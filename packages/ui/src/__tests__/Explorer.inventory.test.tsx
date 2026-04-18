@@ -1,0 +1,124 @@
+import React from 'react';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { screen } from '@testing-library/react';
+import { Route, Routes } from 'react-router-dom';
+import Explorer from '../Explorer';
+import { renderWithProviders } from '../test/renderWithProviders';
+
+vi.mock('../hooks/useAgents', () => ({
+  useAgents: () => ({ data: [], isLoading: false, isError: false }),
+  useAgent: () => ({ data: null }),
+}));
+
+vi.mock('../hooks/useSkills', () => ({
+  useSkills: () => ({ data: [], isLoading: false, isError: false }),
+  useSkill: () => ({ data: null }),
+}));
+
+vi.mock('../hooks/useCommands', () => ({
+  useCommands: () => ({ data: [], isLoading: false, isError: false }),
+  useCommand: () => ({ data: null }),
+}));
+
+vi.mock('../hooks/useConfigs', () => ({
+  useMcpServers: () => ({
+    data: [
+      { name: 'filesystem', config: {}, source: 'local' },
+      { name: 'github', config: {}, source: 'local' },
+    ],
+    isLoading: false,
+    isError: false,
+  }),
+  useHooks: () => ({
+    data: [
+      { event: 'PreToolUse', name: 'PreToolUse [0]', data: {}, source: 'local' },
+      { event: 'PostToolUse', name: 'PostToolUse [0]', data: {}, source: 'local' },
+    ],
+    isLoading: false,
+    isError: false,
+  }),
+  useLspServers: () => ({
+    data: [
+      { name: 'typescript', config: {}, source: 'local' },
+      { name: 'eslint', config: {}, source: 'local' },
+      { name: 'rust', config: {}, source: 'local' },
+    ],
+    isLoading: false,
+    isError: false,
+  }),
+}));
+
+vi.mock('../hooks/usePlugins', () => ({
+  usePlugins: () => ({
+    data: [
+      {
+        id: 'review-pack@market',
+        name: 'review-pack',
+        marketplace: 'market',
+        enabled: true,
+        installs: [{ version: '1.0.0' }],
+        componentCounts: {
+          agents: 1,
+          skills: 1,
+          commands: 1,
+        },
+      },
+    ],
+    isLoading: false,
+    isError: false,
+  }),
+  useMarketplaces: () => ({
+    data: [{ id: 'market' }],
+    isLoading: false,
+    isError: false,
+  }),
+}));
+
+vi.mock('../hooks/useProfiles', () => ({
+  useProfiles: () => ({
+    data: {
+      profiles: [
+        { name: 'default', plugins: ['review-pack@market'], agents: [], skills: [], commands: [] },
+      ],
+      active: null,
+    },
+    isLoading: false,
+    isError: false,
+  }),
+}));
+
+describe('Explorer inventory views', () => {
+  it('shows current environment summary and plugin inventory details', () => {
+    renderWithProviders(
+      <Routes>
+        <Route path="/explore/:tab" element={<Explorer />} />
+      </Routes>,
+      { route: '/explore/plugins' },
+    );
+
+    expect(screen.getByText('Current environment')).toBeInTheDocument();
+    expect(screen.getAllByText('Hooks').length).toBeGreaterThan(0);
+    expect(screen.getAllByText('2').length).toBeGreaterThan(0);
+    expect(screen.getByText('MCP servers')).toBeInTheDocument();
+    expect(screen.getByText('LSP servers')).toBeInTheDocument();
+    expect(screen.getByText('review-pack')).toBeInTheDocument();
+    expect(screen.getByText('Enabled')).toBeInTheDocument();
+    expect(screen.getByText('Agents: 1')).toBeInTheDocument();
+    expect(screen.getByText('Skills: 1')).toBeInTheDocument();
+    expect(screen.getByText('Commands: 1')).toBeInTheDocument();
+  });
+
+  it('shows the current environment summary for read-only config sections', () => {
+    renderWithProviders(
+      <Routes>
+        <Route path="/explore/:tab" element={<Explorer />} />
+      </Routes>,
+      { route: '/explore/hooks' },
+    );
+
+    expect(screen.getByText('Current environment')).toBeInTheDocument();
+    expect(screen.getAllByText('Hooks').length).toBeGreaterThan(0);
+    expect(screen.getAllByText('MCP servers').length).toBeGreaterThan(0);
+    expect(screen.getAllByText('LSP servers').length).toBeGreaterThan(0);
+  });
+});

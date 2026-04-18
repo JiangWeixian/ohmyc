@@ -1,0 +1,121 @@
+import { describe, it, expect, beforeEach, afterEach } from 'vitest';
+import { mkdtempSync, rmSync, writeFileSync, mkdirSync, symlinkSync } from 'fs';
+import path from 'path';
+import os from 'os';
+import Fastify from 'fastify';
+import { skillsRoutes } from '../skills';
+
+describe('skills routes', () => {
+  let tmpRoot: string;
+  let tmpDir: string;
+  let app: ReturnType<typeof Fastify>;
+
+  function createSkillDir(name: string, content: string) {
+    const dir = path.join(tmpDir, name);
+    mkdirSync(dir, { recursive: true });
+    writeFileSync(path.join(dir, 'SKILL.md'), content);
+  }
+
+  beforeEach(async () => {
+    tmpRoot = mkdtempSync(path.join(os.tmpdir(), 'skills-route-test-'));
+    tmpDir = path.join(tmpRoot, 'skills');
+    mkdirSync(tmpDir, { recursive: true });
+    app = Fastify();
+    await app.register(skillsRoutes, {
+      skillsDir: tmpDir,
+      pluginsDir: path.join(tmpRoot, '_plugins'),
+      settingsPath: path.join(tmpRoot, '_settings.json'),
+      baseDir: tmpRoot,
+    });
+    await app.ready();
+  });
+
+  afterEach(async () => {
+    await app.close();
+    rmSync(tmpRoot, { recursive: true, force: true });
+  });
+
+  describe('GET /api/skills', () => {
+    it('returns empty list', async () => {
+      const res = await app.inject({ method: 'GET', url: '/api/skills' });
+      expect(res.statusCode).toBe(200);
+      expect(res.json()).toEqual({ skills: [] });
+    });
+
+    it('returns skills list', async () => {
+      createSkillDir('test', '---\nname: test\ndescription: Test\n---\nprompt');
+      const res = await app.inject({ method: 'GET', url: '/api/skills' });
+      expect(res.statusCode).toBe(200);
+      expect(res.json().skills).toHaveLength(1);
+    });
+
+    it('tags regular dir as source: local', async () => {
+      createSkillDir('local', '---\nname: local\ndescription: Local\n---\nprompt');
+      const res = await app.inject({ method: 'GET', url: '/api/skills' });
+      const local = res.json().skills.find((skill: any) => skill.id === 'local');
+      expect(local.source).toBe('local');
+    });
+
+    it('treats non-profile symlink dirs as local', async () => {
+      const realDir = path.join(tmpDir, '_real-skill');
+      mkdirSync(realDir, { recursive: true });
+      writeFileSync(path.join(realDir, 'SKILL.md'), '---\nname: linked\ndescription: Linked\n---\nprompt');
+      symlinkSync(realDir, path.join(tmpDir, 'linked'));
+      const res = await app.inject({ method: 'GET', url: '/api/skills' });
+      const linked = res.json().skills.find((s: any) => s.id === 'linked');
+      expect(linked.source).toBe('local');
+    });
+
+    it('marks only symlink dirs inside the active profile directory as profile', async () => {
+      const activeProfileDir = path.join(tmpRoot, 'profiles', 'daily');
+      mkdirSync(path.join(activeProfileDir, 'skills'), { recursive: true });
+      writeFileSync(path.join(tmpRoot, 'profiles', '.active'), activeProfileDir);
+
+      const storeDir = path.join(tmpRoot, 'review-skill');
+      mkdirSync(storeDir, { recursive: true });
+      writeFileSync(path.join(storeDir, 'SKILL.md'), '---\nname: linked\ndescription: Linked\n---\nprompt');
+
+      const activeLinkPath = path.join(activeProfileDir, 'skills', 'linked');
+      symlinkSync(storeDir, activeLinkPath);
+      symlinkSync(activeLinkPath, path.join(tmpDir, 'linked'));
+
+      const res = await app.inject({ method: 'GET', url: '/api/skills' });
+      const linked = res.json().skills.find((s: any) => s.id === 'linked');
+
+      expect(linked.source).toBe('profile');
+    });
+
+    it('keeps local and profile skills distinct in the same listing', async () => {
+      createSkillDir('local', '---\nname: local\ndescription: Local\n---\nprompt');
+      const activeProfileDir = path.join(tmpRoot, 'profiles', 'daily');
+      mkdirSync(path.join(activeProfileDir, 'skills'), { recursive: true });
+      writeFileSync(path.join(tmpRoot, 'profiles', '.active'), activeProfileDir);
+      const storeDir = path.join(tmpRoot, 'review-skill');
+      mkdirSync(storeDir, { recursive: true });
+      writeFileSync(path.join(storeDir, 'SKILL.md'), '---\nname: linked\ndescription: Linked\n---\nprompt');
+      const activeLinkPath = path.join(activeProfileDir, 'skills', 'linked');
+      symlinkSync(storeDir, activeLinkPath);
+      symlinkSync(activeLinkPath, path.join(tmpDir, 'linked'));
+
+      const res = await app.inject({ method: 'GET', url: '/api/skills' });
+      const { skills } = res.json();
+
+      expect(skills.find((skill: any) => skill.id === 'local')?.source).toBe('local');
+      expect(skills.find((skill: any) => skill.id === 'linked')?.source).toBe('profile');
+    });
+  });
+
+  describe('GET /api/skills/:name', () => {
+    it('returns 404 for nonexistent', async () => {
+      const res = await app.inject({ method: 'GET', url: '/api/skills/nope' });
+      expect(res.statusCode).toBe(404);
+    });
+
+    it('returns skill', async () => {
+      createSkillDir('test', '---\nname: test\ndescription: Test\n---\nprompt');
+      const res = await app.inject({ method: 'GET', url: '/api/skills/test' });
+      expect(res.statusCode).toBe(200);
+      expect(res.json().skill.id).toBe('test');
+    });
+  });
+});

@@ -1,0 +1,42 @@
+{
+  "name": "@claudeui/cli",
+  "version": "0.1.0",
+  "type": "module",
+  "bin": {
+    "cu": "dist/index.cjs",
+    "claudeui": "dist/index.cjs"
+  },
+  "scripts": {
+    "build": "tsup",
+    "build:full": "pnpm --filter @claudeui/ui build && tsup",
+    "dev": "tsup --watch --onSuccess 'node dist/index.cjs'",
+    "start": "node dist/index.cjs",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "prepublishOnly": "pnpm build:full && node scripts/prepublish.mjs"
+  },
+  "files": ["dist", "README.md"],
+  "publishConfig": {
+    "access": "public",
+    "registry": "https://registry.npmjs.org/"
+  },
+  "dependencies": {
+    "@claudeui/shared": "workspace:*",
+    "@fastify/static": "^7.0.3",
+    "cac": "^6.7.14",
+    "fastify": "^4.26.2",
+    "get-port": "^7.1.0",
+    "gray-matter": "^4.0.3",
+    "open": "^11.0.0",
+    "proper-lockfile": "^4.1.2",
+    "zod-to-json-schema": "^3.23.5"
+  },
+  "devDependencies": {
+    "@types/node": "^20.12.7",
+    "@types/proper-lockfile": "^4.1.4",
+    "tsup": "^8.0.2",
+    "tsx": "^4.21.0",
+    "typescript": "^5.4.5",
+    "vitest": "^2.1.9"
+  }
+}

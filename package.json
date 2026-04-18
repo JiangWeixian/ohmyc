@@ -1,0 +1,20 @@
+{
+  "name": "claudeui",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Claude UI Monorepo",
+  "scripts": {
+    "build": "pnpm --filter @claudeui/ui build && pnpm --filter @claudeui/cli build",
+    "test": "pnpm -r test",
+    "dev": "pnpm --filter @claudeui/ui dev"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "pnpm": "^8.0.0"
+  },
+  "dependencies": {
+    "untildify": "^6.0.0"
+  }
+}
