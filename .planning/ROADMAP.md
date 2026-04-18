@@ -103,18 +103,17 @@ Plans:
 **UI hint**: yes
 
 #### Phase 12: .cu Rebrand
-**Goal**: All managed data writes go to `~/.cu/` instead of `~/.claude/`, while existing data in `~/.claude/` remains readable so no user loses configurations.
+**Goal**: All managed data writes go to `~/.cui/` instead of `~/.claude/`, while existing data in `~/.claude/` remains on disk and plugins stay readable from `~/.claude/plugins/`.
 **Depends on**: Phase 10
 **Requirements**: REBR-01, REBR-02
 **Success Criteria** (what must be TRUE):
-  1. Store, profiles, and activation output are written to `~/.cu/` -- activating a profile creates symlinks and files under `~/.cu/`
-  2. Existing configurations from `~/.claude/` are still readable after rebrand so previously created profiles and store items are not lost
-  3. Fresh install with no prior `~/.claude/` data works correctly by writing only to `~/.cu/`
-**Plans**: TBD
+  1. Store, profiles, and activation output are written to `~/.cui/` -- activating a profile creates symlinks and files under `~/.cui/`
+  2. Existing configurations from `~/.claude/` are not deleted or corrupted; plugins remain readable from `~/.claude/plugins/`
+  3. Fresh install with no prior `~/.cui/` data works correctly by writing only to `~/.cui/` (mkdir-on-demand)
+**Plans**: 1 plan
 
 Plans:
-- [ ] 12-01: TBD
-- [ ] 12-02: TBD
+- [ ] 12-01-PLAN.md — ConfigLocator write path rebrand with split writeBaseDir/claudeCodeDir (REBR-01, REBR-02)
 
 ## Progress
 
@@ -134,4 +133,4 @@ Phases execute in numeric order: 10 -> 11 -> 12
 | 9. Package and Publish | v1.3 | 3/3 | Complete | 2026-04-14 |
 | 10. Config Foundation | v1.4 | 2/2 | Complete | 2026-04-18 |
 | 11. Project-Local Loading | v1.4 | 2/2 | Complete | 2026-04-18 |
-| 12. .cu Rebrand | v1.4 | 0/2 | Not started | - |
+| 12. .cu Rebrand | v1.4 | 0/1 | Not started | - |
