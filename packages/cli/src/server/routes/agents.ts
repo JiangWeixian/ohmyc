@@ -6,6 +6,7 @@ import { resolveInventorySource } from './inventorySource';
 
 interface AgentsRoutesOptions {
   agentsDir: string;
+  projectAgentsDir: string | null | undefined;
   pluginsDir: string;
   settingsPath: string;
   baseDir?: string;
@@ -18,56 +19,73 @@ export const agentsRoutes: FastifyPluginAsync<AgentsRoutesOptions> = async (fast
   fastify.get('/api/agents', async () => {
     const agents = await service.list();
 
-    // Tag source: check if symlink (profile) or regular file (local)
     for (const agent of agents) {
       const filePath = path.join(options.agentsDir, agent.filename);
       (agent as any).source = await resolveInventorySource(filePath, options.baseDir);
+      (agent as any).scope = 'global';
     }
 
-    // Aggregate from enabled plugins
     const pluginPaths = await resolver.getEnabledPluginPaths();
     for (const { id, installPath } of pluginPaths) {
       const pluginService = new AgentService(path.join(installPath, 'agents'));
       const pluginAgents = await pluginService.list();
       for (const agent of pluginAgents) {
-        agents.push({ ...agent, source: 'plugin', pluginId: id });
+        agents.push({ ...agent, source: 'plugin' as const, scope: 'global' as const, pluginId: id });
       }
     }
 
-    agents.sort((a, b) => a.id.localeCompare(b.id));
+    if (options.projectAgentsDir) {
+      const projectService = new AgentService(options.projectAgentsDir);
+      const projectAgents = await projectService.list();
+      for (const agent of projectAgents) {
+        agents.push({ ...agent, source: 'project' as const, scope: 'project' as const });
+      }
+    }
+
+    agents.sort((a, b) => {
+      const cmp = a.id.localeCompare(b.id);
+      if (cmp !== 0) return cmp;
+      const aScope = (a as any).scope === 'project' ? 0 : 1;
+      const bScope = (b as any).scope === 'project' ? 0 : 1;
+      return aScope - bScope;
+    });
     return { agents };
   });
 
-  fastify.get<{ Params: { name: string }; Querystring: { source?: string; pluginId?: string } }>('/api/agents/:name', async (request, reply) => {
+  fastify.get<{ Params: { name: string }; Querystring: { source?: string; pluginId?: string; scope?: string } }>('/api/agents/:name', async (request, reply) => {
     const { name } = request.params;
-    const { source, pluginId } = request.query;
+    const { source, pluginId, scope } = request.query;
 
-    // If source=plugin and pluginId specified, search that plugin directly
     if (source === 'plugin' && pluginId) {
       const pluginPaths = await resolver.getEnabledPluginPaths();
       const target = pluginPaths.find(p => p.id === pluginId);
       if (target) {
         const pluginService = new AgentService(path.join(target.installPath, 'agents'));
         const pluginAgent = await pluginService.get(name);
-        if (pluginAgent) return { agent: { ...pluginAgent, source: 'plugin' as const, pluginId } };
+        if (pluginAgent) return { agent: { ...pluginAgent, source: 'plugin' as const, scope: 'global' as const, pluginId } };
       }
       return reply.status(404).send({ error: 'Agent not found' });
     }
 
-    // Search local
+    if ((source === 'project' || scope === 'project') && options.projectAgentsDir) {
+      const projectService = new AgentService(options.projectAgentsDir);
+      const projectAgent = await projectService.get(name);
+      if (projectAgent) return { agent: { ...projectAgent, source: 'project' as const, scope: 'project' as const } };
+    }
+
     const agent = await service.get(name);
     if (agent) {
       const filePath = path.join(options.agentsDir, agent.filename);
       (agent as any).source = await resolveInventorySource(filePath, options.baseDir);
+      (agent as any).scope = 'global';
       return { agent };
     }
 
-    // Fallback: search all plugins
     const pluginPaths = await resolver.getEnabledPluginPaths();
     for (const { id, installPath } of pluginPaths) {
       const pluginService = new AgentService(path.join(installPath, 'agents'));
       const pluginAgent = await pluginService.get(name);
-      if (pluginAgent) return { agent: { ...pluginAgent, source: 'plugin' as const, pluginId: id } };
+      if (pluginAgent) return { agent: { ...pluginAgent, source: 'plugin' as const, scope: 'global' as const, pluginId: id } };
     }
 
     return reply.status(404).send({ error: 'Agent not found' });

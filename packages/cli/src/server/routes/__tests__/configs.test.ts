@@ -11,15 +11,17 @@ describe('configs routes', () => {
   let settingsPath: string;
   let app: ReturnType<typeof Fastify>;
 
+  let projectDir: string | undefined;
+
   beforeEach(async () => {
     tmpDir = mkdtempSync(path.join(os.tmpdir(), 'configs-test-'));
     pluginsDir = path.join(tmpDir, 'plugins');
     mkdirSync(pluginsDir, { recursive: true });
     settingsPath = path.join(tmpDir, 'settings.json');
-    // Write empty settings
     writeFileSync(settingsPath, JSON.stringify({}));
+    projectDir = undefined;
     app = Fastify();
-    await app.register(configsRoutes, { baseDir: tmpDir, pluginsDir, settingsPath });
+    await app.register(configsRoutes, { baseDir: tmpDir, projectBaseDir: projectDir, pluginsDir, settingsPath });
     await app.ready();
   });
 
@@ -89,6 +91,7 @@ describe('configs routes', () => {
         name: 'db',
         config: { command: 'node', args: ['server.js'] },
         source: 'local',
+        scope: 'global',
       });
       expect(body.mcpServers[0].pluginId).toBeUndefined();
     });
@@ -113,6 +116,7 @@ describe('configs routes', () => {
         name: 'db',
         config: { command: 'node', args: ['local.js'] },
         source: 'local',
+        scope: 'global',
       });
 
       const pluginEntry = body.mcpServers.find((e: any) => e.source === 'plugin');
@@ -120,6 +124,7 @@ describe('configs routes', () => {
         name: 'github',
         config: { command: 'npx', args: ['mcp-github'] },
         source: 'plugin',
+        scope: 'global',
         pluginId: 'my-plugin',
       });
     });
@@ -165,6 +170,7 @@ describe('configs routes', () => {
         name: 'PreToolUse [0]',
         data: { matcher: 'Bash', type: 'command', command: 'echo hi' },
         source: 'local',
+        scope: 'global',
       });
     });
 
@@ -228,6 +234,7 @@ describe('configs routes', () => {
         name: 'python',
         config: { command: 'pyright', extensionToLanguage: { '.py': 'python' } },
         source: 'local',
+        scope: 'global',
       });
     });
 
@@ -252,6 +259,7 @@ describe('configs routes', () => {
         name: 'typescript',
         config: { command: 'tsserver' },
         source: 'plugin',
+        scope: 'global',
         pluginId: 'lsp-plugin',
       });
     });
@@ -264,6 +272,109 @@ describe('configs routes', () => {
 
       const res = await app.inject({ method: 'GET', url: '/api/lsp' });
       expect(res.json().lspServers).toHaveLength(0);
+    });
+  });
+
+  describe('project-local loading', () => {
+    async function createAppWithProject() {
+      await app.close();
+      projectDir = mkdtempSync(path.join(os.tmpdir(), 'project-configs-test-'));
+      mkdirSync(projectDir, { recursive: true });
+      writeFileSync(path.join(projectDir, 'settings.json'), JSON.stringify({}));
+      app = Fastify();
+      await app.register(configsRoutes, { baseDir: tmpDir, projectBaseDir: projectDir, pluginsDir, settingsPath });
+      await app.ready();
+    }
+
+    describe('GET /api/mcp with project', () => {
+      it('returns local + project MCP entries with correct scope', async () => {
+        await createAppWithProject();
+        writeFileSync(path.join(tmpDir, '.mcp.json'), JSON.stringify({
+          mcpServers: { db: { command: 'node', args: ['local.js'] } },
+        }));
+        writeFileSync(path.join(projectDir!, '.mcp.json'), JSON.stringify({
+          mcpServers: { ci: { command: 'node', args: ['project.js'] } },
+        }));
+
+        const res = await app.inject({ method: 'GET', url: '/api/mcp' });
+        const body = res.json();
+        expect(body.mcpServers).toHaveLength(2);
+
+        const local = body.mcpServers.find((e: any) => e.source === 'local');
+        expect(local.scope).toBe('global');
+        const proj = body.mcpServers.find((e: any) => e.source === 'project');
+        expect(proj.scope).toBe('project');
+        expect(proj.name).toBe('ci');
+      });
+
+      it('returns both versions when project and global define same key', async () => {
+        await createAppWithProject();
+        writeFileSync(path.join(tmpDir, '.mcp.json'), JSON.stringify({
+          mcpServers: { db: { command: 'global' } },
+        }));
+        writeFileSync(path.join(projectDir!, '.mcp.json'), JSON.stringify({
+          mcpServers: { db: { command: 'project' } },
+        }));
+
+        const res = await app.inject({ method: 'GET', url: '/api/mcp' });
+        const body = res.json();
+        expect(body.mcpServers).toHaveLength(2);
+        expect(body.mcpServers.find((e: any) => e.scope === 'global')).toBeDefined();
+        expect(body.mcpServers.find((e: any) => e.scope === 'project')).toBeDefined();
+      });
+
+      it('returns only local when projectBaseDir is null', async () => {
+        writeFileSync(path.join(tmpDir, '.mcp.json'), JSON.stringify({
+          mcpServers: { db: { command: 'node' } },
+        }));
+
+        const res = await app.inject({ method: 'GET', url: '/api/mcp' });
+        const body = res.json();
+        expect(body.mcpServers).toHaveLength(1);
+        expect(body.mcpServers[0].scope).toBe('global');
+      });
+    });
+
+    describe('GET /api/hooks with project', () => {
+      it('returns local + project hooks with correct scope', async () => {
+        await createAppWithProject();
+        writeFileSync(settingsPath, JSON.stringify({
+          hooks: { PreToolUse: [{ hooks: [{ type: 'command', command: 'local-hook' }] }] },
+        }));
+        writeFileSync(path.join(projectDir!, 'settings.json'), JSON.stringify({
+          hooks: { PostToolUse: [{ hooks: [{ type: 'command', command: 'project-hook' }] }] },
+        }));
+
+        const res = await app.inject({ method: 'GET', url: '/api/hooks' });
+        const body = res.json();
+        expect(body.hooks).toHaveLength(2);
+
+        const local = body.hooks.find((e: any) => e.source === 'local');
+        expect(local.scope).toBe('global');
+        const proj = body.hooks.find((e: any) => e.source === 'project');
+        expect(proj.scope).toBe('project');
+      });
+    });
+
+    describe('GET /api/lsp with project', () => {
+      it('returns local + project LSP entries with correct scope', async () => {
+        await createAppWithProject();
+        writeFileSync(path.join(tmpDir, '.lsp.json'), JSON.stringify({
+          python: { command: 'pyright' },
+        }));
+        writeFileSync(path.join(projectDir!, '.lsp.json'), JSON.stringify({
+          typescript: { command: 'tsserver' },
+        }));
+
+        const res = await app.inject({ method: 'GET', url: '/api/lsp' });
+        const body = res.json();
+        expect(body.lspServers).toHaveLength(2);
+
+        const local = body.lspServers.find((e: any) => e.source === 'local');
+        expect(local.scope).toBe('global');
+        const proj = body.lspServers.find((e: any) => e.source === 'project');
+        expect(proj.scope).toBe('project');
+      });
     });
   });
 });

@@ -99,6 +99,80 @@ describe('agents routes', () => {
     });
   });
 
+  describe('project-local loading', () => {
+    let projectDir: string;
+
+    beforeEach(async () => {
+      await app.close();
+      projectDir = path.join(tmpRoot, 'project-agents');
+      mkdirSync(projectDir, { recursive: true });
+      app = Fastify();
+      await app.register(agentsRoutes, {
+        agentsDir: tmpDir,
+        projectAgentsDir: projectDir,
+        pluginsDir: path.join(tmpRoot, '_plugins'),
+        settingsPath: path.join(tmpRoot, '_settings.json'),
+        baseDir: tmpRoot,
+      });
+      await app.ready();
+    });
+
+    it('returns both global and project agents with correct scope', async () => {
+      writeFileSync(path.join(tmpDir, 'global.md'), '---\nname: global\ndescription: Global\n---\nprompt');
+      writeFileSync(path.join(projectDir, 'proj.md'), '---\nname: proj\ndescription: Proj\n---\nprompt');
+
+      const res = await app.inject({ method: 'GET', url: '/api/agents' });
+      const { agents } = res.json();
+
+      const global = agents.find((a: any) => a.id === 'global');
+      const proj = agents.find((a: any) => a.id === 'proj');
+      expect(global.source).toBe('local');
+      expect(global.scope).toBe('global');
+      expect(proj.source).toBe('project');
+      expect(proj.scope).toBe('project');
+    });
+
+    it('sorts project agent first when names collide', async () => {
+      writeFileSync(path.join(tmpDir, 'shared.md'), '---\nname: shared\ndescription: Global version\n---\nglobal');
+      writeFileSync(path.join(projectDir, 'shared.md'), '---\nname: shared\ndescription: Project version\n---\nproject');
+
+      const res = await app.inject({ method: 'GET', url: '/api/agents' });
+      const { agents } = res.json();
+
+      expect(agents).toHaveLength(2);
+      expect(agents[0].scope).toBe('project');
+      expect(agents[1].scope).toBe('global');
+    });
+
+    it('returns only global agents when projectAgentsDir is null', async () => {
+      await app.close();
+      writeFileSync(path.join(tmpDir, 'only.md'), '---\nname: only\ndescription: Only\n---\nprompt');
+      app = Fastify();
+      await app.register(agentsRoutes, {
+        agentsDir: tmpDir,
+        projectAgentsDir: null,
+        pluginsDir: path.join(tmpRoot, '_plugins'),
+        settingsPath: path.join(tmpRoot, '_settings.json'),
+        baseDir: tmpRoot,
+      });
+      await app.ready();
+
+      const res = await app.inject({ method: 'GET', url: '/api/agents' });
+      const { agents } = res.json();
+      expect(agents).toHaveLength(1);
+      expect(agents[0].scope).toBe('global');
+    });
+
+    it('finds project agent by name with source=project', async () => {
+      writeFileSync(path.join(projectDir, 'proj.md'), '---\nname: proj\ndescription: Proj\n---\nprompt');
+
+      const res = await app.inject({ method: 'GET', url: '/api/agents/proj?source=project' });
+      expect(res.statusCode).toBe(200);
+      expect(res.json().agent.source).toBe('project');
+      expect(res.json().agent.scope).toBe('project');
+    });
+  });
+
   describe('GET /api/agents/:name', () => {
     it('returns 404 for nonexistent agent', async () => {
       const res = await app.inject({ method: 'GET', url: '/api/agents/nope' });

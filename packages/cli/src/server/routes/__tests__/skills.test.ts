@@ -105,6 +105,73 @@ describe('skills routes', () => {
     });
   });
 
+  describe('project-local loading', () => {
+    let projectDir: string;
+
+    beforeEach(async () => {
+      await app.close();
+      projectDir = path.join(tmpRoot, 'project-skills');
+      mkdirSync(projectDir, { recursive: true });
+      app = Fastify();
+      await app.register(skillsRoutes, {
+        skillsDir: tmpDir,
+        projectSkillsDir: projectDir,
+        pluginsDir: path.join(tmpRoot, '_plugins'),
+        settingsPath: path.join(tmpRoot, '_settings.json'),
+        baseDir: tmpRoot,
+      });
+      await app.ready();
+    });
+
+    it('returns both global and project skills with correct scope', async () => {
+      createSkillDir('global', '---\nname: global\ndescription: Global\n---\nprompt');
+      mkdirSync(path.join(projectDir, 'proj'), { recursive: true });
+      writeFileSync(path.join(projectDir, 'proj', 'SKILL.md'), '---\nname: proj\ndescription: Proj\n---\nprompt');
+
+      const res = await app.inject({ method: 'GET', url: '/api/skills' });
+      const { skills } = res.json();
+
+      const global = skills.find((s: any) => s.id === 'global');
+      const proj = skills.find((s: any) => s.id === 'proj');
+      expect(global.source).toBe('local');
+      expect(global.scope).toBe('global');
+      expect(proj.source).toBe('project');
+      expect(proj.scope).toBe('project');
+    });
+
+    it('sorts project skill first when names collide', async () => {
+      createSkillDir('shared', '---\nname: shared\ndescription: Global version\n---\nglobal');
+      mkdirSync(path.join(projectDir, 'shared'), { recursive: true });
+      writeFileSync(path.join(projectDir, 'shared', 'SKILL.md'), '---\nname: shared\ndescription: Project version\n---\nproject');
+
+      const res = await app.inject({ method: 'GET', url: '/api/skills' });
+      const { skills } = res.json();
+
+      expect(skills).toHaveLength(2);
+      expect(skills[0].scope).toBe('project');
+      expect(skills[1].scope).toBe('global');
+    });
+
+    it('returns only global skills when projectSkillsDir is null', async () => {
+      await app.close();
+      createSkillDir('only', '---\nname: only\ndescription: Only\n---\nprompt');
+      app = Fastify();
+      await app.register(skillsRoutes, {
+        skillsDir: tmpDir,
+        projectSkillsDir: null,
+        pluginsDir: path.join(tmpRoot, '_plugins'),
+        settingsPath: path.join(tmpRoot, '_settings.json'),
+        baseDir: tmpRoot,
+      });
+      await app.ready();
+
+      const res = await app.inject({ method: 'GET', url: '/api/skills' });
+      const { skills } = res.json();
+      expect(skills).toHaveLength(1);
+      expect(skills[0].scope).toBe('global');
+    });
+  });
+
   describe('GET /api/skills/:name', () => {
     it('returns 404 for nonexistent', async () => {
       const res = await app.inject({ method: 'GET', url: '/api/skills/nope' });

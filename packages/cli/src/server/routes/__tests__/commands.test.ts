@@ -95,6 +95,71 @@ describe('commands routes', () => {
     });
   });
 
+  describe('project-local loading', () => {
+    let projectDir: string;
+
+    beforeEach(async () => {
+      await app.close();
+      projectDir = path.join(tmpRoot, 'project-commands');
+      mkdirSync(projectDir, { recursive: true });
+      app = Fastify();
+      await app.register(commandsRoutes, {
+        commandsDir: tmpDir,
+        projectCommandsDir: projectDir,
+        pluginsDir: path.join(tmpRoot, '_plugins'),
+        settingsPath: path.join(tmpRoot, '_settings.json'),
+        baseDir: tmpRoot,
+      });
+      await app.ready();
+    });
+
+    it('returns both global and project commands with correct scope', async () => {
+      writeFileSync(path.join(tmpDir, 'global.md'), '---\nname: global\ndescription: Global\n---\nprompt');
+      writeFileSync(path.join(projectDir, 'proj.md'), '---\nname: proj\ndescription: Proj\n---\nprompt');
+
+      const res = await app.inject({ method: 'GET', url: '/api/commands' });
+      const { commands } = res.json();
+
+      const global = commands.find((c: any) => c.id === 'global');
+      const proj = commands.find((c: any) => c.id === 'proj');
+      expect(global.source).toBe('local');
+      expect(global.scope).toBe('global');
+      expect(proj.source).toBe('project');
+      expect(proj.scope).toBe('project');
+    });
+
+    it('sorts project command first when names collide', async () => {
+      writeFileSync(path.join(tmpDir, 'shared.md'), '---\nname: shared\ndescription: Global version\n---\nglobal');
+      writeFileSync(path.join(projectDir, 'shared.md'), '---\nname: shared\ndescription: Project version\n---\nproject');
+
+      const res = await app.inject({ method: 'GET', url: '/api/commands' });
+      const { commands } = res.json();
+
+      expect(commands).toHaveLength(2);
+      expect(commands[0].scope).toBe('project');
+      expect(commands[1].scope).toBe('global');
+    });
+
+    it('returns only global commands when projectCommandsDir is null', async () => {
+      await app.close();
+      writeFileSync(path.join(tmpDir, 'only.md'), '---\nname: only\ndescription: Only\n---\nprompt');
+      app = Fastify();
+      await app.register(commandsRoutes, {
+        commandsDir: tmpDir,
+        projectCommandsDir: null,
+        pluginsDir: path.join(tmpRoot, '_plugins'),
+        settingsPath: path.join(tmpRoot, '_settings.json'),
+        baseDir: tmpRoot,
+      });
+      await app.ready();
+
+      const res = await app.inject({ method: 'GET', url: '/api/commands' });
+      const { commands } = res.json();
+      expect(commands).toHaveLength(1);
+      expect(commands[0].scope).toBe('global');
+    });
+  });
+
   describe('GET /api/commands/:name', () => {
     it('returns 404 for nonexistent', async () => {
       const res = await app.inject({ method: 'GET', url: '/api/commands/nope' });

@@ -20,6 +20,9 @@ export const AgentFrontmatterSchema = z.object({
   hooks: z.any().optional(),
 }).passthrough();
 
+export const ScopeEnum = z.enum(['global', 'project']);
+export type ScopeType = z.infer<typeof ScopeEnum>;
+
 export const AgentSchema = z.object({
   id: z.string(),
   frontmatter: AgentFrontmatterSchema,
@@ -27,6 +30,7 @@ export const AgentSchema = z.object({
   raw: z.string(),
   filename: z.string(),
   source: z.enum(['local', 'profile', 'plugin', 'project']),
+  scope: ScopeEnum.optional(),
   pluginId: z.string().optional(),
   provenance: StoreComponentProvenanceSchema.optional(),
 });

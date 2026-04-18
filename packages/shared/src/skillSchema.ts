@@ -15,6 +15,8 @@ export const SkillFrontmatterSchema = z.object({
   hooks: z.any().optional(),
 }).passthrough();
 
+import { ScopeEnum } from './agentSchema';
+
 export const SkillSchema = z.object({
   id: z.string(),
   frontmatter: SkillFrontmatterSchema,
@@ -22,6 +24,7 @@ export const SkillSchema = z.object({
   raw: z.string(),
   dirName: z.string(),
   source: z.enum(['local', 'profile', 'plugin', 'project']),
+  scope: ScopeEnum.optional(),
   pluginId: z.string().optional(),
   provenance: StoreComponentProvenanceSchema.optional(),
 });

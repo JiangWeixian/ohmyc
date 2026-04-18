@@ -5,6 +5,7 @@ import { PluginResolver } from '../services/pluginResolver';
 
 interface ConfigRoutesOptions {
   baseDir: string;
+  projectBaseDir: string | null | undefined;
   pluginsDir: string;
   settingsPath: string;
 }
@@ -12,7 +13,8 @@ interface ConfigRoutesOptions {
 interface McpEntry {
   name: string;
   config: any;
-  source: 'local' | 'plugin';
+  source: 'local' | 'plugin' | 'project';
+  scope?: 'global' | 'project';
   pluginId?: string;
 }
 
@@ -20,14 +22,16 @@ interface HookEntry {
   event: string;
   name: string;
   data: { matcher?: string; type: string; command: string };
-  source: 'local' | 'plugin';
+  source: 'local' | 'plugin' | 'project';
+  scope?: 'global' | 'project';
   pluginId?: string;
 }
 
 interface LspEntry {
   name: string;
   config: any;
-  source: 'local' | 'plugin';
+  source: 'local' | 'plugin' | 'project';
+  scope?: 'global' | 'project';
   pluginId?: string;
 }
 
@@ -66,78 +70,98 @@ function flattenHooks(hooksObj: Record<string, any>): Array<{ event: string; nam
 }
 
 export const configsRoutes: FastifyPluginAsync<ConfigRoutesOptions> = async (fastify, options) => {
-  const { baseDir, pluginsDir, settingsPath } = options;
+  const { baseDir, projectBaseDir, pluginsDir, settingsPath } = options;
   const resolver = new PluginResolver(pluginsDir, settingsPath);
 
-  // GET /api/mcp — read .mcp.json and merge with plugin contributions
+  // GET /api/mcp — read .mcp.json and merge with plugin + project contributions
   fastify.get('/api/mcp', async () => {
     const entries: McpEntry[] = [];
 
-    // Local config
     const data = await readJson(path.join(baseDir, '.mcp.json'));
     const localServers = data?.mcpServers ?? {};
     for (const [name, config] of Object.entries(localServers)) {
-      entries.push({ name, config, source: 'local' });
+      entries.push({ name, config, source: 'local', scope: 'global' });
     }
 
-    // Plugin contributions
     const pluginPaths = await resolver.getEnabledPluginPaths();
     for (const { id, installPath } of pluginPaths) {
       const pluginData = await readJson(path.join(installPath, '.mcp.json'));
       const pluginServers = pluginData?.mcpServers ?? {};
       for (const [name, config] of Object.entries(pluginServers)) {
-        entries.push({ name, config, source: 'plugin', pluginId: id });
+        entries.push({ name, config, source: 'plugin', scope: 'global', pluginId: id });
+      }
+    }
+
+    if (projectBaseDir) {
+      const projectData = await readJson(path.join(projectBaseDir, '.mcp.json'));
+      const projectServers = projectData?.mcpServers ?? {};
+      for (const [name, config] of Object.entries(projectServers)) {
+        entries.push({ name, config, source: 'project', scope: 'project' });
       }
     }
 
     return { mcpServers: entries };
   });
 
-  // GET /api/hooks — read hooks from settings.json and merge with plugin contributions
+  // GET /api/hooks — read hooks from settings.json and merge with plugin + project contributions
   fastify.get('/api/hooks', async () => {
     const entries: HookEntry[] = [];
 
-    // Local hooks
     const settings = await readJson(settingsPath);
     const localHooks = settings?.hooks ?? {};
     const flatLocal = flattenHooks(localHooks);
     for (const entry of flatLocal) {
-      entries.push({ ...entry, source: 'local' });
+      entries.push({ ...entry, source: 'local', scope: 'global' });
     }
 
-    // Plugin contributions
     const pluginPaths = await resolver.getEnabledPluginPaths();
     for (const { id, installPath } of pluginPaths) {
       const pluginHooksData = await readJson(path.join(installPath, 'hooks', 'hooks.json'));
       const pluginHooks = pluginHooksData?.hooks ?? {};
       const flatPlugin = flattenHooks(pluginHooks);
       for (const entry of flatPlugin) {
-        entries.push({ ...entry, source: 'plugin', pluginId: id });
+        entries.push({ ...entry, source: 'plugin', scope: 'global', pluginId: id });
+      }
+    }
+
+    if (projectBaseDir) {
+      const projectSettings = await readJson(path.join(projectBaseDir, 'settings.json'));
+      const projectHooks = projectSettings?.hooks ?? {};
+      const flatProject = flattenHooks(projectHooks);
+      for (const entry of flatProject) {
+        entries.push({ ...entry, source: 'project', scope: 'project' });
       }
     }
 
     return { hooks: entries };
   });
 
-  // GET /api/lsp — read .lsp.json and merge with plugin contributions
+  // GET /api/lsp — read .lsp.json and merge with plugin + project contributions
   fastify.get('/api/lsp', async () => {
     const entries: LspEntry[] = [];
 
-    // Local config - .lsp.json is a flat object (not wrapped in a top-level key)
     const data = await readJson(path.join(baseDir, '.lsp.json'));
     if (data && typeof data === 'object') {
       for (const [name, config] of Object.entries(data)) {
-        entries.push({ name, config, source: 'local' });
+        entries.push({ name, config, source: 'local', scope: 'global' });
       }
     }
 
-    // Plugin contributions
     const pluginPaths = await resolver.getEnabledPluginPaths();
     for (const { id, installPath } of pluginPaths) {
       const pluginData = await readJson(path.join(installPath, '.lsp.json'));
       if (pluginData && typeof pluginData === 'object') {
         for (const [name, config] of Object.entries(pluginData)) {
-          entries.push({ name, config, source: 'plugin', pluginId: id });
+          entries.push({ name, config, source: 'plugin', scope: 'global', pluginId: id });
+        }
+      }
+    }
+
+    if (projectBaseDir) {
+      const projectData = await readJson(path.join(projectBaseDir, '.lsp.json'));
+      if (projectData && typeof projectData === 'object') {
+        for (const [name, config] of Object.entries(projectData)) {
+          entries.push({ name, config, source: 'project', scope: 'project' });
         }
       }
     }

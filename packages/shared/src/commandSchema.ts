@@ -15,6 +15,8 @@ export const CommandFrontmatterSchema = z.object({
   hooks: z.any().optional(),
 }).passthrough();
 
+import { ScopeEnum } from './agentSchema';
+
 export const CommandSchema = z.object({
   id: z.string(),
   frontmatter: CommandFrontmatterSchema,
@@ -22,6 +24,7 @@ export const CommandSchema = z.object({
   raw: z.string(),
   filename: z.string(),
   source: z.enum(['local', 'profile', 'plugin', 'project']),
+  scope: ScopeEnum.optional(),
   pluginId: z.string().optional(),
   provenance: StoreComponentProvenanceSchema.optional(),
 });

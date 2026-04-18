@@ -90,11 +90,11 @@ export async function createServer(options: CreateServerOptions = {}): Promise<F
 
   const config = new ConfigLocator();
 
-  await fastify.register(agentsRoutes, { agentsDir: config.agentsDir, pluginsDir: config.pluginsDir, settingsPath: config.settingsPath, baseDir: config.baseDir });
-  await fastify.register(skillsRoutes, { skillsDir: config.skillsDir, pluginsDir: config.pluginsDir, settingsPath: config.settingsPath, baseDir: config.baseDir });
-  await fastify.register(commandsRoutes, { commandsDir: config.commandsDir, pluginsDir: config.pluginsDir, settingsPath: config.settingsPath, baseDir: config.baseDir });
+  await fastify.register(agentsRoutes, { agentsDir: config.agentsDir, projectAgentsDir: config.projectAgentsDir, pluginsDir: config.pluginsDir, settingsPath: config.settingsPath, baseDir: config.baseDir });
+  await fastify.register(skillsRoutes, { skillsDir: config.skillsDir, projectSkillsDir: config.projectSkillsDir, pluginsDir: config.pluginsDir, settingsPath: config.settingsPath, baseDir: config.baseDir });
+  await fastify.register(commandsRoutes, { commandsDir: config.commandsDir, projectCommandsDir: config.projectCommandsDir, pluginsDir: config.pluginsDir, settingsPath: config.settingsPath, baseDir: config.baseDir });
   await fastify.register(pluginsRoutes, { pluginsDir: config.pluginsDir, settingsPath: config.settingsPath });
-  await fastify.register(configsRoutes, { baseDir: config.baseDir, pluginsDir: config.pluginsDir, settingsPath: config.settingsPath });
+  await fastify.register(configsRoutes, { baseDir: config.baseDir, projectBaseDir: config.projectPath, pluginsDir: config.pluginsDir, settingsPath: config.settingsPath });
   await fastify.register(profilesRoutes, { baseDir: config.baseDir });
   await fastify.register(storeRoutes, { baseDir: config.baseDir });
 
