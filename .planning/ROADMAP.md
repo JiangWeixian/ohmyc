@@ -25,8 +25,8 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [x] **Phase 7: Activation Integration** (v1.2)
 - [x] **Phase 8: CLI Launcher** (v1.3)
 - [x] **Phase 9: Package and Publish** (v1.3)
-- [ ] **Phase 10: Config Foundation** -- Centralize path resolution, add project discovery, extend source schema
-- [ ] **Phase 11: Project-Local Loading** -- Dual-source inventory loading with merge and source attribution
+- [x] **Phase 10: Config Foundation** -- Centralize path resolution, add project discovery, extend source schema
+- [x] **Phase 11: Project-Local Loading** -- Dual-source inventory loading with merge and source attribution
 - [ ] **Phase 12: .cu Rebrand** -- Write path moves to ~/.cu/ with backward-compatible reads
 
 ## Phase Details
@@ -97,8 +97,8 @@ Plans:
 **Plans**: 2 plans
 
 Plans:
-- [ ] 11-01-PLAN.md — Backend dual-source loading with scope field and merge routes (LOAD-01, LOAD-02, LOAD-03)
-- [ ] 11-02-PLAN.md — Frontend merge display and view-only behavior for project items (LOAD-02)
+- [x] 11-01-PLAN.md — Backend dual-source loading with scope field and merge routes (LOAD-01, LOAD-02, LOAD-03)
+- [x] 11-02-PLAN.md — Frontend merge display and view-only behavior for project items (LOAD-02)
 
 **UI hint**: yes
 
@@ -132,6 +132,6 @@ Phases execute in numeric order: 10 -> 11 -> 12
 | 7. Activation Integration | v1.2 | 2/2 | Complete | 2026-04-11 |
 | 8. CLI Launcher | v1.3 | 2/2 | Complete | 2026-04-13 |
 | 9. Package and Publish | v1.3 | 3/3 | Complete | 2026-04-14 |
-| 10. Config Foundation | v1.4 | 2/2 | Complete    | 2026-04-18 |
-| 11. Project-Local Loading | v1.4 | 0/2 | Not started | - |
+| 10. Config Foundation | v1.4 | 2/2 | Complete | 2026-04-18 |
+| 11. Project-Local Loading | v1.4 | 2/2 | Complete | 2026-04-18 |
 | 12. .cu Rebrand | v1.4 | 0/2 | Not started | - |
