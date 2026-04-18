@@ -219,6 +219,7 @@ export default function Explorer({ viewSwitcher }: ExplorerProps) {
           title={sectionId}
           content={selectedEntity.content}
           onBack={() => setSelectedItem(null)}
+          scope={selectedEntity.scope}
         />
       );
     }
@@ -268,6 +269,7 @@ export default function Explorer({ viewSwitcher }: ExplorerProps) {
                         name: entity.id,
                         source: entity.source,
                         pluginId: entity.pluginId,
+                        scope: entity.scope,
                       })
                     }
                   />

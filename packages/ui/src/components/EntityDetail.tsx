@@ -6,9 +6,10 @@ interface EntityDetailProps {
   title: string;
   content: string;
   onBack: () => void;
+  scope?: 'global' | 'project';
 }
 
-export function EntityDetail({ title, content, onBack }: EntityDetailProps) {
+export function EntityDetail({ title, content, onBack, scope }: EntityDetailProps) {
   return (
     <motion.div
       initial={{ opacity: 0, x: 12 }}
@@ -25,6 +26,12 @@ export function EntityDetail({ title, content, onBack }: EntityDetailProps) {
         <ChevronLeft size={16} />
         <span className="text-[13px] font-medium">Back to {title}</span>
       </button>
+
+      {scope === 'project' && (
+        <div className="mb-4 rounded-[var(--radius-md)] border border-[#22c55e]/20 bg-[#22c55e]/5 px-4 py-2 text-[13px] text-[#22c55e]">
+          From project directory — view only.
+        </div>
+      )}
 
       <motion.div
         initial={{ opacity: 0, y: 12 }}

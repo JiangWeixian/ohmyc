@@ -24,6 +24,7 @@ async function fetchSkill(locator: ItemLocator): Promise<Skill> {
   const params = new URLSearchParams();
   if (locator.source) params.set('source', locator.source);
   if (locator.pluginId) params.set('pluginId', locator.pluginId);
+  if (locator.scope) params.set('scope', locator.scope);
   const qs = params.toString();
   const response = await fetch(`/api/skills/${encodeURIComponent(locator.name)}${qs ? `?${qs}` : ''}`);
   if (!response.ok) {
@@ -42,7 +43,7 @@ export function useSkills() {
 
 export function useSkill(locator: ItemLocator | null) {
   return useQuery({
-    queryKey: ['skills', locator?.name, locator?.source, locator?.pluginId],
+    queryKey: ['skills', locator?.name, locator?.source, locator?.pluginId, locator?.scope],
     queryFn: () => fetchSkill(locator!),
     enabled: !!locator,
   });

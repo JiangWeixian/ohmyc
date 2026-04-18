@@ -22,12 +22,14 @@ export interface ItemLocator {
   name: string;
   source?: string;
   pluginId?: string;
+  scope?: 'global' | 'project';
 }
 
 async function fetchAgent(locator: ItemLocator): Promise<Agent> {
   const params = new URLSearchParams();
   if (locator.source) params.set('source', locator.source);
   if (locator.pluginId) params.set('pluginId', locator.pluginId);
+  if (locator.scope) params.set('scope', locator.scope);
   const qs = params.toString();
   const response = await fetch(`/api/agents/${encodeURIComponent(locator.name)}${qs ? `?${qs}` : ''}`);
   if (!response.ok) {
@@ -46,7 +48,7 @@ export function useAgents() {
 
 export function useAgent(locator: ItemLocator | null) {
   return useQuery({
-    queryKey: ['agents', locator?.name, locator?.source, locator?.pluginId],
+    queryKey: ['agents', locator?.name, locator?.source, locator?.pluginId, locator?.scope],
     queryFn: () => fetchAgent(locator!),
     enabled: !!locator,
   });

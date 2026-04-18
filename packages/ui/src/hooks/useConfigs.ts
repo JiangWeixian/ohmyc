@@ -9,7 +9,8 @@ async function fetchJson<T>(url: string): Promise<T> {
 export interface ConfigEntry {
   name: string;
   config: any;
-  source: 'local' | 'plugin';
+  source: 'local' | 'plugin' | 'project';
+  scope?: 'global' | 'project';
   pluginId?: string;
 }
 
@@ -17,7 +18,8 @@ export interface HookEntry {
   event: string;
   name: string;
   data: Record<string, unknown>;
-  source: 'local' | 'plugin';
+  source: 'local' | 'plugin' | 'project';
+  scope?: 'global' | 'project';
   pluginId?: string;
 }
 

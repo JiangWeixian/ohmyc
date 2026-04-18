@@ -12,7 +12,8 @@ interface ConfigEntryCardProps {
   icon: IconType;
   iconColor: string;
   index: number;
-  source?: 'local' | 'plugin';
+  source?: 'local' | 'plugin' | 'project';
+  scope?: 'global' | 'project';
   pluginId?: string;
 }
 
@@ -92,13 +93,14 @@ export function ConfigSection({
         >
           {data.map((entry, index) => (
             <ConfigEntryCard
-              key={`${entry.source}-${entry.name}`}
+              key={`${entry.source}-${entry.name}-${entry.scope ?? 'global'}`}
               name={entry.name}
               data={entry.config}
               icon={icon}
               iconColor={iconColor}
               index={index}
               source={entry.source}
+              scope={entry.scope}
               pluginId={entry.pluginId}
             />
           ))}
