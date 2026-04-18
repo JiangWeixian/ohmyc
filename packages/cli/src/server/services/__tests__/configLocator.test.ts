@@ -2,7 +2,7 @@ import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { mkdtempSync, rmSync, mkdirSync } from 'fs';
 import path from 'path';
 import os from 'os';
-import { ConfigLocator, AGENT_DIR_NAME } from '../configLocator';
+import { ConfigLocator, AGENT_DIR_NAME, WRITE_DIR_NAME } from '../configLocator';
 
 describe('ConfigLocator', () => {
   let tmpDir: string;
@@ -25,6 +25,16 @@ describe('ConfigLocator', () => {
     }
   });
 
+  describe('constants', () => {
+    it('AGENT_DIR_NAME equals .claude', () => {
+      expect(AGENT_DIR_NAME).toBe('.claude');
+    });
+
+    it('WRITE_DIR_NAME equals .cui', () => {
+      expect(WRITE_DIR_NAME).toBe('.cui');
+    });
+  });
+
   describe('project discovery', () => {
     it('discovers .claude/ when present in cwd', () => {
       mkdirSync(path.join(tmpDir, '.claude'));
@@ -38,34 +48,84 @@ describe('ConfigLocator', () => {
       expect(locator.hasProject).toBe(false);
       expect(locator.projectPath).toBeNull();
     });
-  });
 
-  describe('global path resolution', () => {
-    it('resolves all global paths from homedir', () => {
+    it('project discovery still checks cwd/.claude/ when AGENT_HOME is NOT set', () => {
+      // D-01, D-10: project dir always .claude/ unless AGENT_HOME overrides
+      mkdirSync(path.join(tmpDir, '.claude'));
       const locator = new ConfigLocator({ cwd: tmpDir });
-      expect(locator.baseDir).toBe(path.join(os.homedir(), '.claude'));
-      expect(locator.agentsDir).toBe(path.join(os.homedir(), '.claude', 'agents'));
-      expect(locator.skillsDir).toBe(path.join(os.homedir(), '.claude', 'skills'));
-      expect(locator.commandsDir).toBe(path.join(os.homedir(), '.claude', 'commands'));
-      expect(locator.pluginsDir).toBe(path.join(os.homedir(), '.claude', 'plugins'));
-      expect(locator.settingsPath).toBe(path.join(os.homedir(), '.claude', 'settings.json'));
-    });
-  });
-
-  describe('AGENT_HOME env var', () => {
-    it('respects AGENT_HOME env var for global dir', () => {
-      process.env.AGENT_HOME = '.custom-claude';
-      const locator = new ConfigLocator({ cwd: tmpDir });
-      expect(locator.baseDir).toBe(path.join(os.homedir(), '.custom-claude'));
-      expect(locator.agentsDir).toBe(path.join(os.homedir(), '.custom-claude', 'agents'));
+      expect(locator.projectPath).toBe(path.join(tmpDir, '.claude'));
     });
 
-    it('respects AGENT_HOME env var for project discovery', () => {
+    it('project discovery uses AGENT_HOME override dir when set', () => {
       process.env.AGENT_HOME = '.custom-claude';
       mkdirSync(path.join(tmpDir, '.custom-claude'));
       const locator = new ConfigLocator({ cwd: tmpDir });
       expect(locator.hasProject).toBe(true);
       expect(locator.projectPath).toBe(path.join(tmpDir, '.custom-claude'));
+    });
+  });
+
+  describe('write path rebrand', () => {
+    it('baseDir resolves to ~/.cui/ (not ~/.claude/)', () => {
+      const locator = new ConfigLocator({ cwd: tmpDir });
+      expect(locator.baseDir).toBe(path.join(os.homedir(), '.cui'));
+    });
+
+    it('agentsDir resolves to ~/.cui/agents/', () => {
+      const locator = new ConfigLocator({ cwd: tmpDir });
+      expect(locator.agentsDir).toBe(path.join(os.homedir(), '.cui', 'agents'));
+    });
+
+    it('skillsDir resolves to ~/.cui/skills/', () => {
+      const locator = new ConfigLocator({ cwd: tmpDir });
+      expect(locator.skillsDir).toBe(path.join(os.homedir(), '.cui', 'skills'));
+    });
+
+    it('commandsDir resolves to ~/.cui/commands/', () => {
+      const locator = new ConfigLocator({ cwd: tmpDir });
+      expect(locator.commandsDir).toBe(path.join(os.homedir(), '.cui', 'commands'));
+    });
+
+    it('settingsPath resolves to ~/.cui/settings.json', () => {
+      const locator = new ConfigLocator({ cwd: tmpDir });
+      expect(locator.settingsPath).toBe(path.join(os.homedir(), '.cui', 'settings.json'));
+    });
+
+    it('pluginsDir resolves to ~/.claude/plugins/ (NOT ~/.cui/plugins/) per D-03', () => {
+      const locator = new ConfigLocator({ cwd: tmpDir });
+      expect(locator.pluginsDir).toBe(path.join(os.homedir(), '.claude', 'plugins'));
+    });
+
+    it('readBaseDir equals writeBaseDir (both ~/.cui/) per D-04', () => {
+      const locator = new ConfigLocator({ cwd: tmpDir });
+      expect(locator.readBaseDir).toBe(locator.baseDir);
+      expect(locator.readBaseDir).toBe(path.join(os.homedir(), '.cui'));
+    });
+
+    it('fresh install — ConfigLocator creates valid paths even when ~/.cui/ does not exist', () => {
+      // No mkdir — ~/.cui/ doesn't exist. ConfigLocator should still return valid paths.
+      const locator = new ConfigLocator({ cwd: tmpDir });
+      expect(locator.baseDir).toBe(path.join(os.homedir(), '.cui'));
+      expect(locator.agentsDir).toBe(path.join(os.homedir(), '.cui', 'agents'));
+      expect(locator.settingsPath).toBe(path.join(os.homedir(), '.cui', 'settings.json'));
+    });
+  });
+
+  describe('AGENT_HOME env var with split paths', () => {
+    it('AGENT_HOME overrides both writeBaseDir AND claudeCodeDir to the same directory per D-09', () => {
+      process.env.AGENT_HOME = '.custom-claude';
+      const locator = new ConfigLocator({ cwd: tmpDir });
+      // Both bases resolve to the same override directory
+      expect(locator.baseDir).toBe(path.join(os.homedir(), '.custom-claude'));
+      expect(locator.readBaseDir).toBe(path.join(os.homedir(), '.custom-claude'));
+      expect(locator.agentsDir).toBe(path.join(os.homedir(), '.custom-claude', 'agents'));
+    });
+
+    it('AGENT_HOME override: pluginsDir resolves to ~/.custom-claude/plugins/', () => {
+      process.env.AGENT_HOME = '.custom-claude';
+      const locator = new ConfigLocator({ cwd: tmpDir });
+      // When AGENT_HOME is set, both bases are the same, so pluginsDir uses override too
+      expect(locator.pluginsDir).toBe(path.join(os.homedir(), '.custom-claude', 'plugins'));
     });
   });
 
@@ -83,12 +143,6 @@ describe('ConfigLocator', () => {
       expect(locator.projectAgentsDir).toBe(path.join(tmpDir, '.claude', 'agents'));
       expect(locator.projectSkillsDir).toBe(path.join(tmpDir, '.claude', 'skills'));
       expect(locator.projectCommandsDir).toBe(path.join(tmpDir, '.claude', 'commands'));
-    });
-  });
-
-  describe('AGENT_DIR_NAME constant', () => {
-    it('equals .claude', () => {
-      expect(AGENT_DIR_NAME).toBe('.claude');
     });
   });
 });
