@@ -21,8 +21,8 @@ Requirements for project-aware loading and .cu rebrand. Each maps to roadmap pha
 
 ### .cu Rebrand
 
-- [ ] **REBR-01**: CLI writes all managed data (store, profiles, activation output) to `~/.cu/` instead of `~/.claude/`
-- [ ] **REBR-02**: Existing `~/.claude/` data remains readable after rebrand so users don't lose existing configurations
+- [x] **REBR-01**: CLI writes all managed data (store, profiles, activation output) to `~/.cu/` instead of `~/.claude/`
+- [x] **REBR-02**: Existing `~/.claude/` data remains readable after rebrand so users don't lose existing configurations
 
 ## v1.5+ Requirements
 
@@ -65,8 +65,8 @@ Which phases cover which requirements. Updated during roadmap creation.
 | LOAD-01 | Phase 11 | Pending |
 | LOAD-02 | Phase 11 | Pending |
 | LOAD-03 | Phase 11 | Pending |
-| REBR-01 | Phase 12 | Pending |
-| REBR-02 | Phase 12 | Pending |
+| REBR-01 | Phase 12 | Complete |
+| REBR-02 | Phase 12 | Complete |
 
 **Coverage:**
 - v1.4 requirements: 8 total

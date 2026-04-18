@@ -27,7 +27,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [x] **Phase 9: Package and Publish** (v1.3)
 - [x] **Phase 10: Config Foundation** -- Centralize path resolution, add project discovery, extend source schema
 - [x] **Phase 11: Project-Local Loading** -- Dual-source inventory loading with merge and source attribution
-- [ ] **Phase 12: .cu Rebrand** -- Write path moves to ~/.cu/ with backward-compatible reads
+- [x] **Phase 12: .cu Rebrand** -- Write path moves to ~/.cu/ with backward-compatible reads
 
 ## Phase Details
 
@@ -113,7 +113,7 @@ Plans:
 **Plans**: 1 plan
 
 Plans:
-- [ ] 12-01-PLAN.md — ConfigLocator write path rebrand with split writeBaseDir/claudeCodeDir (REBR-01, REBR-02)
+- [x] 12-01-PLAN.md — ConfigLocator write path rebrand with split writeBaseDir/claudeCodeDir (REBR-01, REBR-02)
 
 ## Progress
 
@@ -133,4 +133,4 @@ Phases execute in numeric order: 10 -> 11 -> 12
 | 9. Package and Publish | v1.3 | 3/3 | Complete | 2026-04-14 |
 | 10. Config Foundation | v1.4 | 2/2 | Complete | 2026-04-18 |
 | 11. Project-Local Loading | v1.4 | 2/2 | Complete | 2026-04-18 |
-| 12. .cu Rebrand | v1.4 | 0/1 | Not started | - |
+| 12. .cu Rebrand | v1.4 | 1/1 | Complete | 2026-04-18 |

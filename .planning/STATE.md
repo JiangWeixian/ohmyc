@@ -2,16 +2,16 @@
 gsd_state_version: 1.0
 milestone: v1.4
 milestone_name: Project-Aware Loading + .cu Rebrand
-status: executing
-stopped_at: Phase 12 context gathered
-last_updated: "2026-04-18T15:05:00.000Z"
-last_activity: 2026-04-18 -- Phase 12 context gathered (.cui rebrand)
+status: complete
+stopped_at: Milestone v1.4 complete
+last_updated: "2026-04-18T10:29:00.000Z"
+last_activity: 2026-04-18 -- Phase 12 complete (all plans done)
 progress:
   total_phases: 3
-  completed_phases: 2
-  total_plans: 4
-  completed_plans: 4
-  percent: 67
+  completed_phases: 3
+  total_plans: 5
+  completed_plans: 5
+  percent: 100
 ---
 
 # Project State
@@ -21,22 +21,22 @@ progress:
 See: .planning/PROJECT.md (updated 2026-04-17)
 
 **Core value:** Users can reliably assemble and switch between Claude-focused coding environments from reusable local components without manually editing scattered config files.
-**Current focus:** Phase 12 — .cu Rebrand (CONTEXT gathered)
+**Current focus:** Milestone v1.4 COMPLETE
 
 ## Current Position
 
-Phase: 12
-Plan: Not started
-Status: Context gathered, ready for planning
-Last activity: 2026-04-18 -- Phase 12 context gathered (.cui rebrand)
+Phase: 12 (complete)
+Plan: 12-01 (complete)
+Status: All plans executed, milestone v1.4 complete
+Last activity: 2026-04-18 -- Phase 12-01 complete (ConfigLocator write path rebrand)
 
-Progress: [===============-----] 67% (11 prior phases complete from v1.0-v1.4)
+Progress: [====================] 100% (all phases complete)
 
 ## Performance Metrics
 
 **Velocity:**
 
-- Total plans completed: 29 (v1.0: 9, v1.1: 2, v1.2: 6, v1.3: 5, v1.4: 4)
+- Total plans completed: 30 (v1.0: 9, v1.1: 2, v1.2: 6, v1.3: 5, v1.4: 5)
 - Average duration: --
 - Total execution time: --
 
@@ -64,6 +64,7 @@ Progress: [===============-----] 67% (11 prior phases complete from v1.0-v1.4)
 | Phase 10-config-foundation P02 | 2min | 2 tasks | 5 files |
 | Phase 11-project-local-loading P01 | 5min | 3 tasks | 12 files |
 | Phase 11-project-local-loading P02 | 3min | 2 tasks | 7 files |
+| Phase 12-cu-rebrand P01 | 4min | 2 tasks | 2 files |
 
 ## Accumulated Context
 
@@ -80,6 +81,7 @@ Recent decisions affecting current work:
 - [Phase 10-config-foundation]: Project discovery is CWD-only with silent fallback, no walk-up traversal — D-01 locks CWD-only check, prevents finding unrelated .claude/ in parent dirs
 - [Phase 10-config-foundation]: Test assertion uses Tailwind bracket syntax ([#22c55e]/10) to match rendered className for opacity modifier — Tailwind renders bg-[#22c55e]/10 with closing bracket before the opacity modifier, so test must match the actual rendered output
 - [Phase 10-config-foundation]: Project variant follows profile pattern (no pluginId sub-label) rather than plugin variant pattern — Project is a source scope variant, not a plugin reference, so no pluginId sub-label is needed
+- [Phase 12-cu-rebrand]: ConfigLocator split into writeBaseDir (~/.cui/) and claudeCodeDir (~/.claude/) — managed data writes to ~/.cui/, plugins read from ~/.claude/, AGENT_HOME overrides both
 
 ### Pending Todos
 
@@ -92,6 +94,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-04-18T15:05:00.000Z
-Stopped at: Phase 12 context gathered
-Resume file: .planning/phases/12-cu-rebrand/12-CONTEXT.md
+Last session: 2026-04-18T10:29:00.000Z
+Stopped at: Milestone v1.4 complete
+Resume file: None (milestone complete)
