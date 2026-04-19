@@ -12,7 +12,6 @@ import {
   Code,
 } from 'lucide-react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { motion, AnimatePresence } from 'framer-motion';
 import { SettingsLayout } from './components/settings/SettingsLayout';
 import { useAgents, useAgent, type ItemLocator } from './hooks/useAgents';
 import { useSkills, useSkill } from './hooks/useSkills';
@@ -22,7 +21,8 @@ import { usePlugins, useMarketplaces } from './hooks/usePlugins';
 import { useProfiles } from './hooks/useProfiles';
 import type { Agent, Skill, Command } from '@claudeui/shared';
 import { cn } from '@/lib/utils';
-import { EntityCard, Badge, MonoBadge } from './components/EntityCard';
+import { EntityCard } from './components/EntityCard';
+import { Badge, MonoBadge } from './components/Badge';
 import { EntityDetail } from './components/EntityDetail';
 import { SectionHeader } from './components/SectionHeader';
 import { Sidebar, StatusIndicator, type SidebarSection } from './components/Sidebar';
@@ -239,45 +239,26 @@ export default function Explorer({ viewSwitcher }: ExplorerProps) {
             Failed to load {sectionId}.
           </div>
         ) : config.data && config.data.length > 0 ? (
-          <AnimatePresence mode="wait">
-            <motion.div
-              key={sectionId}
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              transition={{ duration: 0.15 }}
-              className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"
-            >
-              {config.data.map((entity, index) => (
-                <motion.div
-                  key={entity.id}
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{
-                    delay: index * 0.03,
-                    duration: 0.2,
-                    ease: [0.16, 1, 0.3, 1]
-                  }}
-                >
-                  <EntityCard
-                    icon={config.icon}
-                    iconAccentVar={entityConfig.iconAccentVar}
-                    title={entityConfig.getTitle(entity as never) || ''}
-                    description={entityConfig.getDescription(entity as never) || ''}
-                    badges={entityConfig.getBadges(entity as never)}
-                    onClick={() =>
-                      setSelectedItem({
-                        name: entity.id,
-                        source: entity.source,
-                        pluginId: entity.pluginId,
-                        scope: entity.scope,
-                      })
-                    }
-                  />
-                </motion.div>
-              ))}
-            </motion.div>
-          </AnimatePresence>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {config.data.map((entity) => (
+              <EntityCard
+                key={entity.id}
+                icon={config.icon}
+                iconAccentVar={entityConfig.iconAccentVar}
+                title={entityConfig.getTitle(entity as never) || ''}
+                description={entityConfig.getDescription(entity as never) || ''}
+                badges={entityConfig.getBadges(entity as never)}
+                onClick={() =>
+                  setSelectedItem({
+                    name: entity.id,
+                    source: entity.source,
+                    pluginId: entity.pluginId,
+                    scope: entity.scope,
+                  })
+                }
+              />
+            ))}
+          </div>
         ) : (
           <div className="text-center py-20 text-[var(--text-tertiary)]">
             {config.emptyMessage}
