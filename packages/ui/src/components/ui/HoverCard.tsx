@@ -1,6 +1,6 @@
 import React from 'react';
 import { motion, useMotionValue, from 'framer-motion';
-import { cn } from '../cn';
+import { cn } from '@/lib/utils';
 
 interface HoverCardProps {
   children: React.ReactNode;

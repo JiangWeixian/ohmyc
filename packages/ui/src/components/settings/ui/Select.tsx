@@ -1,4 +1,4 @@
-import { cn } from '../../cn';
+import { cn } from '@/lib/utils';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useState } from 'react';
 import { ChevronDown, Check } from 'lucide-react';

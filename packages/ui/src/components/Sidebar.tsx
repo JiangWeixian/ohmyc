@@ -1,6 +1,6 @@
 import React from 'react';
 import { Blocks } from 'lucide-react';
-import { cn } from './cn';
+import { cn } from '@/lib/utils';
 import type { IconType } from './icons';
 
 export interface SidebarSection {

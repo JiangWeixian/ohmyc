@@ -1,5 +1,5 @@
 import { usePlugins } from '../../hooks/usePlugins';
-import { cn } from '../cn';
+import { cn } from '@/lib/utils';
 
 interface PluginPickerProps {
   selected: string[];

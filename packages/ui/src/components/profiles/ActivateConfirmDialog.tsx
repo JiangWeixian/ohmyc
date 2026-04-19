@@ -1,4 +1,4 @@
-import { cn } from '../cn';
+import { cn } from '@/lib/utils';
 import type { ModelConfigChanges } from '../../hooks/useProfiles';
 
 function truncateUrl(url: string, maxLen = 40): string {

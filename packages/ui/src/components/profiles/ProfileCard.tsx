@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { motion } from 'framer-motion';
-import { cn } from '../cn';
+import { cn } from '@/lib/utils';
 import type { Profile } from '@claudeui/shared';
 import { usePreflight } from '../../hooks/useProfiles';
 import type { PreflightResult } from '../../hooks/useProfiles';

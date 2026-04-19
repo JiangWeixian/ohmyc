@@ -4,7 +4,7 @@ import { useStoreAgents, useStoreSkills, useStoreCommands, useStoreModelConfigs 
 import { ComponentPicker } from './ComponentPicker';
 import { PluginPicker } from './PluginPicker';
 import { JsonEditor } from '../JsonEditor';
-import { cn } from '../cn';
+import { cn } from '@/lib/utils';
 import type { CreateProfileBody, Profile, UpdateProfileBody } from '@claudeui/shared';
 
 interface ProfileEditorProps {

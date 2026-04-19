@@ -1,6 +1,6 @@
 import { Plus, FolderOpen, Bot, Sparkles, TerminalSquare, Settings } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { cn } from '../cn';
+import { cn } from '@/lib/utils';
 import type { Profile } from '@claudeui/shared';
 
 export type SidebarSelection =

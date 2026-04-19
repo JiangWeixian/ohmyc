@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useState, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { CheckCircle, XCircle, AlertCircle, Info, X } from 'lucide-react';
-import { cn } from '../cn';
+import { cn } from '@/lib/utils';
 
 type ToastType = 'success' | 'error' | 'warning' | 'info';
 

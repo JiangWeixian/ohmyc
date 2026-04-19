@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { cn } from '../cn';
+import { cn } from '@/lib/utils';
 import { useStoreImport } from '../../hooks/useStore';
 import type { StoreImportResult } from '@claudeui/shared';
 

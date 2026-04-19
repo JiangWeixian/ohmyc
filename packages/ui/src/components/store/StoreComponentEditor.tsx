@@ -4,7 +4,7 @@ import {
   useStoreSkill, useCreateStoreSkill, useUpdateStoreSkill,
   useStoreCommand, useCreateStoreCommand, useUpdateStoreCommand,
 } from '../../hooks/useStore';
-import { cn } from '../cn';
+import { cn } from '@/lib/utils';
 import { DeleteConfirmDialog } from './DeleteConfirmDialog';
 import { ModelConfigEditor } from './ModelConfigEditor';
 

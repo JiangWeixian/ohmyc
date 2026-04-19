@@ -20,7 +20,7 @@ import { useCommands, useCommand } from './hooks/useCommands';
 import { useMcpServers, useHooks, useLspServers, type ConfigEntry, type HookEntry } from './hooks/useConfigs';
 import { usePlugins, useMarketplaces } from './hooks/usePlugins';
 import { useProfiles } from './hooks/useProfiles';
-import { cn } from './components/cn';
+import { cn } from '@/lib/utils';
 import { EntityCard, Badge, MonoBadge } from './components/EntityCard';
 import { EntityDetail } from './components/EntityDetail';
 import { SectionHeader } from './components/SectionHeader';

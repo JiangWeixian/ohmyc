@@ -1,7 +1,7 @@
 import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Command, ArrowLeft } from 'lucide-react';
-import { cn } from '../cn';
+import { cn } from '@/lib/utils';
 
 interface ShortcutItem {
   key: string;

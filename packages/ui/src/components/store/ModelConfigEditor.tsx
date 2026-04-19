@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useStoreModelConfig, useCreateStoreModelConfig, useUpdateStoreModelConfig, useDeleteStoreModelConfig } from '../../hooks/useStore';
 import { maskApiKey, isMaskedValue } from '../../utils/maskApiKey';
-import { cn } from '../cn';
+import { cn } from '@/lib/utils';
 import { DeleteConfirmDialog } from './DeleteConfirmDialog';
 
 interface ModelConfigEditorProps {

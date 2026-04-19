@@ -7,7 +7,7 @@ import { StoreComponentEditor } from './StoreComponentEditor';
 import { DeleteConfirmDialog } from './DeleteConfirmDialog';
 import { ImportComponentsDialog } from './ImportComponentsDialog';
 import { maskApiKey } from '../../utils/maskApiKey';
-import { cn } from '../cn';
+import { cn } from '@/lib/utils';
 
 interface StoreComponentListProps {
   category: 'all' | 'agents' | 'skills' | 'commands' | 'model-configs';

@@ -1,5 +1,5 @@
 import { motion } from 'framer-motion';
-import { cn } from '../cn';
+import { cn } from '@/lib/utils';
 import { Settings, Shield, ShieldCheck, Anchor, FileText, Plug, Blocks, Leaf } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 
