@@ -50,7 +50,7 @@
 | 11. Project-Local Loading | v1.4 | 2/2 | Complete | 2026-04-18 |
 | 12. .cu Rebrand | v1.4 | 1/1 | Complete | 2026-04-18 |
 | 13. uitripled Foundation | v1.5 | 3/3 | Complete | 2026-04-19 |
-| 14. Core UI Migration | v1.5 | 0/? | Pending | — |
+| 14. Core UI Migration | v1.5 | 0/4 | Pending | — |
 | 15. Dialogs & Forms Migration | v1.5 | 0/? | Pending | — |
 | 16. Polish & Validation | v1.5 | 0/? | Pending | — |
 
@@ -92,17 +92,18 @@
 
 **Dependencies**: Phase 13 complete
 
-**Plans:**
-- [ ] 14-01-PLAN — Sidebar migration: Sidebar, ProfilesSidebar, SettingsSidebar → animated-sidebar (NAV-01)
-- [ ] 14-02-PLAN — Tabs migration: Explorer, ViewSwitcher → Tabs (NAV-02, NAV-03)
-- [ ] 14-03-PLAN — Card migration: EntityCard, ProfileCard, ConfigSection, SectionHeader → Card (CARD-01, CARD-02, CARD-03, CARD-04)
-- [ ] 14-04-PLAN — Badge + utility migration: SourceBadge → Badge, Toast, HoverCard, Skeleton, QuickActions (CARD-05, UTIL-02, UTIL-03, UTIL-04, UTIL-05)
+**Plans:** 4 plans
+- [ ] 14-01-PLAN — Badge & Skeleton leaf components: extract Badge/MonoBadge, migrate SourceBadge → shadcn Badge, Skeleton → CSS-only (CARD-05, UTIL-04)
+- [ ] 14-02-PLAN — Sidebar & ViewSwitcher migration: all sidebars + ViewSwitcher → native-tabs with layoutId indicator (NAV-01, NAV-02)
+- [ ] 14-03-PLAN — Card migration: EntityCard, ConfigSection, SectionHeader → shadcn Card + Explorer update (CARD-01, CARD-03, CARD-04, NAV-03)
+- [ ] 14-04-PLAN — ProfileCard & utilities: ProfileCard → Card + useActivationFlow hook, HoverCard + QuickActions → CSS-only (CARD-02, UTIL-03, UTIL-05)
 
-**Requirements covered:** NAV-01, NAV-02, NAV-03, CARD-01, CARD-02, CARD-03, CARD-04, CARD-05, UTIL-02, UTIL-03, UTIL-04, UTIL-05
+**Requirements covered:** NAV-01, NAV-02, NAV-03, CARD-01, CARD-02, CARD-03, CARD-04, CARD-05, UTIL-03, UTIL-04, UTIL-05 (UTIL-02 Toast deferred to Phase 15)
 
 **Key risks:**
-- animated-sidebar assumes specific layout patterns — may need adaptation for ClaudeUI's sidebar structure
-- Explorer tab content is complex — Tabs migration must preserve scroll state and tab bar behavior
+- EntityCard iconAccentVar uses dynamic CSS variable injection — must avoid Tailwind purge issues (mitigate: inline style with custom property)
+- ProfileCard is 319 lines with complex dialog state — extraction into hook must preserve discriminated union behavior
+- native-tabs layoutId must be unique per sidebar instance to avoid cross-instance animation conflicts
 
 ### Phase 15: Dialogs & Forms Migration
 
