@@ -5,12 +5,12 @@
 
 ## Foundation
 
-- [ ] **FOUND-01**: Install uitripled peer dependencies (Radix UI primitives, CVA, lucide-react upgrades) into `packages/ui` — Phase 13
-- [ ] **FOUND-02**: Copy relevant uitripled UI primitives (button, card, dialog, input, select, tabs, tooltip, badge, switch, checkbox, dropdown-menu, separator, scroll-area, label, avatar, slider, textarea) into `packages/ui/src/components/uitripled/` using shadcn copy pattern — Phase 13
-- [ ] **FOUND-03**: Map ClaudeUI design tokens (--surface-*, --border-*, --text-*, --accent-*) to shadcn token system (--background, --card, --popover, --border, --foreground, --muted-foreground, --primary, etc.) in globals.css, preserving current dark theme appearance — Phase 13
-- [ ] **FOUND-04**: Verify React 18 compatibility with uitripled components — test all copied primitives render without errors in React 18 environment — Phase 13
-- [ ] **FOUND-05**: Verify Tailwind v3 compatibility — ensure uitripled component classes compile and render correctly with Tailwind v3 — Phase 13
-- [ ] **FOUND-06**: Establish uitripled component re-export pattern — single barrel import path from `@/components/uitripled` for all primitives — Phase 13
+- [x] **FOUND-01**: Install uitripled peer dependencies (Radix UI primitives, CVA, lucide-react upgrades) into `packages/ui` — Phase 13
+- [x] **FOUND-02**: Copy relevant uitripled UI primitives (button, card, dialog, input, select, tabs, tooltip, badge, switch, checkbox, dropdown-menu, separator, scroll-area, label, avatar, slider, textarea) into `packages/ui/src/components/uitripled/` using shadcn copy pattern — Phase 13
+- [x] **FOUND-03**: Map ClaudeUI design tokens (--surface-*, --border-*, --text-*, --accent-*) to shadcn token system (--background, --card, --popover, --border, --foreground, --muted-foreground, --primary, etc.) in globals.css, preserving current dark theme appearance — Phase 13
+- [x] **FOUND-04**: Verify React 18 compatibility with uitripled components — test all copied primitives render without errors in React 18 environment — Phase 13
+- [x] **FOUND-05**: Verify Tailwind v3 compatibility — ensure uitripled component classes compile and render correctly with Tailwind v3 — Phase 13
+- [x] **FOUND-06**: Establish uitripled component re-export pattern — single barrel import path from `@/components/uitripled` for all primitives — Phase 13
 
 ## Component Migration: Sidebar & Navigation
 
@@ -75,12 +75,12 @@
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| FOUND-01 | Phase 13 | Pending |
-| FOUND-02 | Phase 13 | Pending |
-| FOUND-03 | Phase 13 | Pending |
-| FOUND-04 | Phase 13 | Pending |
-| FOUND-05 | Phase 13 | Pending |
-| FOUND-06 | Phase 13 | Pending |
+| FOUND-01 | Phase 13 | Complete |
+| FOUND-02 | Phase 13 | Complete |
+| FOUND-03 | Phase 13 | Complete |
+| FOUND-04 | Phase 13 | Complete |
+| FOUND-05 | Phase 13 | Complete |
+| FOUND-06 | Phase 13 | Complete |
 | NAV-01 | Phase 14 | Pending |
 | NAV-02 | Phase 14 | Pending |
 | NAV-03 | Phase 14 | Pending |

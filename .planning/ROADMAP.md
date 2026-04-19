@@ -28,7 +28,7 @@
 - [x] **Phase 10: Config Foundation** (v1.4)
 - [x] **Phase 11: Project-Local Loading** (v1.4)
 - [x] **Phase 12: .cu Rebrand** (v1.4)
-- [ ] **Phase 13: uitripled Foundation** (v1.5) — install deps, design token mapping, base primitives
+- [x] **Phase 13: uitripled Foundation** (v1.5) — install deps, design token mapping, base primitives
 - [ ] **Phase 14: Core UI Migration** (v1.5) — sidebar, explorer, entity cards, utility components
 - [ ] **Phase 15: Dialogs & Forms Migration** (v1.5) — modals, forms, settings, editors, command palette
 - [ ] **Phase 16: Polish & Validation** (v1.5) — animations, accessibility, visual regression, dead code removal
@@ -49,7 +49,7 @@
 | 10. Config Foundation | v1.4 | 2/2 | Complete | 2026-04-18 |
 | 11. Project-Local Loading | v1.4 | 2/2 | Complete | 2026-04-18 |
 | 12. .cu Rebrand | v1.4 | 1/1 | Complete | 2026-04-18 |
-| 13. uitripled Foundation | v1.5 | 0/? | In Progress | — |
+| 13. uitripled Foundation | v1.5 | 3/3 | Complete | 2026-04-19 |
 | 14. Core UI Migration | v1.5 | 0/? | Pending | — |
 | 15. Dialogs & Forms Migration | v1.5 | 0/? | Pending | — |
 | 16. Polish & Validation | v1.5 | 0/? | Pending | — |
@@ -63,9 +63,9 @@
 **Dependencies**: None (first phase of v1.5)
 
 **Plans:** 3 plans
-- [ ] 13-01-PLAN — React 19 upgrade, cn() migration, shadcn init, 18 base primitives + 4 native animated wrappers (FOUND-01, FOUND-02, FOUND-06)
-- [ ] 13-02-PLAN — Design token mapping: ClaudeUI tokens → shadcn tokens in globals.css (FOUND-03)
-- [ ] 13-03-PLAN — Compatibility verification: React 19, Tailwind v3, render smoke tests (FOUND-04, FOUND-05)
+- [x] 13-01-PLAN — React 19 upgrade, cn() migration, shadcn init, 18 base primitives + 4 native animated wrappers (FOUND-01, FOUND-02, FOUND-06)
+- [x] 13-02-PLAN — Design token mapping: ClaudeUI tokens → shadcn tokens in globals.css (FOUND-03)
+- [x] 13-03-PLAN — Compatibility verification: React 19, Tailwind v3, render smoke tests (FOUND-04, FOUND-05)
 
 **Requirements covered:** FOUND-01, FOUND-02, FOUND-03, FOUND-04, FOUND-05, FOUND-06
 
