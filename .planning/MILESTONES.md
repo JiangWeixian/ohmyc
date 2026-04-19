@@ -1,5 +1,21 @@
 # Milestones
 
+## v1.4 Project-Aware Loading + .cu Rebrand (Shipped: 2026-04-19)
+
+**Phases completed:** 3 phases, 5 plans
+
+**Key accomplishments:**
+
+- ConfigLocator 集中路径解析 — 所有 `.claude`/`.cui` 路径通过单一服务，零散落字面量
+- Project-local 双源加载 — API 返回 global + project 合并结果，project 优先，source 标签区分来源
+- SourceBadge project variant — 绿色视觉标识 project-scoped 组件
+- 写入路径重品牌为 ~/.cui/ — 管理数据写 `~/.cui/`，插件读 `~/.claude/`，`CUI_HOME` 可独立覆盖写入路径
+- UAT 发现并修复 CUI_HOME/AGENT_HOME 独立性问题
+
+**Archive:** [v1.4-ROADMAP.md](./milestones/v1.4-ROADMAP.md) | [v1.4-REQUIREMENTS.md](./milestones/v1.4-REQUIREMENTS.md)
+
+---
+
 ## v1.3 CLI MVP (Shipped: 2026-04-16)
 
 **Phases completed:** 2 phases, 5 plans, 9 tasks

@@ -35,6 +35,9 @@ Users can reliably assemble and switch between Claude-focused coding environment
 - ✓ Centralized path resolution via ConfigLocator — all `.claude` path references through single service (Phase 10)
 - ✓ Project-local `.claude/` discovery at startup with CWD-only check and silent fallback — Phase 10
 - ✓ SourceBadge project variant with green (#22c55e) rendering and shared schema `'project'` source support — Phase 10
+- ✓ Dual-source inventory loading — global and project items merged in all routes with source badges (Phase 11)
+- ✓ Write path rebrand to ~/.cui/ — managed data writes separate from plugin reads at ~/.claude/ (Phase 12)
+- ✓ CUI_HOME env var independently overrides write path, AGENT_HOME only affects plugin/project paths
 
 ### Active
 
@@ -51,7 +54,7 @@ Users can reliably assemble and switch between Claude-focused coding environment
 
 ## Context
 
-Brownfield TypeScript monorepo with separate UI, CLI, and shared schema packages. All milestones v1.0–v1.3 complete. Phase 10 (Config Foundation) complete — ConfigLocator centralizes path resolution, project discovery works, SourceBadge has project variant. CLI builds as self-contained CJS bundle via tsup, publishes as `@aiou/cu`.
+Brownfield TypeScript monorepo with separate UI, CLI, and shared schema packages. All milestones v1.0–v1.4 complete. ConfigLocator centralizes all path resolution with split writeBaseDir (~/.cui/) and claudeCodeDir (~/.claude/). Project-local dual-source loading with merge and source attribution. CLI builds as self-contained CJS bundle via tsup, publishes as `@aiou/cu`.
 
 ## Constraints
 
@@ -82,8 +85,16 @@ Brownfield TypeScript monorepo with separate UI, CLI, and shared schema packages
 | Prepublish name rewrite from @claudeui/cli to @aiou/cu with process.on('exit') restore | Original package.json never permanently modified | ✓ Good |
 | Files allowlist (not .npmignore) for tarball control | Explicit control over what ships in the npm package | ✓ Good |
 | AGENT_HOME stays as .claude for v1.3, directory rebrand deferred to v2 | Avoids breaking change in CLI MVP release | ✓ Good |
+| CUI_HOME overrides writeBaseDir, AGENT_HOME only affects claudeCodeDir and project discovery | Separation of concerns — write path and plugin/project paths are independently configurable | ✓ Good |
 
-## Current Milestone: v1.4 Project-Aware Loading + .cu Rebrand
+## Current Milestone: None (v1.4 shipped)
+
+**Last shipped:** v1.4 Project-Aware Loading + .cu Rebrand (2026-04-19)
+
+**Next steps:** Define v1.5 requirements via `/gsd-new-milestone`
+
+<details>
+<summary>v1.4 archive</summary>
 
 **Goal:** CLI loads project-local `.claude/` alongside global, and activation writes go to `.cu`.
 
@@ -91,6 +102,8 @@ Brownfield TypeScript monorepo with separate UI, CLI, and shared schema packages
 - Discover and load project `.claude/` directory on startup (alongside global)
 - Merge both stores into unified views with source badges, project overrides global
 - Rebrand activation/write path from `.claude` to `.cu` (store, profiles, settings)
+
+</details>
 
 ## Evolution
 
@@ -110,4 +123,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-04-18 after Phase 10 completion*
+*Last updated: 2026-04-19 after v1.4 milestone completion*
