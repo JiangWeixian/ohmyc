@@ -63,7 +63,7 @@
 **Dependencies**: None (first phase of v1.5)
 
 **Plans:** 3 plans
-- [ ] 13-01-PLAN — React 19 upgrade, cn() migration, install Radix UI deps, copy uitripled UI primitives, establish barrel re-exports (FOUND-01, FOUND-02, FOUND-06)
+- [ ] 13-01-PLAN — React 19 upgrade, cn() migration, shadcn init, 18 base primitives + 4 native animated wrappers (FOUND-01, FOUND-02, FOUND-06)
 - [ ] 13-02-PLAN — Design token mapping: ClaudeUI tokens → shadcn tokens in globals.css (FOUND-03)
 - [ ] 13-03-PLAN — Compatibility verification: React 19, Tailwind v3, render smoke tests (FOUND-04, FOUND-05)
 
