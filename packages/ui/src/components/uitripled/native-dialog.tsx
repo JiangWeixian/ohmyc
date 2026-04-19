@@ -1,28 +1,21 @@
 "use client";
 
-import {
-  DialogDescription as BaseDialogDescription,
-  DialogTitle as BaseDialogTitle,
-  Dialog,
-  DialogClose,
-  DialogFooter,
-  DialogHeader,
-  DialogPortal,
-  DialogTrigger,
-} from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
 import * as DialogPrimitive from "@radix-ui/react-dialog";
 import { motion } from "framer-motion";
 import { X } from "lucide-react";
 import * as React from "react";
 
-const NativeDialog = Dialog;
+// Use Radix UI Dialog consistently — the animated overlay and content
+// require Radix Dialog.Root context. base-ui Dialog cannot provide it.
 
-const NativeDialogTrigger = DialogTrigger;
+const NativeDialog = DialogPrimitive.Root;
 
-const NativeDialogPortal = DialogPortal;
+const NativeDialogTrigger = DialogPrimitive.Trigger;
 
-const NativeDialogClose = DialogClose;
+const NativeDialogPortal = DialogPrimitive.Portal;
+
+const NativeDialogClose = DialogPrimitive.Close;
 
 const NativeDialogOverlay = React.forwardRef<
   React.ElementRef<typeof DialogPrimitive.Overlay>,
@@ -40,7 +33,7 @@ const NativeDialogOverlay = React.forwardRef<
     />
   </DialogPrimitive.Overlay>
 ));
-NativeDialogOverlay.displayName = DialogPrimitive.Overlay.displayName;
+NativeDialogOverlay.displayName = "NativeDialogOverlay";
 
 const NativeDialogContent = React.forwardRef<
   React.ElementRef<typeof DialogPrimitive.Content>,
@@ -60,26 +53,65 @@ const NativeDialogContent = React.forwardRef<
         )}
       >
         {children}
-        <DialogClose className="absolute right-4 top-4 rounded-full p-1 opacity-70 ring-offset-background transition-all hover:opacity-100 hover:bg-black/5 dark:hover:bg-white/10 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none data-[state=open]:bg-accent data-[state=open]:text-muted-foreground">
+        <DialogPrimitive.Close className="absolute right-4 top-4 rounded-full p-1 opacity-70 ring-offset-background transition-all hover:opacity-100 hover:bg-black/5 dark:hover:bg-white/10 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none data-[state=open]:bg-accent data-[state=open]:text-muted-foreground">
           <X className="h-4 w-4" />
           <span className="sr-only">Close</span>
-        </DialogClose>
+        </DialogPrimitive.Close>
       </motion.div>
     </DialogPrimitive.Content>
   </NativeDialogPortal>
 ));
-NativeDialogContent.displayName = DialogPrimitive.Content.displayName;
+NativeDialogContent.displayName = "NativeDialogContent";
 
-const NativeDialogHeader = DialogHeader;
+const NativeDialogHeader = ({
+  className,
+  ...props
+}: React.HTMLAttributes<HTMLDivElement>) => (
+  <div
+    data-slot="dialog-header"
+    className={cn("flex flex-col gap-2", className)}
+    {...props}
+  />
+);
 NativeDialogHeader.displayName = "NativeDialogHeader";
 
-const NativeDialogFooter = DialogFooter;
+const NativeDialogFooter = ({
+  className,
+  ...props
+}: React.HTMLAttributes<HTMLDivElement>) => (
+  <div
+    data-slot="dialog-footer"
+    className={cn(
+      "flex flex-col-reverse gap-2 sm:flex-row sm:justify-end",
+      className
+    )}
+    {...props}
+  />
+);
 NativeDialogFooter.displayName = "NativeDialogFooter";
 
-const NativeDialogTitle = BaseDialogTitle;
+const NativeDialogTitle = React.forwardRef<
+  React.ElementRef<typeof DialogPrimitive.Title>,
+  React.ComponentPropsWithoutRef<typeof DialogPrimitive.Title>
+>(({ className, ...props }, ref) => (
+  <DialogPrimitive.Title
+    ref={ref}
+    className={cn("text-base leading-none font-medium", className)}
+    {...props}
+  />
+));
 NativeDialogTitle.displayName = "NativeDialogTitle";
 
-const NativeDialogDescription = BaseDialogDescription;
+const NativeDialogDescription = React.forwardRef<
+  React.ElementRef<typeof DialogPrimitive.Description>,
+  React.ComponentPropsWithoutRef<typeof DialogPrimitive.Description>
+>(({ className, ...props }, ref) => (
+  <DialogPrimitive.Description
+    ref={ref}
+    className={cn("text-sm text-muted-foreground", className)}
+    {...props}
+  />
+));
 NativeDialogDescription.displayName = "NativeDialogDescription";
 
 export {

@@ -11,6 +11,7 @@
     "test": "vitest run"
   },
   "dependencies": {
+    "@base-ui/react": "^1.4.0",
     "@claudeui/shared": "workspace:*",
     "@codemirror/commands": "^6.10.3",
     "@codemirror/lang-json": "^6.0.2",
