@@ -43,7 +43,7 @@ function getDefaultCandidatePaths(): string[] {
  *
  * Throws a descriptive error when no valid UI asset directory is found.
  */
-export function resolveStaticRoot(staticRoot?: string): string {
+export function resolveStaticRoot(staticRoot?: string): string | undefined {
   const candidates = staticRoot ? [staticRoot] : getDefaultCandidatePaths();
 
   for (const candidate of candidates) {
@@ -52,15 +52,12 @@ export function resolveStaticRoot(staticRoot?: string): string {
     }
   }
 
-  const searched = candidates.map(c => `  - ${c}`).join('\n');
-  throw new Error(
-    `Cannot resolve static UI assets: no directory containing index.html found.\nSearched:\n${searched}`
-  );
+  return undefined;
 }
 
 export interface CreateServerOptions {
-  /** Explicit static asset root. If omitted, resolveStaticRoot() is used. */
   staticRoot?: string;
+  apiOnly?: boolean;
 }
 
 export async function createServer(options: CreateServerOptions = {}): Promise<FastifyInstance> {
@@ -73,16 +70,18 @@ export async function createServer(options: CreateServerOptions = {}): Promise<F
     return { status: 'ok' };
   });
 
-  // Resolve and validate the static asset root
-  const uiDistPath = resolveStaticRoot(options.staticRoot);
+  if (!options.apiOnly) {
+    const uiDistPath = resolveStaticRoot(options.staticRoot);
 
-  console.log(`Serving static files from: ${uiDistPath}`);
-
-  fastify.register(fastifyStatic, {
-    root: uiDistPath,
-    prefix: '/',
-    wildcard: false,
-  });
+    if (uiDistPath) {
+      console.log(`Serving static files from: ${uiDistPath}`);
+      fastify.register(fastifyStatic, {
+        root: uiDistPath,
+        prefix: '/',
+        wildcard: false,
+      });
+    }
+  }
 
   // REST API (must be registered before the SPA fallback)
   await fastify.register(configRoutes);
@@ -98,41 +97,42 @@ export async function createServer(options: CreateServerOptions = {}): Promise<F
   await fastify.register(profilesRoutes, { baseDir: config.baseDir });
   await fastify.register(storeRoutes, { baseDir: config.baseDir });
 
-  // Serve index.html for all other routes to support client-side routing
-  fastify.setNotFoundHandler((request, reply) => {
-    reply.sendFile('index.html');
-  });
+  if (!options.apiOnly) {
+    fastify.setNotFoundHandler((request, reply) => {
+      reply.sendFile('index.html');
+    });
+  } else {
+    fastify.setNotFoundHandler((request, reply) => {
+      reply.status(404).send({ error: 'Not found' });
+    });
+  }
 
   return fastify;
 }
 
 export interface StartServerOptions {
   defaultPort?: number;
-  /** Explicit static asset root. If omitted, resolveStaticRoot() is used. */
   staticRoot?: string;
+  apiOnly?: boolean;
 }
 
 export interface StartServerResult {
   port: number;
   address: string;
-  staticRoot: string;
-  /** True when the chosen port differs from the requested defaultPort. */
+  staticRoot?: string;
   fallback: boolean;
-  /** Close the running server. */
   close: () => Promise<void>;
 }
 
 export async function startServer(options: StartServerOptions | number = {}): Promise<StartServerResult> {
-  // Backward-compatible: accept a plain number for defaultPort
   const opts: StartServerOptions = typeof options === 'number'
     ? { defaultPort: options }
     : options;
 
   const defaultPort = opts.defaultPort ?? 3000;
-  const staticRoot = resolveStaticRoot(opts.staticRoot);
 
   const port = await getPort({ port: [defaultPort, defaultPort + 1, defaultPort + 2, 0] });
-  const fastify = await createServer({ staticRoot });
+  const fastify = await createServer({ staticRoot: opts.staticRoot, apiOnly: opts.apiOnly });
 
   try {
     const address = await fastify.listen({ port, host: '0.0.0.0' });
@@ -140,7 +140,7 @@ export async function startServer(options: StartServerOptions | number = {}): Pr
     return {
       port,
       address,
-      staticRoot,
+      staticRoot: resolveStaticRoot(opts.staticRoot),
       fallback: defaultPort !== 0 && port !== defaultPort,
       close: () => fastify.close(),
     };

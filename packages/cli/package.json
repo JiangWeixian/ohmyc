@@ -10,6 +10,7 @@
     "build": "tsup",
     "build:full": "pnpm --filter @claudeui/ui build && tsup",
     "dev": "tsup --watch --onSuccess 'node dist/index.cjs'",
+    "dev:server": "tsup --watch --onSuccess 'node dist/index.cjs start --api-only'",
     "start": "node dist/index.cjs",
     "test": "vitest run",
     "test:watch": "vitest",

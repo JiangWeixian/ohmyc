@@ -7,6 +7,7 @@ const cli = cac('cu');
 cli
   .command('start', 'Start the ClaudeUI server and open the browser')
   .option('--port <port>', 'Port to listen on', { default: 3000 })
+  .option('--api-only', 'Start API server only, skip static file serving')
   .action(async (options) => {
     const port = parseInt(options.port, 10);
     if (isNaN(port) || port < 0 || port > 65535) {
@@ -14,7 +15,7 @@ cli
       process.exit(1);
     }
     try {
-      await launchApp({ defaultPort: port });
+      await launchApp({ defaultPort: port, apiOnly: options.apiOnly });
     } catch (err) {
       console.error(err instanceof Error ? err.message : String(err));
       process.exit(1);
