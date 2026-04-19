@@ -1,41 +1,14 @@
 import React from 'react';
 import { Blocks } from 'lucide-react';
+import { motion } from 'framer-motion';
 import { cn } from '@/lib/utils';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import type { IconType } from './icons';
 
 export interface SidebarSection {
   id: string;
   label: string;
   icon: IconType;
-}
-
-interface SidebarItemProps {
-  label: string;
-  icon: IconType;
-  active?: boolean;
-  index: number;
-  onClick: () => void;
-}
-
-function SidebarItem({ label, icon: Icon, active, index, onClick }: SidebarItemProps) {
-  return (
-    <button
-      onClick={onClick}
-      type="button"
-      className={cn(
-        'w-full flex items-center gap-3 rounded-[var(--radius-sm)] px-3 py-2.5 text-left text-[13px] font-medium transition-smooth',
-        active
-          ? 'border border-[var(--accent-blue)]/30 bg-[var(--accent-blue)]/12 text-[var(--text-primary)] shadow-[var(--shadow-xs)]'
-          : 'border border-transparent text-[var(--text-secondary)] hover:border-white/5 hover:bg-white/[0.03] hover:text-[var(--text-primary)]'
-      )}
-      style={{ transitionDelay: `${index * 24}ms` }}
-    >
-      <span className={active ? 'text-[var(--accent-blue)]' : 'text-[var(--text-tertiary)]'}>
-        <Icon size={16} />
-      </span>
-      <span>{label}</span>
-    </button>
-  );
 }
 
 export function StatusIndicator() {
@@ -91,18 +64,41 @@ export function Sidebar({
         <div className="mb-3 px-1 text-[9px] font-medium uppercase text-[var(--text-tertiary)]">
           Explore
         </div>
-        <div className="space-y-1">
-          {sections.map((section, index) => (
-            <SidebarItem
-              key={section.id}
-              label={section.label}
-              icon={section.icon}
-              active={activeSection === section.id}
-              index={index}
-              onClick={() => onSectionChange(section.id)}
-            />
-          ))}
-        </div>
+        <Tabs
+          value={activeSection}
+          onValueChange={onSectionChange}
+        >
+          <TabsList className="flex flex-col gap-1 bg-transparent p-0 border-0">
+            {sections.map((section) => {
+              const isActive = activeSection === section.id;
+              return (
+                <TabsTrigger
+                  key={section.id}
+                  value={section.id}
+                  className={cn(
+                    "relative w-full flex items-center gap-3 rounded-[var(--radius-sm)] px-3 py-2.5 text-left text-[13px] font-medium",
+                    "transition-colors",
+                    isActive
+                      ? "text-[var(--text-primary)]"
+                      : "text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-white/[0.03]"
+                  )}
+                >
+                  {isActive && (
+                    <motion.div
+                      layoutId="sidebar-active"
+                      className="absolute inset-0 rounded-[var(--radius-sm)] border border-[var(--accent-blue)]/30 bg-[var(--accent-blue)]/12 shadow-[var(--shadow-xs)]"
+                      transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
+                    />
+                  )}
+                  <span className={cn("relative z-10", isActive ? "text-[var(--accent-blue)]" : "text-[var(--text-tertiary)]")}>
+                    <section.icon size={16} />
+                  </span>
+                  <span className="relative z-10">{section.label}</span>
+                </TabsTrigger>
+              );
+            })}
+          </TabsList>
+        </Tabs>
       </nav>
 
       {statusIndicator}
