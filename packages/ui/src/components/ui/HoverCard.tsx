@@ -1,5 +1,4 @@
 import React from 'react';
-import { motion, useMotionValue } from 'framer-motion';
 import { cn } from '@/lib/utils';
 
 interface HoverCardProps {
@@ -9,7 +8,7 @@ interface HoverCardProps {
 }
 
 /**
- * A card with a smooth hover effect and animations.
+ * A card with a smooth hover effect using CSS transitions.
  * Perfect for interactive elements like cards, buttons, or items.
  */
 export function HoverCard({
@@ -17,22 +16,17 @@ export function HoverCard({
   className,
   onClick,
 }: HoverCardProps) {
-  const x = useMotionValue(0);
-  const scale = useMotionValue(1);
-
   return (
-    <motion.div
+    <div
       onClick={onClick}
-      whileHover={{ scale: 1.01, y: -2 }}
-      whileTap={{ scale: 0.98 }}
-      style={{ x, cursor: onClick ? 'pointer' : 'default' }}
       className={cn(
-        'transition-shadow duration-150',
-        'hover:shadow-[var(--shadow-md)]',
+        'transition-transform duration-150',
+        'hover:-translate-y-0.5 hover:shadow-[var(--shadow-md)]',
+        onClick ? 'cursor-pointer' : 'cursor-default',
         className
       )}
     >
       {children}
-    </motion.div>
+    </div>
   );
 }
