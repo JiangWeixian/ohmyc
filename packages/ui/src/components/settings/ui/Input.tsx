@@ -1,7 +1,9 @@
 import { cn } from '@/lib/utils';
-import { motion } from 'framer-motion';
+import { motion, type HTMLMotionProps } from 'framer-motion';
 
-interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> {
+type MotionInputProps = Omit<HTMLMotionProps<'input'>, 'children'>;
+
+interface InputProps extends MotionInputProps {
   label?: string;
   error?: string;
   icon?: React.ReactNode;

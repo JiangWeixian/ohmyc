@@ -85,7 +85,7 @@ export function AnimatedList({ children, className }: { children: React.ReactNod
       animate="visible"
       className={className}
     >
-      {React.Children.map((child, i) => (
+      {React.Children.map(children, (child, i) => (
         <motion.div
           key={i}
           initial={{ opacity: 0, y: 20, scale: 0.95 }}

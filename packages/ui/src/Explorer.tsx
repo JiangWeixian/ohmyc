@@ -20,6 +20,7 @@ import { useCommands, useCommand } from './hooks/useCommands';
 import { useMcpServers, useHooks, useLspServers, type ConfigEntry, type HookEntry } from './hooks/useConfigs';
 import { usePlugins, useMarketplaces } from './hooks/usePlugins';
 import { useProfiles } from './hooks/useProfiles';
+import type { Agent, Skill, Command } from '@claudeui/shared';
 import { cn } from '@/lib/utils';
 import { EntityCard, Badge, MonoBadge } from './components/EntityCard';
 import { EntityDetail } from './components/EntityDetail';

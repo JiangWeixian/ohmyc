@@ -83,10 +83,10 @@ export function ProfileEditor({ profile, onSaved, onCancel }: ProfileEditorProps
 
     setError(null);
 
-    const hooks = hooksResult.data;
-    const mcpServers = mcpResult.data;
-    const lspServers = lspResult.data;
-    const settings = settingsResult.data as Record<string, unknown> | undefined;
+    const hooks = hooksResult.ok ? hooksResult.data : undefined;
+    const mcpServers = mcpResult.ok ? mcpResult.data : undefined;
+    const lspServers = lspResult.ok ? lspResult.data : undefined;
+    const settings = settingsResult.ok ? settingsResult.data as Record<string, unknown> | undefined : undefined;
 
     if (isEdit) {
       const body: UpdateProfileBody = {

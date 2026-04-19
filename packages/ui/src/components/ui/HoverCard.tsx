@@ -17,8 +17,8 @@ export function HoverCard({
   className,
   onClick,
 }: HoverCardProps) {
-  const x = useMotionValue(0, 0);
-  const scale = useMotionValue(1, 1);
+  const x = useMotionValue(0);
+  const scale = useMotionValue(1);
 
   return (
     <motion.div
