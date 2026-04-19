@@ -1,3 +1,6 @@
+import { Badge } from '@/components/ui/badge';
+import { cn } from '@/lib/utils';
+
 type InventorySource = 'local' | 'profile' | 'plugin' | 'project';
 
 interface SourceBadgeProps {
@@ -8,32 +11,44 @@ interface SourceBadgeProps {
 export function SourceBadge({ source, pluginId }: SourceBadgeProps) {
   if (source === 'local') {
     return (
-      <span className="rounded-[var(--radius-sm)] bg-[var(--surface-overlay)] px-2 py-0.5 text-[10px] font-semibold uppercase text-[var(--text-tertiary)]">
+      <Badge
+        variant="secondary"
+        className="h-auto min-h-0 rounded-[var(--radius-sm)] border-transparent bg-[var(--surface-overlay)] px-2 py-0.5 text-[10px] font-semibold uppercase text-[var(--text-tertiary)]"
+      >
         local
-      </span>
+      </Badge>
     );
   }
   if (source === 'profile') {
     return (
-      <span className="rounded-[var(--radius-sm)] bg-[var(--accent-blue)]/10 px-2 py-0.5 text-[10px] font-semibold uppercase text-[var(--accent-blue)]">
+      <Badge
+        variant="outline"
+        className="h-auto min-h-0 rounded-[var(--radius-sm)] border-transparent bg-[var(--accent-blue)]/10 px-2 py-0.5 text-[10px] font-semibold uppercase text-[var(--accent-blue)]"
+      >
         profile
-      </span>
+      </Badge>
     );
   }
   if (source === 'plugin') {
     const label = pluginId ? pluginId.split('@')[0] : 'plugin';
     return (
-      <span className="inline-flex items-center gap-1 rounded-[var(--radius-sm)] bg-[var(--accent-purple)]/10 px-2 py-0.5 text-[10px] font-semibold uppercase text-[var(--accent-purple)]">
+      <Badge
+        variant="outline"
+        className="h-auto min-h-0 gap-1 rounded-[var(--radius-sm)] border-transparent bg-[var(--accent-purple)]/10 px-2 py-0.5 text-[10px] font-semibold uppercase text-[var(--accent-purple)]"
+      >
         <span>plugin</span>
         {pluginId ? <span className="normal-case">{label}</span> : null}
-      </span>
+      </Badge>
     );
   }
   if (source === 'project') {
     return (
-      <span className="rounded-[var(--radius-sm)] bg-[#22c55e]/10 px-2 py-0.5 text-[10px] font-semibold uppercase text-[#22c55e]">
+      <Badge
+        variant="outline"
+        className="h-auto min-h-0 rounded-[var(--radius-sm)] border-transparent bg-[var(--accent-green)]/10 px-2 py-0.5 text-[10px] font-semibold uppercase text-[var(--accent-green)]"
+      >
         project
-      </span>
+      </Badge>
     );
   }
   return null;

@@ -29,9 +29,9 @@ describe('SourceBadge', () => {
 
     const badge = screen.getByText('project');
     expect(badge).toBeInTheDocument();
-    // D-06: green color #22c55e
-    expect(badge.className).toContain('[#22c55e]/10');
-    expect(badge.className).toContain('text-[#22c55e]');
+    // D-09: green color via CSS var (replaces hardcoded #22c55e)
+    expect(badge.className).toContain('[var(--accent-green)]/10');
+    expect(badge.className).toContain('text-[var(--accent-green)]');
     // D-07: uppercase label (applied via Tailwind class)
     expect(badge.className).toContain('uppercase');
   });
