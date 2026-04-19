@@ -42,6 +42,27 @@
     --elevation-1: 0 8px 20px rgba(0, 0, 0, 0.16);
     --elevation-2: 0 16px 32px rgba(0, 0, 0, 0.22);
     --elevation-3: 0 24px 40px rgba(0, 0, 0, 0.28);
+
+    /* shadcn token mappings — derived from ClaudeUI dark theme */
+    --background: 180 5% 3%;
+    --foreground: 155 5% 89%;
+    --card: 180 4% 6%;
+    --card-foreground: 155 5% 89%;
+    --popover: 195 5% 9%;
+    --popover-foreground: 155 5% 89%;
+    --primary: 233 54% 60%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 200 4% 13%;
+    --secondary-foreground: 155 5% 89%;
+    --muted: 200 4% 13%;
+    --muted-foreground: 200 5% 60%;
+    --accent: 200 4% 13%;
+    --accent-foreground: 155 5% 89%;
+    --destructive: 8 68% 62%;
+    --border: 200 5% 14%;
+    --input: 200 5% 14%;
+    --ring: 233 54% 60%;
+    --radius: 0.5rem;
   }
 }
 
