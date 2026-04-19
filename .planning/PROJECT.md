@@ -41,6 +41,7 @@ Users can reliably assemble and switch between Claude-focused coding environment
 
 ### Active
 
+- [ ] Refactor ClaudeUI UI to use uitripled component library (shadcn-based) — v1.5
 - [ ] Leave room for future support of other coding-agent ecosystems through import and conversion into the Claude-centered model
 - [ ] CLI auto-update mechanism
 - [ ] CLI configuration file for default port, browser preference, etc.
@@ -54,7 +55,7 @@ Users can reliably assemble and switch between Claude-focused coding environment
 
 ## Context
 
-Brownfield TypeScript monorepo with separate UI, CLI, and shared schema packages. All milestones v1.0–v1.4 complete. ConfigLocator centralizes all path resolution with split writeBaseDir (~/.cui/) and claudeCodeDir (~/.claude/). Project-local dual-source loading with merge and source attribution. CLI builds as self-contained CJS bundle via tsup, publishes as `@aiou/cu`.
+Brownfield TypeScript monorepo with separate UI, CLI, and shared schema packages. All milestones v1.0–v1.4 complete. ConfigLocator centralizes all path resolution with split writeBaseDir (~/.cui/) and claudeCodeDir (~/.claude/). Project-local dual-source loading with merge and source attribution. CLI builds as self-contained CJS bundle via tsup, publishes as `@aiou/cu`. UI uses React 18, Vite, Tailwind v3, framer-motion with custom design tokens. uitripled (shadcn-based component library) source available at vendor/uitripled/ for migration reference.
 
 ## Constraints
 
@@ -62,6 +63,7 @@ Brownfield TypeScript monorepo with separate UI, CLI, and shared schema packages
 - **Platform**: Local filesystem-based activation — current profile switching relies on symlinks/plugin generation and is therefore constrained by host filesystem behavior
 - **Architecture**: Brownfield evolution over rewrite — existing store/profile services and UI should be leveraged rather than replaced wholesale
 - **Audience**: Advanced multi-environment users — workflows should optimize for power and reuse, not only basic single-profile editing
+- **UI Framework**: uitripled components copied via shadcn pattern (source copy, not npm package) — components live in the codebase and can be adapted
 
 ## Key Decisions
 
@@ -86,12 +88,20 @@ Brownfield TypeScript monorepo with separate UI, CLI, and shared schema packages
 | Files allowlist (not .npmignore) for tarball control | Explicit control over what ships in the npm package | ✓ Good |
 | AGENT_HOME stays as .claude for v1.3, directory rebrand deferred to v2 | Avoids breaking change in CLI MVP release | ✓ Good |
 | CUI_HOME overrides writeBaseDir, AGENT_HOME only affects claudeCodeDir and project discovery | Separation of concerns — write path and plugin/project paths are independently configurable | ✓ Good |
+| Use uitripled (shadcn-based) as UI component library via source copy | 280+ components available, matches existing cn() pattern, Radix UI primitives provide accessibility out of the box | ✓ Good |
+| Map ClaudeUI design tokens to shadcn token system rather than adopting oklch color space | Preserves current dark theme appearance while enabling uitripled component compatibility | Pending |
 
-## Current Milestone: None (v1.4 shipped)
+## Current Milestone: v1.5 UI Refactor — uitripled Migration
 
-**Last shipped:** v1.4 Project-Aware Loading + .cu Rebrand (2026-04-19)
+**Goal:** Refactor ClaudeUI's UI to use uitripled components wherever possible, replacing hand-built components with shadcn-based primitives.
 
-**Next steps:** Define v1.5 requirements via `/gsd-new-milestone`
+**Target features:**
+- Install uitripled infrastructure (Radix UI deps, copied primitives, barrel exports)
+- Map ClaudeUI design tokens to shadcn token system
+- Migrate all card, sidebar, tab, badge, dialog, form, and utility components
+- Validate accessibility, visual parity, and test coverage
+
+**Phases:** 13–16 (uitripled Foundation → Core UI Migration → Dialogs & Forms → Polish & Validation)
 
 <details>
 <summary>v1.4 archive</summary>
@@ -123,4 +133,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-04-19 after v1.4 milestone completion*
+*Last updated: 2026-04-19 for v1.5 milestone start*
