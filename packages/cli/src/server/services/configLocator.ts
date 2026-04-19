@@ -16,8 +16,9 @@ export class ConfigLocator {
   constructor(options?: { cwd?: string }) {
     const agentHome = process.env.AGENT_HOME;
 
-    // D-01: writeBaseDir defaults to ~/.cui/, overridden by AGENT_HOME
-    const writeDirName = agentHome || WRITE_DIR_NAME;
+    // D-01: writeBaseDir defaults to ~/.cui/, overridden by CUI_HOME (not AGENT_HOME)
+    const cuiHome = process.env.CUI_HOME;
+    const writeDirName = cuiHome || WRITE_DIR_NAME;
     this.writeBaseDir = path.join(os.homedir(), writeDirName);
 
     // D-03: claudeCodeDir defaults to ~/.claude/ for plugin reads, overridden by AGENT_HOME

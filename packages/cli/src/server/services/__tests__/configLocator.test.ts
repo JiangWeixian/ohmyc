@@ -7,21 +7,27 @@ import { ConfigLocator, AGENT_DIR_NAME, WRITE_DIR_NAME } from '../configLocator'
 describe('ConfigLocator', () => {
   let tmpDir: string;
   let savedAgentHome: string | undefined;
+  let savedCuiHome: string | undefined;
 
   beforeEach(() => {
     tmpDir = mkdtempSync(path.join(os.tmpdir(), 'config-locator-test-'));
-    // Save and clear AGENT_HOME to prevent env pollution between tests
     savedAgentHome = process.env.AGENT_HOME;
+    savedCuiHome = process.env.CUI_HOME;
     delete process.env.AGENT_HOME;
+    delete process.env.CUI_HOME;
   });
 
   afterEach(() => {
     rmSync(tmpDir, { recursive: true, force: true });
-    // Restore AGENT_HOME
     if (savedAgentHome !== undefined) {
       process.env.AGENT_HOME = savedAgentHome;
     } else {
       delete process.env.AGENT_HOME;
+    }
+    if (savedCuiHome !== undefined) {
+      process.env.CUI_HOME = savedCuiHome;
+    } else {
+      delete process.env.CUI_HOME;
     }
   });
 
@@ -112,19 +118,35 @@ describe('ConfigLocator', () => {
   });
 
   describe('AGENT_HOME env var with split paths', () => {
-    it('AGENT_HOME overrides both writeBaseDir AND claudeCodeDir to the same directory per D-09', () => {
+    it('AGENT_HOME overrides claudeCodeDir (plugins) and project discovery, NOT writeBaseDir', () => {
       process.env.AGENT_HOME = '.custom-claude';
       const locator = new ConfigLocator({ cwd: tmpDir });
-      // Both bases resolve to the same override directory
-      expect(locator.baseDir).toBe(path.join(os.homedir(), '.custom-claude'));
-      expect(locator.readBaseDir).toBe(path.join(os.homedir(), '.custom-claude'));
-      expect(locator.agentsDir).toBe(path.join(os.homedir(), '.custom-claude', 'agents'));
+      expect(locator.baseDir).toBe(path.join(os.homedir(), '.cui'));
+      expect(locator.agentsDir).toBe(path.join(os.homedir(), '.cui', 'agents'));
+      expect(locator.pluginsDir).toBe(path.join(os.homedir(), '.custom-claude', 'plugins'));
+    });
+  });
+
+  describe('CUI_HOME env var override', () => {
+    it('CUI_HOME overrides writeBaseDir', () => {
+      process.env.CUI_HOME = '.custom-cui';
+      const locator = new ConfigLocator({ cwd: tmpDir });
+      expect(locator.baseDir).toBe(path.join(os.homedir(), '.custom-cui'));
+      expect(locator.agentsDir).toBe(path.join(os.homedir(), '.custom-cui', 'agents'));
+      expect(locator.settingsPath).toBe(path.join(os.homedir(), '.custom-cui', 'settings.json'));
     });
 
-    it('AGENT_HOME override: pluginsDir resolves to ~/.custom-claude/plugins/', () => {
+    it('CUI_HOME does not affect claudeCodeDir (plugins still from ~/.claude/)', () => {
+      process.env.CUI_HOME = '.custom-cui';
+      const locator = new ConfigLocator({ cwd: tmpDir });
+      expect(locator.pluginsDir).toBe(path.join(os.homedir(), '.claude', 'plugins'));
+    });
+
+    it('CUI_HOME and AGENT_HOME can be set independently', () => {
+      process.env.CUI_HOME = '.custom-cui';
       process.env.AGENT_HOME = '.custom-claude';
       const locator = new ConfigLocator({ cwd: tmpDir });
-      // When AGENT_HOME is set, both bases are the same, so pluginsDir uses override too
+      expect(locator.baseDir).toBe(path.join(os.homedir(), '.custom-cui'));
       expect(locator.pluginsDir).toBe(path.join(os.homedir(), '.custom-claude', 'plugins'));
     });
   });
