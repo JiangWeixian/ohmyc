@@ -80,7 +80,6 @@ None.
 
 ### Blockers/Concerns
 
-- **React 18 vs React 19**: uitripled peer dep is React 19. Need to verify all Radix UI primitives work with React 18. If incompatible, React 19 upgrade becomes a blocking prerequisite.
 - **Tailwind v3 vs v4**: uitripled docs reference Tailwind v4. Components use standard utility classes that should work with v3, but needs verification.
 
 ## Session Continuity

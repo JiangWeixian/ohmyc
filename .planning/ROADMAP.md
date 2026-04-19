@@ -58,19 +58,19 @@
 
 ### Phase 13: uitripled Foundation
 
-**Goal**: uitripled primitives are installed, design tokens mapped, and a verified subset of components render correctly in the React 18 + Tailwind v3 environment.
+**Goal**: uitripled primitives are installed, React upgraded to ^19.0.0, design tokens mapped, and a verified subset of components render correctly in the React 19 + Tailwind v3 environment.
 
 **Dependencies**: None (first phase of v1.5)
 
 **Plans:** 3 plans
-- [ ] 13-01-PLAN — Install Radix UI deps, copy uitripled UI primitives, establish barrel re-exports (FOUND-01, FOUND-02, FOUND-06)
+- [ ] 13-01-PLAN — React 19 upgrade, cn() migration, install Radix UI deps, copy uitripled UI primitives, establish barrel re-exports (FOUND-01, FOUND-02, FOUND-06)
 - [ ] 13-02-PLAN — Design token mapping: ClaudeUI tokens → shadcn tokens in globals.css (FOUND-03)
-- [ ] 13-03-PLAN — Compatibility verification: React 18, Tailwind v3, render smoke tests (FOUND-04, FOUND-05)
+- [ ] 13-03-PLAN — Compatibility verification: React 19, Tailwind v3, render smoke tests (FOUND-04, FOUND-05)
 
 **Requirements covered:** FOUND-01, FOUND-02, FOUND-03, FOUND-04, FOUND-05, FOUND-06
 
 **Key risks:**
-- React 18 incompatibility with Radix UI latest versions (mitigate: pin tested versions)
+- React 19 upgrade breaking existing components (mitigate: run full test suite, React 19 is largely backward compatible)
 - Tailwind v3 missing features used by uitripled components (mitigate: Tailwind v3 covers standard utility classes)
 - Design token color space mismatch (ClaudeUI uses hex, uitripled uses oklch) — need custom dark theme mapping
 

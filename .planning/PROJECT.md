@@ -90,6 +90,11 @@ Brownfield TypeScript monorepo with separate UI, CLI, and shared schema packages
 | CUI_HOME overrides writeBaseDir, AGENT_HOME only affects claudeCodeDir and project discovery | Separation of concerns — write path and plugin/project paths are independently configurable | ✓ Good |
 | Use uitripled (shadcn-based) as UI component library via source copy | 280+ components available, matches existing cn() pattern, Radix UI primitives provide accessibility out of the box | ✓ Good |
 | Map ClaudeUI design tokens to shadcn token system rather than adopting oklch color space | Preserves current dark theme appearance while enabling uitripled component compatibility | Pending |
+| Add @ path alias in tsconfig.json + vite.config.ts for uitripled compatibility | Zero code changes to copied uitripled components, matches shadcn convention | Pending |
+| Move cn() from src/components/cn.ts to src/lib/utils.ts, update all 28 imports | Unifies utility location with shadcn convention that uitripled components expect | Pending |
+| Upgrade React from ^18.2.0 to ^19.0.0 (packages/ui only) | uitripled peer dep is React 19; CLI and shared packages have no React deps | Pending |
+| Install exact Radix UI versions uitripled specifies | Proven compatibility between uitripled components and specific Radix versions | Pending |
+| Keep "use client" directives in copied uitripled components | Harmless in Vite, avoids unnecessary diff from source | Pending |
 
 ## Current Milestone: v1.5 UI Refactor — uitripled Migration
 
