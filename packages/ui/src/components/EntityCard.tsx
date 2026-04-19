@@ -64,38 +64,5 @@ export function EntityCard({
   );
 }
 
-// Badge components for common use cases
-export function Badge({
-  children,
-  variant = 'default',
-}: {
-  children: React.ReactNode;
-  variant?: 'default' | 'blue' | 'purple' | 'green' | 'amber';
-}) {
-  const colorClasses = {
-    default: 'text-[var(--text-tertiary)] bg-[var(--surface-overlay)]',
-    blue: 'text-[var(--accent-blue)] bg-[var(--accent-blue)]/10',
-    purple: 'text-[var(--accent-purple)] bg-[var(--accent-purple)]/10',
-    green: 'text-[var(--accent-green)] bg-[var(--accent-green)]/10',
-    amber: 'text-[var(--accent-amber)] bg-[var(--accent-amber)]/10',
-  };
-
-  return (
-    <span
-      className={cn(
-        'rounded-[var(--radius-sm)] px-2 py-0.5 text-[10px] font-semibold uppercase',
-        colorClasses[variant]
-      )}
-    >
-      {children}
-    </span>
-  );
-}
-
-export function MonoBadge({ children }: { children: React.ReactNode }) {
-  return (
-    <span className="rounded-[var(--radius-sm)] bg-[var(--surface-panel)] px-2 py-0.5 font-mono text-[10px] text-[var(--text-tertiary)]">
-      {children}
-    </span>
-  );
-}
+// Re-export Badge and MonoBadge from dedicated file for backward compatibility
+export { Badge, MonoBadge } from './Badge';
