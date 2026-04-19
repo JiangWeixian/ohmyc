@@ -41,14 +41,14 @@ export function useKeyboardShortcuts(customShortcuts?: Shortcut[]) {
       if (hasModifiers) {
         const modifier = parts[0];
         const mainKey = parts.slice(1).join('+');
-        return (
-          (modifier === 'cmd' ? isMeta : key === mainKey) ||
-          (modifier === 'ctrl' ? e.ctrlKey && key === mainKey) :
-          (modifier === 'shift' ? e.shiftKey && key === mainKey) :
-          (modifier === 'alt' ? e.altKey && key === mainKey) :
-          (!hasModifiers && key === mainKey)
-        );
-      }, [isMeta, e.ctrlKey, e.shiftKey, e.altKey, key]);
+        if (modifier === 'cmd') return isMeta && key === mainKey;
+        if (modifier === 'ctrl') return e.ctrlKey && key === mainKey;
+        if (modifier === 'shift') return e.shiftKey && key === mainKey;
+        if (modifier === 'alt') return e.altKey && key === mainKey;
+        return key === mainKey;
+      }
+      return key === s.key.toLowerCase();
+    });
 
     if (shortcut) {
       e.preventDefault();

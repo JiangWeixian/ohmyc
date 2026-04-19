@@ -88,11 +88,11 @@ export function KeyboardShortcutsPanel({
                     </motion.div>
                   ))}
                 </div>
-              ))}
-            </div>
-          </motion.div>
+              </div>
+            ))}
+          </div>
         </motion.div>
-      )}
+      </motion.div>
     </AnimatePresence>
   );
 }
