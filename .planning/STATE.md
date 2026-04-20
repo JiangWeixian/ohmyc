@@ -2,16 +2,16 @@
 gsd_state_version: 1.0
 milestone: v1.5
 milestone_name: "UI Refactor — uitripled Migration"
-status: Ready to execute
-stopped_at: Phase 14 planned (4 plans, 2 waves)
-last_updated: "2026-04-19T22:45:00.000Z"
-last_activity: 2026-04-19 -- Phase 14 planned (4 plans in 2 waves)
+status: in_progress
+stopped_at: Phase 15 ready to start
+last_updated: "2026-04-19T23:15:00.000Z"
+last_activity: 2026-04-19 -- Phase 14 complete (4/4 plans)
 progress:
   total_phases: 4
-  completed_phases: 1
+  completed_phases: 2
   total_plans: 7
-  completed_plans: 3
-  percent: 25
+  completed_plans: 7
+  percent: 50
 ---
 
 # Project State
@@ -25,17 +25,17 @@ See: .planning/PROJECT.md (updated 2026-04-19)
 
 ## Current Position
 
-Phase: 14 (Core UI Migration)
+Phase: 15 (Dialogs & Forms Migration)
 Plan: None
-Status: Phase 14 planned — 4 plans in 2 waves
-Last activity: 2026-04-19 -- Phase 14 planned
+Status: Phase 15 ready to start
+Last activity: 2026-04-19 -- Phase 14 complete (4/4 plans)
 
 ## v1.5 Phase Map
 
 | Phase | Name | Focus | Status |
 |-------|------|-------|--------|
 | 13 | uitripled Foundation | Install deps, token mapping, copy primitives | Complete |
-| 14 | Core UI Migration | Sidebar, tabs, cards, badges, utilities | Pending |
+| 14 | Core UI Migration | Sidebars, cards, badges, utilities | Complete |
 | 15 | Dialogs & Forms Migration | All dialogs, form controls, command palette | Pending |
 | 16 | Polish & Validation | Test regression, a11y audit, dead code removal | Pending |
 
@@ -43,29 +43,16 @@ Last activity: 2026-04-19 -- Phase 14 planned
 
 **Velocity:**
 
-- Total plans completed: 38 (v1.0: 9, v1.1: 2, v1.2: 6, v1.3: 5, v1.4: 5, v1.5: 3 so far)
-- Average duration: --
-- Total execution time: --
+- Total plans completed: 45 (v1.0: 9, v1.1: 2, v1.2: 6, v1.3: 5, v1.4: 5, v1.5: 7 so far)
+- Total execution time: ~38min for v1.5 phases 13+14
 
 **By Phase:**
 
 | Phase | Plans | Total | Avg/Plan |
 |-------|-------|-------|----------|
-| 1. Store and Inventory Foundation | 4 | - | - |
-| 2. Profile Composition | 3 | - | - |
-| 3. Safe Switching and Reference Safety | 2 | 18min | 9min |
-| 4. Explorer Tab Corrections | 2 | 18min | 9min |
-| 5. Model Config Store Backend | 2 | - | - |
-| 6. Model Config UI and Profile Integration | 2 | 29min | 14.5min |
-| 7. Activation Integration | 2 | 6min | 3min |
-| 8. CLI Launcher | 2 | - | - |
-| 9. Package and Publish | 3 | - | - |
-| 10. Config Foundation | 2 | 4min | 2min |
-| 11. Project-Local Loading | 2 | 8min | 4min |
-| 12. .cu Rebrand | 1 | 4min | 4min |
 | 13. uitripled Foundation | 3 | 22min | 7min |
-| 14. Core UI Migration | 0 | - | - |
-| 15. Dialogs & Forms Migration | 0 | - | - |
+| 14. Core UI Migration | 4 | 16min | 4min |
+| 15. Dialogs & Forms | 0 | - | - |
 | 16. Polish & Validation | 0 | - | - |
 
 ## Accumulated Context
@@ -80,11 +67,11 @@ None.
 
 ### Blockers/Concerns
 
-- Resolved: Tailwind v3 compatibility confirmed — uitripled components render correctly with v3 (verified in 13-03 smoke tests)
+- Minor: Hardcoded `#5E6AD2` in ProfilesSidebar.tsx Active badge (line 69) — not caught during Phase 14 migration. Should be cleaned up in Phase 16 or as a quick fix.
 
 ## Session Continuity
 
-Last session: 2026-04-19T21:40:00.000Z
-Stopped at: Phase 14 ready to start
+Last session: 2026-04-19T23:15:00.000Z
+Stopped at: Phase 15 ready to start
 Resume file: None
-Next step: Begin Phase 14 — Core UI Migration (sidebar, tabs, cards, badges)
+Next step: Begin Phase 15 — Dialogs & Forms Migration

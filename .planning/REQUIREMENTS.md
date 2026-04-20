@@ -14,17 +14,17 @@
 
 ## Component Migration: Sidebar & Navigation
 
-- [ ] **NAV-01**: Replace hand-built Sidebar with uitripled animated-sidebar — ProfileSidebar, SettingsSidebar, main Sidebar — Phase 14
-- [ ] **NAV-02**: Replace ViewSwitcher with uitripled Tabs primitive for view mode toggling — Phase 14
-- [ ] **NAV-03**: Replace Explorer tabs with uitripled Tabs component — Phase 14
+- [x] **NAV-01**: Replace hand-built Sidebar with uitripled animated-sidebar — ProfileSidebar, SettingsSidebar, main Sidebar — Phase 14
+- [x] **NAV-02**: Replace ViewSwitcher with uitripled Tabs primitive for view mode toggling — Phase 14
+- [x] **NAV-03**: Replace Explorer tabs with uitripled Tabs component — Phase 14
 
 ## Component Migration: Cards & Display
 
-- [ ] **CARD-01**: Replace EntityCard with uitripled Card primitive (CardHeader, CardTitle, CardDescription, CardContent, CardFooter) — Phase 14
-- [ ] **CARD-02**: Replace ProfileCard with uitripled Card — Phase 14
-- [ ] **CARD-03**: Replace ConfigSection with uitripled Card — Phase 14
-- [ ] **CARD-04**: Replace SectionHeader with uitripled Card header pattern — Phase 14
-- [ ] **CARD-05**: Replace SourceBadge with uitripled Badge — Phase 14
+- [x] **CARD-01**: Replace EntityCard with uitripled Card primitive (CardHeader, CardTitle, CardDescription, CardContent, CardFooter) — Phase 14
+- [x] **CARD-02**: Replace ProfileCard with uitripled Card — Phase 14
+- [x] **CARD-03**: Replace ConfigSection with uitripled Card — Phase 14
+- [x] **CARD-04**: Replace SectionHeader with uitripled Card header pattern — Phase 14
+- [x] **CARD-05**: Replace SourceBadge with uitripled Badge — Phase 14
 
 ## Component Migration: Dialogs
 
@@ -49,10 +49,10 @@
 ## Component Migration: Utilities
 
 - [ ] **UTIL-01**: Replace CommandPalette with uitripled command-palette — Phase 15
-- [ ] **UTIL-02**: Replace Toast with uitripled toast-notification — Phase 14
-- [ ] **UTIL-03**: Replace HoverCard with uitripled tooltip/hover-card — Phase 14
-- [ ] **UTIL-04**: Replace Skeleton with uitripled Skeleton or custom equivalent — Phase 14
-- [ ] **UTIL-05**: Replace QuickActions with uitripled DropdownMenu — Phase 14
+- [ ] **UTIL-02**: Replace Toast with uitripled toast-notification — Phase 15
+- [x] **UTIL-03**: Replace HoverCard with uitripled tooltip/hover-card — Phase 14
+- [x] **UTIL-04**: Replace Skeleton with uitripled Skeleton or custom equivalent — Phase 14
+- [x] **UTIL-05**: Replace QuickActions with uitripled DropdownMenu — Phase 14
 
 ## Polish & Validation
 
@@ -81,18 +81,18 @@
 | FOUND-04 | Phase 13 | Complete |
 | FOUND-05 | Phase 13 | Complete |
 | FOUND-06 | Phase 13 | Complete |
-| NAV-01 | Phase 14 | Pending |
-| NAV-02 | Phase 14 | Pending |
-| NAV-03 | Phase 14 | Pending |
-| CARD-01 | Phase 14 | Pending |
-| CARD-02 | Phase 14 | Pending |
-| CARD-03 | Phase 14 | Pending |
-| CARD-04 | Phase 14 | Pending |
-| CARD-05 | Phase 14 | Pending |
-| UTIL-02 | Phase 14 | Pending |
-| UTIL-03 | Phase 14 | Pending |
-| UTIL-04 | Phase 14 | Pending |
-| UTIL-05 | Phase 14 | Pending |
+| NAV-01 | Phase 14 | Complete |
+| NAV-02 | Phase 14 | Complete |
+| NAV-03 | Phase 14 | Complete |
+| CARD-01 | Phase 14 | Complete |
+| CARD-02 | Phase 14 | Complete |
+| CARD-03 | Phase 14 | Complete |
+| CARD-04 | Phase 14 | Complete |
+| CARD-05 | Phase 14 | Complete |
+| UTIL-02 | Phase 15 | Deferred |
+| UTIL-03 | Phase 14 | Complete |
+| UTIL-04 | Phase 14 | Complete |
+| UTIL-05 | Phase 14 | Complete |
 | DLG-01 | Phase 15 | Pending |
 | DLG-02 | Phase 15 | Pending |
 | DLG-03 | Phase 15 | Pending |
