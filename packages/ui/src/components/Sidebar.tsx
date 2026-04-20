@@ -77,7 +77,7 @@ export function Sidebar({
                   key={section.id}
                   value={section.id}
                   className={cn(
-                    "relative w-full flex items-center gap-3 rounded-[var(--radius-sm)] px-3 py-2.5 text-left text-[13px] font-medium",
+                    "relative w-full flex items-center justify-start gap-3 rounded-[var(--radius-sm)] px-3 py-2.5 text-left text-[13px] font-medium",
                     "transition-colors",
                     isActive
                       ? "text-[var(--text-primary)]"
