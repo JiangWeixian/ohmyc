@@ -18,7 +18,7 @@ interface ViewSwitcherProps {
 export function ViewSwitcher({ active, onChange }: ViewSwitcherProps) {
   return (
     <Tabs value={active} onValueChange={(v) => onChange(v as ViewId)}>
-      <TabsList className="grid w-full grid-cols-2 gap-1 rounded-[var(--radius-md)] border border-[var(--border-default)] bg-[var(--surface-panel)] p-1">
+      <TabsList className="!w-full grid grid-cols-2 gap-1 rounded-[var(--radius-md)] border border-[var(--border-default)] bg-[var(--surface-panel)] p-1">
         {VIEWS.map(({ id, label, icon: Icon }) => {
           const isActive = active === id;
           return (

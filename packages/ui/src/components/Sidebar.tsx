@@ -67,8 +67,9 @@ export function Sidebar({
         <Tabs
           value={activeSection}
           onValueChange={onSectionChange}
+          orientation="vertical"
         >
-          <TabsList className="flex flex-col gap-1 bg-transparent p-0 border-0">
+          <TabsList className="flex w-full flex-col gap-1 bg-transparent p-0 border-0">
             {sections.map((section) => {
               const isActive = activeSection === section.id;
               return (
