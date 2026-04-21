@@ -51,7 +51,7 @@
 | 12. .cu Rebrand | v1.4 | 1/1 | Complete | 2026-04-18 |
 | 13. uitripled Foundation | v1.5 | 3/3 | Complete | 2026-04-19 |
 | 14. Core UI Migration | v1.5 | 4/4 | Complete | 2026-04-19 |
-| 15. Dialogs & Forms Migration | v1.5 | 0/? | Pending | — |
+| 15. Dialogs & Forms Migration | v1.5 | 0/4 | Pending | — |
 | 16. Polish & Validation | v1.5 | 0/? | Pending | — |
 
 ## Phase Details: v1.5
@@ -111,13 +111,13 @@
 
 **Dependencies**: Phase 14 complete
 
-**Plans:**
-- [ ] 15-01-PLAN — Dialog migration: all 6 dialog components → Dialog / animated-dialog (DLG-01, DLG-02, DLG-03, DLG-04, DLG-05, DLG-06)
-- [ ] 15-02-PLAN — Form primitives migration: Button, Input, Select, Toggle → uitripled primitives (FORM-01, FORM-02, FORM-03, FORM-04)
-- [ ] 15-03-PLAN — Editor & settings migration: ProfileEditor, StoreComponentEditor, ModelConfigEditor, GeneralSettings (FORM-05, FORM-06, FORM-07, FORM-08)
-- [ ] 15-04-PLAN — Command palette migration: CommandPalette → uitripled command-palette (UTIL-01)
+**Plans:** 4 plans (all Wave 1 — fully parallel)
+- [ ] 15-01-PLAN — Dialog migration: all 6 dialogs → NativeDialog + shared utils extraction (DLG-01–DLG-06)
+- [ ] 15-02-PLAN — Form primitives + GeneralSettings: settings/ui → shadcn wrappers, GeneralSettings → direct imports (FORM-01–FORM-04, FORM-08)
+- [ ] 15-03-PLAN — Editor migration: ProfileEditor, StoreComponentEditor, ModelConfigEditor → shadcn form primitives (FORM-05–FORM-07)
+- [ ] 15-04-PLAN — Command palette + Toast: cmdk rebuild, Sonner replacement (UTIL-01, UTIL-02)
 
-**Requirements covered:** DLG-01–DLG-06, FORM-01–FORM-08, UTIL-01
+**Requirements covered:** DLG-01–DLG-06, FORM-01–FORM-08, UTIL-01, UTIL-02
 
 **Key risks:**
 - Dialog state machines (discriminated unions) must be preserved during migration
