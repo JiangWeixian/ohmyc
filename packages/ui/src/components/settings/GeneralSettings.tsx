@@ -1,9 +1,10 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useSettings } from '../../hooks/useSettings';
-import { Input } from './ui/Input';
-import { Select } from './ui/Select';
-import { Toggle } from './ui/Toggle';
-import { Button } from './ui/Button';
+import { Input } from '@/components/ui/input';
+import { Select, SelectTrigger, SelectContent, SelectItem, SelectValue } from '@/components/ui/select';
+import { Switch } from '@/components/ui/switch';
+import { Label } from '@/components/ui/label';
+import { NativeButton } from '@/components/uitripled/native-button';
 import { Loader2 } from 'lucide-react';
 import fastDeepEqual from 'fast-deep-equal';
 import type { GeneralSettings } from '@claudeui/shared';
@@ -117,9 +118,9 @@ export function GeneralSettings() {
           </p>
         </div>
         <div className="flex items-center justify-center py-12 border border-dashed border-[var(--border-default)] rounded-[var(--radius-lg)]">
-          <Button onClick={handleCreateSettings} disabled={isSaving}>
+          <NativeButton onClick={handleCreateSettings} disabled={isSaving} variant="default" size="sm">
             {isSaving ? 'Creating...' : 'Create settings.json'}
-          </Button>
+          </NativeButton>
         </div>
       </div>
     );
@@ -141,16 +142,13 @@ export function GeneralSettings() {
           Model
         </h2>
         <div className="space-y-4">
-          <Input
-            label="Model"
-            value={formData.model || ''}
-            onChange={(e) => updateField('model', e.target.value || undefined)}
-            placeholder="claude-opus-4-5-20250514"
-          />
-          <Input
-            label="Available Models (comma-separated)"
-            value={formData.availableModels?.join(', ') || ''}
-            onChange={(e) =>
+          <div className="space-y-2">
+            <Label htmlFor="model">Model</Label>
+            <Input id="model" value={formData.model || ''} onChange={(e) => updateField('model', e.target.value || undefined)} placeholder="claude-opus-4-5-20250514" />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="available-models">Available Models (comma-separated)</Label>
+            <Input id="available-models" value={formData.availableModels?.join(', ') || ''} onChange={(e) =>
               updateField(
                 'availableModels',
                 e.target.value
@@ -160,9 +158,8 @@ export function GeneralSettings() {
                       .filter(Boolean)
                   : undefined
               )
-            }
-            placeholder="claude-opus-4-5-20250514, claude-sonnet-4-20250514"
-          />
+            } placeholder="claude-opus-4-5-20250514, claude-sonnet-4-20250514" />
+          </div>
         </div>
       </section>
 
@@ -172,32 +169,32 @@ export function GeneralSettings() {
           UI
         </h2>
         <div className="space-y-4">
-          <Select
-            label="Auto Updates Channel"
-            value={formData.autoUpdatesChannel || 'stable'}
-            onChange={(e) =>
-              updateField('autoUpdatesChannel', e.target.value as 'stable' | 'beta')
-            }
-            options={[
-              { value: 'stable', label: 'Stable' },
-              { value: 'beta', label: 'Beta' },
-            ]}
-          />
-          <Toggle
-            label="Always Thinking Enabled"
-            checked={formData.alwaysThinkingEnabled || false}
-            onChange={(checked) => updateField('alwaysThinkingEnabled', checked)}
-          />
-          <Toggle
-            label="Show Turn Duration"
-            checked={formData.showTurnDuration || false}
-            onChange={(checked) => updateField('showTurnDuration', checked)}
-          />
-          <Toggle
-            label="Prefers Reduced Motion"
-            checked={formData.prefersReducedMotion || false}
-            onChange={(checked) => updateField('prefersReducedMotion', checked)}
-          />
+          <div className="space-y-2">
+            <Label>Auto Updates Channel</Label>
+            <Select value={formData.autoUpdatesChannel || 'stable'} onValueChange={(val) =>
+              updateField('autoUpdatesChannel', val as 'stable' | 'beta')
+            }>
+              <SelectTrigger className="w-full">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="stable">Stable</SelectItem>
+                <SelectItem value="beta">Beta</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="flex items-center justify-between">
+            <Label>Always Thinking Enabled</Label>
+            <Switch checked={formData.alwaysThinkingEnabled || false} onCheckedChange={(checked) => updateField('alwaysThinkingEnabled', checked)} />
+          </div>
+          <div className="flex items-center justify-between">
+            <Label>Show Turn Duration</Label>
+            <Switch checked={formData.showTurnDuration || false} onCheckedChange={(checked) => updateField('showTurnDuration', checked)} />
+          </div>
+          <div className="flex items-center justify-between">
+            <Label>Prefers Reduced Motion</Label>
+            <Switch checked={formData.prefersReducedMotion || false} onCheckedChange={(checked) => updateField('prefersReducedMotion', checked)} />
+          </div>
         </div>
       </section>
 
@@ -210,9 +207,9 @@ export function GeneralSettings() {
           {saveStatus === 'idle' && hasChanges && 'Unsaved changes'}
           {saveStatus === 'idle' && !hasChanges && 'No changes'}
         </span>
-        <Button onClick={handleSave} disabled={!hasChanges || isSaving}>
+        <NativeButton onClick={handleSave} disabled={!hasChanges || isSaving} variant="default" size="sm">
           {isSaving ? 'Saving...' : 'Save'}
-        </Button>
+        </NativeButton>
       </footer>
     </div>
   );
