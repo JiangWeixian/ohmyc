@@ -28,28 +28,28 @@
 
 ## Component Migration: Dialogs
 
-- [ ] **DLG-01**: Replace ConfirmSwitchDialog with uitripled Dialog — Phase 15
-- [ ] **DLG-02**: Replace ActivateConfirmDialog with uitripled animated-dialog — Phase 15
-- [ ] **DLG-03**: Replace ActivationBlockedDialog with uitripled Dialog — Phase 15
-- [ ] **DLG-04**: Replace ImportComponentsDialog with uitripled Dialog — Phase 15
-- [ ] **DLG-05**: Replace DeleteConfirmDialog with uitripled Dialog — Phase 15
-- [ ] **DLG-06**: Replace KeyboardShortcutsPanel with uitripled Dialog — Phase 15
+- [x] **DLG-01**: Replace ConfirmSwitchDialog with uitripled Dialog — Phase 15
+- [x] **DLG-02**: Replace ActivateConfirmDialog with uitripled animated-dialog — Phase 15
+- [x] **DLG-03**: Replace ActivationBlockedDialog with uitripled Dialog — Phase 15
+- [x] **DLG-04**: Replace ImportComponentsDialog with uitripled Dialog — Phase 15
+- [x] **DLG-05**: Replace DeleteConfirmDialog with uitripled Dialog — Phase 15
+- [x] **DLG-06**: Replace KeyboardShortcutsPanel with uitripled Dialog — Phase 15
 
 ## Component Migration: Forms & Inputs
 
-- [ ] **FORM-01**: Replace settings/ui/Button with uitripled Button (with variants: default, destructive, outline, secondary, ghost, link) — Phase 15
-- [ ] **FORM-02**: Replace settings/ui/Input with uitripled Input — Phase 15
-- [ ] **FORM-03**: Replace settings/ui/Select with uitripled Select — Phase 15
-- [ ] **FORM-04**: Replace settings/ui/Toggle with uitripled Switch — Phase 15
-- [ ] **FORM-05**: Migrate ProfileEditor form controls to uitripled Input, Select, Switch — Phase 15
-- [ ] **FORM-06**: Migrate StoreComponentEditor to uitripled form primitives — Phase 15
-- [ ] **FORM-07**: Migrate ModelConfigEditor to uitripled form primitives — Phase 15
-- [ ] **FORM-08**: Migrate GeneralSettings to uitripled form primitives — Phase 15
+- [x] **FORM-01**: Replace settings/ui/Button with uitripled Button (with variants: default, destructive, outline, secondary, ghost, link) — Phase 15
+- [x] **FORM-02**: Replace settings/ui/Input with uitripled Input — Phase 15
+- [x] **FORM-03**: Replace settings/ui/Select with uitripled Select — Phase 15
+- [x] **FORM-04**: Replace settings/ui/Toggle with uitripled Switch — Phase 15
+- [x] **FORM-05**: Migrate ProfileEditor form controls to uitripled Input, Select, Switch — Phase 15
+- [x] **FORM-06**: Migrate StoreComponentEditor to uitripled form primitives — Phase 15
+- [x] **FORM-07**: Migrate ModelConfigEditor to uitripled form primitives — Phase 15
+- [x] **FORM-08**: Migrate GeneralSettings to uitripled form primitives — Phase 15
 
 ## Component Migration: Utilities
 
-- [ ] **UTIL-01**: Replace CommandPalette with uitripled command-palette — Phase 15
-- [ ] **UTIL-02**: Replace Toast with uitripled toast-notification — Phase 15
+- [x] **UTIL-01**: Replace CommandPalette with uitripled command-palette — Phase 15
+- [x] **UTIL-02**: Replace Toast with uitripled toast-notification — Phase 15
 - [x] **UTIL-03**: Replace HoverCard with uitripled tooltip/hover-card — Phase 14
 - [x] **UTIL-04**: Replace Skeleton with uitripled Skeleton or custom equivalent — Phase 14
 - [x] **UTIL-05**: Replace QuickActions with uitripled DropdownMenu — Phase 14
@@ -89,25 +89,25 @@
 | CARD-03 | Phase 14 | Complete |
 | CARD-04 | Phase 14 | Complete |
 | CARD-05 | Phase 14 | Complete |
-| UTIL-02 | Phase 15 | Deferred |
+| UTIL-02 | Phase 15 | Complete |
 | UTIL-03 | Phase 14 | Complete |
 | UTIL-04 | Phase 14 | Complete |
 | UTIL-05 | Phase 14 | Complete |
-| DLG-01 | Phase 15 | Pending |
-| DLG-02 | Phase 15 | Pending |
-| DLG-03 | Phase 15 | Pending |
-| DLG-04 | Phase 15 | Pending |
-| DLG-05 | Phase 15 | Pending |
-| DLG-06 | Phase 15 | Pending |
-| FORM-01 | Phase 15 | Pending |
-| FORM-02 | Phase 15 | Pending |
-| FORM-03 | Phase 15 | Pending |
-| FORM-04 | Phase 15 | Pending |
-| FORM-05 | Phase 15 | Pending |
-| FORM-06 | Phase 15 | Pending |
-| FORM-07 | Phase 15 | Pending |
-| FORM-08 | Phase 15 | Pending |
-| UTIL-01 | Phase 15 | Pending |
+| DLG-01 | Phase 15 | Complete |
+| DLG-02 | Phase 15 | Complete |
+| DLG-03 | Phase 15 | Complete |
+| DLG-04 | Phase 15 | Complete |
+| DLG-05 | Phase 15 | Complete |
+| DLG-06 | Phase 15 | Complete |
+| FORM-01 | Phase 15 | Complete |
+| FORM-02 | Phase 15 | Complete |
+| FORM-03 | Phase 15 | Complete |
+| FORM-04 | Phase 15 | Complete |
+| FORM-05 | Phase 15 | Complete |
+| FORM-06 | Phase 15 | Complete |
+| FORM-07 | Phase 15 | Complete |
+| FORM-08 | Phase 15 | Complete |
+| UTIL-01 | Phase 15 | Complete |
 | POL-01 | Phase 16 | Pending |
 | POL-02 | Phase 16 | Pending |
 | POL-03 | Phase 16 | Pending |

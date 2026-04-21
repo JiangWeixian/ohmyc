@@ -30,7 +30,7 @@
 - [x] **Phase 12: .cu Rebrand** (v1.4)
 - [x] **Phase 13: uitripled Foundation** (v1.5) — install deps, design token mapping, base primitives
 - [x] **Phase 14: Core UI Migration** (v1.5) — sidebar, explorer, entity cards, utility components
-- [ ] **Phase 15: Dialogs & Forms Migration** (v1.5) — modals, forms, settings, editors, command palette
+- [x] **Phase 15: Dialogs & Forms Migration** (v1.5) — modals, forms, settings, editors, command palette
 - [ ] **Phase 16: Polish & Validation** (v1.5) — animations, accessibility, visual regression, dead code removal
 
 ## Progress
@@ -51,7 +51,7 @@
 | 12. .cu Rebrand | v1.4 | 1/1 | Complete | 2026-04-18 |
 | 13. uitripled Foundation | v1.5 | 3/3 | Complete | 2026-04-19 |
 | 14. Core UI Migration | v1.5 | 4/4 | Complete | 2026-04-19 |
-| 15. Dialogs & Forms Migration | v1.5 | 0/4 | Pending | — |
+| 15. Dialogs & Forms Migration | v1.5 | 4/4 | Complete | 2026-04-21 |
 | 16. Polish & Validation | v1.5 | 0/? | Pending | — |
 
 ## Phase Details: v1.5
