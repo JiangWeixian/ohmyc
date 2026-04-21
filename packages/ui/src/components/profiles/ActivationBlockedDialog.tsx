@@ -1,4 +1,5 @@
-import { cn } from '@/lib/utils';
+import { NativeDialog, NativeDialogContent, NativeDialogTitle, NativeDialogFooter } from '@/components/uitripled/native-dialog';
+import { Button } from '@/components/ui/button';
 
 interface ActivationBlockedDialogProps {
   profileName: string;
@@ -12,25 +13,11 @@ export function ActivationBlockedDialog({
   onClose,
 }: ActivationBlockedDialogProps) {
   return (
-    <div
-      className="fixed inset-0 bg-black/60 flex items-center justify-center z-50"
-      role="dialog"
-      aria-modal="true"
-      onKeyDown={(e) => {
-        if (e.key === 'Escape') onClose();
-      }}
-    >
-      <div
-        className={cn(
-          "p-6 max-w-md w-full mx-4 space-y-4",
-          "bg-[var(--surface-raised)] border border-[var(--border-default)]",
-          "rounded-[var(--radius-xl)]"
-        )}
-        autoFocus
-      >
-        <h3 className="text-lg font-semibold text-[var(--text-primary)]">
+    <NativeDialog open={true} onOpenChange={(open) => { if (!open) onClose(); }}>
+      <NativeDialogContent className="max-w-md bg-[var(--surface-raised)] border-[var(--border-default)] rounded-[var(--radius-xl)]">
+        <NativeDialogTitle className="text-lg font-semibold text-[var(--text-primary)]">
           Cannot activate {profileName}
-        </h3>
+        </NativeDialogTitle>
         <p className="text-[13px] text-[var(--text-secondary)]">
           This profile references store components that no longer exist. Fix the profile before activating.
         </p>
@@ -44,15 +31,10 @@ export function ActivationBlockedDialog({
           </div>
         )}
 
-        <div className="flex justify-end gap-2">
-          <button onClick={onClose} className={cn(
-            "px-3 py-1.5 text-[13px] font-medium rounded-[var(--radius-md)]",
-            "bg-[var(--surface-overlay)] text-[var(--text-secondary)]",
-            "hover:bg-[var(--border-hover)] hover:text-[var(--text-primary)]",
-            "transition-colors duration-150"
-          )}>Close</button>
-        </div>
-      </div>
-    </div>
+        <NativeDialogFooter>
+          <Button variant="outline" size="sm" onClick={onClose}>Close</Button>
+        </NativeDialogFooter>
+      </NativeDialogContent>
+    </NativeDialog>
   );
 }

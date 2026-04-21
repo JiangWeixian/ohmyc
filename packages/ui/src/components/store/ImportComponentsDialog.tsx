@@ -1,5 +1,7 @@
 import { useState } from 'react';
-import { cn } from '@/lib/utils';
+import { NativeDialog, NativeDialogContent, NativeDialogTitle, NativeDialogFooter } from '@/components/uitripled/native-dialog';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import { useStoreImport } from '../../hooks/useStore';
 import type { StoreImportResult } from '@claudeui/shared';
 
@@ -33,7 +35,7 @@ export function ImportComponentsDialog({ onClose }: ImportComponentsDialogProps)
         onClose();
       }
     } catch (mutationError) {
-      setError(mutationError instanceof Error ? mutationError.message : 'Couldn’t complete this action. Review the conflicting items or filesystem details, then try again.');
+      setError(mutationError instanceof Error ? mutationError.message : 'Couldn\'t complete this action. Review the conflicting items or filesystem details, then try again.');
     } finally {
       setIsApplying(false);
     }
@@ -47,45 +49,32 @@ export function ImportComponentsDialog({ onClose }: ImportComponentsDialogProps)
       await importMutation.applyImport(sourceDir, true);
       onClose();
     } catch (mutationError) {
-      setError(mutationError instanceof Error ? mutationError.message : 'Couldn’t complete this action. Review the conflicting items or filesystem details, then try again.');
+      setError(mutationError instanceof Error ? mutationError.message : 'Couldn\'t complete this action. Review the conflicting items or filesystem details, then try again.');
     } finally {
       setIsApplying(false);
     }
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60">
-      <div
-        className={cn(
-          "mx-4 w-full max-w-2xl space-y-4 rounded-[var(--radius-xl)] border border-[var(--border-default)] bg-[var(--surface-raised)] p-6",
-        )}
-      >
-        <div className="space-y-1">
-          <h2 className="text-lg font-semibold text-[var(--text-primary)]">Import Components</h2>
-          <p className="text-[13px] text-[var(--text-tertiary)]">
-            Preview a Claude-compatible directory before importing it into the store.
-          </p>
-        </div>
+    <NativeDialog open={true} onOpenChange={(open) => { if (!open) onClose(); }}>
+      <NativeDialogContent className="max-w-2xl bg-[var(--surface-raised)] border-[var(--border-default)] rounded-[var(--radius-xl)]">
+        <NativeDialogTitle className="text-lg font-semibold text-[var(--text-primary)]">Import Components</NativeDialogTitle>
+        <p className="text-[13px] text-[var(--text-tertiary)]">
+          Preview a Claude-compatible directory before importing it into the store.
+        </p>
 
-        <label className="block text-[12px] text-[var(--text-tertiary)]">
-          Source directory
-          <input
-            aria-label="Source directory"
-            value={sourceDir}
-            onChange={(event) => setSourceDir(event.target.value)}
-            placeholder="/path/to/.claude"
-            className={cn(
-              "mt-2 w-full rounded-[var(--radius-md)] border border-[var(--border-default)] bg-[var(--surface-base)] px-3 py-2 text-[13px] text-[var(--text-primary)]",
-              "focus:outline-none focus:border-[var(--accent-blue)]",
-            )}
-          />
-        </label>
+        <Input
+          aria-label="Source directory"
+          value={sourceDir}
+          onChange={(e) => setSourceDir(e.target.value)}
+          placeholder="/path/to/.claude"
+        />
 
-        {error ? (
+        {error && (
           <div className="rounded-[var(--radius-md)] border border-[var(--accent-red)]/30 bg-[var(--accent-red)]/10 px-4 py-3 text-[13px] text-[var(--accent-red)]">
             {error}
           </div>
-        ) : null}
+        )}
 
         {preview?.conflicts?.length ? (
           <div className="space-y-3 rounded-[var(--radius-md)] border border-[var(--accent-amber)]/30 bg-[var(--accent-amber)]/10 p-4">
@@ -105,41 +94,19 @@ export function ImportComponentsDialog({ onClose }: ImportComponentsDialogProps)
           </div>
         ) : null}
 
-        <div className="flex justify-end gap-2">
-          <button
-            type="button"
-            onClick={onClose}
-            className={cn(
-              "rounded-[var(--radius-md)] bg-[var(--surface-overlay)] px-3 py-1.5 text-[13px] font-medium text-[var(--text-secondary)]",
-            )}
-          >
-            Cancel
-          </button>
+        <NativeDialogFooter>
+          <Button variant="outline" size="sm" onClick={onClose}>Cancel</Button>
           {preview?.conflicts?.length ? (
-            <button
-              type="button"
-              onClick={overwriteAll}
-              disabled={isApplying}
-              className={cn(
-                "rounded-[var(--radius-md)] bg-[var(--accent-red)] px-3 py-1.5 text-[13px] font-medium text-white disabled:opacity-50",
-              )}
-            >
+            <Button variant="destructive" size="sm" onClick={overwriteAll} disabled={isApplying}>
               Overwrite All
-            </button>
+            </Button>
           ) : (
-            <button
-              type="button"
-              onClick={runPreview}
-              disabled={isApplying || importMutation.isPending}
-              className={cn(
-                "rounded-[var(--radius-md)] bg-[var(--accent-blue)] px-3 py-1.5 text-[13px] font-medium text-white disabled:opacity-50",
-              )}
-            >
+            <Button variant="default" size="sm" onClick={runPreview} disabled={isApplying || importMutation.isPending}>
               Import Components
-            </button>
+            </Button>
           )}
-        </div>
-      </div>
-    </div>
+        </NativeDialogFooter>
+      </NativeDialogContent>
+    </NativeDialog>
   );
 }

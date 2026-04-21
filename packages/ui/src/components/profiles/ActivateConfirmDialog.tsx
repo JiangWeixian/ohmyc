@@ -1,10 +1,7 @@
-import { cn } from '@/lib/utils';
+import { NativeDialog, NativeDialogContent, NativeDialogTitle, NativeDialogFooter } from '@/components/uitripled/native-dialog';
+import { Button } from '@/components/ui/button';
+import { ModelConfigChangeList } from './ModelConfigChangeList';
 import type { ModelConfigChanges } from '../../hooks/useProfiles';
-
-function truncateUrl(url: string, maxLen = 40): string {
-  if (url.length <= maxLen) return url;
-  return url.slice(0, 20) + '...' + url.slice(-15);
-}
 
 interface ActivateConfirmDialogProps {
   targetProfile: string;
@@ -22,48 +19,20 @@ export function ActivateConfirmDialog({
   onCancel,
 }: ActivateConfirmDialogProps) {
   return (
-    <div
-      className="fixed inset-0 bg-black/60 flex items-center justify-center z-50"
-      role="dialog"
-      aria-modal="true"
-      onKeyDown={(e) => {
-        if (e.key === 'Escape') onCancel();
-      }}
-    >
-      <div
-        className={cn(
-          "p-6 max-w-md w-full mx-4 space-y-4",
-          "bg-[var(--surface-raised)] border border-[var(--border-default)]",
-          "rounded-[var(--radius-xl)]"
-        )}
-        autoFocus
-      >
-        <h3 className="text-lg font-semibold text-[var(--text-primary)]">
+    <NativeDialog open={true} onOpenChange={(open) => { if (!open) onCancel(); }}>
+      <NativeDialogContent className="max-w-md bg-[var(--surface-raised)] border-[var(--border-default)] rounded-[var(--radius-xl)]">
+        <NativeDialogTitle className="text-lg font-semibold text-[var(--text-primary)]">
           Activate {targetProfile}?
-        </h3>
+        </NativeDialogTitle>
         <p className="text-[13px] text-[var(--text-secondary)]">
           This profile will overwrite settings you manually configured.
         </p>
 
         {modelConfigChanges && modelConfigChanges.changes.length > 0 && (
-          <div className="bg-[#5E6AD2]/8 border border-[#5E6AD2]/15 rounded-[var(--radius-md)] p-4">
-            <p className="text-[#5E6AD2] text-[13px] font-semibold mb-1">
-              Model Config: {modelConfigChanges.configName}
-            </p>
-            <ul className="text-[13px] font-mono space-y-0.5">
-              {modelConfigChanges.changes.map(c => (
-                <li key={c.key}>
-                  <span className="text-[var(--accent-amber)] font-semibold">{c.action}</span>{' '}
-                  <span className="text-[var(--text-secondary)]">
-                    {c.action === 'REMOVE' ? c.key : `${c.key}=${c.key === 'ANTHROPIC_AUTH_TOKEN' || c.key === 'ANTHROPIC_BASE_URL' || c.key === 'API_TIMEOUT_MS' ? truncateUrl(c.value) : c.value}`}
-                  </span>
-                  {c.action === 'CHANGE' && c.previousValue && (
-                    <span className="text-[var(--text-tertiary)]"> (was: {c.key === 'ANTHROPIC_AUTH_TOKEN' || c.key === 'ANTHROPIC_BASE_URL' || c.key === 'API_TIMEOUT_MS' ? truncateUrl(c.previousValue) : c.previousValue})</span>
-                  )}
-                </li>
-              ))}
-            </ul>
-          </div>
+          <ModelConfigChangeList
+            title={`Model Config: ${modelConfigChanges.configName}`}
+            changes={modelConfigChanges.changes}
+          />
         )}
 
         {settingsWarnings.length > 0 && (
@@ -75,23 +44,13 @@ export function ActivateConfirmDialog({
           </div>
         )}
 
-        <div className="flex justify-end gap-2">
-          <button onClick={onCancel} className={cn(
-            "px-3 py-1.5 text-[13px] font-medium rounded-[var(--radius-md)]",
-            "bg-[var(--surface-overlay)] text-[var(--text-secondary)]",
-            "hover:bg-[var(--border-hover)] hover:text-[var(--text-primary)]",
-            "transition-colors duration-150"
-          )}>Don't Activate</button>
-          <button onClick={onConfirm} className={cn(
-            "px-3 py-1.5 text-[13px] font-medium rounded-[var(--radius-md)]",
-            "bg-[var(--accent-blue)] text-white",
-            "hover:bg-[var(--accent-blue-hover)]",
-            "transition-colors duration-150"
-          )}>
+        <NativeDialogFooter>
+          <Button variant="outline" size="sm" onClick={onCancel}>Don't Activate</Button>
+          <Button variant="default" size="sm" onClick={onConfirm}>
             Activate {targetProfile}
-          </button>
-        </div>
-      </div>
-    </div>
+          </Button>
+        </NativeDialogFooter>
+      </NativeDialogContent>
+    </NativeDialog>
   );
 }
