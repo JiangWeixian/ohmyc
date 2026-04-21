@@ -1,7 +1,9 @@
 import { useState, useEffect } from 'react';
 import { useStoreModelConfig, useCreateStoreModelConfig, useUpdateStoreModelConfig, useDeleteStoreModelConfig } from '../../hooks/useStore';
 import { maskApiKey, isMaskedValue } from '../../utils/maskApiKey';
-import { cn } from '@/lib/utils';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Button } from '@/components/ui/button';
 import { DeleteConfirmDialog } from './DeleteConfirmDialog';
 
 interface ModelConfigEditorProps {
@@ -92,36 +94,14 @@ export function ModelConfigEditor({ editName, onSaved, onCancel }: ModelConfigEd
         </h2>
         <div className="flex gap-2">
           {isEdit ? (
-            <button
-              type="button"
-              onClick={handleDelete}
-              disabled={deleteMut.isPending}
-              className={cn(
-                "px-3 py-1.5 text-[13px] font-medium rounded-[var(--radius-md)]",
-                "bg-[var(--accent-red)]/10 text-[var(--accent-red)]",
-                "hover:bg-[var(--accent-red)]/20",
-                "disabled:opacity-50",
-                "transition-colors duration-150"
-              )}
-            >
+            <Button variant="destructive" size="sm" onClick={handleDelete} disabled={deleteMut.isPending}>
               {deleteMut.isPending ? 'Deleting...' : 'Delete'}
-            </button>
+            </Button>
           ) : null}
-          <button onClick={onCancel} className={cn(
-            "px-3 py-1.5 text-[13px] font-medium rounded-[var(--radius-md)]",
-            "bg-[var(--surface-overlay)] text-[var(--text-secondary)]",
-            "hover:bg-[var(--border-hover)] hover:text-[var(--text-primary)]",
-            "transition-colors duration-150"
-          )}>Cancel</button>
-          <button onClick={handleSave} disabled={isSaving} className={cn(
-            "px-3 py-1.5 text-[13px] font-medium rounded-[var(--radius-md)]",
-            "bg-[var(--accent-blue)] text-white",
-            "hover:bg-[var(--accent-blue-hover)]",
-            "disabled:opacity-50",
-            "transition-colors duration-150"
-          )}>
+          <Button variant="outline" size="sm" onClick={onCancel}>Cancel</Button>
+          <Button variant="default" size="sm" onClick={handleSave} disabled={isSaving}>
             {isSaving ? 'Saving...' : 'Save'}
-          </button>
+          </Button>
         </div>
       </div>
 
@@ -131,35 +111,30 @@ export function ModelConfigEditor({ editName, onSaved, onCancel }: ModelConfigEd
 
       <div className="grid gap-4">
         {!isEdit && (
-          <div>
-            <label className="text-[11px] font-medium text-[var(--text-tertiary)] uppercase tracking-wide">Name</label>
-            <input aria-label="Name" value={name} onChange={e => setName(e.target.value)} placeholder="my-model-config"
-              className="mt-1.5 w-full rounded-[var(--radius-md)] px-3 py-2 text-[13px] bg-[var(--surface-base)] border border-[var(--border-default)] text-[var(--text-primary)] placeholder:text-[var(--text-tertiary)] focus:outline-none focus:border-[var(--accent-blue)] transition-colors duration-150" />
+          <div className="space-y-2">
+            <Label htmlFor="mc-name">Name</Label>
+            <Input id="mc-name" value={name} onChange={e => setName(e.target.value)} placeholder="my-model-config" />
           </div>
         )}
 
-        <div>
-          <label className="text-[11px] font-medium text-[var(--text-tertiary)] uppercase tracking-wide">API Key</label>
-          <input aria-label="API Key" type="password" value={apiKey} onChange={e => setApiKey(e.target.value)} placeholder="Enter API key"
-            className="mt-1.5 w-full rounded-[var(--radius-md)] px-3 py-2 text-[13px] bg-[var(--surface-base)] border border-[var(--border-default)] text-[var(--text-primary)] placeholder:text-[var(--text-tertiary)] focus:outline-none focus:border-[var(--accent-blue)] transition-colors duration-150" />
+        <div className="space-y-2">
+          <Label htmlFor="mc-apikey">API Key</Label>
+          <Input id="mc-apikey" type="password" value={apiKey} onChange={e => setApiKey(e.target.value)} placeholder="Enter API key" />
         </div>
 
-        <div>
-          <label className="text-[11px] font-medium text-[var(--text-tertiary)] uppercase tracking-wide">Base URL</label>
-          <input aria-label="Base URL" value={baseUrl} onChange={e => setBaseUrl(e.target.value)} placeholder="https://api.example.com"
-            className="mt-1.5 w-full rounded-[var(--radius-md)] px-3 py-2 text-[13px] bg-[var(--surface-base)] border border-[var(--border-default)] text-[var(--text-primary)] placeholder:text-[var(--text-tertiary)] focus:outline-none focus:border-[var(--accent-blue)] transition-colors duration-150" />
+        <div className="space-y-2">
+          <Label htmlFor="mc-baseurl">Base URL</Label>
+          <Input id="mc-baseurl" value={baseUrl} onChange={e => setBaseUrl(e.target.value)} placeholder="https://api.example.com" />
         </div>
 
-        <div>
-          <label className="text-[11px] font-medium text-[var(--text-tertiary)] uppercase tracking-wide">Model Name (optional)</label>
-          <input aria-label="Model Name" value={modelName} onChange={e => setModelName(e.target.value)} placeholder="claude-3-opus"
-            className="mt-1.5 w-full rounded-[var(--radius-md)] px-3 py-2 text-[13px] bg-[var(--surface-base)] border border-[var(--border-default)] text-[var(--text-primary)] placeholder:text-[var(--text-tertiary)] focus:outline-none focus:border-[var(--accent-blue)] transition-colors duration-150" />
+        <div className="space-y-2">
+          <Label htmlFor="mc-model">Model Name (optional)</Label>
+          <Input id="mc-model" value={modelName} onChange={e => setModelName(e.target.value)} placeholder="claude-3-opus" />
         </div>
 
-        <div>
-          <label className="text-[11px] font-medium text-[var(--text-tertiary)] uppercase tracking-wide">Provider (optional)</label>
-          <input aria-label="Provider" value={provider} onChange={e => setProvider(e.target.value)} placeholder="anthropic"
-            className="mt-1.5 w-full rounded-[var(--radius-md)] px-3 py-2 text-[13px] bg-[var(--surface-base)] border border-[var(--border-default)] text-[var(--text-primary)] placeholder:text-[var(--text-tertiary)] focus:outline-none focus:border-[var(--accent-blue)] transition-colors duration-150" />
+        <div className="space-y-2">
+          <Label htmlFor="mc-provider">Provider (optional)</Label>
+          <Input id="mc-provider" value={provider} onChange={e => setProvider(e.target.value)} placeholder="anthropic" />
         </div>
       </div>
 

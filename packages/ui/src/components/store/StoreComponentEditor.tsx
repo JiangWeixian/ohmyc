@@ -4,7 +4,10 @@ import {
   useStoreSkill, useCreateStoreSkill, useUpdateStoreSkill,
   useStoreCommand, useCreateStoreCommand, useUpdateStoreCommand,
 } from '../../hooks/useStore';
-import { cn } from '@/lib/utils';
+import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
+import { Label } from '@/components/ui/label';
+import { Button } from '@/components/ui/button';
 import { DeleteConfirmDialog } from './DeleteConfirmDialog';
 import { ModelConfigEditor } from './ModelConfigEditor';
 
@@ -89,34 +92,14 @@ export function StoreComponentEditor({ category, editName, onSaved, onCancel }: 
         </h2>
         <div className="flex gap-2">
           {isEdit ? (
-            <button
-              type="button"
-              onClick={() => setShowDeleteDialog(true)}
-              className={cn(
-                "px-3 py-1.5 text-[13px] font-medium rounded-[var(--radius-md)]",
-                "bg-[var(--accent-red)]/10 text-[var(--accent-red)]",
-                "hover:bg-[var(--accent-red)]/20",
-                "transition-colors duration-150"
-              )}
-            >
+            <Button variant="destructive" size="sm" onClick={() => setShowDeleteDialog(true)}>
               Delete
-            </button>
+            </Button>
           ) : null}
-          <button onClick={onCancel} className={cn(
-            "px-3 py-1.5 text-[13px] font-medium rounded-[var(--radius-md)]",
-            "bg-[var(--surface-overlay)] text-[var(--text-secondary)]",
-            "hover:bg-[var(--border-hover)] hover:text-[var(--text-primary)]",
-            "transition-colors duration-150"
-          )}>Cancel</button>
-          <button onClick={handleSave} disabled={isSaving} className={cn(
-            "px-3 py-1.5 text-[13px] font-medium rounded-[var(--radius-md)]",
-            "bg-[var(--accent-blue)] text-white",
-            "hover:bg-[var(--accent-blue-hover)]",
-            "disabled:opacity-50",
-            "transition-colors duration-150"
-          )}>
+          <Button variant="outline" size="sm" onClick={onCancel}>Cancel</Button>
+          <Button variant="default" size="sm" onClick={handleSave} disabled={isSaving}>
             {isSaving ? 'Saving...' : 'Save'}
-          </button>
+          </Button>
         </div>
       </div>
 
@@ -126,42 +109,21 @@ export function StoreComponentEditor({ category, editName, onSaved, onCancel }: 
 
       <div className="grid gap-4">
         {!isEdit && (
-          <div>
-            <label className="text-[11px] font-medium text-[var(--text-tertiary)] uppercase tracking-wide">Name</label>
-            <input aria-label="Name" value={name} onChange={e => setName(e.target.value)} placeholder="my-component"
-              className={cn(
-                "mt-1.5 w-full rounded-[var(--radius-md)] px-3 py-2 text-[13px]",
-                "bg-[var(--surface-base)] border border-[var(--border-default)]",
-                "text-[var(--text-primary)] placeholder:text-[var(--text-tertiary)]",
-                "focus:outline-none focus:border-[var(--accent-blue)]",
-                "transition-colors duration-150"
-              )} />
+          <div className="space-y-2">
+            <Label htmlFor="component-name">Name</Label>
+            <Input id="component-name" value={name} onChange={e => setName(e.target.value)} placeholder="my-component" />
           </div>
         )}
 
-        <div>
-          <label className="text-[11px] font-medium text-[var(--text-tertiary)] uppercase tracking-wide">Description</label>
-          <input aria-label="Description" value={description} onChange={e => setDescription(e.target.value)} placeholder="What this component does..."
-            className={cn(
-              "mt-1.5 w-full rounded-[var(--radius-md)] px-3 py-2 text-[13px]",
-              "bg-[var(--surface-base)] border border-[var(--border-default)]",
-              "text-[var(--text-primary)] placeholder:text-[var(--text-tertiary)]",
-              "focus:outline-none focus:border-[var(--accent-blue)]",
-              "transition-colors duration-150"
-            )} />
+        <div className="space-y-2">
+          <Label htmlFor="component-desc">Description</Label>
+          <Input id="component-desc" value={description} onChange={e => setDescription(e.target.value)} placeholder="What this component does..." />
         </div>
 
-        <div>
-          <label className="text-[11px] font-medium text-[var(--text-tertiary)] uppercase tracking-wide">Content (Markdown)</label>
-          <textarea aria-label="Content (Markdown)" value={content} onChange={e => setContent(e.target.value)}
-            rows={16} placeholder="System prompt or skill content..."
-            className={cn(
-              "mt-1.5 w-full rounded-[var(--radius-md)] px-3 py-2 text-[13px] font-mono",
-              "bg-[var(--surface-base)] border border-[var(--border-default)]",
-              "text-[var(--text-primary)] placeholder:text-[var(--text-tertiary)]",
-              "focus:outline-none focus:border-[var(--accent-blue)]",
-              "transition-colors duration-150 resize-y"
-            )} />
+        <div className="space-y-2">
+          <Label htmlFor="component-content">Content (Markdown)</Label>
+          <Textarea id="component-content" value={content} onChange={e => setContent(e.target.value)}
+            rows={16} placeholder="System prompt or skill content..." className="font-mono resize-y" />
         </div>
       </div>
 
