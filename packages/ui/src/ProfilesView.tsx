@@ -2,12 +2,12 @@ import { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Loader2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { toast } from 'sonner';
 import { ProfilesSidebar, type SidebarSelection } from './components/profiles/ProfilesSidebar';
 import { ProfileCard } from './components/profiles/ProfileCard';
 import { ProfileEditor } from './components/profiles/ProfileEditor';
 import { StoreComponentList } from './components/store/StoreComponentList';
 import { useProfiles, useProfile, useActivateProfile, useDeactivateProfile, useDeleteProfile } from './hooks/useProfiles';
-import { useToast } from './components/ui/Toast';
 
 function parseSelection(params: Record<string, string | undefined>): SidebarSelection | null {
   const { '*': rest } = params;
@@ -29,7 +29,6 @@ export function ProfilesView({ viewSwitcher }: ProfilesViewProps) {
   const navigate = useNavigate();
   const selection = parseSelection(params);
   const [editing, setEditing] = useState(false);
-  const { success, error } = useToast();
 
   const { data, isLoading } = useProfiles();
   const profiles = data?.profiles ?? [];
@@ -53,13 +52,13 @@ export function ProfilesView({ viewSwitcher }: ProfilesViewProps) {
     activateMut.mutate(name, {
       onSuccess: (result) => {
         if (result.warnings?.length) {
-          success(`Activated ${name}`);
+          toast.success(`Activated ${name}`);
         } else {
-          success(`Activated ${name}`);
+          toast.success(`Activated ${name}`);
         }
       },
       onError: () => {
-        error(`Failed to activate ${name}`);
+        toast.error(`Failed to activate ${name}`);
       }
     });
   };
@@ -67,10 +66,10 @@ export function ProfilesView({ viewSwitcher }: ProfilesViewProps) {
   const handleDeactivate = (name: string) => {
     deactivateMut.mutate(name, {
       onSuccess: () => {
-        success(`Deactivated ${name}`);
+        toast.success(`Deactivated ${name}`);
       },
       onError: () => {
-        error(`Failed to deactivate ${name}`);
+        toast.error(`Failed to deactivate ${name}`);
       }
     });
   };
@@ -79,11 +78,11 @@ export function ProfilesView({ viewSwitcher }: ProfilesViewProps) {
     if (!confirm(`Delete ${name}? This removes the saved composition only. Store components stay in your library.`)) return;
     deleteMut.mutate(name, {
       onSuccess: () => {
-        success(`Deleted ${name}`);
+        toast.success(`Deleted ${name}`);
         navigate('/profiles');
       },
       onError: () => {
-        error(`Failed to delete ${name}`);
+        toast.error(`Failed to delete ${name}`);
       }
     });
   };

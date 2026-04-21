@@ -1,7 +1,7 @@
 import { Routes, Route, Navigate, useLocation, useNavigate } from 'react-router-dom';
 import { ViewSwitcher, type ViewId } from './components/ViewSwitcher';
 import { CommandPaletteProvider } from './components/ui/CommandPalette';
-import { ToastProvider } from './components/ui/Toast';
+import { Toaster } from 'sonner';
 import Explorer from './Explorer';
 import { ProfilesView } from './ProfilesView';
 
@@ -32,9 +32,8 @@ function AppLayout() {
 export default function App() {
   return (
     <CommandPaletteProvider>
-      <ToastProvider>
-        <AppLayout />
-      </ToastProvider>
+      <AppLayout />
+      <Toaster theme="dark" position="bottom-right" toastOptions={{ style: { background: 'var(--surface-overlay)', border: '1px solid var(--border-default)', color: 'var(--text-primary)', borderRadius: 'var(--radius-lg)' } }} />
     </CommandPaletteProvider>
   );
 }

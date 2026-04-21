@@ -10,8 +10,6 @@ const mockStoreComponentList = vi.fn();
 // Mutable state for per-test active profile control
 let mockActiveProfile: string | null = null;
 let mockActivateMutate = vi.fn();
-const mockSuccess = vi.fn();
-const mockError = vi.fn();
 
 vi.mock('../components/store/StoreComponentList', () => ({
   StoreComponentList: ({ category }: { category: 'all' | 'agents' | 'skills' | 'commands' | 'model-configs' }) => {
@@ -67,8 +65,11 @@ vi.mock('../components/profiles/ProfileCard', () => ({
   ),
 }));
 
-vi.mock('../components/ui/Toast', () => ({
-  useToast: () => ({ success: mockSuccess, error: mockError }),
+vi.mock('sonner', () => ({
+  toast: {
+    success: vi.fn(),
+    error: vi.fn(),
+  },
 }));
 
 describe('ProfilesView store routes', () => {
@@ -148,8 +149,6 @@ describe('ProfilesView active state and activation feedback', () => {
   beforeEach(() => {
     mockActiveProfile = null;
     mockActivateMutate = vi.fn();
-    mockSuccess.mockReset();
-    mockError.mockReset();
   });
 
   it('renders Active badge when the active profile matches', () => {
