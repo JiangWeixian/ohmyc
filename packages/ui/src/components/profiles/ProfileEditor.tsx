@@ -4,7 +4,10 @@ import { useStoreAgents, useStoreSkills, useStoreCommands, useStoreModelConfigs 
 import { ComponentPicker } from './ComponentPicker';
 import { PluginPicker } from './PluginPicker';
 import { JsonEditor } from '../JsonEditor';
-import { cn } from '@/lib/utils';
+import { Input } from '@/components/ui/input';
+import { Select, SelectTrigger, SelectContent, SelectItem, SelectValue } from '@/components/ui/select';
+import { Label } from '@/components/ui/label';
+import { Button } from '@/components/ui/button';
 import type { CreateProfileBody, Profile, UpdateProfileBody } from '@claudeui/shared';
 
 interface ProfileEditorProps {
@@ -145,27 +148,12 @@ export function ProfileEditor({ profile, onSaved, onCancel }: ProfileEditorProps
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
-          <button
-            onClick={onCancel}
-            type="button"
-            className={cn(
-              'rounded-[var(--radius-sm)] border border-[var(--border-default)] bg-[var(--surface-panel)] px-3 py-1.5 text-[13px] font-medium text-[var(--text-secondary)]',
-              'transition-smooth hover:border-[var(--border-hover)] hover:text-[var(--text-primary)]'
-            )}
-          >
+          <Button variant="outline" size="sm" onClick={onCancel}>
             Cancel
-          </button>
-          <button
-            onClick={handleSave}
-            disabled={isSaving}
-            type="button"
-            className={cn(
-              'rounded-[var(--radius-sm)] border border-[var(--accent-blue)]/30 bg-[var(--accent-blue)] px-3 py-1.5 text-[13px] font-medium text-white',
-              'transition-smooth hover:bg-[var(--accent-blue-hover)]'
-            )}
-          >
+          </Button>
+          <Button variant="default" size="sm" onClick={handleSave} disabled={isSaving}>
             {isSaving ? 'Saving...' : 'Save Profile'}
-          </button>
+          </Button>
         </div>
       </div>
 
@@ -183,38 +171,13 @@ export function ProfileEditor({ profile, onSaved, onCancel }: ProfileEditorProps
           Name and description for this profile
         </p>
         <div className="space-y-4">
-          <div>
-            <label className="text-[11px] font-medium text-[var(--text-tertiary)] uppercase tracking-wide">
-              Name
-            </label>
-            <input
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              disabled={isEdit}
-              placeholder="my-profile"
-              className={cn(
-                'mt-2 w-full rounded-[var(--radius-sm)] border border-[var(--border-default)] bg-[var(--surface-panel)] px-3 py-2 text-[13px]',
-                'text-[var(--text-primary)] placeholder:text-[var(--text-tertiary)]',
-                'focus:outline-none focus:border-[var(--accent-blue)]',
-                'transition-smooth'
-              )}
-            />
+          <div className="space-y-2">
+            <Label htmlFor="profile-name">Name</Label>
+            <Input id="profile-name" value={name} onChange={(e) => setName(e.target.value)} disabled={isEdit} placeholder="my-profile" />
           </div>
-          <div>
-            <label className="text-[11px] font-medium text-[var(--text-tertiary)] uppercase tracking-wide">
-              Description
-            </label>
-            <input
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              placeholder="What this profile is for..."
-              className={cn(
-                'mt-2 w-full rounded-[var(--radius-sm)] border border-[var(--border-default)] bg-[var(--surface-panel)] px-3 py-2 text-[13px]',
-                'text-[var(--text-primary)] placeholder:text-[var(--text-tertiary)]',
-                'focus:outline-none focus:border-[var(--accent-blue)]',
-                'transition-smooth'
-              )}
-            />
+          <div className="space-y-2">
+            <Label htmlFor="profile-description">Description</Label>
+            <Input id="profile-description" value={description} onChange={(e) => setDescription(e.target.value)} placeholder="What this profile is for..." />
           </div>
         </div>
       </section>
@@ -266,28 +229,27 @@ export function ProfileEditor({ profile, onSaved, onCancel }: ProfileEditorProps
             <PluginPicker selected={plugins} onChange={setPlugins} />
           </div>
           <div className="panel p-5">
-            <div className="mb-3 text-[11px] font-medium uppercase tracking-wide text-[var(--text-tertiary)]">Model Config</div>
-            {modelConfigsQ.isLoading ? (
-              <span className="text-[13px] text-[var(--text-tertiary)]">Loading...</span>
-            ) : (
-              <select
-                value={modelConfig ?? ''}
-                onChange={(e) => setModelConfig(e.target.value || undefined)}
-                className={cn(
-                  "rounded-[var(--radius-md)] border border-[var(--border-default)] bg-[var(--surface-base)] px-3 py-2 text-[13px]",
-                  "text-[var(--text-primary)] focus:outline-none focus:border-[var(--accent-blue)]",
-                  "transition-colors duration-150 w-full"
-                )}
-              >
-                <option value="">None</option>
-                {(modelConfigsQ.data ?? [])
-                  .slice()
-                  .sort((a, b) => a.name.localeCompare(b.name))
-                  .map(mc => (
-                    <option key={mc.name} value={mc.name}>{mc.name}</option>
-                  ))}
-              </select>
-            )}
+            <div className="space-y-2">
+              <Label>Model Config</Label>
+              {modelConfigsQ.isLoading ? (
+                <span className="text-[13px] text-[var(--text-tertiary)]">Loading...</span>
+              ) : (
+                <Select value={modelConfig ?? ''} onValueChange={(val) => setModelConfig(val || undefined)}>
+                  <SelectTrigger className="w-full">
+                    <SelectValue placeholder="None" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="">None</SelectItem>
+                    {(modelConfigsQ.data ?? [])
+                      .slice()
+                      .sort((a, b) => a.name.localeCompare(b.name))
+                      .map(mc => (
+                        <SelectItem key={mc.name} value={mc.name}>{mc.name}</SelectItem>
+                      ))}
+                  </SelectContent>
+                </Select>
+              )}
+            </div>
           </div>
         </div>
       </section>
@@ -300,9 +262,9 @@ export function ProfileEditor({ profile, onSaved, onCancel }: ProfileEditorProps
         </p>
         <div className="space-y-6">
           <div className="panel p-5">
-            <label className="text-[11px] font-medium text-[var(--text-tertiary)] uppercase tracking-wide mb-1.5 block">
+            <Label className="text-[11px] font-medium text-[var(--text-tertiary)] uppercase tracking-wide mb-1.5">
               Hooks
-            </label>
+            </Label>
             <p className="mb-2 text-[12px] text-[var(--text-tertiary)]">
               Define event hooks like preToolUse and postToolUse handlers.
             </p>
@@ -317,9 +279,9 @@ export function ProfileEditor({ profile, onSaved, onCancel }: ProfileEditorProps
           </div>
 
           <div className="panel p-5">
-            <label className="text-[11px] font-medium text-[var(--text-tertiary)] uppercase tracking-wide mb-1.5 block">
+            <Label className="text-[11px] font-medium text-[var(--text-tertiary)] uppercase tracking-wide mb-1.5">
               MCP Servers
-            </label>
+            </Label>
             <p className="mb-2 text-[12px] text-[var(--text-tertiary)]">
               Configure Model Context Protocol servers by name.
             </p>
@@ -334,9 +296,9 @@ export function ProfileEditor({ profile, onSaved, onCancel }: ProfileEditorProps
           </div>
 
           <div className="panel p-5">
-            <label className="text-[11px] font-medium text-[var(--text-tertiary)] uppercase tracking-wide mb-1.5 block">
+            <Label className="text-[11px] font-medium text-[var(--text-tertiary)] uppercase tracking-wide mb-1.5">
               LSP Servers
-            </label>
+            </Label>
             <p className="mb-2 text-[12px] text-[var(--text-tertiary)]">
               Configure Language Server Protocol servers by name.
             </p>
@@ -351,9 +313,9 @@ export function ProfileEditor({ profile, onSaved, onCancel }: ProfileEditorProps
           </div>
 
           <div className="panel p-5">
-            <label className="text-[11px] font-medium text-[var(--text-tertiary)] uppercase tracking-wide mb-1.5 block">
+            <Label className="text-[11px] font-medium text-[var(--text-tertiary)] uppercase tracking-wide mb-1.5">
               Settings Overlay
-            </label>
+            </Label>
             <p className="mb-2 text-[12px] text-[var(--text-tertiary)]">
               Override Claude settings like model and effort level.
             </p>
