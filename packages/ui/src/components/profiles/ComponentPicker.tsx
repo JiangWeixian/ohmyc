@@ -1,4 +1,5 @@
 import { cn } from '@/lib/utils';
+import { Checkbox } from '@/components/ui/checkbox';
 
 interface ComponentPickerProps {
   label: string;
@@ -30,17 +31,10 @@ export function ComponentPicker({ label, available, selected, onChange, isLoadin
                 "hover:border-white/5 hover:bg-white/[0.03]"
               )}
             >
-              <input
-                type="checkbox"
+              <Checkbox
                 checked={selected.includes(item.id)}
-                onChange={() => toggle(item.id)}
-                className={cn(
-                  "mt-0.5 size-4 rounded-[var(--radius-sm)] border-[var(--border-default)]",
-                  "bg-[var(--surface-panel)]",
-                  "text-[var(--accent-blue)]",
-                  "focus:ring-[var(--accent-blue)]/30",
-                  "cursor-pointer"
-                )}
+                onCheckedChange={() => toggle(item.id)}
+                className="mt-0.5 cursor-pointer"
               />
               <div className="min-w-0">
                 <div className="text-[13px] text-[var(--text-primary)]">{item.id}</div>

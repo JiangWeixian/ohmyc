@@ -42,13 +42,14 @@ const NativeDialogContent = React.forwardRef<
   <NativeDialogPortal>
     <NativeDialogOverlay />
     <DialogPrimitive.Content ref={ref} asChild {...props}>
+      <div className="fixed left-[50%] top-[50%] z-50 -translate-x-1/2 -translate-y-1/2">
       <motion.div
         initial={{ opacity: 0, scale: 0.95, filter: "blur(10px)" }}
         animate={{ opacity: 1, scale: 1, filter: "blur(0px)" }}
         exit={{ opacity: 0, scale: 0.95, filter: "blur(10px)" }}
         transition={{ type: "spring", duration: 0.5, bounce: 0 }}
         className={cn(
-          "fixed left-[50%] top-[50%] z-50 grid w-full max-w-lg translate-x-[-50%] translate-y-[-50%] gap-4 border border-white/10 bg-white/70 dark:bg-neutral-900/70 backdrop-blur-xl p-6 shadow-2xl sm:rounded-2xl",
+          "grid w-full max-w-lg gap-4 border border-white/10 bg-white/70 dark:bg-neutral-900/70 backdrop-blur-xl p-6 shadow-2xl sm:rounded-2xl",
           className
         )}
       >
@@ -58,6 +59,7 @@ const NativeDialogContent = React.forwardRef<
           <span className="sr-only">Close</span>
         </DialogPrimitive.Close>
       </motion.div>
+      </div>
     </DialogPrimitive.Content>
   </NativeDialogPortal>
 ));
