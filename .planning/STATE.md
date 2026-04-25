@@ -1,17 +1,17 @@
 ---
 gsd_state_version: 1.0
 milestone: v1.5
-milestone_name: "UI Refactor — uitripled Migration"
-status: in_progress
-stopped_at: Phase 15 complete
-last_updated: "2026-04-21T08:20:00.000Z"
-last_activity: 2026-04-21 -- Phase 15 complete (4/4 plans)
+milestone_name: "### Phase 13: uitripled Foundation"
+status: ready_to_plan
+stopped_at: Phase 15.1 context gathered
+last_updated: "2026-04-25T08:23:05.782Z"
+last_activity: 2026-04-25 -- Phase --phase execution started
 progress:
-  total_phases: 4
-  completed_phases: 3
-  total_plans: 11
+  total_phases: 6
+  completed_phases: 4
+  total_plans: 16
   completed_plans: 11
-  percent: 75
+  percent: 67
 ---
 
 # Project State
@@ -21,14 +21,14 @@ progress:
 See: .planning/PROJECT.md (updated 2026-04-19)
 
 **Core value:** Users can reliably assemble and switch between Claude-focused coding environments from reusable local components without manually editing scattered config files.
-**Current focus:** v1.5 — Refactor UI to use uitripled (shadcn-based) component library
+**Current focus:** Phase --phase — 15.1
 
 ## Current Position
 
-Phase: 15 (Dialogs & Forms Migration) — COMPLETE
-Plan: All 4 plans complete
-Status: Phase 15 complete, ready for Phase 16
-Last activity: 2026-04-21 -- Phase 15 complete (4/4 plans)
+Phase: 16
+Plan: Not started
+Status: Ready to plan
+Last activity: 2026-04-25
 
 ## v1.5 Phase Map
 
@@ -43,7 +43,7 @@ Last activity: 2026-04-21 -- Phase 15 complete (4/4 plans)
 
 **Velocity:**
 
-- Total plans completed: 49 (v1.0: 9, v1.1: 2, v1.2: 6, v1.3: 5, v1.4: 5, v1.5: 11 so far)
+- Total plans completed: 54 (v1.0: 9, v1.1: 2, v1.2: 6, v1.3: 5, v1.4: 5, v1.5: 11 so far)
 - Total execution time: ~65min for v1.5 phases 13+14+15
 
 **By Phase:**
@@ -54,8 +54,13 @@ Last activity: 2026-04-21 -- Phase 15 complete (4/4 plans)
 | 14. Core UI Migration | 4 | 16min | 4min |
 | 15. Dialogs & Forms | 4 | 27min | 7min |
 | 16. Polish & Validation | 0 | - | - |
+| 15.1 | 5 | - | - |
 
 ## Accumulated Context
+
+### Roadmap Evolution
+
+- Phase 15.1 inserted after Phase 15: 统一组件库，使用 uitripled 代替 base-ui/react。减少原始的@radix-ui 组建使用，尽量使用 uitripled 或者 shadcn 的方式 (URGENT)
 
 ### Decisions
 
@@ -72,7 +77,7 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-04-21T08:20:00.000Z
-Stopped at: Phase 15 complete
-Resume file: None
+Last session: --stopped-at
+Stopped at: Phase 15.1 context gathered
+Resume file: --resume-file
 Next step: Begin Phase 16 — Polish & Validation

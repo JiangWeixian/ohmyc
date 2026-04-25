@@ -112,10 +112,10 @@
 **Dependencies**: Phase 14 complete
 
 **Plans:** 4 plans (all Wave 1 — fully parallel)
-- [ ] 15-01-PLAN — Dialog migration: all 6 dialogs → NativeDialog + shared utils extraction (DLG-01–DLG-06)
-- [ ] 15-02-PLAN — Form primitives + GeneralSettings: settings/ui → shadcn wrappers, GeneralSettings → direct imports (FORM-01–FORM-04, FORM-08)
-- [ ] 15-03-PLAN — Editor migration: ProfileEditor, StoreComponentEditor, ModelConfigEditor → shadcn form primitives (FORM-05–FORM-07)
-- [ ] 15-04-PLAN — Command palette + Toast: cmdk rebuild, Sonner replacement (UTIL-01, UTIL-02)
+- [x] 15-01-PLAN — Dialog migration: all 6 dialogs → NativeDialog + shared utils extraction (DLG-01–DLG-06)
+- [x] 15-02-PLAN — Form primitives + GeneralSettings: settings/ui → shadcn wrappers, GeneralSettings → direct imports (FORM-01–FORM-04, FORM-08)
+- [x] 15-03-PLAN — Editor migration: ProfileEditor, StoreComponentEditor, ModelConfigEditor → shadcn form primitives (FORM-05–FORM-07)
+- [x] 15-04-PLAN — Command palette + Toast: cmdk rebuild, Sonner replacement (UTIL-01, UTIL-02)
 
 **Requirements covered:** DLG-01–DLG-06, FORM-01–FORM-08, UTIL-01, UTIL-02
 
@@ -123,6 +123,27 @@
 - Dialog state machines (discriminated unions) must be preserved during migration
 - Form validation patterns may differ between hand-built and uitripled inputs
 - Command palette behavior (search, keyboard nav) must be preserved exactly
+
+### Phase 15.1: Unify Component Library — Replace @base-ui/react with @radix-ui/react (INSERTED)
+
+**Goal**: All 13 @base-ui/react-based shadcn components are replaced with @radix-ui/react-based uitripled equivalents. @base-ui/react is removed from dependencies. The app remains visually identical.
+
+**Requirements**: UNIFY-01, UNIFY-02, UNIFY-03, UNIFY-04
+**Depends on:** Phase 15 complete
+**Plans:** 5/5 plans complete
+
+Plans:
+- [x] 15.1-01-PLAN — Leaf components: avatar, badge, button, input, separator → @radix-ui or pure React
+- [x] 15.1-02-PLAN — Scroll-area + form controls: scroll-area, checkbox, switch, slider → @radix-ui or pure React
+- [x] 15.1-03-PLAN — Navigation: tabs, tooltip → @radix-ui/react-tabs, @radix-ui/react-tooltip
+- [x] 15.1-04-PLAN — Complex overlays: dialog, dropdown-menu, select → @radix-ui/react-dialog, @radix-ui/react-dropdown-menu, @radix-ui/react-select
+- [x] 15.1-05-PLAN — Verification & cleanup: test suite, remove @base-ui/react dependency
+
+**Key risks:**
+- API differences between @base-ui/react and @radix-ui/react (state attributes, sub-component names)
+- Scroll-area visual regression (switching from custom scrollbar to webkit scrollbar)
+- Dialog close button pattern change (render prop → asChild)
+- Select positioning behavior change (Positioner wrapper removed in Radix)
 
 ### Phase 16: Polish & Validation
 
