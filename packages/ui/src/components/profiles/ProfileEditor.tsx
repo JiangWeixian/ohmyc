@@ -234,12 +234,12 @@ export function ProfileEditor({ profile, onSaved, onCancel }: ProfileEditorProps
               {modelConfigsQ.isLoading ? (
                 <span className="text-[13px] text-[var(--text-tertiary)]">Loading...</span>
               ) : (
-                <Select value={modelConfig ?? ''} onValueChange={(val) => setModelConfig(val || undefined)}>
+                <Select value={modelConfig ?? '__none__'} onValueChange={(val) => setModelConfig(val === '__none__' ? undefined : val)}>
                   <SelectTrigger className="w-full">
                     <SelectValue placeholder="None" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">None</SelectItem>
+                    <SelectItem value="__none__">None</SelectItem>
                     {(modelConfigsQ.data ?? [])
                       .slice()
                       .sort((a, b) => a.name.localeCompare(b.name))
