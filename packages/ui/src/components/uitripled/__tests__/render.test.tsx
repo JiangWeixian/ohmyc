@@ -2,7 +2,7 @@
  * Smoke test suite for uitripled primitives
  *
  * Verifies that all 18 shadcn base primitives and 4 native animated wrappers
- * render without React errors in the React 19 + Tailwind v3 + @base-ui/react environment.
+ * render without React errors in the React 19 + Tailwind v3 + @radix-ui/react environment.
  *
  * Components tested:
  * - Base primitives: Card, Button, Badge, Input, Textarea, Label, Separator,
@@ -31,7 +31,7 @@ import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { ScrollArea } from "@/components/ui/scroll-area";
 
-// Interactive base primitives (base-ui)
+// Interactive base primitives 
 import {
   Tabs,
   TabsList,
@@ -168,7 +168,7 @@ describe("Input and Textarea", () => {
 
 // ─── Test 5: Tabs ───────────────────────────────────────────────────
 
-describe("Tabs component (base-ui)", () => {
+describe("Tabs component ", () => {
   it("renders Tabs with triggers and content panels", () => {
     render(
       <Tabs defaultValue="tab1">
@@ -187,9 +187,9 @@ describe("Tabs component (base-ui)", () => {
   });
 });
 
-// ─── Test 6: Dialog (base-ui) ───────────────────────────────────────
+// ─── Test 6: Dialog  ───────────────────────────────────────
 
-describe("Dialog component (base-ui)", () => {
+describe("Dialog component ", () => {
   it("renders dialog content when open", () => {
     render(
       <Dialog open={true} onOpenChange={() => {}}>
@@ -220,9 +220,9 @@ describe("Dialog component (base-ui)", () => {
   });
 });
 
-// ─── Test 7: Select (base-ui) ───────────────────────────────────────
+// ─── Test 7: Select  ───────────────────────────────────────
 
-describe("Select component (base-ui)", () => {
+describe("Select component ", () => {
   it("renders Select with trigger", () => {
     const { container } = render(
       <Select defaultValue="a">
@@ -243,9 +243,9 @@ describe("Select component (base-ui)", () => {
   });
 });
 
-// ─── Test 8: Switch (base-ui) ───────────────────────────────────────
+// ─── Test 8: Switch  ───────────────────────────────────────
 
-describe("Switch component (base-ui)", () => {
+describe("Switch component ", () => {
   it("renders Switch without errors", () => {
     const { container } = render(<Switch />);
     const switchEl = container.querySelector('[data-slot="switch"]');
@@ -253,9 +253,9 @@ describe("Switch component (base-ui)", () => {
   });
 });
 
-// ─── Test 9: Tooltip (base-ui) ──────────────────────────────────────
+// ─── Test 9: Tooltip  ──────────────────────────────────────
 
-describe("Tooltip component (base-ui)", () => {
+describe("Tooltip component ", () => {
   it("renders Tooltip with trigger and content", () => {
     render(
       <TooltipProvider>
@@ -270,9 +270,9 @@ describe("Tooltip component (base-ui)", () => {
   });
 });
 
-// ─── Test 10: DropdownMenu (base-ui) ────────────────────────────────
+// ─── Test 10: DropdownMenu  ────────────────────────────────
 
-describe("DropdownMenu component (base-ui)", () => {
+describe("DropdownMenu component ", () => {
   it("renders DropdownMenu with trigger and items", () => {
     render(
       <DropdownMenu>
@@ -312,9 +312,9 @@ describe("Label, Separator, ScrollArea", () => {
   });
 });
 
-// ─── Test 12: Slider (base-ui) ──────────────────────────────────────
+// ─── Test 12: Slider  ──────────────────────────────────────
 
-describe("Slider component (base-ui)", () => {
+describe("Slider component ", () => {
   it("renders Slider with value", () => {
     const { container } = render(<Slider defaultValue={[50]} />);
     const slider = container.querySelector('[data-slot="slider"]');
@@ -322,9 +322,9 @@ describe("Slider component (base-ui)", () => {
   });
 });
 
-// ─── Test 13: Checkbox (base-ui) ────────────────────────────────────
+// ─── Test 13: Checkbox  ────────────────────────────────────
 
-describe("Checkbox component (base-ui)", () => {
+describe("Checkbox component ", () => {
   it("renders Checkbox without errors", () => {
     const { container } = render(<Checkbox />);
     const checkbox = container.querySelector('[data-slot="checkbox"]');
@@ -334,7 +334,7 @@ describe("Checkbox component (base-ui)", () => {
 
 // ─── Test 14: Avatar ────────────────────────────────────────────────
 
-describe("Avatar component (base-ui)", () => {
+describe("Avatar component ", () => {
   it("renders Avatar with fallback", () => {
     render(
       <Avatar>
