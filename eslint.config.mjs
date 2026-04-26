@@ -3,9 +3,11 @@ import { aiou } from '@aiou/eslint-config'
 const config = await aiou({ ssr: false })
 
 export default [
+  {
+    ignores: ['vendor/**', '.planning/**/*.md'],
+  },
   ...config,
   {
-    ignores: ['vendor/**'],
     rules: {
       'unicorn/prevent-abbreviations': 'off',
       'unicorn/no-null': 'off',
