@@ -23,6 +23,7 @@ export default defineConfig({
     'gray-matter',
     'open',
     'proper-lockfile',
+    'untildify',
     'zod-to-json-schema',
   ],
   onSuccess: async () => {

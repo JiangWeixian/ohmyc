@@ -17,7 +17,7 @@ const package_ = JSON.parse(readFileSync(packagePath, 'utf8'))
 const tsupConfigPath = path.resolve(import.meta.dirname, '../../tsup.config.ts')
 const tsupConfigText = readFileSync(tsupConfigPath, 'utf8')
 
-const distributionIndexPath = path.resolve(import.meta.dirname, '../../dist/index.cjs')
+const distributionIndexPath = path.resolve(import.meta.dirname, '../../dist/index.mjs')
 const distributionUiHtmlPath = path.resolve(import.meta.dirname, '../../dist/ui/index.html')
 const distributionExists = existsSync(distributionIndexPath)
 
@@ -41,12 +41,13 @@ const RUNTIME_DEPS = [
   'gray-matter',
   'open',
   'proper-lockfile',
+  'untildify',
   'zod-to-json-schema',
 ]
 
 describe('Package configuration', () => {
-  it('bin.cu points to dist/index.cjs', () => {
-    expect(package_.bin.cu).toBe('dist/index.cjs')
+  it('bin.cu points to dist/index.mjs', () => {
+    expect(package_.bin.cu).toBe('dist/index.mjs')
   })
 
   it('files field is an allowlist with dist and README.md', () => {
@@ -80,19 +81,19 @@ describe('Package configuration', () => {
     }
   })
 
-  it('tsup config uses CJS format', () => {
-    expect(tsupConfigText).toMatch(/format:\s*\[\s*['"]cjs['"]\s*\]/)
-    expect(tsupConfigText).not.toMatch(/format:\s*\[\s*['"]esm['"]\s*\]/)
+  it('tsup config uses ESM format', () => {
+    expect(tsupConfigText).toMatch(/format:\s*\[\s*['"]esm['"]\s*\]/)
+    expect(tsupConfigText).not.toMatch(/format:\s*\[\s*['"]cjs['"]\s*\]/)
   })
 
   const distributionTestSkip = distributionExists ? it : it.skip
 
-  distributionTestSkip('dist/index.cjs exists after build', () => {
+  distributionTestSkip('dist/index.mjs exists after build', () => {
     const stat = statSync(distributionIndexPath)
     expect(stat.size).toBeGreaterThan(0)
   })
 
-  distributionTestSkip('dist/index.cjs has no external npm package imports', () => {
+  distributionTestSkip('dist/index.mjs has no external npm package imports', () => {
     const bundleContent = readFileSync(distributionIndexPath, 'utf8')
 
     // Check ESM from imports
@@ -124,9 +125,9 @@ describe('Package configuration', () => {
     expect(existsSync(distributionUiHtmlPath)).toBe(true)
   })
 
-  distributionTestSkip('node dist/index.cjs --help runs without errors', async () => {
+  distributionTestSkip('node dist/index.mjs --help runs without errors', async () => {
     const { execSync } = await import('node:child_process')
-    const output = execSync('node dist/index.cjs --help', {
+    const output = execSync('node dist/index.mjs --help', {
       cwd: path.resolve(import.meta.dirname, '../..'),
       encoding: 'utf8',
       timeout: 10_000,

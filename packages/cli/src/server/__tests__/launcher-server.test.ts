@@ -144,19 +144,26 @@ describe('Launcher server', () => {
       expect(resolved).toBe(staticRoot)
     })
 
-    it('throws a descriptive error when no UI asset directory can be resolved', () => {
+    it('returns undefined when no UI asset directory can be resolved', () => {
       const nonexistent = path.join(tmpDir, 'no-such-dir')
 
-      expect(() => resolveStaticRoot(nonexistent)).toThrow(/no.*UI.*asset|cannot.*resolve.*static|missing.*index\.html/i)
+      const resolved = resolveStaticRoot(nonexistent)
+      expect(resolved).toBeUndefined()
     })
   })
 
   describe('createServer without valid static root', () => {
-    it('throws a descriptive error when assets are missing', async () => {
+    it('does not throw and still serves API routes when assets are missing', async () => {
       const nonexistent = path.join(tmpDir, 'no-such-dir')
 
-      await expect(createServer({ staticRoot: nonexistent }))
-        .rejects.toThrow(/no.*UI.*asset|cannot.*resolve.*static|missing.*index\.html/i)
+      const fastify = await createServer({ staticRoot: nonexistent })
+
+      // Health endpoint should still work
+      const res = await fastify.inject({ method: 'GET', url: '/health' })
+      expect(res.statusCode).toBe(200)
+      expect(res.json()).toEqual({ status: 'ok' })
+
+      await fastify.close()
     })
   })
 })

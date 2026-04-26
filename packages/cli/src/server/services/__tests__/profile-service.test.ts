@@ -34,6 +34,22 @@ describe('ProfileService', () => {
     rmSync(tmpDir, { recursive: true, force: true })
   })
 
+  // Shared helper for model config tests
+  function writeModelConfig(name: string, fields: { apiKey?: string; baseUrl?: string; modelName?: string }) {
+    const config = {
+      name,
+      apiKey: fields.apiKey ?? 'sk-test-key-1234',
+      baseUrl: fields.baseUrl ?? 'https://api.anthropic.com',
+      modelName: fields.modelName ?? '',
+      provider: '',
+    }
+    writeFileSync(
+      path.join(tmpDir, 'store', 'model-configs', `${name}.json`),
+      JSON.stringify(config, null, 2),
+      'utf8',
+    )
+  }
+
   describe('list()', () => {
     it('returns empty array when no profiles', async () => {
       const { profiles, active } = await service.list()
@@ -517,22 +533,6 @@ describe('ProfileService', () => {
       mkdirSync(path.join(tmpDir, 'store', 'model-configs'), { recursive: true })
       writeFileSync(path.join(tmpDir, 'settings.json'), JSON.stringify({ model: 'sonnet' }))
     })
-
-    // eslint-disable-next-line unicorn/consistent-function-scoping
-    function writeModelConfig(name: string, fields: { apiKey?: string; baseUrl?: string; modelName?: string }) {
-      const config = {
-        name,
-        apiKey: fields.apiKey ?? 'sk-test-key-1234',
-        baseUrl: fields.baseUrl ?? 'https://api.anthropic.com',
-        modelName: fields.modelName ?? '',
-        provider: '',
-      }
-      writeFileSync(
-        path.join(tmpDir, 'store', 'model-configs', `${name}.json`),
-        JSON.stringify(config, null, 2),
-        'utf8',
-      )
-    }
 
     it('returns modelConfigChanges with SET actions for profile with model config', async () => {
       writeModelConfig('work-anthropic', { apiKey: 'sk-test-key-1234', baseUrl: 'https://api.anthropic.com', modelName: 'claude-3-opus' })
