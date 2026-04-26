@@ -1,30 +1,31 @@
-import { NativeButton } from '@/components/uitripled/native-button';
-import React from 'react';
+import React from 'react'
 
-interface ButtonProps {
-  variant?: 'primary' | 'secondary' | 'ghost' | 'danger';
-  size?: 'sm' | 'md' | 'lg';
-  loading?: boolean;
-  icon?: React.ReactNode;
-  children?: React.ReactNode;
-  disabled?: boolean;
-  className?: string;
-  onClick?: React.MouseEventHandler<HTMLButtonElement>;
-  type?: 'button' | 'submit' | 'reset';
+import { NativeButton } from '@/components/uitripled/native-button'
+
+interface ButtonProperties {
+  variant?: 'danger' | 'ghost' | 'primary' | 'secondary'
+  size?: 'lg' | 'md' | 'sm'
+  loading?: boolean
+  icon?: React.ReactNode
+  children?: React.ReactNode
+  disabled?: boolean
+  className?: string
+  onClick?: React.MouseEventHandler<HTMLButtonElement>
+  type?: 'button' | 'reset' | 'submit'
 }
 
-const variantMap: Record<string, 'default' | 'outline' | 'ghost' | 'destructive'> = {
+const variantMap: Record<string, 'default' | 'destructive' | 'ghost' | 'outline'> = {
   primary: 'default',
   secondary: 'outline',
   ghost: 'ghost',
   danger: 'destructive',
-};
+}
 
-const sizeMap: Record<string, 'sm' | 'default' | 'lg'> = {
+const sizeMap: Record<string, 'default' | 'lg' | 'sm'> = {
   sm: 'sm',
   md: 'default',
   lg: 'lg',
-};
+}
 
 export function Button({
   variant = 'primary',
@@ -34,8 +35,8 @@ export function Button({
   className,
   children,
   disabled,
-  ...props
-}: ButtonProps) {
+  ...properties
+}: ButtonProperties) {
   return (
     <NativeButton
       variant={variantMap[variant] || 'default'}
@@ -43,10 +44,10 @@ export function Button({
       loading={loading}
       disabled={disabled}
       className={className}
-      {...props}
+      {...properties}
     >
       {icon}
       {children}
     </NativeButton>
-  );
+  )
 }

@@ -1,14 +1,14 @@
-import { cn } from '@/lib/utils';
-import { Input as ShadcnInput } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
+import { Input as ShadcnInput } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import { cn } from '@/lib/utils'
 
-interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> {
-  label?: string;
-  error?: string;
-  icon?: React.ReactNode;
+interface InputProperties extends React.InputHTMLAttributes<HTMLInputElement> {
+  label?: string
+  error?: string
+  icon?: React.ReactNode
 }
 
-export function Input({ label, error, icon, className, ...props }: InputProps) {
+export function Input({ label, error, icon, className, ...properties }: InputProperties) {
   return (
     <div className="flex flex-col gap-1.5">
       {label && (
@@ -26,9 +26,9 @@ export function Input({ label, error, icon, className, ...props }: InputProps) {
           className={cn(
             icon && 'pl-9',
             error && 'border-[var(--accent-red)] focus:border-[var(--accent-red)]',
-            className
+            className,
           )}
-          {...props}
+          {...properties}
         />
       </div>
       {error && (
@@ -37,5 +37,5 @@ export function Input({ label, error, icon, className, ...props }: InputProps) {
         </span>
       )}
     </div>
-  );
+  )
 }

@@ -1,54 +1,54 @@
-"use client";
+'use client'
 
-import * as TooltipPrimitive from "@radix-ui/react-tooltip";
-import { motion } from "framer-motion";
-import * as React from "react";
+import * as TooltipPrimitive from '@radix-ui/react-tooltip'
+import { motion } from 'framer-motion'
+import * as React from 'react'
 
-import { cn } from "@/lib/utils";
+import { cn } from '@/lib/utils'
 
 const NativeTooltipProvider = ({
   delayDuration = 100,
-  ...props
+  ...properties
 }: React.ComponentProps<typeof TooltipPrimitive.Provider>) => (
-  <TooltipPrimitive.Provider delayDuration={delayDuration} {...props} />
-);
+  <TooltipPrimitive.Provider delayDuration={delayDuration} {...properties} />
+)
 
-const NativeTooltipRoot = TooltipPrimitive.Root;
+const NativeTooltipRoot = TooltipPrimitive.Root
 
-const NativeTooltipTrigger = TooltipPrimitive.Trigger;
+const NativeTooltipTrigger = TooltipPrimitive.Trigger
 
 const NativeTooltipContent = React.forwardRef<
   React.ElementRef<typeof TooltipPrimitive.Content>,
   React.ComponentPropsWithoutRef<typeof TooltipPrimitive.Content> & {
-    animation?: "blur" | "scale";
+    animation?: 'blur' | 'scale'
   }
 >(
   (
-    { className, sideOffset = 8, children, animation = "blur", ...props },
-    ref
+    { className, sideOffset = 8, children, animation = 'blur', ...properties },
+    reference,
   ) => {
     const animations = {
       blur: {
-        initial: { opacity: 0, scale: 0.9, filter: "blur(4px)" },
-        animate: { opacity: 1, scale: 1, filter: "blur(0px)" },
-        transition: { type: "spring", duration: 0.4, bounce: 0 } as any,
+        initial: { opacity: 0, scale: 0.9, filter: 'blur(4px)' },
+        animate: { opacity: 1, scale: 1, filter: 'blur(0px)' },
+        transition: { type: 'spring', duration: 0.4, bounce: 0 } as any,
       },
       scale: {
         initial: { opacity: 0, scale: 0.5, y: 10 },
         animate: { opacity: 1, scale: 1, y: 0 },
-        transition: { type: "spring", duration: 0.4, bounce: 0.4 } as any,
+        transition: { type: 'spring', duration: 0.4, bounce: 0.4 } as any,
       },
-    };
+    }
 
-    const selectedAnimation = animations[animation];
+    const selectedAnimation = animations[animation]
 
     return (
       <TooltipPrimitive.Portal>
         <TooltipPrimitive.Content
-          ref={ref}
+          ref={reference}
           sideOffset={sideOffset}
-          className={cn("z-50 overflow-visible bg-transparent", className)}
-          {...props}
+          className={cn('z-50 overflow-visible bg-transparent', className)}
+          {...properties}
         >
           <motion.div
             initial={selectedAnimation.initial}
@@ -60,37 +60,37 @@ const NativeTooltipContent = React.forwardRef<
           </motion.div>
         </TooltipPrimitive.Content>
       </TooltipPrimitive.Portal>
-    );
-  }
-);
-NativeTooltipContent.displayName = TooltipPrimitive.Content.displayName;
+    )
+  },
+)
+NativeTooltipContent.displayName = TooltipPrimitive.Content.displayName
 
 const NativeTooltip = ({
   content,
   children,
   animation,
-  ...props
+  ...properties
 }: React.ComponentProps<typeof TooltipPrimitive.Root> & {
-  content?: React.ReactNode;
-  animation?: "blur" | "scale";
+  content?: React.ReactNode
+  animation?: 'blur' | 'scale'
 }) => {
   if (content) {
     return (
-      <NativeTooltipRoot {...props}>
+      <NativeTooltipRoot {...properties}>
         <NativeTooltipTrigger asChild>{children}</NativeTooltipTrigger>
         <NativeTooltipContent animation={animation}>
           {content}
         </NativeTooltipContent>
       </NativeTooltipRoot>
-    );
+    )
   }
 
-  return <NativeTooltipRoot {...props}>{children}</NativeTooltipRoot>;
-};
+  return <NativeTooltipRoot {...properties}>{children}</NativeTooltipRoot>
+}
 
 export {
   NativeTooltip,
   NativeTooltipContent,
   NativeTooltipProvider,
   NativeTooltipTrigger,
-};
+}

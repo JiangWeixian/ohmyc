@@ -1,41 +1,42 @@
-import React from 'react';
-import { cn } from '@/lib/utils';
+import React from 'react'
 
-interface SkeletonProps {
-  className?: string;
-  rows?: number;
+import { cn } from '@/lib/utils'
+
+interface SkeletonProperties {
+  className?: string
+  rows?: number
 }
 
-export function Skeleton({ className, rows = 3 }: SkeletonProps) {
+export function Skeleton({ className, rows = 3 }: SkeletonProperties) {
   return (
     <div className={cn('space-y-3', className)}>
-      {Array.from({ length: rows }).map((_, i) => (
-        <div key={i} className="space-y-3">
+      {Array.from({ length: rows }).map((_, index) => (
+        <div key={index} className="space-y-3">
           <div
             className={cn(
               'h-3 bg-[var(--surface-overlay)] rounded-[var(--radius-md)]',
-              'animate-pulse'
+              'animate-pulse',
             )}
             style={{ width: '60%' }}
           />
           <div
             className={cn(
               'h-4 bg-[var(--surface-overlay)] rounded-[var(--radius-md)]',
-              'animate-pulse'
+              'animate-pulse',
             )}
             style={{ width: '100%' }}
           />
           <div
             className={cn(
               'h-3 bg-[var(--surface-overlay)] rounded-[var(--radius-md)]',
-              'animate-pulse'
+              'animate-pulse',
             )}
             style={{ width: '40%' }}
           />
         </div>
       ))}
     </div>
-  );
+  )
 }
 
 export function CardSkeleton() {
@@ -50,7 +51,7 @@ export function CardSkeleton() {
         <div className="h-4 bg-[var(--surface-overlay)] rounded-[var(--radius-md)] animate-pulse" style={{ width: '80%' }} />
       </div>
     </div>
-  );
+  )
 }
 
 export function ListItemSkeleton() {
@@ -59,7 +60,7 @@ export function ListItemSkeleton() {
       <div className="size-8 bg-[var(--surface-overlay)] rounded-[var(--radius-md)] animate-pulse" />
       <div className="flex-1 h-3 bg-[var(--surface-overlay)] rounded-[var(--radius-md)] animate-pulse" />
     </div>
-  );
+  )
 }
 
 export function AnimatedList({ children, className }: { children: React.ReactNode; className?: string }) {
@@ -67,5 +68,5 @@ export function AnimatedList({ children, className }: { children: React.ReactNod
     <div className={className}>
       {children}
     </div>
-  );
+  )
 }

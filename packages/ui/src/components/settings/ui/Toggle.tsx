@@ -1,14 +1,13 @@
-import { cn } from '@/lib/utils';
-import { Switch } from '@/components/ui/switch';
+import { Switch } from '@/components/ui/switch'
 
-interface ToggleProps {
-  checked: boolean;
-  onChange: (checked: boolean) => void;
-  label?: string;
-  description?: string;
+interface ToggleProperties {
+  checked: boolean
+  onChange: (checked: boolean) => void
+  label?: string
+  description?: string
 }
 
-export function Toggle({ checked, onChange, label, description }: ToggleProps) {
+export function Toggle({ checked, onChange, label, description }: ToggleProperties) {
   return (
     <div className="flex items-start gap-3">
       <Switch checked={checked} onCheckedChange={onChange} />
@@ -30,5 +29,5 @@ export function Toggle({ checked, onChange, label, description }: ToggleProps) {
         </div>
       )}
     </div>
-  );
+  )
 }

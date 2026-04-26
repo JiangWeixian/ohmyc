@@ -1,13 +1,19 @@
-import React from 'react';
-import { Blocks } from 'lucide-react';
-import { cn } from '@/lib/utils';
-import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import type { IconType } from './icons';
+import { Blocks } from 'lucide-react'
+import React from 'react'
+
+import {
+  Tabs,
+  TabsList,
+  TabsTrigger,
+} from '@/components/ui/tabs'
+import { cn } from '@/lib/utils'
+
+import type { IconType } from './icons'
 
 export interface SidebarSection {
-  id: string;
-  label: string;
-  icon: IconType;
+  id: string
+  label: string
+  icon: IconType
 }
 
 function SidebarHeader({ title, headerSlot }: { title?: string; headerSlot?: React.ReactNode }) {
@@ -25,15 +31,15 @@ function SidebarHeader({ title, headerSlot }: { title?: string; headerSlot?: Rea
       </div>
       {headerSlot && <div className="w-full overflow-hidden">{headerSlot}</div>}
     </div>
-  );
+  )
 }
 
-interface SidebarProps {
-  sections: SidebarSection[];
-  activeSection: string;
-  onSectionChange: (id: string) => void;
-  title?: string;
-  headerSlot?: React.ReactNode;
+interface SidebarProperties {
+  sections: SidebarSection[]
+  activeSection: string
+  onSectionChange: (id: string) => void
+  title?: string
+  headerSlot?: React.ReactNode
 }
 
 export function Sidebar({
@@ -42,7 +48,7 @@ export function Sidebar({
   onSectionChange,
   title,
   headerSlot,
-}: SidebarProps) {
+}: SidebarProperties) {
   return (
     <aside className="flex w-60 flex-col border-r border-[rgba(255,255,255,0.05)] bg-[var(--bg-panel)]">
       <SidebarHeader title={title} headerSlot={headerSlot} />
@@ -57,29 +63,29 @@ export function Sidebar({
         >
           <TabsList className="flex w-full flex-col gap-1 bg-transparent p-0 border-0">
             {sections.map((section) => {
-              const isActive = activeSection === section.id;
+              const isActive = activeSection === section.id
               return (
                 <TabsTrigger
                   key={section.id}
                   value={section.id}
                   className={cn(
-                    "relative w-full flex items-center justify-start gap-3 rounded-md px-3 py-2.5 text-left text-[13px] font-medium",
-                    "transition-colors duration-150",
+                    'relative w-full flex items-center justify-start gap-3 rounded-md px-3 py-2.5 text-left text-[13px] font-medium',
+                    'transition-colors duration-150',
                     isActive
-                      ? "bg-[rgba(255,255,255,0.08)] text-[var(--text-primary)]"
-                      : "text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[rgba(255,255,255,0.03)]"
+                      ? 'bg-[rgba(255,255,255,0.08)] text-[var(--text-primary)]'
+                      : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[rgba(255,255,255,0.03)]',
                   )}
                 >
-                  <span className={cn("relative z-10", isActive ? "text-[var(--text-primary)]" : "text-[var(--text-tertiary)]")}>
+                  <span className={cn('relative z-10', isActive ? 'text-[var(--text-primary)]' : 'text-[var(--text-tertiary)]')}>
                     <section.icon size={16} />
                   </span>
                   <span className="relative z-10">{section.label}</span>
                 </TabsTrigger>
-              );
+              )
             })}
           </TabsList>
         </Tabs>
       </nav>
     </aside>
-  );
+  )
 }

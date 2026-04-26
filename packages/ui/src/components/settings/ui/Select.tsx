@@ -1,22 +1,22 @@
-import { cn } from '@/lib/utils';
+import { Label } from '@/components/ui/label'
 import {
   Select as ShadcnSelect,
-  SelectTrigger,
   SelectContent,
   SelectItem,
+  SelectTrigger,
   SelectValue,
-} from '@/components/ui/select';
-import { Label } from '@/components/ui/label';
+} from '@/components/ui/select'
+import { cn } from '@/lib/utils'
 
-interface SelectFieldProps extends Omit<React.SelectHTMLAttributes<HTMLSelectElement>, 'onChange'> {
-  label?: string;
-  options: { value: string; label: string }[];
-  error?: string;
-  value?: string;
-  onChange?: (e: { target: { value: string } }) => void;
+interface SelectFieldProperties extends Omit<React.SelectHTMLAttributes<HTMLSelectElement>, 'onChange'> {
+  label?: string
+  options: { value: string; label: string }[]
+  error?: string
+  value?: string
+  onChange?: (e: { target: { value: string } }) => void
 }
 
-export function Select({ label, options, error, value, onChange, className, ...props }: SelectFieldProps) {
+export function Select({ label, options, error, value, onChange, className, ...properties }: SelectFieldProperties) {
   return (
     <div className="flex flex-col gap-1.5">
       {label && (
@@ -24,10 +24,13 @@ export function Select({ label, options, error, value, onChange, className, ...p
           {label}
         </Label>
       )}
-      <ShadcnSelect value={value} onValueChange={(val) => {
-        onChange?.({ target: { value: val ?? '' } });
-      }}>
-        <SelectTrigger className={cn("w-full", className)}>
+      <ShadcnSelect
+        value={value}
+        onValueChange={(value_) => {
+          onChange?.({ target: { value: value_ ?? '' } })
+        }}
+      >
+        <SelectTrigger className={cn('w-full', className)}>
           <SelectValue placeholder="Select..." />
         </SelectTrigger>
         <SelectContent>
@@ -40,5 +43,5 @@ export function Select({ label, options, error, value, onChange, className, ...p
         <span className="text-[12px] text-[var(--accent-red)]">{error}</span>
       )}
     </div>
-  );
+  )
 }

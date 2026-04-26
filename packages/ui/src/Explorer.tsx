@@ -1,35 +1,49 @@
-import { useState, useMemo } from 'react';
 import {
-  FileText,
   Anchor,
-  Server,
-  TerminalSquare,
-  Bot,
-  Sparkles,
   Blocks,
-  Search,
-  Info,
+  Bot,
   Code,
-} from 'lucide-react';
-import { useParams, useNavigate } from 'react-router-dom';
-import { SettingsLayout } from './components/settings/SettingsLayout';
-import { useAgents, useAgent, type ItemLocator } from './hooks/useAgents';
-import { useSkills, useSkill } from './hooks/useSkills';
-import { useCommands, useCommand } from './hooks/useCommands';
-import { useMcpServers, useHooks, useLspServers, type ConfigEntry, type HookEntry } from './hooks/useConfigs';
-import { usePlugins, useMarketplaces } from './hooks/usePlugins';
-import { useProfiles } from './hooks/useProfiles';
-import type { Agent, Skill, Command } from '@claudeui/shared';
-import { cn } from '@/lib/utils';
-import { EntityCard } from './components/EntityCard';
-import { Badge, MonoBadge } from './components/Badge';
-import { EntityDetail } from './components/EntityDetail';
-import { SectionHeader } from './components/SectionHeader';
-import { Sidebar, type SidebarSection } from './components/Sidebar';
-import { ConfigSection } from './components/ConfigSection';
-import { SourceBadge } from './components/SourceBadge';
-import { AnimatedList } from './components/ui/Skeleton';
-import { CardSkeleton } from './components/ui/Skeleton';
+  Info,
+  Search,
+  Server,
+  Sparkles,
+  TerminalSquare,
+} from 'lucide-react'
+import { useMemo, useState } from 'react'
+import { useNavigate, useParams } from 'react-router-dom'
+
+import { Badge, MonoBadge } from './components/badge'
+import { ConfigSection } from './components/config-section'
+import { EntityCard } from './components/entity-card'
+import { EntityDetail } from './components/entity-detail'
+import { SectionHeader } from './components/section-header'
+import { SettingsLayout } from './components/settings/settings-layout'
+import { Sidebar, type SidebarSection } from './components/sidebar'
+import { SourceBadge } from './components/source-badge'
+import { AnimatedList, CardSkeleton } from './components/ui/skeleton'
+import {
+  type ItemLocator,
+  useAgent,
+  useAgents,
+} from './hooks/use-agents'
+import { useCommand, useCommands } from './hooks/use-commands'
+import {
+  type ConfigEntry,
+  type HookEntry,
+  useHooks,
+  useLspServers,
+  useMcpServers,
+} from './hooks/use-configs'
+import { useMarketplaces, usePlugins } from './hooks/use-plugins'
+import { useProfiles } from './hooks/use-profiles'
+import { useSkill, useSkills } from './hooks/use-skills'
+import { cn } from '@/lib/utils'
+
+import type {
+  Agent,
+  Command,
+  Skill,
+} from '@claudeui/shared'
 
 const SECTIONS: SidebarSection[] = [
   { id: 'agents', label: 'Agents', icon: Bot },
@@ -39,7 +53,7 @@ const SECTIONS: SidebarSection[] = [
   { id: 'hooks', label: 'Hooks', icon: Anchor },
   { id: 'mcp', label: 'MCP Servers', icon: Server },
   { id: 'lsp', label: 'LSP Servers', icon: Code },
-];
+]
 
 // Section descriptions
 const SECTION_DESCRIPTIONS: Record<string, string> = {
@@ -51,7 +65,7 @@ const SECTION_DESCRIPTIONS: Record<string, string> = {
   'mcp-servers': 'Model Context Protocol servers providing external tools and services.',
   hooks: 'Event handlers that respond to Claude Code lifecycle events.',
   'lsp-servers': 'Language Server Protocol servers providing code intelligence.',
-};
+}
 
 // Entity card configurations
 const ENTITY_CONFIG = {
@@ -93,51 +107,51 @@ const ENTITY_CONFIG = {
       </>
     ),
   },
-} as const;
+} as const
 
-interface ExplorerProps {
-  viewSwitcher?: React.ReactNode;
+interface ExplorerProperties {
+  viewSwitcher?: React.ReactNode
 }
 
-export default function Explorer({ viewSwitcher }: ExplorerProps) {
-  const { tab } = useParams<{ tab: string }>();
-  const navigate = useNavigate();
-  const activeSection = tab && SECTIONS.some((s) => s.id === tab) ? tab : 'agents';
-  const [selectedItem, setSelectedItem] = useState<ItemLocator | null>(null);
+export function Explorer({ viewSwitcher }: ExplorerProperties) {
+  const { tab } = useParams<{ tab: string }>()
+  const navigate = useNavigate()
+  const activeSection = tab && SECTIONS.some(s => s.id === tab) ? tab : 'agents'
+  const [selectedItem, setSelectedItem] = useState<ItemLocator | null>(null)
 
   // Data hooks
-  const { data: agents, isLoading: agentsLoading, isError: agentsError } = useAgents();
-  const { data: selectedAgent } = useAgent(activeSection === 'agents' ? selectedItem : null);
+  const { data: agents, isLoading: agentsLoading, isError: agentsError } = useAgents()
+  const { data: selectedAgent } = useAgent(activeSection === 'agents' ? selectedItem : null)
 
-  const { data: skills, isLoading: skillsLoading, isError: skillsError } = useSkills();
-  const { data: selectedSkill } = useSkill(activeSection === 'skills' ? selectedItem : null);
+  const { data: skills, isLoading: skillsLoading, isError: skillsError } = useSkills()
+  const { data: selectedSkill } = useSkill(activeSection === 'skills' ? selectedItem : null)
 
-  const { data: commands, isLoading: commandsLoading, isError: commandsError } = useCommands();
-  const { data: selectedCommand } = useCommand(activeSection === 'commands' ? selectedItem : null);
+  const { data: commands, isLoading: commandsLoading, isError: commandsError } = useCommands()
+  const { data: selectedCommand } = useCommand(activeSection === 'commands' ? selectedItem : null)
 
-  const { data: mcpServers, isLoading: mcpLoading, isError: mcpError } = useMcpServers();
-  const { data: hooks, isLoading: hooksLoading, isError: hooksError } = useHooks();
-  const { data: lspServers, isLoading: lspLoading, isError: lspError } = useLspServers();
-  const { data: plugins, isLoading: pluginsLoading, isError: pluginsError } = usePlugins();
-  const { data: marketplaces } = useMarketplaces();
-  const { data: profilesData } = useProfiles();
+  const { data: mcpServers, isLoading: mcpLoading, isError: mcpError } = useMcpServers()
+  const { data: hooks, isLoading: hooksLoading, isError: hooksError } = useHooks()
+  const { data: lspServers, isLoading: lspLoading, isError: lspError } = useLspServers()
+  const { data: plugins, isLoading: pluginsLoading, isError: pluginsError } = usePlugins()
+  const { data: marketplaces } = useMarketplaces()
+  const { data: profilesData } = useProfiles()
 
-  const hookCount = (hooks ?? []).length;
-  const mcpCount = (mcpServers ?? []).length;
-  const lspCount = (lspServers ?? []).length;
+  const hookCount = (hooks ?? []).length
+  const mcpCount = (mcpServers ?? []).length
+  const lspCount = (lspServers ?? []).length
 
-  const allProfiles = profilesData?.profiles ?? [];
-  const pluginRefMap = useMemo(() => {
-    const map = new Map<string, string[]>();
+  const allProfiles = profilesData?.profiles ?? []
+  const pluginReferenceMap = useMemo(() => {
+    const map = new Map<string, string[]>()
     for (const p of allProfiles) {
       for (const pluginId of p.plugins) {
-        const existing = map.get(pluginId) ?? [];
-        existing.push(p.name);
-        map.set(pluginId, existing);
+        const existing = map.get(pluginId) ?? []
+        existing.push(p.name)
+        map.set(pluginId, existing)
       }
     }
-    return map;
-  }, [allProfiles]);
+    return map
+  }, [allProfiles])
 
   const renderEnvironmentSummary = () => (
     <section className="panel p-7">
@@ -160,11 +174,11 @@ export default function Explorer({ viewSwitcher }: ExplorerProps) {
         </div>
       </div>
     </section>
-  );
+  )
 
   // Get current section config
   const getSectionConfig = (sectionId: string) => {
-    if (sectionId === 'agents')
+    if (sectionId === 'agents') {
       return {
         data: agents,
         isLoading: agentsLoading,
@@ -172,8 +186,9 @@ export default function Explorer({ viewSwitcher }: ExplorerProps) {
         icon: Bot,
         emptyMessage: 'No agents found in ',
         emptyPath: '~/.claude/agents/',
-      };
-    if (sectionId === 'skills')
+      }
+    }
+    if (sectionId === 'skills') {
       return {
         data: skills,
         isLoading: skillsLoading,
@@ -181,8 +196,9 @@ export default function Explorer({ viewSwitcher }: ExplorerProps) {
         icon: Sparkles,
         emptyMessage: 'No skills found in ',
         emptyPath: '~/.claude/skills/',
-      };
-    if (sectionId === 'commands')
+      }
+    }
+    if (sectionId === 'commands') {
       return {
         data: commands,
         isLoading: commandsLoading,
@@ -190,32 +206,37 @@ export default function Explorer({ viewSwitcher }: ExplorerProps) {
         icon: TerminalSquare,
         emptyMessage: 'No commands found in ',
         emptyPath: '~/.claude/commands/',
-      };
-    return null;
-  };
+      }
+    }
+    return null
+  }
 
   // Render entity list view
-  const renderEntityList = (sectionId: 'agents' | 'skills' | 'commands') => {
-    const config = getSectionConfig(sectionId);
-    const entityConfig = ENTITY_CONFIG[sectionId];
-    const selectedEntity =
-      sectionId === 'agents'
+  const renderEntityList = (sectionId: 'agents' | 'commands' | 'skills') => {
+    const config = getSectionConfig(sectionId)
+    const entityConfig = ENTITY_CONFIG[sectionId]
+    const selectedEntity
+      = sectionId === 'agents'
         ? selectedAgent
-        : sectionId === 'skills'
-          ? selectedSkill
-          : selectedCommand;
+        : (sectionId === 'skills'
+            ? selectedSkill
+            : selectedCommand)
 
-    if (!config) return null;
+    if (!config) {
+      return null
+    }
 
-    const description =
-      sectionId === 'commands' ? (
+    const description
+      = sectionId === 'commands'
+        ? (
         <>
-          {SECTION_DESCRIPTIONS['commands']}
+          {SECTION_DESCRIPTIONS.commands}
           <code className="text-[var(--text-secondary)] text-[13px]">/command-name</code>.
         </>
-      ) : (
-        SECTION_DESCRIPTIONS[sectionId]
-      );
+          )
+        : (
+            SECTION_DESCRIPTIONS[sectionId]
+          )
 
     if (selectedItem && selectedEntity) {
       return (
@@ -225,19 +246,23 @@ export default function Explorer({ viewSwitcher }: ExplorerProps) {
           onBack={() => setSelectedItem(null)}
           scope={selectedEntity.scope}
         />
-      );
+      )
     }
 
     return (
       <div>
         <SectionHeader title={sectionId.charAt(0).toUpperCase() + sectionId.slice(1)} description={description} />
-        {config.isLoading ? (
+        {/* eslint-disable unicorn/no-nested-ternary */}
+        {config.isLoading
+          ? (
           <AnimatedList className="grid grid-cols-1 md:grid-cols-2 gap-5">
-            {Array.from({ length: 4 }, (_, i) => (
-              <CardSkeleton key={i} />
+            {Array.from({ length: 4 }, (_, index) => (
+              <CardSkeleton key={index} />
             ))}
           </AnimatedList>
-        ) : config.isError ? (
+            )
+          : config.isError
+            ? (
           <div className="panel-subtle flex flex-col items-center justify-center py-20 text-center">
             <div className="mb-3 flex size-12 items-center justify-center rounded-md border border-[var(--border-standard)] bg-[rgba(255,255,255,0.02)]">
               <Info size={20} className="text-[var(--text-tertiary)]" />
@@ -247,7 +272,9 @@ export default function Explorer({ viewSwitcher }: ExplorerProps) {
               Something went wrong while fetching your {sectionId}. Try refreshing the page.
             </p>
           </div>
-        ) : config.data && config.data.length > 0 ? (
+              )
+            : config.data && config.data.length > 0
+              ? (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
             {config.data.map((entity, index) => (
               <EntityCard
@@ -264,12 +291,12 @@ export default function Explorer({ viewSwitcher }: ExplorerProps) {
                     source: entity.source,
                     pluginId: entity.pluginId,
                     scope: entity.scope,
-                  })
-                }
+                  })}
               />
             ))}
           </div>
-        ) : (
+                )
+              : (
           <div className="panel-subtle flex flex-col items-center justify-center py-20 text-center">
             <div className="mb-3 flex size-12 items-center justify-center rounded-md border border-[var(--border-standard)] bg-[rgba(255,255,255,0.02)]">
               <Search size={20} className="text-[var(--text-tertiary)]" />
@@ -279,10 +306,11 @@ export default function Explorer({ viewSwitcher }: ExplorerProps) {
               {config.emptyMessage}<code className="text-[var(--text-secondary)]">{config.emptyPath}</code>
             </p>
           </div>
-        )}
+                )}
+        {/* eslint-enable unicorn/no-nested-ternary */}
       </div>
-    );
-  };
+    )
+  }
 
   // Render under construction placeholder
   const renderPlaceholder = () => (
@@ -301,7 +329,7 @@ export default function Explorer({ viewSwitcher }: ExplorerProps) {
         section is still in development. It will be available in a future release.
       </p>
     </div>
-  );
+  )
 
   const renderPlugins = () => {
     return (
@@ -313,13 +341,17 @@ export default function Explorer({ viewSwitcher }: ExplorerProps) {
           title="Plugins"
           description="Inspect installed plugins, enabled state, and bundled component counts for the current environment."
         />
-        {pluginsLoading ? (
+        {/* eslint-disable unicorn/no-nested-ternary */}
+        {pluginsLoading
+          ? (
           <AnimatedList className="grid grid-cols-1 gap-5 md:grid-cols-2">
             {Array.from({ length: 2 }, (_, index) => (
               <CardSkeleton key={index} />
             ))}
           </AnimatedList>
-        ) : pluginsError ? (
+            )
+          : pluginsError
+            ? (
           <div className="panel-subtle flex flex-col items-center justify-center py-20 text-center">
             <div className="mb-3 flex size-12 items-center justify-center rounded-md border border-[var(--border-standard)] bg-[rgba(255,255,255,0.02)]">
               <Info size={20} className="text-[var(--text-tertiary)]" />
@@ -329,13 +361,15 @@ export default function Explorer({ viewSwitcher }: ExplorerProps) {
               Something went wrong while fetching your plugins. Try refreshing the page.
             </p>
           </div>
-        ) : plugins && plugins.length > 0 ? (
+              )
+            : plugins && plugins.length > 0
+              ? (
           <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
             {plugins.map((plugin) => {
-              const installCount = plugin.installs.length;
-              const marketplace = marketplaces?.find((entry) => entry.id === plugin.marketplace);
-              const refNames = pluginRefMap.get(plugin.id) ?? [];
-              const refCount = refNames.length;
+              const installCount = plugin.installs.length
+              const marketplace = marketplaces?.find(entry => entry.id === plugin.marketplace)
+              const referenceNames = pluginReferenceMap.get(plugin.id) ?? []
+              const referenceCount = referenceNames.length
 
               return (
                 <div
@@ -370,12 +404,15 @@ export default function Explorer({ viewSwitcher }: ExplorerProps) {
                   </div>
                   <div className="mt-5">
                     <div className="text-[10px] font-medium tracking-[0.04em] text-[var(--text-tertiary)]">Profiles</div>
-                    {refCount === 0 ? (
+                    {referenceCount === 0
+                      ? (
                       <span className="text-[13px] tabular-nums text-[var(--text-tertiary)]">0</span>
-                    ) : refCount <= 2 ? (
+                        )
+                      : (referenceCount <= 2
+                          ? (
                       <div className="flex items-center gap-1.5 mt-1">
-                        <span className="text-[13px] tabular-nums text-[var(--text-primary)]">{refCount}</span>
-                        {refNames.map(name => (
+                        <span className="text-[13px] tabular-nums text-[var(--text-primary)]">{referenceCount}</span>
+                        {referenceNames.map(name => (
                           <span
                             key={name}
                             className="inline-block rounded bg-[rgba(255,255,255,0.08)] px-1.5 py-0.5 text-[11px] text-[var(--text-secondary)] border border-[var(--border-standard)]"
@@ -384,25 +421,29 @@ export default function Explorer({ viewSwitcher }: ExplorerProps) {
                           </span>
                         ))}
                       </div>
-                    ) : (
+                            )
+                          : (
                       <span
                         className="text-[13px] text-[var(--text-secondary)] mt-1 block"
-                        title={refNames.join(', ')}
+                        title={referenceNames.join(', ')}
                       >
-                        Used by {refCount} profiles
+                        Used by {referenceCount} profiles
                       </span>
-                    )}
+                            ))}
                   </div>
-                  {marketplace ? (
+                  {marketplace
+                    ? (
                     <p className="mt-4 text-[12px] text-[var(--text-tertiary)]">
                       Marketplace: {marketplace.id}
                     </p>
-                  ) : null}
+                      )
+                    : null}
                 </div>
-              );
+              )
             })}
           </div>
-        ) : (
+                )
+              : (
           <div className="panel-subtle flex flex-col items-center justify-center py-20 text-center">
             <div className="mb-3 flex size-12 items-center justify-center rounded-md border border-[var(--border-standard)] bg-[rgba(255,255,255,0.02)]">
               <Blocks size={20} className="text-[var(--text-tertiary)]" />
@@ -412,30 +453,31 @@ export default function Explorer({ viewSwitcher }: ExplorerProps) {
               There are no plugins in the current environment.
             </p>
           </div>
-        )}
+                )}
+        {/* eslint-enable unicorn/no-nested-ternary */}
       </section>
     </div>
-    );
-  };
+    )
+  }
 
   const renderConfigSection = (
-    id: 'mcp' | 'hooks' | 'lsp',
+    id: 'hooks' | 'lsp' | 'mcp',
     config: {
-      title: string;
-      description: string;
-      data: ConfigEntry[] | undefined;
-      isLoading: boolean;
-      isError: boolean;
-      icon: typeof Server;
-      iconColor: string;
-      emptyMessage: string;
+      title: string
+      description: string
+      data: ConfigEntry[] | undefined
+      isLoading: boolean
+      isError: boolean
+      icon: typeof Server
+      iconColor: string
+      emptyMessage: string
     },
   ) => (
     <div className="space-y-6">
       {renderEnvironmentSummary()}
       <ConfigSection {...config} />
     </div>
-  );
+  )
 
   return (
     <div className="flex h-full min-w-0 text-[var(--text-primary)] font-sans">
@@ -444,8 +486,8 @@ export default function Explorer({ viewSwitcher }: ExplorerProps) {
         sections={SECTIONS}
         activeSection={activeSection}
         onSectionChange={(id) => {
-          navigate(`/explore/${id}`);
-          setSelectedItem(null);
+          navigate(`/explore/${id}`)
+          setSelectedItem(null)
         }}
         headerSlot={viewSwitcher}
       />
@@ -476,7 +518,7 @@ export default function Explorer({ viewSwitcher }: ExplorerProps) {
                   'w-60 rounded-md border border-[var(--border-standard)] bg-[rgba(255,255,255,0.02)] py-2 pl-8 pr-3 text-[13px]',
                   'text-[var(--text-primary)] placeholder:text-[var(--text-tertiary)]',
                   'focus:outline-none focus:border-[rgba(255,255,255,0.2)]',
-                  'transition-smooth'
+                  'transition-smooth',
                 )}
               />
             </div>
@@ -504,7 +546,7 @@ export default function Explorer({ viewSwitcher }: ExplorerProps) {
             {activeSection === 'hooks' && (
               renderConfigSection('hooks', {
                 title: 'Hooks',
-                description: SECTION_DESCRIPTIONS['hooks'],
+                description: SECTION_DESCRIPTIONS.hooks,
                 data: hooks?.map((h: HookEntry) => ({ ...h, config: h.data })),
                 isLoading: hooksLoading,
                 isError: hooksError,
@@ -532,5 +574,5 @@ export default function Explorer({ viewSwitcher }: ExplorerProps) {
         </div>
       </main>
     </div>
-  );
+  )
 }

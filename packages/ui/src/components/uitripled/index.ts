@@ -12,15 +12,15 @@ export {
   NativeDialogPortal,
   NativeDialogTitle,
   NativeDialogTrigger,
-} from "./native-dialog";
+} from './native-dialog'
 
-export { NativeTabs } from "./native-tabs";
+export { NativeTabs } from './native-tabs'
 
 export {
   NativeTooltip,
   NativeTooltipContent,
   NativeTooltipProvider,
   NativeTooltipTrigger,
-} from "./native-tooltip";
+} from './native-tooltip'
 
-export { NativeButton, type NativeButtonProps } from "./native-button";
+export { NativeButton, type NativeButtonProps } from './native-button'

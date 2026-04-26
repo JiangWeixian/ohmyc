@@ -1,19 +1,26 @@
-import { Routes, Route, Navigate, useLocation, useNavigate } from 'react-router-dom';
-import { ViewSwitcher, type ViewId } from './components/ViewSwitcher';
-import { CommandPaletteProvider } from './components/ui/CommandPalette';
-import { Toaster } from 'sonner';
-import Explorer from './Explorer';
-import { ProfilesView } from './ProfilesView';
+import {
+  Navigate,
+  Route,
+  Routes,
+  useLocation,
+  useNavigate,
+} from 'react-router-dom'
+import { Toaster } from 'sonner'
+
+import { CommandPaletteProvider } from './components/ui/command-palette'
+import { type ViewId, ViewSwitcher } from './components/view-switcher'
+import { Explorer } from './explorer'
+import { ProfilesView } from './profiles-view'
 
 function AppLayout() {
-  const location = useLocation();
-  const navigate = useNavigate();
+  const location = useLocation()
+  const navigate = useNavigate()
 
-  const active: ViewId = location.pathname.startsWith('/profiles') ? 'profiles' : 'agent-home';
+  const active: ViewId = location.pathname.startsWith('/profiles') ? 'profiles' : 'agent-home'
 
   const handleChange = (id: ViewId) => {
-    navigate(id === 'profiles' ? '/profiles' : '/explore');
-  };
+    navigate(id === 'profiles' ? '/profiles' : '/explore')
+  }
 
   return (
     <div className="h-dvh flex flex-col bg-[var(--surface-base)] text-[var(--text-primary)]">
@@ -26,14 +33,14 @@ function AppLayout() {
         </Routes>
       </main>
     </div>
-  );
+  )
 }
 
-export default function App() {
+export function App() {
   return (
     <CommandPaletteProvider>
       <AppLayout />
       <Toaster theme="dark" position="bottom-right" toastOptions={{ style: { background: 'var(--surface-overlay)', border: '1px solid var(--border-default)', color: 'var(--text-primary)', borderRadius: 'var(--radius-lg)' } }} />
     </CommandPaletteProvider>
-  );
+  )
 }

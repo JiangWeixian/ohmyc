@@ -1,0 +1,49 @@
+import { motion } from 'framer-motion'
+import { ChevronLeft } from 'lucide-react'
+
+import { MarkdownRenderer } from './markdown-renderer'
+
+interface EntityDetailProperties {
+  title: string
+  content: string
+  onBack: () => void
+  scope?: 'global' | 'project'
+}
+
+export function EntityDetail({ title, content, onBack, scope }: EntityDetailProperties) {
+  return (
+    <motion.div
+      initial={{ opacity: 0, x: 12 }}
+      animate={{ opacity: 1, x: 0 }}
+      exit={{ opacity: 0, x: -12 }}
+      transition={{ duration: 0.18, ease: 'easeOut' }}
+      className="h-full"
+    >
+      <button
+        onClick={onBack}
+        type="button"
+        className="mb-6 inline-flex items-center gap-2 rounded-[var(--radius-sm)] px-2 py-1 text-[13px] font-medium text-[var(--text-secondary)] transition-smooth hover:bg-white/[0.03] hover:text-[var(--text-primary)]"
+      >
+        <ChevronLeft size={16} />
+        <span className="text-[13px] font-medium">Back to {title}</span>
+      </button>
+
+      {scope === 'project' && (
+        <div className="mb-4 rounded-[var(--radius-md)] border border-[#22c55e]/20 bg-[#22c55e]/5 px-4 py-2 text-[13px] text-[#22c55e]">
+          From project directory — view only.
+        </div>
+      )}
+
+      <motion.div
+        initial={{ opacity: 0, y: 12 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.18, delay: 0.05, ease: 'easeOut' }}
+        className="panel overflow-hidden p-6"
+      >
+        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.08 }}>
+          <MarkdownRenderer content={content} />
+        </motion.div>
+      </motion.div>
+    </motion.div>
+  )
+}
