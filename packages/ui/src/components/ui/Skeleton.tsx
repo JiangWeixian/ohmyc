@@ -40,13 +40,14 @@ export function Skeleton({ className, rows = 3 }: SkeletonProps) {
 
 export function CardSkeleton() {
   return (
-    <div className="p-5 bg-[var(--surface-raised)] border border-[var(--border-default)] rounded-[var(--radius-lg)]">
-      <div className="flex items-start justify-between mb-4">
-        <div className="size-10 bg-[var(--surface-overlay)] rounded-[var(--radius-md)] animate-pulse" />
+    <div className="p-6 bg-[var(--surface-raised)] border border-[var(--border-default)] rounded-[var(--radius-lg)]">
+      <div className="flex items-start justify-between mb-5">
+        <div className="size-11 bg-[var(--surface-overlay)] rounded-[var(--radius-md)] animate-pulse" />
       </div>
       <div className="flex-1 space-y-3">
-        <div className="h-3 bg-[var(--surface-overlay)] rounded-[var(--radius-md)] animate-pulse" style={{ width: '70%' }} />
+        <div className="h-3.5 bg-[var(--surface-overlay)] rounded-[var(--radius-md)] animate-pulse" style={{ width: '60%' }} />
         <div className="h-4 bg-[var(--surface-overlay)] rounded-[var(--radius-md)] animate-pulse" style={{ width: '100%' }} />
+        <div className="h-4 bg-[var(--surface-overlay)] rounded-[var(--radius-md)] animate-pulse" style={{ width: '80%' }} />
       </div>
     </div>
   );

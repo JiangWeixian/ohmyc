@@ -3,9 +3,9 @@ import {
   FileText,
   Anchor,
   Server,
-  Terminal,
-  Users,
-  Zap,
+  TerminalSquare,
+  Bot,
+  Sparkles,
   Blocks,
   Search,
   Info,
@@ -25,16 +25,16 @@ import { EntityCard } from './components/EntityCard';
 import { Badge, MonoBadge } from './components/Badge';
 import { EntityDetail } from './components/EntityDetail';
 import { SectionHeader } from './components/SectionHeader';
-import { Sidebar, StatusIndicator, type SidebarSection } from './components/Sidebar';
+import { Sidebar, type SidebarSection } from './components/Sidebar';
 import { ConfigSection } from './components/ConfigSection';
 import { SourceBadge } from './components/SourceBadge';
 import { AnimatedList } from './components/ui/Skeleton';
 import { CardSkeleton } from './components/ui/Skeleton';
 
 const SECTIONS: SidebarSection[] = [
-  { id: 'agents', label: 'Agents', icon: Users },
-  { id: 'skills', label: 'Skills', icon: Zap },
-  { id: 'commands', label: 'Commands', icon: Terminal },
+  { id: 'agents', label: 'Agents', icon: Bot },
+  { id: 'skills', label: 'Skills', icon: Sparkles },
+  { id: 'commands', label: 'Commands', icon: TerminalSquare },
   { id: 'plugins', label: 'Plugins', icon: Blocks },
   { id: 'hooks', label: 'Hooks', icon: Anchor },
   { id: 'mcp', label: 'MCP Servers', icon: Server },
@@ -56,7 +56,7 @@ const SECTION_DESCRIPTIONS: Record<string, string> = {
 // Entity card configurations
 const ENTITY_CONFIG = {
   agents: {
-    iconAccentVar: '--accent-blue',
+    iconAccentVar: '--text-primary',
     getTitle: (entity: Agent) => entity.frontmatter.name,
     getDescription: (entity: Agent) => entity.frontmatter.description,
     getBadges: (entity: Agent) => (
@@ -67,7 +67,7 @@ const ENTITY_CONFIG = {
     ),
   },
   skills: {
-    iconAccentVar: '--accent-amber',
+    iconAccentVar: '--text-secondary',
     getTitle: (entity: Skill) => entity.frontmatter.name,
     getDescription: (entity: Skill) => entity.frontmatter.description,
     getBadges: (entity: Skill) => (
@@ -81,7 +81,7 @@ const ENTITY_CONFIG = {
     ),
   },
   commands: {
-    iconAccentVar: '--accent-green',
+    iconAccentVar: '--text-tertiary',
     getTitle: (entity: Command) => `/${entity.frontmatter.name}`,
     getDescription: (entity: Command) => entity.frontmatter.description,
     getBadges: (entity: Command) => (
@@ -140,20 +140,23 @@ export default function Explorer({ viewSwitcher }: ExplorerProps) {
   }, [allProfiles]);
 
   const renderEnvironmentSummary = () => (
-    <section className="rounded-[var(--radius-md)] border border-[var(--border-default)] bg-[var(--surface-raised)] p-5">
-      <h2 className="text-lg font-semibold text-[var(--text-primary)]">Current environment</h2>
-      <div className="mt-4 grid gap-3 md:grid-cols-3">
-        <div className="rounded-[var(--radius-md)] bg-[var(--surface-overlay)] px-4 py-3">
-          <div className="text-[12px] text-[var(--text-tertiary)]">Hooks</div>
-          <div className="text-base font-semibold text-[var(--text-primary)]">{hookCount}</div>
+    <section className="panel p-7">
+      <div className="flex items-baseline justify-between">
+        <h2 className="text-[18px] font-semibold tracking-[-0.02em] text-[var(--text-primary)]">Environment</h2>
+        <span className="text-[12px] text-[var(--text-tertiary)]">Current workspace</span>
+      </div>
+      <div className="mt-6 grid gap-4 md:grid-cols-3">
+        <div className="panel-subtle px-5 py-4 transition-smooth hover:border-[var(--border-hover)]">
+          <div className="text-[12px] font-medium tracking-[0.02em] text-[var(--text-tertiary)]">Hooks</div>
+          <div className="mt-1 text-[24px] font-semibold tabular-nums tracking-[-0.03em] text-[var(--text-primary)]">{hookCount}</div>
         </div>
-        <div className="rounded-[var(--radius-md)] bg-[var(--surface-overlay)] px-4 py-3">
-          <div className="text-[12px] text-[var(--text-tertiary)]">MCP servers</div>
-          <div className="text-base font-semibold text-[var(--text-primary)]">{mcpCount}</div>
+        <div className="panel-subtle px-5 py-4 transition-smooth hover:border-[var(--border-hover)]">
+          <div className="text-[12px] font-medium tracking-[0.02em] text-[var(--text-tertiary)]">MCP servers</div>
+          <div className="mt-1 text-[24px] font-semibold tabular-nums tracking-[-0.03em] text-[var(--text-primary)]">{mcpCount}</div>
         </div>
-        <div className="rounded-[var(--radius-md)] bg-[var(--surface-overlay)] px-4 py-3">
-          <div className="text-[12px] text-[var(--text-tertiary)]">LSP servers</div>
-          <div className="text-base font-semibold text-[var(--text-primary)]">{lspCount}</div>
+        <div className="panel-subtle px-5 py-4 transition-smooth hover:border-[var(--border-hover)]">
+          <div className="text-[12px] font-medium tracking-[0.02em] text-[var(--text-tertiary)]">LSP servers</div>
+          <div className="mt-1 text-[24px] font-semibold tabular-nums tracking-[-0.03em] text-[var(--text-primary)]">{lspCount}</div>
         </div>
       </div>
     </section>
@@ -166,7 +169,7 @@ export default function Explorer({ viewSwitcher }: ExplorerProps) {
         data: agents,
         isLoading: agentsLoading,
         isError: agentsError,
-        icon: Users,
+        icon: Bot,
         emptyMessage: 'No agents found in ',
         emptyPath: '~/.claude/agents/',
       };
@@ -175,7 +178,7 @@ export default function Explorer({ viewSwitcher }: ExplorerProps) {
         data: skills,
         isLoading: skillsLoading,
         isError: skillsError,
-        icon: Zap,
+        icon: Sparkles,
         emptyMessage: 'No skills found in ',
         emptyPath: '~/.claude/skills/',
       };
@@ -184,7 +187,7 @@ export default function Explorer({ viewSwitcher }: ExplorerProps) {
         data: commands,
         isLoading: commandsLoading,
         isError: commandsError,
-        icon: Terminal,
+        icon: TerminalSquare,
         emptyMessage: 'No commands found in ',
         emptyPath: '~/.claude/commands/',
       };
@@ -208,7 +211,7 @@ export default function Explorer({ viewSwitcher }: ExplorerProps) {
       sectionId === 'commands' ? (
         <>
           {SECTION_DESCRIPTIONS['commands']}
-          <code className="text-[var(--accent-cyan)] text-[13px]">/command-name</code>.
+          <code className="text-[var(--text-secondary)] text-[13px]">/command-name</code>.
         </>
       ) : (
         SECTION_DESCRIPTIONS[sectionId]
@@ -229,18 +232,24 @@ export default function Explorer({ viewSwitcher }: ExplorerProps) {
       <div>
         <SectionHeader title={sectionId.charAt(0).toUpperCase() + sectionId.slice(1)} description={description} />
         {config.isLoading ? (
-          <AnimatedList className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {Array.from({ length: 6 }, (_, i) => (
+          <AnimatedList className="grid grid-cols-1 md:grid-cols-2 gap-5">
+            {Array.from({ length: 4 }, (_, i) => (
               <CardSkeleton key={i} />
             ))}
           </AnimatedList>
         ) : config.isError ? (
-          <div className="text-center py-20 text-[var(--text-tertiary)]">
-            Failed to load {sectionId}.
+          <div className="panel-subtle flex flex-col items-center justify-center py-20 text-center">
+            <div className="mb-3 flex size-12 items-center justify-center rounded-md border border-[var(--border-standard)] bg-[rgba(255,255,255,0.02)]">
+              <Info size={20} className="text-[var(--text-tertiary)]" />
+            </div>
+            <h3 className="text-[16px] font-medium text-[var(--text-primary)]">Failed to load {sectionId}</h3>
+            <p className="mt-2 max-w-sm text-[14px] text-[var(--text-tertiary)]">
+              Something went wrong while fetching your {sectionId}. Try refreshing the page.
+            </p>
           </div>
         ) : config.data && config.data.length > 0 ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {config.data.map((entity) => (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+            {config.data.map((entity, index) => (
               <EntityCard
                 key={entity.id}
                 icon={config.icon}
@@ -248,6 +257,7 @@ export default function Explorer({ viewSwitcher }: ExplorerProps) {
                 title={entityConfig.getTitle(entity as never) || ''}
                 description={entityConfig.getDescription(entity as never) || ''}
                 badges={entityConfig.getBadges(entity as never)}
+                featured={index === 0}
                 onClick={() =>
                   setSelectedItem({
                     name: entity.id,
@@ -260,9 +270,14 @@ export default function Explorer({ viewSwitcher }: ExplorerProps) {
             ))}
           </div>
         ) : (
-          <div className="text-center py-20 text-[var(--text-tertiary)]">
-            {config.emptyMessage}
-            <code className="text-[var(--text-secondary)]">{config.emptyPath}</code>
+          <div className="panel-subtle flex flex-col items-center justify-center py-20 text-center">
+            <div className="mb-3 flex size-12 items-center justify-center rounded-md border border-[var(--border-standard)] bg-[rgba(255,255,255,0.02)]">
+              <Search size={20} className="text-[var(--text-tertiary)]" />
+            </div>
+            <h3 className="text-[16px] font-medium text-[var(--text-primary)]">No {sectionId} found</h3>
+            <p className="mt-2 max-w-sm text-[14px] text-[var(--text-tertiary)]">
+              {config.emptyMessage}<code className="text-[var(--text-secondary)]">{config.emptyPath}</code>
+            </p>
           </div>
         )}
       </div>
@@ -271,19 +286,19 @@ export default function Explorer({ viewSwitcher }: ExplorerProps) {
 
   // Render under construction placeholder
   const renderPlaceholder = () => (
-    <div className="panel-subtle flex flex-col items-center justify-center py-16">
-      <div className="mb-4 flex size-14 items-center justify-center rounded-[var(--radius-md)] border border-[var(--border-default)] bg-[var(--surface-panel)]">
-        <Info size={24} className="text-[var(--text-tertiary)]" />
+    <div className="panel-subtle flex flex-col items-center justify-center py-20">
+      <div className="mb-5 flex size-14 items-center justify-center rounded-xl border border-[var(--border-standard)] bg-[rgba(255,255,255,0.02)]">
+        <Info size={22} className="text-[var(--text-tertiary)]" />
       </div>
-      <h2 className="text-[20px] font-medium text-[var(--text-primary)]">
-        Section Under Construction
+      <h2 className="text-[22px] font-semibold tracking-[-0.02em] text-[var(--text-primary)]">
+        Coming soon
       </h2>
-      <p className="text-pretty mt-3 max-w-md text-center text-[15px] text-[var(--text-tertiary)]">
+      <p className="text-pretty mt-3 max-w-md text-center text-[15px] leading-relaxed text-[var(--text-tertiary)]">
         The{' '}
-        <span className="text-[var(--accent-blue)] capitalize">
+        <span className="text-[var(--text-primary)] capitalize">
           {activeSection.replace('-', ' ')}
         </span>{' '}
-        viewer is currently being implemented. Check back soon!
+        section is still in development. It will be available in a future release.
       </p>
     </div>
   );
@@ -299,15 +314,23 @@ export default function Explorer({ viewSwitcher }: ExplorerProps) {
           description="Inspect installed plugins, enabled state, and bundled component counts for the current environment."
         />
         {pluginsLoading ? (
-          <AnimatedList className="grid grid-cols-1 gap-4 md:grid-cols-2">
+          <AnimatedList className="grid grid-cols-1 gap-5 md:grid-cols-2">
             {Array.from({ length: 2 }, (_, index) => (
               <CardSkeleton key={index} />
             ))}
           </AnimatedList>
         ) : pluginsError ? (
-          <div className="text-center py-20 text-[var(--text-tertiary)]">Failed to load plugins.</div>
+          <div className="panel-subtle flex flex-col items-center justify-center py-20 text-center">
+            <div className="mb-3 flex size-12 items-center justify-center rounded-md border border-[var(--border-standard)] bg-[rgba(255,255,255,0.02)]">
+              <Info size={20} className="text-[var(--text-tertiary)]" />
+            </div>
+            <h3 className="text-[16px] font-medium text-[var(--text-primary)]">Failed to load plugins</h3>
+            <p className="mt-2 max-w-sm text-[14px] text-[var(--text-tertiary)]">
+              Something went wrong while fetching your plugins. Try refreshing the page.
+            </p>
+          </div>
         ) : plugins && plugins.length > 0 ? (
-          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+          <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
             {plugins.map((plugin) => {
               const installCount = plugin.installs.length;
               const marketplace = marketplaces?.find((entry) => entry.id === plugin.marketplace);
@@ -317,45 +340,45 @@ export default function Explorer({ viewSwitcher }: ExplorerProps) {
               return (
                 <div
                   key={plugin.id}
-                  className="rounded-[var(--radius-md)] border border-[var(--border-default)] bg-[var(--surface-raised)] p-4"
+                  className="panel p-7 transition-smooth hover:border-[var(--border-hover)]"
                 >
                   <div className="flex items-start justify-between gap-3">
                     <div>
-                      <h3 className="text-base font-semibold text-[var(--text-primary)]">
+                      <h3 className="text-[16px] font-semibold tracking-[-0.01em] text-[var(--text-primary)]">
                         {plugin.name}
                       </h3>
-                      <p className="text-[13px] text-[var(--text-tertiary)]">
+                      <p className="mt-0.5 text-[13px] text-[var(--text-tertiary)]">
                         {plugin.id}
                       </p>
                     </div>
                     <span
                       className={cn(
-                        'rounded-[var(--radius-sm)] px-2 py-1 text-[11px] font-semibold uppercase',
+                        'rounded-md px-2.5 py-1 text-[11px] font-medium tracking-[0.02em]',
                         plugin.enabled
-                          ? 'bg-[var(--accent-green)]/10 text-[var(--accent-green)]'
-                          : 'bg-[var(--surface-overlay)] text-[var(--text-tertiary)]',
+                          ? 'bg-[var(--text-primary)] text-[var(--bg-marketing)]'
+                          : 'bg-[rgba(255,255,255,0.02)] text-[var(--text-tertiary)] border border-[var(--border-standard)]',
                       )}
                     >
                       {plugin.enabled ? 'Enabled' : 'Disabled'}
                     </span>
                   </div>
-                  <div className="mt-3 grid grid-cols-2 gap-3 text-[13px] text-[var(--text-secondary)]">
+                  <div className="mt-5 grid grid-cols-2 gap-3 text-[13px] text-[var(--text-secondary)]">
                     <div>Agents: {plugin.componentCounts.agents}</div>
                     <div>Skills: {plugin.componentCounts.skills}</div>
                     <div>Commands: {plugin.componentCounts.commands}</div>
                     <div>Installs: {installCount}</div>
                   </div>
-                  <div className="mt-3">
-                    <div className="text-[10px] font-semibold uppercase tracking-wide text-[var(--text-tertiary)]">profiles</div>
+                  <div className="mt-5">
+                    <div className="text-[10px] font-medium tracking-[0.04em] text-[var(--text-tertiary)]">Profiles</div>
                     {refCount === 0 ? (
                       <span className="text-[13px] tabular-nums text-[var(--text-tertiary)]">0</span>
                     ) : refCount <= 2 ? (
-                      <div className="flex items-center gap-1.5">
+                      <div className="flex items-center gap-1.5 mt-1">
                         <span className="text-[13px] tabular-nums text-[var(--text-primary)]">{refCount}</span>
                         {refNames.map(name => (
                           <span
                             key={name}
-                            className="inline-block rounded bg-[var(--accent-blue)]/8 px-1.5 py-0.5 text-[11px] text-[var(--accent-blue)] border border-[var(--accent-blue)]/15"
+                            className="inline-block rounded bg-[rgba(255,255,255,0.08)] px-1.5 py-0.5 text-[11px] text-[var(--text-secondary)] border border-[var(--border-standard)]"
                           >
                             {name}
                           </span>
@@ -363,7 +386,7 @@ export default function Explorer({ viewSwitcher }: ExplorerProps) {
                       </div>
                     ) : (
                       <span
-                        className="text-[13px] text-[var(--accent-blue)]"
+                        className="text-[13px] text-[var(--text-secondary)] mt-1 block"
                         title={refNames.join(', ')}
                       >
                         Used by {refCount} profiles
@@ -371,7 +394,7 @@ export default function Explorer({ viewSwitcher }: ExplorerProps) {
                     )}
                   </div>
                   {marketplace ? (
-                    <p className="mt-3 text-[12px] text-[var(--text-tertiary)]">
+                    <p className="mt-4 text-[12px] text-[var(--text-tertiary)]">
                       Marketplace: {marketplace.id}
                     </p>
                   ) : null}
@@ -380,8 +403,14 @@ export default function Explorer({ viewSwitcher }: ExplorerProps) {
             })}
           </div>
         ) : (
-          <div className="text-center py-20 text-[var(--text-tertiary)]">
-            No plugins installed in the current environment.
+          <div className="panel-subtle flex flex-col items-center justify-center py-20 text-center">
+            <div className="mb-3 flex size-12 items-center justify-center rounded-md border border-[var(--border-standard)] bg-[rgba(255,255,255,0.02)]">
+              <Blocks size={20} className="text-[var(--text-tertiary)]" />
+            </div>
+            <h3 className="text-[16px] font-medium text-[var(--text-primary)]">No plugins installed</h3>
+            <p className="mt-2 max-w-sm text-[14px] text-[var(--text-tertiary)]">
+              There are no plugins in the current environment.
+            </p>
           </div>
         )}
       </section>
@@ -411,22 +440,22 @@ export default function Explorer({ viewSwitcher }: ExplorerProps) {
   return (
     <div className="flex h-full min-w-0 text-[var(--text-primary)] font-sans">
       <Sidebar
+        title="Explorer"
         sections={SECTIONS}
         activeSection={activeSection}
         onSectionChange={(id) => {
           navigate(`/explore/${id}`);
           setSelectedItem(null);
         }}
-        statusIndicator={<StatusIndicator />}
         headerSlot={viewSwitcher}
       />
 
       {/* Main Content */}
-      <main className="relative flex min-w-0 flex-1 flex-col overflow-hidden bg-[radial-gradient(circle_at_top,_rgba(94,106,210,0.08),_transparent_26%),_var(--surface-base)]">
-        <header className="flex h-16 items-center justify-between border-b border-[var(--border-default)] px-6">
+      <main className="relative flex min-w-0 flex-1 flex-col overflow-hidden bg-[var(--bg-marketing)]">
+        <header className="flex h-16 items-center justify-between border-b border-[rgba(255,255,255,0.05)] px-6">
           <div className="flex items-center gap-2">
             <span className="text-[13px] text-[var(--text-tertiary)]">Explorer</span>
-            <span className="text-[var(--border-default)]">/</span>
+            <span className="text-[var(--border-standard)]">/</span>
             <span className="text-[13px] font-medium capitalize text-[var(--text-primary)]">
               {selectedItem
                 ? `${activeSection.replace('-', ' ')} Detail`
@@ -444,9 +473,9 @@ export default function Explorer({ viewSwitcher }: ExplorerProps) {
                 type="text"
                 placeholder="Search..."
                 className={cn(
-                  'w-44 rounded-[var(--radius-sm)] border border-[var(--border-default)] bg-[var(--surface-panel)] py-1.5 pl-8 pr-3 text-[12px]',
+                  'w-60 rounded-md border border-[var(--border-standard)] bg-[rgba(255,255,255,0.02)] py-2 pl-8 pr-3 text-[13px]',
                   'text-[var(--text-primary)] placeholder:text-[var(--text-tertiary)]',
-                  'focus:outline-none focus:border-[var(--accent-blue)]',
+                  'focus:outline-none focus:border-[rgba(255,255,255,0.2)]',
                   'transition-smooth'
                 )}
               />
@@ -456,7 +485,7 @@ export default function Explorer({ viewSwitcher }: ExplorerProps) {
 
         {/* Content */}
         <div className="flex-1 overflow-y-auto">
-          <div className="mx-auto w-full max-w-7xl px-8 py-8">
+          <div className="mx-auto w-full max-w-6xl px-10 py-10">
             {activeSection === 'agents' && renderEntityList('agents')}
             {activeSection === 'skills' && renderEntityList('skills')}
             {activeSection === 'commands' && renderEntityList('commands')}
@@ -468,7 +497,7 @@ export default function Explorer({ viewSwitcher }: ExplorerProps) {
                 isLoading: mcpLoading,
                 isError: mcpError,
                 icon: Server,
-                iconColor: 'text-[var(--accent-blue)]',
+                iconColor: 'text-[var(--text-primary)]',
                 emptyMessage: 'No MCP servers configured in .mcp.json',
               })
             )}
@@ -480,7 +509,7 @@ export default function Explorer({ viewSwitcher }: ExplorerProps) {
                 isLoading: hooksLoading,
                 isError: hooksError,
                 icon: Anchor,
-                iconColor: 'text-[var(--accent-purple)]',
+                iconColor: 'text-[var(--text-secondary)]',
                 emptyMessage: 'No hooks configured in settings.json',
               })
             )}
@@ -492,7 +521,7 @@ export default function Explorer({ viewSwitcher }: ExplorerProps) {
                 isLoading: lspLoading,
                 isError: lspError,
                 icon: Code,
-                iconColor: 'text-[var(--accent-cyan)]',
+                iconColor: 'text-[var(--text-tertiary)]',
                 emptyMessage: 'No LSP servers configured in .lsp.json',
               })
             )}

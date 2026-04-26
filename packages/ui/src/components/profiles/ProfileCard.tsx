@@ -185,8 +185,8 @@ export function ProfileCard({ profile, isActive, activeProfileName, onActivate, 
                   disabled={preflightMut.isPending}
                   type="button"
                   className={cn(
-                    "rounded-[var(--radius-sm)] border border-[var(--accent-blue)]/30 bg-[var(--accent-blue)] px-3 py-1.5 text-[13px] font-medium text-white",
-                    "transition-smooth hover:bg-[var(--accent-blue-hover)]",
+                    "rounded-md border border-[rgba(255,255,255,0.08)] bg-[var(--text-primary)] px-3 py-1.5 text-[13px] font-medium text-[var(--bg-marketing)]",
+                    "transition-smooth hover:bg-[var(--text-secondary)]",
                     preflightMut.isPending && "opacity-50 cursor-not-allowed"
                   )}
                 >
@@ -197,8 +197,8 @@ export function ProfileCard({ profile, isActive, activeProfileName, onActivate, 
                 onClick={handleDeleteClick}
                 type="button"
                 className={cn(
-                  "rounded-[var(--radius-sm)] border border-[var(--accent-red)]/20 bg-[var(--accent-red)]/8 px-3 py-1.5 text-[13px] font-medium text-[var(--accent-red)]",
-                  "transition-smooth hover:bg-[var(--accent-red)]/14"
+                  "rounded-md border border-[rgba(255,255,255,0.08)] bg-[rgba(255,255,255,0.02)] px-3 py-1.5 text-[13px] font-medium text-[var(--text-secondary)]",
+                  "transition-smooth hover:bg-[rgba(255,255,255,0.04)] hover:text-[var(--text-primary)]"
                 )}
               >
                 Delete

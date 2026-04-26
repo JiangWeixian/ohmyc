@@ -1,0 +1,1 @@
+$HOME is /Volumes/ORICO/Users/jiangwei

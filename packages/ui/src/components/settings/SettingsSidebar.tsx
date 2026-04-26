@@ -55,7 +55,7 @@ export function SettingsSidebar({
                   key={category.id}
                   value={category.id}
                   className={cn(
-                    "relative w-full flex items-center gap-3 px-3 py-2 rounded-[var(--radius-md)] text-[13px] font-medium transition-colors duration-150",
+                    "relative w-full flex items-center gap-3 px-3 py-2.5 rounded-[var(--radius-md)] text-[13px] font-medium tracking-[-0.01em] transition-all duration-200",
                     isActive
                       ? "text-[var(--accent-blue)]"
                       : "text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--surface-overlay)]"

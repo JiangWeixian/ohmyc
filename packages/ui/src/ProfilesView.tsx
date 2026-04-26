@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Loader2 } from 'lucide-react';
+import { Loader2, FolderOpen } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'sonner';
 import { ProfilesSidebar, type SidebarSelection } from './components/profiles/ProfilesSidebar';
@@ -97,7 +97,7 @@ export function ProfilesView({ viewSwitcher }: ProfilesViewProps) {
         headerSlot={viewSwitcher}
       />
 
-      <main className="flex-1 overflow-y-auto bg-[radial-gradient(circle_at_top,_rgba(94,106,210,0.08),_transparent_26%),_var(--surface-base)]">
+      <main className="flex-1 overflow-y-auto bg-[var(--surface-base)]">
         <AnimatePresence mode="wait">
           <motion.div
             key={isLoading ? 'loading' : selection?.type || 'empty'}
@@ -111,13 +111,20 @@ export function ProfilesView({ viewSwitcher }: ProfilesViewProps) {
               <motion.div
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
-                className="flex items-center justify-center py-20"
+                className="flex flex-col items-center justify-center py-20 text-center"
               >
                 <Loader2 size={20} className="animate-spin text-[var(--text-tertiary)]" />
+                <p className="mt-4 text-[14px] text-[var(--text-tertiary)]">Loading profiles...</p>
               </motion.div>
             ) : selection === null ? (
-              <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="panel-subtle py-16 text-center text-[var(--text-tertiary)]">
-                Select a profile or component type from the sidebar.
+              <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="panel-subtle flex flex-col items-center justify-center py-20 text-center">
+                <div className="mb-3 flex size-12 items-center justify-center rounded-[var(--radius-md)] border border-[var(--border-default)] bg-[var(--surface-panel)]">
+                  <FolderOpen size={20} className="text-[var(--text-tertiary)]" />
+                </div>
+                <h3 className="text-[16px] font-medium text-[var(--text-primary)]">Select a profile</h3>
+                <p className="mt-2 max-w-sm text-[14px] text-[var(--text-tertiary)]">
+                  Choose a profile or component type from the sidebar to view details.
+                </p>
               </motion.div>
             ) : (
               <AnimatePresence mode="wait">

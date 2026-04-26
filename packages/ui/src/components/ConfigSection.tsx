@@ -18,15 +18,15 @@ interface ConfigEntryCardProps {
 
 function ConfigEntryCard({ name, data, icon: Icon, iconColor, source = 'local', pluginId }: ConfigEntryCardProps) {
   return (
-    <Card className="panel p-5 transition-smooth hover:border-[var(--border-hover)] hover:shadow-[var(--shadow-sm)]">
-      <div className="mb-4 flex items-center gap-3">
-        <div className="flex size-10 items-center justify-center rounded-[var(--radius-sm)] border border-[var(--border-default)] bg-[var(--surface-panel)]">
+    <Card className="panel p-6 transition-smooth hover:border-[var(--border-hover)] hover:shadow-[var(--shadow-sm)]">
+      <div className="mb-5 flex items-center gap-3">
+        <div className="flex size-10 items-center justify-center rounded-[var(--radius-md)] border border-[var(--border-default)] bg-[var(--surface-panel)] transition-all duration-300 hover:border-[var(--border-hover)]">
           <Icon size={16} className={iconColor} />
         </div>
-        <h3 className="text-[14px] font-medium text-[var(--text-primary)]">{name}</h3>
+        <h3 className="text-[15px] font-semibold tracking-[-0.01em] text-[var(--text-primary)]">{name}</h3>
         <SourceBadge source={source} pluginId={pluginId} />
       </div>
-      <pre className="panel-subtle max-h-48 overflow-x-auto p-4 text-[12px] text-[var(--text-secondary)]">
+      <pre className="panel-subtle max-h-48 overflow-x-auto p-4 text-[12px] leading-relaxed text-[var(--text-secondary)]">
         {JSON.stringify(data, null, 2)}
       </pre>
     </Card>
@@ -63,11 +63,17 @@ export function ConfigSection({
           <Loader2 size={20} className="animate-spin text-[var(--text-tertiary)]" />
         </div>
       ) : isError ? (
-        <div className="panel-subtle py-16 text-center text-[var(--text-tertiary)]">
-          Failed to load {title.toLowerCase()}.
+        <div className="panel-subtle flex flex-col items-center justify-center py-20 text-center">
+          <div className="mb-3 flex size-12 items-center justify-center rounded-[var(--radius-md)] border border-[var(--border-default)] bg-[var(--surface-panel)]">
+            <Loader2 size={20} className="text-[var(--accent-red)]" />
+          </div>
+          <h3 className="text-[16px] font-medium text-[var(--text-primary)]">Failed to load {title.toLowerCase()}</h3>
+          <p className="mt-2 max-w-sm text-[14px] text-[var(--text-tertiary)]">
+            Something went wrong while fetching your {title.toLowerCase()}. Try refreshing the page.
+          </p>
         </div>
       ) : data && data.length > 0 ? (
-        <div className="grid grid-cols-1 gap-4 xl:grid-cols-2">
+        <div className="grid grid-cols-1 gap-5 xl:grid-cols-2">
           {data.map((entry) => (
             <ConfigEntryCard
               key={`${entry.source}-${entry.name}-${entry.scope ?? 'global'}`}
@@ -82,8 +88,14 @@ export function ConfigSection({
           ))}
         </div>
       ) : (
-        <div className="panel-subtle py-16 text-center text-[var(--text-tertiary)]">
-          {emptyMessage}
+        <div className="panel-subtle flex flex-col items-center justify-center py-20 text-center">
+          <div className="mb-3 flex size-12 items-center justify-center rounded-[var(--radius-md)] border border-[var(--border-default)] bg-[var(--surface-panel)]">
+            <div className="size-5 rounded-full border-2 border-dashed border-[var(--text-tertiary)]" />
+          </div>
+          <h3 className="text-[16px] font-medium text-[var(--text-primary)]">No {title.toLowerCase()} configured</h3>
+          <p className="mt-2 max-w-sm text-[14px] text-[var(--text-tertiary)]">
+            {emptyMessage}
+          </p>
         </div>
       )}
     </div>

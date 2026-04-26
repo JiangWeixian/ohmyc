@@ -96,7 +96,7 @@ describe('Explorer inventory views', () => {
       { route: '/explore/plugins' },
     );
 
-    expect(screen.getByText('Current environment')).toBeInTheDocument();
+    expect(screen.getByText('Environment')).toBeInTheDocument();
     expect(screen.getAllByText('Hooks').length).toBeGreaterThan(0);
     expect(screen.getAllByText('2').length).toBeGreaterThan(0);
     expect(screen.getByText('MCP servers')).toBeInTheDocument();
@@ -116,7 +116,7 @@ describe('Explorer inventory views', () => {
       { route: '/explore/hooks' },
     );
 
-    expect(screen.getByText('Current environment')).toBeInTheDocument();
+    expect(screen.getByText('Environment')).toBeInTheDocument();
     expect(screen.getAllByText('Hooks').length).toBeGreaterThan(0);
     expect(screen.getAllByText('MCP servers').length).toBeGreaterThan(0);
     expect(screen.getAllByText('LSP servers').length).toBeGreaterThan(0);

@@ -37,7 +37,7 @@ export function QuickActions({ actions, className }: QuickActionsProps) {
             'flex items-center gap-1.5 px-2.5 py-1.5 rounded-[var(--radius-md)] text-[12px] font-medium',
             'transition-colors duration-150',
             action.variant === 'primary'
-              ? 'bg-[var(--accent-blue)] text-white hover:bg-[var(--accent-blue-hover)]'
+              ? 'bg-[var(--text-primary)] text-[var(--bg-marketing)] hover:bg-[var(--text-secondary)]'
               : action.variant === 'danger'
                 ? 'text-[var(--accent-red)] hover:bg-red-500/10'
                 : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--surface-raised)]'
@@ -71,7 +71,7 @@ export function FloatingActionButton({
       className={cn(
         'flex items-center justify-center gap-2',
         'size-10 rounded-full',
-        'bg-[var(--accent-blue)] text-white',
+        'bg-[var(--text-primary)] text-[var(--bg-marketing)]',
         'shadow-[var(--shadow-lg)]',
         'hover:scale-105 hover:shadow-lg active:scale-95',
         'transition-transform duration-150',

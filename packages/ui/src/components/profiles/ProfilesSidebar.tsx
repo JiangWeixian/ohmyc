@@ -1,5 +1,4 @@
-import { Plus, FolderOpen, Bot, Sparkles, TerminalSquare, Settings } from 'lucide-react';
-import { motion } from 'framer-motion';
+import { Plus, FolderOpen, Bot, Sparkles, TerminalSquare, Settings, User } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import type { Profile } from '@claudeui/shared';
@@ -17,105 +16,143 @@ interface ProfilesSidebarProps {
   headerSlot?: React.ReactNode;
 }
 
+function SidebarHeader({ headerSlot }: { headerSlot?: React.ReactNode }) {
+  return (
+    <div className="border-b border-[rgba(255,255,255,0.05)] px-4 pb-4 pt-5">
+      <div className="mb-5 flex items-center gap-3">
+        <div className="flex size-10 items-center justify-center rounded-lg border border-[rgba(255,255,255,0.08)] bg-[rgba(255,255,255,0.02)] text-[var(--text-primary)]">
+          <FolderOpen size={18} />
+        </div>
+        <span className="text-[15px] font-semibold text-[var(--text-primary)]">
+          Profiles
+        </span>
+      </div>
+      {headerSlot && <div className="w-full overflow-hidden">{headerSlot}</div>}
+    </div>
+  );
+}
+
+// Compound value format for Tabs
+function getTabValue(selection: SidebarSelection | null): string {
+  if (!selection) return '';
+  if (selection.type === 'profile') return `profile:${selection.name}`;
+  if (selection.type === 'new-profile') return 'new-profile';
+  if (selection.type === 'components') return `component:${selection.category}`;
+  return '';
+}
+
+function parseTabValue(value: string): SidebarSelection | null {
+  if (value.startsWith('profile:')) return { type: 'profile', name: value.slice(8) };
+  if (value === 'new-profile') return { type: 'new-profile' };
+  if (value.startsWith('component:')) return { type: 'components', category: value.slice(10) as any };
+  return null;
+}
+
+const COMPONENTS = [
+  { category: 'agents' as const, label: 'Agents', icon: Bot },
+  { category: 'skills' as const, label: 'Skills', icon: Sparkles },
+  { category: 'commands' as const, label: 'Commands', icon: TerminalSquare },
+  { category: 'model-configs' as const, label: 'Model Configs', icon: Settings },
+] as const;
+
 export function ProfilesSidebar({ profiles, active, selection, onSelect, headerSlot }: ProfilesSidebarProps) {
-  const selectedProfile = selection?.type === 'profile' ? selection.name : '';
+  const currentValue = getTabValue(selection);
+
+  const handleValueChange = (value: string) => {
+    const parsed = parseTabValue(value);
+    if (parsed) onSelect(parsed);
+  };
 
   return (
-    <aside className="flex w-64 flex-col border-r border-[var(--border-default)] bg-[var(--surface-panel)]">
-      <div className="border-b border-[var(--border-default)] px-4 pb-4 pt-5">
-        <div className="mb-4 flex items-center gap-3">
-          <div className="flex size-8 items-center justify-center rounded-[var(--radius-sm)] border border-[var(--border-default)] bg-[var(--surface-overlay)] text-[var(--accent-blue)]">
-            <FolderOpen size={14} />
-          </div>
-          <div>
-            <div className="text-[9px] font-medium uppercase text-[var(--text-tertiary)]">Claude UI</div>
-            <div className="text-[15px] font-medium text-[var(--text-primary)]">Profiles</div>
-          </div>
-        </div>
-        {headerSlot && <div className="w-full">{headerSlot}</div>}
-      </div>
-
+    <aside className="flex w-60 flex-col border-r border-[rgba(255,255,255,0.05)] bg-[var(--bg-panel)]">
+      <SidebarHeader headerSlot={headerSlot} />
       <nav className="flex-1 overflow-y-auto px-3 py-3">
-        <div className="px-1 py-2 text-[9px] font-medium uppercase text-[var(--text-tertiary)]">
+        <div className="mb-3 px-1 text-[13px] font-medium text-[var(--text-tertiary)]">
           My Profiles
         </div>
         <Tabs
-          value={selectedProfile}
-          onValueChange={(v) => onSelect({ type: 'profile', name: v })}
+          value={currentValue}
+          onValueChange={handleValueChange}
+          orientation="vertical"
         >
-          <TabsList className="flex flex-col gap-1 bg-transparent p-0 border-0">
+          <TabsList className="flex w-full flex-col gap-1 bg-transparent p-0 border-0">
             {profiles.map((p) => {
               const isActive = active === p.name;
-              const isSelected = selection?.type === 'profile' && selection.name === p.name;
+              const value = `profile:${p.name}`;
+              const isSelected = currentValue === value;
               return (
                 <TabsTrigger
                   key={p.name}
-                  value={p.name}
+                  value={value}
                   className={cn(
-                    'relative w-full flex items-center gap-2 rounded-[var(--radius-sm)] px-3 py-2 text-[13px] font-medium transition-colors',
+                    'relative w-full flex items-center justify-start gap-3 rounded-md px-3 py-2.5 text-left text-[13px] font-medium transition-colors duration-150',
                     isSelected
-                      ? 'text-[var(--text-primary)]'
-                      : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-white/[0.03]'
+                      ? 'bg-[rgba(255,255,255,0.08)] text-[var(--text-primary)]'
+                      : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[rgba(255,255,255,0.03)]'
                   )}
                 >
-                  {isSelected && (
-                    <motion.div
-                      layoutId="profiles-sidebar-active"
-                      className="absolute inset-0 rounded-[var(--radius-sm)] border border-[var(--accent-blue)]/30 bg-[var(--accent-blue)]/12"
-                      transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
-                    />
-                  )}
+                  <span className={cn("relative z-10", isSelected ? "text-[var(--text-primary)]" : "text-[var(--text-tertiary)]")}>
+                    <User size={16} />
+                  </span>
+                  <span className="relative z-10 truncate">{p.name}</span>
                   {isActive && (
-                    <span className="relative z-10 shrink-0 text-[10px] font-medium text-[#5E6AD2] bg-[#5E6AD2]/15 px-1.5 py-0.5 rounded">
+                    <span className="relative z-10 ml-auto shrink-0 text-[10px] font-medium text-[var(--text-primary)] bg-[rgba(255,255,255,0.08)] px-1.5 py-0.5 rounded">
                       Active
                     </span>
                   )}
-                  <span className="relative z-10 truncate">{p.name}</span>
+                </TabsTrigger>
+              );
+            })}
+
+            <TabsTrigger
+              value="new-profile"
+              className={cn(
+                'relative w-full flex items-center justify-start gap-3 rounded-md px-3 py-2.5 text-left text-[13px] font-medium transition-colors duration-150',
+                currentValue === 'new-profile'
+                  ? 'bg-[rgba(255,255,255,0.08)] text-[var(--text-primary)]'
+                  : 'text-[var(--text-tertiary)] hover:text-[var(--text-primary)] hover:bg-[rgba(255,255,255,0.03)]'
+              )}
+            >
+              <span className={cn("relative z-10", currentValue === 'new-profile' ? "text-[var(--text-primary)]" : "text-[var(--text-tertiary)]")}>
+                <Plus size={16} />
+              </span>
+              <span className="relative z-10">New Profile</span>
+            </TabsTrigger>
+          </TabsList>
+        </Tabs>
+
+        <div className="mt-5 mb-3 px-1 text-[13px] font-medium text-[var(--text-tertiary)]">
+          Components
+        </div>
+        <Tabs
+          value={currentValue}
+          onValueChange={handleValueChange}
+          orientation="vertical"
+        >
+          <TabsList className="flex w-full flex-col gap-1 bg-transparent p-0 border-0">
+            {COMPONENTS.map(({ category, label, icon: Icon }) => {
+              const value = `component:${category}`;
+              const isSelected = currentValue === value;
+              return (
+                <TabsTrigger
+                  key={category}
+                  value={value}
+                  className={cn(
+                    'relative w-full flex items-center justify-start gap-3 rounded-md px-3 py-2.5 text-left text-[13px] font-medium transition-colors duration-150',
+                    isSelected
+                      ? 'bg-[rgba(255,255,255,0.08)] text-[var(--text-primary)]'
+                      : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[rgba(255,255,255,0.03)]'
+                  )}
+                >
+                  <span className={cn("relative z-10", isSelected ? "text-[var(--text-primary)]" : "text-[var(--text-tertiary)]")}>
+                    <Icon size={16} />
+                  </span>
+                  <span className="relative z-10">{label}</span>
                 </TabsTrigger>
               );
             })}
           </TabsList>
         </Tabs>
-
-        <button
-          onClick={() => onSelect({ type: 'new-profile' })}
-          type="button"
-          className={cn(
-            'mt-2 w-full flex items-center gap-2 rounded-[var(--radius-sm)] border border-dashed border-[var(--border-default)] px-3 py-2 text-[13px] font-medium text-[var(--text-tertiary)] transition-colors',
-            'hover:border-[var(--border-hover)] hover:bg-white/[0.03] hover:text-[var(--text-primary)]'
-          )}
-        >
-          <Plus size={14} />
-          New Profile
-        </button>
-
-        <div className="mt-5 px-1 py-2 text-[9px] font-medium uppercase text-[var(--text-tertiary)]">
-          Components
-        </div>
-        {[
-          { category: 'agents' as const, label: 'Agents', icon: Bot },
-          { category: 'skills' as const, label: 'Skills', icon: Sparkles },
-          { category: 'commands' as const, label: 'Commands', icon: TerminalSquare },
-          { category: 'model-configs' as const, label: 'Model Configs', icon: Settings },
-        ].map(({ category, label, icon: Icon }) => {
-          const isComponentSelected = selection?.type === 'components' && selection.category === category;
-          return (
-            <button
-              key={category}
-              onClick={() => onSelect({ type: 'components', category })}
-              type="button"
-              className={cn(
-                'mb-1 w-full flex items-center gap-2 rounded-[var(--radius-sm)] border px-3 py-2 text-[13px] font-medium transition-colors',
-                isComponentSelected
-                  ? 'border-[var(--accent-blue)]/30 bg-[var(--accent-blue)]/12 text-[var(--text-primary)]'
-                  : 'border-transparent text-[var(--text-secondary)] hover:border-white/5 hover:bg-white/[0.03] hover:text-[var(--text-primary)]'
-              )}
-            >
-              <Icon size={14} />
-              {label}
-            </button>
-          );
-        })}
       </nav>
     </aside>
   );

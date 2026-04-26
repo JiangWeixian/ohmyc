@@ -1,6 +1,5 @@
 import React from 'react';
 import { Blocks } from 'lucide-react';
-import { motion } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import type { IconType } from './icons';
@@ -11,33 +10,20 @@ export interface SidebarSection {
   icon: IconType;
 }
 
-export function StatusIndicator() {
+function SidebarHeader({ title, headerSlot }: { title?: string; headerSlot?: React.ReactNode }) {
   return (
-    <div className="border-t border-[var(--border-default)] px-3 py-3">
-      <div className="panel-subtle flex items-center gap-2 px-3 py-2 text-[12px] text-[var(--text-secondary)]">
-        <span className="inline-flex size-2 rounded-full bg-[var(--accent-green)]" />
-        <span className="tabular-nums">Ready</span>
-        <span className="text-[var(--text-tertiary)]">Local workspace indexed</span>
-      </div>
-    </div>
-  );
-}
-
-function SidebarHeader({ headerSlot }: { headerSlot?: React.ReactNode }) {
-  return (
-    <div className="border-b border-[var(--border-default)] px-4 pb-4 pt-5">
-      <div className="mb-4 flex items-center gap-3">
-        <div className="flex size-8 items-center justify-center rounded-[var(--radius-sm)] border border-[var(--border-default)] bg-[var(--surface-overlay)] text-[var(--accent-blue)]">
-          <Blocks size={14} />
+    <div className="border-b border-[rgba(255,255,255,0.05)] px-4 pb-4 pt-5">
+      <div className="mb-5 flex items-center gap-3">
+        <div className="flex size-10 items-center justify-center rounded-lg border border-[rgba(255,255,255,0.08)] bg-[rgba(255,255,255,0.02)] text-[var(--text-primary)]">
+          <Blocks size={18} />
         </div>
-        <div>
-          <div className="text-[9px] font-medium uppercase text-[var(--text-tertiary)]">
-            Claude UI
-          </div>
-          <div className="text-[15px] font-medium text-[var(--text-primary)]">Workspace</div>
-        </div>
+        {title && (
+          <span className="text-[15px] font-semibold text-[var(--text-primary)]">
+            {title}
+          </span>
+        )}
       </div>
-      {headerSlot && <div className="w-full">{headerSlot}</div>}
+      {headerSlot && <div className="w-full overflow-hidden">{headerSlot}</div>}
     </div>
   );
 }
@@ -46,7 +32,7 @@ interface SidebarProps {
   sections: SidebarSection[];
   activeSection: string;
   onSectionChange: (id: string) => void;
-  statusIndicator?: React.ReactNode;
+  title?: string;
   headerSlot?: React.ReactNode;
 }
 
@@ -54,14 +40,14 @@ export function Sidebar({
   sections,
   activeSection,
   onSectionChange,
-  statusIndicator,
+  title,
   headerSlot,
 }: SidebarProps) {
   return (
-    <aside className="flex w-64 flex-col border-r border-[var(--border-default)] bg-[var(--surface-panel)]">
-      <SidebarHeader headerSlot={headerSlot} />
+    <aside className="flex w-60 flex-col border-r border-[rgba(255,255,255,0.05)] bg-[var(--bg-panel)]">
+      <SidebarHeader title={title} headerSlot={headerSlot} />
       <nav className="flex-1 overflow-y-auto px-3 py-3">
-        <div className="mb-3 px-1 text-[9px] font-medium uppercase text-[var(--text-tertiary)]">
+        <div className="mb-3 px-1 text-[13px] font-medium text-[var(--text-tertiary)]">
           Explore
         </div>
         <Tabs
@@ -77,21 +63,14 @@ export function Sidebar({
                   key={section.id}
                   value={section.id}
                   className={cn(
-                    "relative w-full flex items-center justify-start gap-3 rounded-[var(--radius-sm)] px-3 py-2.5 text-left text-[13px] font-medium",
-                    "transition-colors",
+                    "relative w-full flex items-center justify-start gap-3 rounded-md px-3 py-2.5 text-left text-[13px] font-medium",
+                    "transition-colors duration-150",
                     isActive
-                      ? "text-[var(--text-primary)]"
-                      : "text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-white/[0.03]"
+                      ? "bg-[rgba(255,255,255,0.08)] text-[var(--text-primary)]"
+                      : "text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[rgba(255,255,255,0.03)]"
                   )}
                 >
-                  {isActive && (
-                    <motion.div
-                      layoutId="sidebar-active"
-                      className="absolute inset-0 rounded-[var(--radius-sm)] border border-[var(--accent-blue)]/30 bg-[var(--accent-blue)]/12 shadow-[var(--shadow-xs)]"
-                      transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
-                    />
-                  )}
-                  <span className={cn("relative z-10", isActive ? "text-[var(--accent-blue)]" : "text-[var(--text-tertiary)]")}>
+                  <span className={cn("relative z-10", isActive ? "text-[var(--text-primary)]" : "text-[var(--text-tertiary)]")}>
                     <section.icon size={16} />
                   </span>
                   <span className="relative z-10">{section.label}</span>
@@ -101,8 +80,6 @@ export function Sidebar({
           </TabsList>
         </Tabs>
       </nav>
-
-      {statusIndicator}
     </aside>
   );
 }

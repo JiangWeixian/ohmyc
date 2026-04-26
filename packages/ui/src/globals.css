@@ -1,4 +1,4 @@
-@import url('https://rsms.me/inter/inter.css');
+@import url('https://cdn.jsdelivr.net/npm/geist@1.3.0/dist/fonts/geist-sans/style.css');
 
 @tailwind base;
 @tailwind components;
@@ -6,62 +6,98 @@
 
 @layer base {
   :root {
-    --surface-base: #080a0a;
-    --surface-raised: #0f1112;
-    --surface-overlay: #15181a;
-    --surface-panel: #0c0f10;
-    --border-default: #202427;
-    --border-hover: #2a2f33;
-    --text-primary: #e2e4e3;
-    --text-secondary: #b2b5b7;
-    --text-tertiary: #7a8085;
-    --accent-blue: #5E6AD2;
-    --accent-blue-hover: #6d79dc;
-    --accent-purple: #8f7bf5;
-    --accent-cyan: #5cbcd2;
-    --accent-green: #4da36f;
-    --accent-amber: #d8ab45;
-    --accent-red: #e0675c;
+    /* Monochrome Dark Palette */
+    --bg-marketing: #08090a;
+    --bg-panel: #0f1011;
+    --bg-surface: #191a1b;
+    --bg-secondary: #28282c;
+    
+    --text-primary: #f7f8f8;
+    --text-secondary: #d0d6e0;
+    --text-tertiary: #8a8f98;
+    --text-quaternary: #62666d;
+    
+    --border-subtle: rgba(255,255,255,0.05);
+    --border-standard: rgba(255,255,255,0.08);
+    --border-primary: #23252a;
+    --border-secondary: #34343a;
+    --border-tertiary: #3e3e44;
+    
+    /* Legacy aliases for smooth migration */
+    --surface-base: #08090a;
+    --surface-raised: #191a1b;
+    --surface-overlay: #191a1b;
+    --surface-panel: #0f1011;
+    --border-default: rgba(255,255,255,0.08);
+    --border-hover: rgba(255,255,255,0.12);
+    --accent-blue: #f7f8f8;
+    --accent-blue-hover: #d0d6e0;
+    --accent-green: #d0d6e0;
+    --accent-amber: #8a8f98;
+    --accent-cyan: #8a8f98;
+    --accent-purple: #8a8f98;
+    --accent-red: #8a8f98;
+    
+    /* Radius */
     --radius-sm: 6px;
     --radius-md: 8px;
-    --radius-lg: 8px;
-    --radius-xl: 8px;
-    --radius-2xl: 8px;
+    --radius-lg: 12px;
+    --radius-xl: 18px;
+    --radius-2xl: 22px;
     --radius-full: 9999px;
-    --shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.2);
-    --shadow-sm: 0 8px 24px rgba(0, 0, 0, 0.22);
-    --shadow-md: 0 16px 40px rgba(0, 0, 0, 0.28);
-    --shadow-lg: 0 24px 48px rgba(0, 0, 0, 0.32);
-    --transition-fast: 150ms ease;
-    --transition-normal: 200ms ease;
-    --transition-slow: 200ms ease;
-    --transition-bounce: 200ms ease;
+    
+    /* Shadows */
+    --shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.3);
+    --shadow-sm: 0 8px 24px rgba(0, 0, 0, 0.35);
+    --shadow-md: 0 16px 40px rgba(0, 0, 0, 0.4);
+    --shadow-lg: 0 24px 48px rgba(0, 0, 0, 0.45);
+    
+    /* Transitions */
+    --transition-fast: 150ms cubic-bezier(0.4, 0, 0.2, 1);
+    --transition-normal: 200ms cubic-bezier(0.4, 0, 0.2, 1);
+    --transition-slow: 300ms cubic-bezier(0.4, 0, 0.2, 1);
     --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
     --ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
+    
+    /* Elevation */
     --elevation-0: none;
-    --elevation-1: 0 8px 20px rgba(0, 0, 0, 0.16);
-    --elevation-2: 0 16px 32px rgba(0, 0, 0, 0.22);
-    --elevation-3: 0 24px 40px rgba(0, 0, 0, 0.28);
+    --elevation-1: 0 8px 20px rgba(0, 0, 0, 0.2);
+    --elevation-2: 0 16px 32px rgba(0, 0, 0, 0.28);
+    --elevation-3: 0 24px 40px rgba(0, 0, 0, 0.35);
 
-    /* shadcn token mappings — derived from ClaudeUI dark theme */
-    --background: 180 5% 3%;
-    --foreground: 155 5% 89%;
-    --card: 180 4% 6%;
-    --card-foreground: 155 5% 89%;
-    --popover: 195 5% 9%;
-    --popover-foreground: 155 5% 89%;
-    --primary: 233 54% 60%;
-    --primary-foreground: 0 0% 100%;
-    --secondary: 200 4% 13%;
-    --secondary-foreground: 155 5% 89%;
-    --muted: 200 4% 13%;
-    --muted-foreground: 200 5% 60%;
-    --accent: 200 4% 13%;
-    --accent-foreground: 155 5% 89%;
-    --destructive: 8 68% 62%;
-    --border: 200 5% 14%;
-    --input: 200 5% 14%;
-    --ring: 233 54% 60%;
+    /* spacing scale — 4px base */
+    --space-1: 4px;
+    --space-2: 8px;
+    --space-3: 12px;
+    --space-4: 16px;
+    --space-5: 20px;
+    --space-6: 24px;
+    --space-8: 32px;
+    --space-10: 40px;
+    --space-12: 48px;
+    --space-16: 64px;
+    --space-20: 80px;
+    --space-24: 96px;
+
+    /* shadcn token mappings */
+    --background: 210 5% 3%;
+    --foreground: 150 5% 97%;
+    --card: 210 4% 10%;
+    --card-foreground: 150 5% 97%;
+    --popover: 210 4% 10%;
+    --popover-foreground: 150 5% 97%;
+    --primary: 150 5% 97%;
+    --primary-foreground: 210 5% 3%;
+    --secondary: 210 4% 16%;
+    --secondary-foreground: 150 5% 97%;
+    --muted: 210 4% 16%;
+    --muted-foreground: 210 5% 60%;
+    --accent: 210 4% 16%;
+    --accent-foreground: 150 5% 97%;
+    --destructive: 0 0% 60%;
+    --border: 210 5% 14%;
+    --input: 210 5% 14%;
+    --ring: 150 5% 97%;
     --radius: 0.5rem;
   }
 }
@@ -69,24 +105,26 @@
 @layer base {
   * {
     box-sizing: border-box;
-    border-color: var(--border-default);
+    border-color: var(--border-standard);
   }
 
   html {
-    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    font-family: 'Geist', 'Geist Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
-    background: var(--surface-base);
+    background: var(--bg-marketing);
+    scroll-behavior: smooth;
   }
 
   body {
     margin: 0;
     min-height: 100dvh;
-    background-color: var(--surface-base);
+    background-color: var(--bg-marketing);
     color: var(--text-primary);
-    font-size: 17px;
-    line-height: 1.5;
+    font-size: 16px;
+    line-height: 1.6;
     text-rendering: optimizeLegibility;
+    letter-spacing: -0.01em;
   }
 
   #root {
@@ -94,7 +132,7 @@
   }
 
   :focus-visible {
-    outline: 2px solid var(--accent-blue);
+    outline: 2px solid var(--text-primary);
     outline-offset: 2px;
     border-radius: var(--radius-sm);
   }
@@ -113,17 +151,17 @@
   }
 
   ::-webkit-scrollbar-thumb {
-    background: var(--border-default);
+    background: var(--border-standard);
     border-radius: var(--radius-full);
   }
 
   ::-webkit-scrollbar-thumb:hover {
-    background: var(--border-hover);
+    background: var(--border-primary);
   }
 
   ::selection {
-    background: var(--accent-blue);
-    color: white;
+    background: var(--text-primary);
+    color: var(--bg-marketing);
   }
 
   button,
@@ -154,21 +192,19 @@
   }
 
   .focus-ring {
-    @apply focus-visible:ring-2 focus-visible:ring-[var(--accent-blue)] focus-visible:ring-offset-2;
+    @apply focus-visible:ring-2 focus-visible:ring-[var(--text-primary)] focus-visible:ring-offset-2;
   }
 
   .panel {
-    background:
-      linear-gradient(180deg, rgba(255, 255, 255, 0.03), rgba(255, 255, 255, 0)),
-      var(--surface-raised);
-    border: 1px solid var(--border-default);
+    background: rgba(255, 255, 255, 0.02);
+    border: 1px solid var(--border-standard);
     border-radius: var(--radius-md);
     box-shadow: var(--shadow-xs);
   }
 
   .panel-subtle {
-    background: var(--surface-panel);
-    border: 1px solid var(--border-default);
+    background: rgba(255, 255, 255, 0.02);
+    border: 1px solid var(--border-standard);
     border-radius: var(--radius-md);
   }
 

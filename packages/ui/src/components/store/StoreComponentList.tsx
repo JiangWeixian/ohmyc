@@ -185,8 +185,8 @@ export function StoreComponentList({ category }: StoreComponentListProps) {
             onClick={() => setEditing({ category: createCategory })}
             className={cn(
               "flex items-center gap-1.5 px-2.5 py-1.5 text-[13px] font-medium rounded-[var(--radius-md)]",
-              "bg-[var(--accent-blue)] text-white",
-              "hover:bg-[var(--accent-blue-hover)]",
+              "bg-[var(--text-primary)] text-[var(--bg-marketing)]",
+              "hover:bg-[var(--text-secondary)]",
               "transition-colors duration-150"
             )}
           >
@@ -251,8 +251,8 @@ export function StoreComponentList({ category }: StoreComponentListProps) {
               type="button"
               onClick={() => setEditing({ category: 'model-configs' })}
               className={cn(
-                "mt-4 rounded-[var(--radius-md)] bg-[var(--accent-blue)] px-3 py-1.5 text-[13px] font-medium text-white",
-                "hover:bg-[var(--accent-blue-hover)]",
+                "mt-4 rounded-[var(--radius-md)] bg-[var(--text-primary)] px-3 py-1.5 text-[13px] font-medium text-[var(--bg-marketing)]",
+                "hover:bg-[var(--text-secondary)]",
                 "transition-colors duration-150"
               )}
             >
@@ -275,8 +275,8 @@ export function StoreComponentList({ category }: StoreComponentListProps) {
             type="button"
             onClick={() => setShowImportDialog(true)}
             className={cn(
-              "mt-4 rounded-[var(--radius-md)] bg-[var(--accent-blue)] px-3 py-1.5 text-[13px] font-medium text-white",
-              "hover:bg-[var(--accent-blue-hover)]",
+              "mt-4 rounded-[var(--radius-md)] bg-[var(--text-primary)] px-3 py-1.5 text-[13px] font-medium text-[var(--bg-marketing)]",
+              "hover:bg-[var(--text-secondary)]",
               "transition-colors duration-150"
             )}
           >
