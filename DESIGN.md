@@ -237,6 +237,88 @@ packages/ui/src/
 │       └── EventList.tsx    # Chronological events
 ```
 
+## Layout & Interaction
+
+The visual system above is settled. This section governs **how the app is laid out and operated** — what lives where on the page, what the keyboard does, and which surfaces are the canonical entry points. Visual changes go in the sections above; placement / behavior changes go here.
+
+**Master thesis:** Profiles are the killer flow. Activate / compare / swap is the centerpiece — the rest of the app is supporting surface. The layout already supports this; we don't restructure it. We **propagate two pieces of chrome** (active-profile chip + ⌘K pill) and **wire one keyboard surface** (the command palette) so profile actions are reachable from anywhere in two keystrokes.
+
+### Default route
+- Landing route is `/profiles`. The wildcard fallback (`*`) also redirects to `/profiles`, not `/explore/agents`.
+- Rationale: profiles are the front door. Explorer is a reference surface, not a destination.
+
+### Active-profile chip (header-right, persistent)
+- **Placement:** Top-right of the page header, on every route. Mirrors the chip in `ProfilesView` so the active identity travels with the user across Profiles ↔ Explorer ↔ Settings.
+- **Anatomy:** `[avatar dot] Active <name> ▾`
+  - Avatar dot: 6px circle, `#f7f8f8` fill (active = white)
+  - Label: `12px / weight 510 / text-secondary`, "Active" prefix in `text-tertiary`
+  - Caret: `lucide ChevronDown size 12`, `text-tertiary`
+- **Container:**
+  - Height: `h-9` (36px)
+  - Padding: `px-3` (12px)
+  - Border: `1px solid rgba(255,255,255,0.08)`
+  - Background: `rgba(255,255,255,0.02)`
+  - Border-radius: `rounded-full`
+  - Hover: bg → `rgba(255,255,255,0.04)`, border → `rgba(255,255,255,0.14)`
+- **Click:** opens a small dropdown — list of profiles + `Compare…` + `Manage profiles →` (links to `/profiles`).
+- **Empty state:** if no active profile, show `No active profile` with `text-tertiary` and no avatar dot. Clicking still opens the dropdown.
+
+### ⌘K command palette (primary action surface)
+- **Placement:** A pill button sits **immediately left** of the active-profile chip in the header, on every route. Replaces any inert search input that was previously rendered for cosmetic purposes.
+- **Pill anatomy:** `[search icon 14] Search... [⌘K]`
+  - Width: `w-60` (240px)
+  - Height: `h-9` (36px)
+  - Border-radius: `rounded-md` (6px)
+  - Background: `rgba(255,255,255,0.02)`
+  - Border: `1px solid rgba(255,255,255,0.08)`
+  - Right-aligned `⌘K` keycap: `11px / weight 510 / text-quaternary`, `1px solid rgba(255,255,255,0.08)` border, `rounded-sm`
+  - **Visually a search input; behaviorally a button** — clicking opens the palette.
+- **Open behavior:** ⌘K (or Ctrl+K) anywhere, or click the pill. Opens a centered dialog at Level 4 elevation (`#191a1b` + dialog shadow stack), 640px wide, max-height 480px, with backdrop dim `rgba(0,0,0,0.6)`.
+- **Command groups (in order):**
+  1. **Profile** — `Activate <name>`, `Compare with…`, `Duplicate active profile`, `Edit active profile`
+  2. **Go to** — `Profiles`, `Explorer / Agents`, `Explorer / Skills`, `Explorer / Commands`, `Settings`
+  3. **Search** — typed-in token searches across profiles, agents, skills, commands (only appears when query is non-empty)
+- **Keyboard map (inside palette):** ↑/↓ navigate, ↵ run, Esc close.
+- **Global keyboard map (when palette is closed):**
+  - `⌘1 / ⌘2 / ⌘3` — activate the 1st / 2nd / 3rd profile in sidebar order (top three)
+  - `g p` — go to Profiles
+  - `g e` — go to Explorer
+  - `g s` — go to Settings
+  - `c` — open Compare panel against active profile
+  - These bindings are silent when focus is in a text input.
+
+### Compare side panel
+- **Trigger:** Palette command `Compare with…` → pick a target profile → panel slides in.
+- **Placement:** Right-edge panel, `w-[480px]`, full viewport height, slides in from the right (200ms ease-in-out) over the current view. The underlying view dims to `rgba(0,0,0,0.4)`.
+- **Surface:** `#191a1b` bg, `border-l 1px solid rgba(255,255,255,0.08)`, dialog shadow stack.
+- **Header:** `Compare — <active-name> vs <target-name>` (24px / weight 510), close `×` icon-only button top-right.
+- **Body:** sectioned diff (Agents / Skills / Commands / Model configs / Settings). Each row uses leading markers in `font-mono`:
+  - `+` (`text-primary`) — only in target
+  - `−` (`text-tertiary`) — only in active
+  - `=` (`text-quaternary`) — same in both
+- **Footer:** sticky bar with two buttons. Left: ghost `Close`. Right: primary `Activate <target>` (one-click swap).
+- **Built on:** the existing dialog primitive (Base UI / Radix Dialog wrapper). Do not introduce a new modal stack.
+
+### Header chrome propagation
+The header on **every** route renders the same three things, in this order from right to left: notifications/secondary actions → ⌘K pill → active-profile chip. Routes are not allowed to render their own header search inputs or ad-hoc identity widgets. If a route needs a contextual action, it goes in the page body, not the header.
+
+### Explorer view rules
+- **Card grid:** uniform 2-column grid. No `featured` variant — every card has equal weight. Featured-card emphasis was a holdover from a different IA and undermines scanability.
+- **Environment Summary:** rendered **only on the Plugins tab**. It is plugin-specific; on Hooks / MCP / LSP it was decorative noise.
+- **Skeletons:** removed for first paint. The Explorer reads from local config files — load is fast enough that skeletons flash and create perceived jank. Show content directly; if a future async source is added, reintroduce a single subtle pulse, not the multi-row skeleton.
+
+### Profile row interactions (sidebar)
+- **Default state:** `[icon] <name>` and, if active, an `Active` badge pinned right.
+- **Hover:** reveal a `QuickActions` cluster (right-aligned, `gap-1`):
+  - `Activate` (ghost, primary if not yet active)
+  - `Compare` (ghost) — opens the Compare panel against this row
+- These are the only hover-revealed actions. Don't add edit/delete to the row — those live in the profile detail.
+
+### Wireframe reference
+- Pixel-level reference: `~/.gstack/projects/JiangWeixian-claudeui/designs/layout-interaction-20260426/wireframe.html`
+- Four screens: Profiles front door · ⌘K palette open · Compare side panel · Explorer view (chrome propagation).
+- Open it before changing header / palette / compare layout — the placement is settled there, not in this doc.
+
 ## Decisions Log
 
 | Date | Decision | Rationale |
@@ -249,6 +331,14 @@ packages/ui/src/
 | 2026-04-25 | Monochrome palette | User requested dark + gray only, no accent colors |
 | 2026-04-25 | Primary button: white | Inverted style for maximum contrast |
 | 2026-04-25 | Relaxed letter-spacing | User found aggressive tracking too tight |
+| 2026-04-26 | Default route: `/profiles` | Profiles are the killer flow; Explorer is reference surface, not landing |
+| 2026-04-26 | Active-profile chip in every header | Identity must travel with the user; activation is ≤2 clicks from anywhere |
+| 2026-04-26 | ⌘K is the primary action surface | Wire the existing CommandPaletteProvider; replace inert header search inputs with the palette pill |
+| 2026-04-26 | Compare = right-side panel, not full page | Reuses dialog primitive; keeps active context visible behind the dim |
+| 2026-04-26 | Drop Explorer `featured` card variant | Equal-weight 2-col grid scans faster; emphasis was IA holdover |
+| 2026-04-26 | Environment Summary on Plugins tab only | Plugin-specific stats; was decorative on Hooks/MCP/LSP |
+| 2026-04-26 | Remove first-paint skeletons in Explorer | Local config reads are fast; skeleton flash creates perceived jank |
+| 2026-04-26 | Reverse earlier "Featured variant" decision | Superseded by 2026-04-26 uniform-grid decision above |
 
 ## Migration Checklist
 

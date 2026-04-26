@@ -1,4 +1,16 @@
 
+## Design system
+
+**Before any visual or UI work, read [DESIGN.md](./DESIGN.md).** It is the source of truth for:
+
+- Visual system (color, typography, spacing, elevation) — *settled, don't redesign*
+- **Layout & Interaction** — placement of header chrome, ⌘K palette, Compare panel, default route, Explorer rules
+- Decisions Log — every visual/layout decision and its rationale
+
+Companion artifact: pixel-level wireframe at `~/.gstack/projects/JiangWeixian-claudeui/designs/layout-interaction-20260426/wireframe.html` (four screens covering Profiles, ⌘K palette, Compare, Explorer). Open it before changing header / palette / compare layout.
+
+When a UI change conflicts with DESIGN.md, update DESIGN.md *first* (add a Decisions Log row + amend the relevant section), then implement. Don't let code drift ahead of the doc.
+
 ## Skill routing
 
 When the user's request matches an available skill, invoke it via the Skill tool. The
