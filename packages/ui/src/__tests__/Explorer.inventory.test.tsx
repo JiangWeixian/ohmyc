@@ -114,7 +114,21 @@ describe('Explorer inventory views', () => {
     expect(screen.getByText('Commands: 1')).toBeInTheDocument()
   })
 
-  it('shows the current environment summary for read-only config sections', () => {
+  it('shows the current environment summary only on plugins tab', () => {
+    renderWithProviders(
+      <Routes>
+        <Route path="/explore/:tab" element={<Explorer />} />
+      </Routes>,
+      { route: '/explore/plugins' },
+    )
+
+    expect(screen.getByText('Environment')).toBeInTheDocument()
+    expect(screen.getAllByText('Hooks').length).toBeGreaterThan(0)
+    expect(screen.getAllByText('MCP servers').length).toBeGreaterThan(0)
+    expect(screen.getAllByText('LSP servers').length).toBeGreaterThan(0)
+  })
+
+  it('does not show environment summary on hooks tab', () => {
     renderWithProviders(
       <Routes>
         <Route path="/explore/:tab" element={<Explorer />} />
@@ -122,9 +136,6 @@ describe('Explorer inventory views', () => {
       { route: '/explore/hooks' },
     )
 
-    expect(screen.getByText('Environment')).toBeInTheDocument()
-    expect(screen.getAllByText('Hooks').length).toBeGreaterThan(0)
-    expect(screen.getAllByText('MCP servers').length).toBeGreaterThan(0)
-    expect(screen.getAllByText('LSP servers').length).toBeGreaterThan(0)
+    expect(screen.queryByText('Environment')).not.toBeInTheDocument()
   })
 })

@@ -7,9 +7,11 @@ import {
 } from 'react-router-dom'
 import { Toaster } from 'sonner'
 
+import { Header } from './components/header'
 import { CommandPaletteProvider } from './components/ui/command-palette'
 import { type ViewId, ViewSwitcher } from './components/view-switcher'
 import { Explorer } from './explorer'
+import { useGlobalKeyboardShortcuts } from './hooks/use-keyboard-shortcuts'
 import { ProfilesView } from './profiles-view'
 
 function AppLayout() {
@@ -22,14 +24,17 @@ function AppLayout() {
     navigate(id === 'profiles' ? '/profiles' : '/explore')
   }
 
+  useGlobalKeyboardShortcuts()
+
   return (
     <div className="h-dvh flex flex-col bg-[var(--surface-base)] text-[var(--text-primary)]">
+      <Header />
       <main className="flex-1 overflow-hidden">
         <Routes>
           <Route path="/profiles/*" element={<ProfilesView viewSwitcher={<ViewSwitcher active={active} onChange={handleChange} />} />} />
           <Route path="/explore/:tab" element={<Explorer viewSwitcher={<ViewSwitcher active={active} onChange={handleChange} />} />} />
           <Route path="/explore" element={<Navigate to="/explore/agents" replace />} />
-          <Route path="*" element={<Navigate to="/explore/agents" replace />} />
+          <Route path="*" element={<Navigate to="/profiles" replace />} />
         </Routes>
       </main>
     </div>

@@ -4,6 +4,7 @@ import {
   Bot,
   Code,
   Info,
+  Loader2,
   Search,
   Server,
   Sparkles,
@@ -20,7 +21,6 @@ import { SectionHeader } from './components/section-header'
 import { SettingsLayout } from './components/settings/settings-layout'
 import { Sidebar, type SidebarSection } from './components/sidebar'
 import { SourceBadge } from './components/source-badge'
-import { AnimatedList, CardSkeleton } from './components/ui/skeleton'
 import {
   type ItemLocator,
   useAgent,
@@ -255,11 +255,9 @@ export function Explorer({ viewSwitcher }: ExplorerProperties) {
         {/* eslint-disable unicorn/no-nested-ternary */}
         {config.isLoading
           ? (
-          <AnimatedList className="grid grid-cols-1 md:grid-cols-2 gap-5">
-            {Array.from({ length: 4 }, (_, index) => (
-              <CardSkeleton key={index} />
-            ))}
-          </AnimatedList>
+          <div className="flex items-center justify-center py-20">
+            <Loader2 size={20} className="animate-spin text-[var(--text-tertiary)]" />
+          </div>
             )
           : config.isError
             ? (
@@ -284,7 +282,6 @@ export function Explorer({ viewSwitcher }: ExplorerProperties) {
                 title={entityConfig.getTitle(entity as never) || ''}
                 description={entityConfig.getDescription(entity as never) || ''}
                 badges={entityConfig.getBadges(entity as never)}
-                featured={index === 0}
                 onClick={() =>
                   setSelectedItem({
                     name: entity.id,
@@ -344,11 +341,9 @@ export function Explorer({ viewSwitcher }: ExplorerProperties) {
         {/* eslint-disable unicorn/no-nested-ternary */}
         {pluginsLoading
           ? (
-          <AnimatedList className="grid grid-cols-1 gap-5 md:grid-cols-2">
-            {Array.from({ length: 2 }, (_, index) => (
-              <CardSkeleton key={index} />
-            ))}
-          </AnimatedList>
+          <div className="flex items-center justify-center py-20">
+            <Loader2 size={20} className="animate-spin text-[var(--text-tertiary)]" />
+          </div>
             )
           : pluginsError
             ? (
@@ -474,7 +469,6 @@ export function Explorer({ viewSwitcher }: ExplorerProperties) {
     },
   ) => (
     <div className="space-y-6">
-      {renderEnvironmentSummary()}
       <ConfigSection {...config} />
     </div>
   )
@@ -494,37 +488,6 @@ export function Explorer({ viewSwitcher }: ExplorerProperties) {
 
       {/* Main Content */}
       <main className="relative flex min-w-0 flex-1 flex-col overflow-hidden bg-[var(--bg-marketing)]">
-        <header className="flex h-16 items-center justify-between border-b border-[rgba(255,255,255,0.05)] px-6">
-          <div className="flex items-center gap-2">
-            <span className="text-[13px] text-[var(--text-tertiary)]">Explorer</span>
-            <span className="text-[var(--border-standard)]">/</span>
-            <span className="text-[13px] font-medium capitalize text-[var(--text-primary)]">
-              {selectedItem
-                ? `${activeSection.replace('-', ' ')} Detail`
-                : activeSection.replace('-', ' ')}
-            </span>
-          </div>
-
-          <div className="flex items-center gap-4">
-            <div className="relative">
-              <Search
-                size={14}
-                className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--text-tertiary)]"
-              />
-              <input
-                type="text"
-                placeholder="Search..."
-                className={cn(
-                  'w-60 rounded-md border border-[var(--border-standard)] bg-[rgba(255,255,255,0.02)] py-2 pl-8 pr-3 text-[13px]',
-                  'text-[var(--text-primary)] placeholder:text-[var(--text-tertiary)]',
-                  'focus:outline-none focus:border-[rgba(255,255,255,0.2)]',
-                  'transition-smooth',
-                )}
-              />
-            </div>
-          </div>
-        </header>
-
         {/* Content */}
         <div className="flex-1 overflow-y-auto">
           <div className="mx-auto w-full max-w-6xl px-10 py-10">

@@ -25,6 +25,8 @@ interface ProfilesSidebarProperties {
   active: string | null
   selection: SidebarSelection | null
   onSelect: (sel: SidebarSelection) => void
+  onCompare?: (profileName: string) => void
+  onActivate?: (profileName: string) => void
   headerSlot?: React.ReactNode
 }
 
@@ -81,7 +83,7 @@ const COMPONENTS = [
   { category: 'model-configs' as const, label: 'Model Configs', icon: Settings },
 ] as const
 
-export function ProfilesSidebar({ profiles, active, selection, onSelect, headerSlot }: ProfilesSidebarProperties) {
+export function ProfilesSidebar({ profiles, active, selection, onSelect, onCompare, onActivate, headerSlot }: ProfilesSidebarProperties) {
   const currentValue = getTabValue(selection)
 
   const handleValueChange = (value: string) => {
@@ -113,7 +115,7 @@ export function ProfilesSidebar({ profiles, active, selection, onSelect, headerS
                   key={p.name}
                   value={value}
                   className={cn(
-                    'relative w-full flex items-center justify-start gap-3 rounded-md px-3 py-2.5 text-left text-[13px] font-medium transition-colors duration-150',
+                    'group relative w-full flex items-center justify-start gap-3 rounded-md px-3 py-2.5 text-left text-[13px] font-medium transition-colors duration-150',
                     isSelected
                       ? 'bg-[rgba(255,255,255,0.08)] text-[var(--text-primary)]'
                       : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[rgba(255,255,255,0.03)]',
@@ -123,11 +125,42 @@ export function ProfilesSidebar({ profiles, active, selection, onSelect, headerS
                     <User size={16} />
                   </span>
                   <span className="relative z-10 truncate">{p.name}</span>
-                  {isActive && (
-                    <span className="relative z-10 ml-auto shrink-0 text-[10px] font-medium text-[var(--text-primary)] bg-[rgba(255,255,255,0.08)] px-1.5 py-0.5 rounded">
-                      Active
+                  <span className="relative z-10 ml-auto flex items-center gap-1">
+                    {isActive && (
+                      <span className="text-[10px] font-medium text-[#f7f8f8] bg-[rgba(255,255,255,0.08)] px-1.5 py-0.5 rounded">
+                        Active
+                      </span>
+                    )}
+                    {/* Hover actions */}
+                    <span className="hidden group-hover:flex items-center gap-1">
+                      {!isActive && onActivate && (
+                        <span
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            onActivate(p.name)
+                          }}
+                          role="button"
+                          tabIndex={0}
+                          className="text-[10px] font-medium px-1.5 py-0.5 rounded bg-[rgba(255,255,255,0.08)] text-[#f7f8f8] hover:bg-[rgba(255,255,255,0.12)] cursor-pointer"
+                        >
+                          Activate
+                        </span>
+                      )}
+                      {onCompare && (
+                        <span
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            onCompare(p.name)
+                          }}
+                          role="button"
+                          tabIndex={0}
+                          className="text-[10px] font-medium px-1.5 py-0.5 rounded border border-[rgba(255,255,255,0.08)] text-[#d0d6e0] hover:bg-[rgba(255,255,255,0.04)] hover:text-[#f7f8f8] cursor-pointer"
+                        >
+                          Compare
+                        </span>
+                      )}
                     </span>
-                  )}
+                  </span>
                 </TabsTrigger>
               )
             })}

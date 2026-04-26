@@ -1,9 +1,14 @@
 import { AnimatePresence, motion } from 'framer-motion'
 import { FolderOpen, Loader2 } from 'lucide-react'
-import { useState } from 'react'
-import { useNavigate, useParams } from 'react-router-dom'
+import { useEffect, useState } from 'react'
+import {
+  useNavigate,
+  useParams,
+  useSearchParams,
+} from 'react-router-dom'
 import { toast } from 'sonner'
 
+import { ComparePanel } from './components/compare-panel'
 import { ProfileCard } from './components/profiles/profile-card'
 import { ProfileEditor } from './components/profiles/profile-editor'
 import { ProfilesSidebar, type SidebarSelection } from './components/profiles/profiles-sidebar'
@@ -15,6 +20,8 @@ import {
   useProfile,
   useProfiles,
 } from './hooks/use-profiles'
+
+import type { Profile } from '@claudeui/shared'
 
 function parseSelection(parameters: Record<string, string | undefined>): SidebarSelection | null {
   const { '*': rest } = parameters
@@ -48,10 +55,14 @@ export function ProfilesView({ viewSwitcher }: ProfilesViewProperties) {
   const navigate = useNavigate()
   const selection = parseSelection(parameters)
   const [editing, setEditing] = useState(false)
+  const [compareTarget, setCompareTarget] = useState<Profile | null>(null)
+  const [searchParams, setSearchParams] = useSearchParams()
 
   const { data, isLoading } = useProfiles()
   const profiles = data?.profiles ?? []
   const active = data?.active ?? null
+
+  const isCompareOpen = compareTarget !== null
 
   const selectedProfileName = selection?.type === 'profile' ? selection.name : null
   const { data: selectedProfile } = useProfile(selectedProfileName)
@@ -117,6 +128,63 @@ export function ProfilesView({ viewSwitcher }: ProfilesViewProperties) {
     })
   }
 
+  // Route-specific keyboard shortcuts
+  useEffect(() => {
+    const isInputFocused = () => {
+      const el = document.activeElement
+      return (
+        el instanceof HTMLInputElement
+        || el instanceof HTMLTextAreaElement
+        || el?.getAttribute('contenteditable') === 'true'
+      )
+    }
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (isInputFocused()) {
+        return
+      }
+
+      // ⌘1/⌘2/⌘3 — activate 1st/2nd/3rd profile
+      if ((e.metaKey || e.ctrlKey) && ['1', '2', '3'].includes(e.key)) {
+        e.preventDefault()
+        const index = Number.parseInt(e.key, 10) - 1
+        const profile = profiles[index]
+        if (profile) {
+          handleActivate(profile.name)
+        }
+        return
+      }
+
+      // c — open compare with first non-active profile
+      if (e.key === 'c' && !e.metaKey && !e.ctrlKey && active) {
+        const target = profiles.find(p => p.name !== active)
+        if (target) {
+          setCompareTarget(target)
+        }
+      }
+    }
+
+    document.addEventListener('keydown', handleKeyDown)
+    return () => document.removeEventListener('keydown', handleKeyDown)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [profiles, active])
+
+  // Handle ?action=compare query param
+  useEffect(() => {
+    const action = searchParams.get('action')
+    if (action === 'compare' && active) {
+      const target = profiles.find(p => p.name !== active)
+      if (target) {
+        // eslint-disable-next-line react-hooks/set-state-in-effect
+        setCompareTarget(target)
+      }
+      // Clear the query param
+      const newParams = new URLSearchParams(searchParams)
+      newParams.delete('action')
+      setSearchParams(newParams, { replace: true })
+    }
+  }, [searchParams, active, profiles, setSearchParams])
+
   return (
     <div className="flex h-full min-w-0">
       <ProfilesSidebar
@@ -124,6 +192,13 @@ export function ProfilesView({ viewSwitcher }: ProfilesViewProperties) {
         active={active}
         selection={selection}
         onSelect={handleSelect}
+        onCompare={(name) => {
+          const target = profiles.find(p => p.name === name)
+          if (target) {
+            setCompareTarget(target)
+          }
+        }}
+        onActivate={handleActivate}
         headerSlot={viewSwitcher}
       />
 
@@ -231,6 +306,19 @@ export function ProfilesView({ viewSwitcher }: ProfilesViewProperties) {
           </motion.div>
         </AnimatePresence>
       </main>
+
+      <ComparePanel
+        open={isCompareOpen}
+        onClose={() => setCompareTarget(null)}
+        activeProfile={profiles.find(p => p.name === active) || null}
+        targetProfile={compareTarget}
+        onActivateTarget={() => {
+          if (compareTarget) {
+            handleActivate(compareTarget.name)
+            setCompareTarget(null)
+          }
+        }}
+      />
     </div>
   )
 }
