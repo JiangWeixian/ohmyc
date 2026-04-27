@@ -1,6 +1,5 @@
 import {
   Bot,
-  FolderOpen,
   Plus,
   Settings,
   Sparkles,
@@ -31,17 +30,12 @@ interface ProfilesSidebarProperties {
 }
 
 function SidebarHeader({ headerSlot }: { headerSlot?: React.ReactNode }) {
+  if (!headerSlot) {
+    return null
+  }
   return (
-    <div className="border-b border-[rgba(255,255,255,0.05)] px-4 pb-4 pt-5">
-      <div className="mb-5 flex items-center gap-3">
-        <div className="flex size-10 items-center justify-center rounded-lg border border-[rgba(255,255,255,0.08)] bg-[rgba(255,255,255,0.02)] text-[var(--text-primary)]">
-          <FolderOpen size={18} />
-        </div>
-        <span className="text-[15px] font-semibold text-[var(--text-primary)]">
-          Profiles
-        </span>
-      </div>
-      {headerSlot && <div className="w-full overflow-hidden">{headerSlot}</div>}
+    <div className="border-b border-[rgba(255,255,255,0.05)] px-4 py-3">
+      <div className="w-full overflow-hidden">{headerSlot}</div>
     </div>
   )
 }

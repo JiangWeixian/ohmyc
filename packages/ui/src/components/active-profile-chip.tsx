@@ -64,10 +64,18 @@ export function ActiveProfileChip({ onCompare, onNavigateToProfiles }: ActivePro
             <span className="w-1.5 h-1.5 rounded-full bg-[#f7f8f8]" />
           )}
           <span className="text-[12px] font-[510]">
-            <span className="text-[#8a8f98]">Active</span>{' '}
-            <span className="text-[#d0d6e0]">
-              {isLoading ? '...' : (hasActive ? activeProfile.name : 'No active profile')}
-            </span>
+            {hasActive
+              ? (
+              <>
+                <span className="text-[#8a8f98]">Active</span>{' '}
+                <span className="text-[#d0d6e0]">{activeProfile.name}</span>
+              </>
+                )
+              : (
+              <span className="text-[#62666d]">
+                {isLoading ? '…' : 'No active profile'}
+              </span>
+                )}
           </span>
           <ChevronDown size={12} className="text-[#8a8f98]" />
         </button>

@@ -1,4 +1,3 @@
-import { Blocks } from 'lucide-react'
 import React from 'react'
 
 import {
@@ -16,20 +15,13 @@ export interface SidebarSection {
   icon: IconType
 }
 
-function SidebarHeader({ title, headerSlot }: { title?: string; headerSlot?: React.ReactNode }) {
+function SidebarHeader({ headerSlot }: { headerSlot?: React.ReactNode }) {
+  if (!headerSlot) {
+    return null
+  }
   return (
-    <div className="border-b border-[rgba(255,255,255,0.05)] px-4 pb-4 pt-5">
-      <div className="mb-5 flex items-center gap-3">
-        <div className="flex size-10 items-center justify-center rounded-lg border border-[rgba(255,255,255,0.08)] bg-[rgba(255,255,255,0.02)] text-[var(--text-primary)]">
-          <Blocks size={18} />
-        </div>
-        {title && (
-          <span className="text-[15px] font-semibold text-[var(--text-primary)]">
-            {title}
-          </span>
-        )}
-      </div>
-      {headerSlot && <div className="w-full overflow-hidden">{headerSlot}</div>}
+    <div className="border-b border-[rgba(255,255,255,0.05)] px-4 py-3">
+      <div className="w-full overflow-hidden">{headerSlot}</div>
     </div>
   )
 }
@@ -46,12 +38,11 @@ export function Sidebar({
   sections,
   activeSection,
   onSectionChange,
-  title,
   headerSlot,
 }: SidebarProperties) {
   return (
     <aside className="flex w-60 flex-col border-r border-[rgba(255,255,255,0.05)] bg-[var(--bg-panel)]">
-      <SidebarHeader title={title} headerSlot={headerSlot} />
+      <SidebarHeader headerSlot={headerSlot} />
       <nav className="flex-1 overflow-y-auto px-3 py-3">
         <div className="mb-3 px-1 text-[13px] font-medium text-[var(--text-tertiary)]">
           Explore
