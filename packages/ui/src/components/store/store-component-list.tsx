@@ -2,7 +2,6 @@ import { AnimatePresence, motion } from 'framer-motion'
 import {
   ChevronDown,
   Edit2,
-  Info,
   Loader2,
   Plus,
   Trash2,
@@ -370,7 +369,6 @@ export function StoreComponentList({ category }: StoreComponentListProperties) {
                 animate={{ opacity: 1, x: 0 }}
                 exit={{ opacity: 0, x: -20, scale: 0.95 }}
                 transition={{ delay: index * 0.03, duration: 0.2 }}
-                whileHover={{ x: 4 }}
                 className={cn(
                   'rounded-[var(--radius-md)] px-4 py-4',
                   'bg-[var(--surface-raised)] border border-[var(--border-default)]',
@@ -406,18 +404,23 @@ export function StoreComponentList({ category }: StoreComponentListProperties) {
                       </div>
                         )
                       : (
-                    <div className="grid gap-3 md:grid-cols-[minmax(0,120px)_minmax(0,1fr)_minmax(0,1.4fr)_140px]">
+                    <div className={typeFilter === 'all'
+                      ? 'grid gap-3 md:grid-cols-[minmax(0,120px)_minmax(0,1fr)_minmax(0,1.4fr)_140px]'
+                      : 'grid gap-3 md:grid-cols-[minmax(0,1fr)_minmax(0,1.6fr)_140px]'}
+                    >
+                      {typeFilter === 'all' && (
                       <div>
                         <div className="text-[10px] font-semibold uppercase tracking-wide text-[var(--text-tertiary)]">type</div>
                         <div className="text-[13px] font-medium text-[var(--text-primary)]">{item.type}</div>
                       </div>
+                      )}
                       <div>
                         <div className="text-[10px] font-semibold uppercase tracking-wide text-[var(--text-tertiary)]">name</div>
                         <div className="text-[13px] font-medium text-[var(--text-primary)]">{item.name}</div>
                       </div>
                       <div>
                         <div className="text-[10px] font-semibold uppercase tracking-wide text-[var(--text-tertiary)]">description</div>
-                        <div className="text-[13px] text-[var(--text-secondary)]">{item.description || 'No description'}</div>
+                        <div className="line-clamp-3 text-[13px] text-[var(--text-secondary)]">{item.description || 'No description'}</div>
                       </div>
                       <div>
                         <div className="text-[10px] font-semibold uppercase tracking-wide text-[var(--text-tertiary)]">profiles</div>
@@ -430,7 +433,6 @@ export function StoreComponentList({ category }: StoreComponentListProperties) {
                       <details className="group rounded-[var(--radius-md)] border border-[var(--border-default)]/80 bg-[var(--surface-overlay)]/40 px-3 py-2">
                         <summary className="flex cursor-pointer list-none items-center gap-2 text-[12px] text-[var(--text-tertiary)]">
                           <ChevronDown size={14} className="transition-transform group-open:rotate-180" />
-                          <Info size={14} />
                           Source details
                         </summary>
                         <div className="mt-2 space-y-1 text-[12px] text-[var(--text-secondary)]">
