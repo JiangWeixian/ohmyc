@@ -11,7 +11,7 @@
     "build": "tsup",
     "build:full": "pnpm --filter @claudeui/ui build && tsup",
     "dev": "tsup --watch --onSuccess 'node dist/index.mjs'",
-    "dev:server": "tsup --watch --onSuccess 'node dist/index.mjs start --api-only'",
+    "dev:server": "tsup --watch --onSuccess 'cd ../.. && node packages/cli/dist/index.mjs start --api-only'",
     "start": "node dist/index.mjs",
     "test": "vitest run",
     "test:watch": "vitest",

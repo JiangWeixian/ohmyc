@@ -67,9 +67,18 @@ export async function createServer(options: CreateServerOptions = {}): Promise<F
     logger: true,
   })
 
-  // Health check
+  // Health check + debug
   fastify.get('/health', async () => {
-    return { status: 'ok' }
+    const config = new ConfigLocator()
+    return {
+      status: 'ok',
+      debug: {
+        cwd: process.cwd(),
+        agentsDir: config.agentsDir,
+        projectAgentsDir: config.projectAgentsDir,
+        projectPath: config.projectPath,
+      },
+    }
   })
 
   if (!options.apiOnly) {
