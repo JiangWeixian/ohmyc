@@ -139,27 +139,29 @@ export function ProfileCard({ profile, isActive, activeProfileName, onActivate, 
     onDelete,
   })
 
+  const hasComponents = !!(profile.agents?.length || profile.skills?.length || profile.commands?.length || profile.plugins?.length || profile.modelConfig)
+  const hasRuntime = hooksKeys.length > 0 || mcpKeys.length > 0 || lspKeys.length > 0 || settingsKeys.length > 0
+
   return (
     <Card className="panel p-6">
       <CardContent className="p-0">
-        <div className="flex flex-col gap-8 lg:flex-row">
-          {/* Left column - summary rail (~35%) */}
-          <div className="flex flex-col gap-4 lg:w-[35%]">
-            <div>
+        <div className="flex flex-col gap-6">
+          {/* Header row: name + badge left, actions right */}
+          <div className="flex items-start justify-between gap-4">
+            <div className="min-w-0">
               <div className="flex items-center gap-2.5">
-                <h2 className="text-balance text-[30px] font-semibold leading-[1.1] text-[var(--text-primary)]">{profile.name}</h2>
+                <h2 className="truncate text-[28px] font-semibold leading-[1.1] text-[var(--text-primary)]">{profile.name}</h2>
                 {isActive && (
-                  <span className="bg-[var(--accent-blue)]/15 text-[var(--accent-blue)] text-[11px] font-medium px-2 py-0.5 rounded">
+                  <span className="shrink-0 rounded bg-white/[0.08] px-2 py-0.5 text-[11px] font-medium text-[var(--text-primary)]">
                     Active
                   </span>
                 )}
               </div>
               {profile.description && (
-                <p className="text-pretty mt-2 max-w-md text-[15px] text-[var(--text-secondary)]">{profile.description}</p>
+                <p className="text-pretty mt-1.5 text-[14px] text-[var(--text-secondary)]">{profile.description}</p>
               )}
             </div>
-
-            <div className="flex flex-wrap gap-2">
+            <div className="flex shrink-0 flex-wrap items-center gap-2 pt-0.5">
               <button
                 onClick={onEdit}
                 type="button"
@@ -208,63 +210,63 @@ export function ProfileCard({ profile, isActive, activeProfileName, onActivate, 
                 Delete
               </button>
             </div>
+          </div>
 
-            {lockError && (
-              <p className="text-[13px] text-[var(--accent-amber)]">Another activation is in progress. Wait a moment and try again.</p>
+          {lockError && (
+            <p className="text-[13px] text-[var(--accent-amber)]">Another activation is in progress. Wait a moment and try again.</p>
+          )}
+
+          {/* Content sections — side-by-side when both present, full-width otherwise */}
+          {(hasComponents || hasRuntime) && (
+            <div className={cn(
+              'flex flex-col gap-6',
+              hasComponents && hasRuntime && 'lg:grid lg:grid-cols-2',
             )}
-          </div>
-
-          {/* Right column (~65%) */}
-          <div className="flex flex-col gap-8 lg:w-[65%]">
-            {/* Components section — only render if at least one component is set */}
-            {(profile.agents?.length || profile.skills?.length || profile.commands?.length || profile.plugins?.length || profile.modelConfig)
-              ? (
-            <div>
-              <h3 className="text-[20px] font-semibold text-[var(--text-primary)]">Components</h3>
-              <p className="mb-4 mt-1 text-[13px] text-[var(--text-tertiary)]">Store-managed items included in this profile</p>
-              <div className="flex flex-col gap-3">
-                <ComponentGroup label="Agents" items={profile.agents ?? []} />
-                <ComponentGroup label="Skills" items={profile.skills ?? []} />
-                <ComponentGroup label="Commands" items={profile.commands ?? []} />
-                <ComponentGroup label="Plugins" items={profile.plugins ?? []} />
-                {profile.modelConfig && resolvedModelConfig && (
-                  <div>
-                    <div className="mb-1.5 text-[13px] font-medium text-[var(--text-primary)]">Model Config</div>
-                    <div>
-                      <span className="inline-block rounded bg-white/[0.04] px-2 py-0.5 text-[12px] text-[var(--text-secondary)] border border-[var(--border-default)]">
-                        {resolvedModelConfig.name}
-                      </span>
-                      <div className="mt-1 text-[12px] text-[var(--text-tertiary)]">
-                        {[
-                          resolvedModelConfig.provider,
-                          resolvedModelConfig.apiKey ? maskApiKey(resolvedModelConfig.apiKey) : null,
-                          resolvedModelConfig.baseUrl,
-                        ].filter(Boolean).join(' | ')}
+            >
+              {hasComponents && (
+                <div>
+                  <h3 className="text-[15px] font-semibold text-[var(--text-primary)]">Components</h3>
+                  <p className="mb-3 mt-0.5 text-[12px] text-[var(--text-tertiary)]">Store-managed items included in this profile</p>
+                  <div className="flex flex-col gap-3">
+                    <ComponentGroup label="Agents" items={profile.agents ?? []} />
+                    <ComponentGroup label="Skills" items={profile.skills ?? []} />
+                    <ComponentGroup label="Commands" items={profile.commands ?? []} />
+                    <ComponentGroup label="Plugins" items={profile.plugins ?? []} />
+                    {profile.modelConfig && resolvedModelConfig && (
+                      <div>
+                        <div className="mb-1.5 text-[13px] font-medium text-[var(--text-primary)]">Model Config</div>
+                        <div>
+                          <span className="inline-block rounded bg-white/[0.04] px-2 py-0.5 text-[12px] text-[var(--text-secondary)] border border-[var(--border-default)]">
+                            {resolvedModelConfig.name}
+                          </span>
+                          <div className="mt-1 text-[12px] text-[var(--text-tertiary)]">
+                            {[
+                              resolvedModelConfig.provider,
+                              resolvedModelConfig.apiKey ? maskApiKey(resolvedModelConfig.apiKey) : null,
+                              resolvedModelConfig.baseUrl,
+                            ].filter(Boolean).join(' | ')}
+                          </div>
+                        </div>
                       </div>
-                    </div>
+                    )}
                   </div>
-                )}
-              </div>
-            </div>
-                )
-              : null}
+                </div>
+              )}
 
-            {/* Runtime config section — only render if at least one runtime key is set */}
-            {(hooksKeys.length > 0 || mcpKeys.length > 0 || lspKeys.length > 0 || settingsKeys.length > 0)
-              ? (
-            <div>
-              <h3 className="text-[20px] font-semibold text-[var(--text-primary)]">Runtime config</h3>
-              <p className="mb-4 mt-1 text-[13px] text-[var(--text-tertiary)]">Configuration blocks applied when this profile is activated</p>
-              <div className="flex flex-col gap-3">
-                <RuntimeGroup label="Hooks" keys={hooksKeys} />
-                <RuntimeGroup label="MCP" keys={mcpKeys} />
-                <RuntimeGroup label="LSP" keys={lspKeys} />
-                <RuntimeGroup label="Settings" keys={settingsKeys} />
-              </div>
+              {hasRuntime && (
+                <div>
+                  <h3 className="text-[15px] font-semibold text-[var(--text-primary)]">Runtime config</h3>
+                  <p className="mb-3 mt-0.5 text-[12px] text-[var(--text-tertiary)]">Configuration blocks applied when this profile is activated</p>
+                  <div className="flex flex-col gap-3">
+                    <RuntimeGroup label="Hooks" keys={hooksKeys} />
+                    <RuntimeGroup label="MCP" keys={mcpKeys} />
+                    <RuntimeGroup label="LSP" keys={lspKeys} />
+                    <RuntimeGroup label="Settings" keys={settingsKeys} />
+                  </div>
+                </div>
+              )}
             </div>
-                )
-              : null}
-          </div>
+          )}
         </div>
       </CardContent>
 
