@@ -1,4 +1,4 @@
-@import url('https://cdn.jsdelivr.net/npm/geist@1.3.0/dist/fonts/geist-sans/style.css');
+/* Inter Variable loaded via index.html <link> for preconnect performance */
 
 @tailwind base;
 @tailwind components;
@@ -109,7 +109,8 @@
   }
 
   html {
-    font-family: 'Geist', 'Geist Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    font-family: 'Inter var', 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    font-feature-settings: 'cv01', 'ss03';
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
     background: var(--bg-marketing);
