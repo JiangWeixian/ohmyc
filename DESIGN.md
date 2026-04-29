@@ -314,10 +314,59 @@ The header on **every** route renders the same three things, in this order from 
   - `Compare` (ghost) — opens the Compare panel against this row
 - These are the only hover-revealed actions. Don't add edit/delete to the row — those live in the profile detail.
 
+### Profiles → Components (store library views)
+The Profiles sidebar's `Components` group (Agents / Skills / Commands / Model configs) opens **store-management** views — distinct in job from Explorer's read-only browse. Routes: `/profiles/agents`, `/profiles/skills`, `/profiles/commands`, `/profiles/model-configs`.
+
+- **Header chrome:** same propagation rules. Breadcrumb is `Profiles / <Component>` (e.g. `Profiles / Agents`).
+- **Toolbar (top of content):**
+  - Left-flex: search input (`bg rgba(255,255,255,0.02)`, `1px border var(--border-default)`, `rounded-md`, placeholder `Search <component> by name…`).
+  - Right cluster: ghost `Import` button + primary `New <singular>` button. **No type-filter segmented control** — the sidebar already segments by type; duplicating it adds chrome without affordance.
+- **Counter line** (Berkeley Mono, 12px, `text-tertiary`, sits between toolbar and list):
+  `<N> <plural> · <M> referenced · <K> unused`. Reads like a status line; frames the screen as inventory.
+- **Row anatomy** (dense, 64–72px tall, `rounded-lg`, `bg rgba(255,255,255,0.02)`, hover lifts to `0.04`):
+  - `[36px square avatar — initials, rounded-md, bg rgba(255,255,255,0.04), 1px border]`
+  - Name: `14px / weight 510 / text-primary`
+  - Description: `12px / text-secondary / line-clamp-1`
+  - Meta line: Berkeley Mono `11px / text-tertiary` — `source · model · imported from <path>` (omit empty fields)
+  - **Right cluster — "Used by" indicator (the killer column):**
+    - **0 refs** → italic `Unused` (Berkeley Mono, `text-quaternary`); row name dims to `text-secondary` so deletion candidates are scannable.
+    - **1–2 refs** → `Used by` label + profile-name pills (`rounded-full`, `1px border var(--border-default)`, `bg rgba(255,255,255,0.02)`, `11px weight 510`).
+    - **3+ refs** → single `Used by N profiles` mono badge with tooltip listing names.
+  - **Hover-revealed quick actions** (right-edge cluster, `gap-1`): ghost `Edit` + ghost `Delete` (red-tinted on hover via `text-[var(--accent-red)]` only on the icon hover state — text stays grayscale per monochrome rule).
+- **Empty state:** centered card (matches Profiles empty-state pattern) with headline `No <plural> in your store yet`, blurb, primary action `Import components`.
+- **Delete confirm:** reuses `DeleteConfirmDialog`. When `Used by N` ≠ 0, dialog lists referencing profile names inline — surfaces the same data the row already showed; no extra fetch.
+- **Out of scope here:** in-place add/remove from active profile (composition lives in profile detail, not the store). The store edits the canonical components; profile composition is separate.
+
+### Profile editor (`/profiles/new`, `/profiles/:name/edit`)
+The editor replaces the prior wall-of-cards layout. Three structural pieces — sticky save bar, left section nav, sectioned content — and one rule: **section visual treatment matches the data type** (form vs picker vs code).
+
+- **Sticky save bar (top of `main`, replaces the route header):**
+  - Left: breadcrumb `Profiles / <name> / Edit` (or `New profile`).
+  - Right cluster (right-to-left): primary `Save profile` with `⌘S` keycap, ghost `Cancel`, dirty indicator (`6px white dot + "Unsaved changes"` in Berkeley Mono `text-tertiary`).
+  - Save is **disabled** until the form is both dirty and valid (no JSON parse errors). Cancel closes back to the prior route; if dirty, prompt-on-leave.
+- **Left section nav (sticky, `w-[200px]`, own scroll container):**
+  - `Sections` eyebrow + numbered jump-links: `01 Basics`, `02 Components`, `03 Plugins & model`, `04 Runtime config`, `05 Settings overlay`.
+  - Active item: `bg rgba(255,255,255,0.06) / text-primary`. Inactive: `text-secondary`. Number prefix: Berkeley Mono `11px / text-quaternary`, fixed 18px column.
+  - **Error propagation:** if any field in a section is invalid, that nav item shows a `6px text-tertiary dot` on the right edge — find errors when scrolled into another section.
+  - Active section determined by scroll-spy on the section eyebrows; clicks scroll-to without changing the route.
+- **Section heading rhythm** (every section uses the same skeleton):
+  - Eyebrow row: `[Berkeley Mono number `01`] [headline 20px/590 -0.15px] [optional right-aligned mono meta — counts/error-summary]`
+  - 1-line subtitle below, `13px / text-tertiary`, indented 28px so it visually hangs off the number column.
+  - Content area indented 28px so number column reads as a margin.
+- **Section visual treatments (the differentiation rule):**
+  - **01 Basics — light form**, no card chrome. Stacked full-width fields (Name above Description) — single column matches the rest of the form's vertical rhythm. Name field is `font-mono` (it's an id), disabled in edit mode with a one-line `text-quaternary` caption.
+  - **02 Components — picker cards**, one per type (Agents / Skills / Commands), `bg rgba(255,255,255,0.02)` + `border rounded-lg`. Each card: header row `[icon] [type name] [n / total mono badge] [inline search 200px]`; body = chip-cloud of selected items + dashed `+ Add <type>` chip that opens a typeahead. Selected chip = `bg rgba(255,255,255,0.06)` solid + `×` remove handle. Empty types collapse to single-row affordance with the `+ Add` chip on the right of the header.
+  - **03 Plugins & model — stacked panels** (full width, top to bottom). Plugins panel = checkbox grid of available plugins with source meta. Model-config panel = dropdown with provider readout below. No side-by-side — keeps a single vertical column through the entire form.
+  - **04 Runtime config — code mode** (the gear-shift). Visually **distinct from every other section**: `bg #08090a` deep surface (not `0.02`), Berkeley Mono throughout, line numbers, `{ }` eyebrow icon, header row `[{ } icon] [field name] [optional schema hint] [right: "valid" / mono error summary]`. Each field (hooks / mcpServers / lspServers) is its own panel with the same anatomy.
+    - Error rendering: invalid JSON line gets `bg rgba(255,255,255,0.04)`, line-number bumped to `text-primary / 590`, and an inline `← expected ,` annotation in `text-quaternary` to the right of the offending token. Panel border lifts to `rgba(255,255,255,0.18)`.
+  - **05 Settings overlay — single code panel** (same anatomy as 04). Lives in its own section because settings is a different conceptual surface (Claude runtime tuning) from the per-tool configs in 04, even though the editor is identical.
+- **Layout shell:** 2-pane split inside `main` — `aside` (left nav) + scrolling content. The page-level header row is **replaced** by the save bar; the editor does not render the standard breadcrumb header. Active-profile chip and ⌘K pill **do not** appear on the editor route — modal-like focus on the form is intentional.
+- **Empty profile (new):** all chip clouds empty, all JSON editors empty, dirty bit only flips after first edit. Save button reads `Create profile` instead of `Save profile`.
+
 ### Wireframe reference
 - Pixel-level reference: `~/.gstack/projects/JiangWeixian-claudeui/designs/layout-interaction-20260426/wireframe.html`
-- Four screens: Profiles front door · ⌘K palette open · Compare side panel · Explorer view (chrome propagation).
-- Open it before changing header / palette / compare layout — the placement is settled there, not in this doc.
+- Six screens: Profiles front door · ⌘K palette open · Compare side panel · Explorer view (chrome propagation) · Profiles → Agents store · Profile editor.
+- Open it before changing header / palette / compare / store / editor layout — the placement is settled there, not in this doc.
 
 ## Decisions Log
 
@@ -339,6 +388,14 @@ The header on **every** route renders the same three things, in this order from 
 | 2026-04-26 | Environment Summary on Plugins tab only | Plugin-specific stats; was decorative on Hooks/MCP/LSP |
 | 2026-04-26 | Remove first-paint skeletons in Explorer | Local config reads are fast; skeleton flash creates perceived jank |
 | 2026-04-26 | Reverse earlier "Featured variant" decision | Superseded by 2026-04-26 uniform-grid decision above |
+| 2026-04-28 | Profiles→Components store uses dense rows, not cards | Job is management (CRUD + reference auditing), not discovery — rows pack 4–5× the density of cards and surface the "Used by" column inline |
+| 2026-04-28 | "Used by N" is the killer column on store views | Answers "what breaks if I delete this?" before the delete dialog; 0-ref rows tagged `Unused` to make orphans scannable |
+| 2026-04-28 | No type-filter segmented control on store views | Sidebar already segments by type (Agents/Skills/Commands/Model configs); duplicating it adds chrome without affordance |
+| 2026-04-29 | Profile editor uses sticky save bar + left section nav | Long form was unscannable; numbered jump-links + scroll-spy + dirty/save bar match Linear/Vercel settings UX |
+| 2026-04-29 | Editor sections differ visually by data type, not just by heading | Form (light), picker (chip cards), code (mono dark surface w/ line numbers) — visual gear-shift makes mode obvious before reading |
+| 2026-04-29 | Active-profile chip + ⌘K pill hidden on editor route | Editor is modal-like focus; chrome propagation rule has an explicit exception for forms with their own save bar |
+| 2026-04-29 | JSON errors propagate to section nav as a dot | Users scrolled past a broken section don't lose track of where the error is |
+| 2026-04-29 | Editor uses single-column stacked fields, no in-section 2-col grids | Side-by-side Name/Description and Plugins/Model broke the form's vertical rhythm; stacking improves scanability and works at narrower widths |
 
 ## Migration Checklist
 
