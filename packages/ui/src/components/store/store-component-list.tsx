@@ -127,9 +127,9 @@ export function StoreComponentList({ category, onEdit }: StoreComponentListPrope
   const deleteModelConfigMut = useDeleteStoreModelConfig()
 
   const { data: profilesData } = useProfiles()
-  const allProfiles = profilesData?.profiles ?? []
 
   const referencedByMap = useMemo(() => {
+    const allProfiles = profilesData?.profiles ?? []
     const m = new Map<string, string[]>()
     for (const p of allProfiles) {
       for (const r of p.agents) {
@@ -150,7 +150,7 @@ export function StoreComponentList({ category, onEdit }: StoreComponentListPrope
       }
     }
     return m
-  }, [allProfiles])
+  }, [profilesData])
 
   const items = useMemo(() => {
     if (category === 'agents') {
@@ -421,7 +421,7 @@ export function StoreComponentList({ category, onEdit }: StoreComponentListPrope
                       {metaParts.length > 0 && (
                         <div className="mt-1 truncate font-mono text-[11px] text-[var(--text-tertiary)]">
                           {metaParts.map((part, i) => (
-                            <span key={i}>
+                            <span key={`${part}-${i}`}>
                               {i > 0 && <span className="mx-1.5 text-[var(--text-quaternary)]">·</span>}
                               {part}
                             </span>

@@ -79,15 +79,15 @@ function ProfileRow({
           : 'border-[rgba(255,255,255,0.08)] hover:border-[rgba(255,255,255,0.12)]',
       )}
     >
-      <div className="flex size-9 shrink-0 items-center justify-center rounded-lg border border-[rgba(255,255,255,0.08)] bg-[rgba(255,255,255,0.06)] text-[12px] font-[590] text-[var(--text-secondary)] tracking-[0.02em]">
+      <div className="flex size-9 shrink-0 items-center justify-center rounded-lg border border-[rgba(255,255,255,0.08)] bg-[rgba(255,255,255,0.06)] text-[12px] font-[590] tracking-[0.02em] text-[var(--text-secondary)]">
         {getInitials(profile.name)}
       </div>
 
-      <div className="flex-1 min-w-0">
-        <div className="flex items-center gap-2 mb-0.5">
-          <span className="text-[15px] font-[510] text-[var(--text-primary)] truncate">{profile.name}</span>
+      <div className="min-w-0 flex-1">
+        <div className="mb-0.5 flex items-center gap-2">
+          <span className="truncate text-[15px] font-[510] text-[var(--text-primary)]">{profile.name}</span>
           {isActive && (
-            <span className="shrink-0 rounded-[3px] bg-[var(--text-primary)] px-1.5 py-px text-[10px] font-[590] text-[var(--bg-marketing)] tracking-[0.04em] uppercase">
+            <span className="shrink-0 rounded-[3px] bg-[var(--text-primary)] px-1.5 py-px text-[10px] font-[590] uppercase tracking-[0.04em] text-[var(--bg-marketing)]">
               Active
             </span>
           )}
@@ -96,14 +96,14 @@ function ProfileRow({
       </div>
 
       {!isActive && (
-        <div className="flex shrink-0 items-center gap-1.5 opacity-0 transition-opacity duration-150 group-hover:opacity-100 focus-within:opacity-100">
+        <div className="flex shrink-0 items-center gap-1.5 opacity-0 transition-opacity duration-150 focus-within:opacity-100 group-hover:opacity-100">
           <button
             onClick={(e) => {
               e.stopPropagation()
               onCompare()
             }}
             type="button"
-            className="rounded-md border border-[rgba(255,255,255,0.08)] bg-[rgba(255,255,255,0.04)] px-3 py-1.5 text-[12px] font-[510] text-[var(--text-secondary)] hover:bg-[rgba(255,255,255,0.06)] hover:text-[var(--text-primary)] transition-colors"
+            className="rounded-md border border-[rgba(255,255,255,0.08)] bg-[rgba(255,255,255,0.04)] px-3 py-1.5 text-[12px] font-[510] text-[var(--text-secondary)] transition-colors hover:bg-[rgba(255,255,255,0.06)] hover:text-[var(--text-primary)]"
           >
             Compare with active
           </button>
@@ -113,7 +113,7 @@ function ProfileRow({
               onActivate()
             }}
             type="button"
-            className="rounded-md border-transparent bg-[var(--text-primary)] px-3 py-1.5 text-[12px] font-[510] text-[var(--bg-marketing)] hover:bg-[var(--text-secondary)] transition-colors"
+            className="rounded-md border-transparent bg-[var(--text-primary)] px-3 py-1.5 text-[12px] font-[510] text-[var(--bg-marketing)] transition-colors hover:bg-[var(--text-secondary)]"
           >
             Activate
           </button>
@@ -168,12 +168,13 @@ export function ProfilesView({ viewSwitcher }: ProfilesViewProperties) {
   const componentCategory = selection?.type === 'components' ? selection.category : null
   // Reset component-edit target when sidebar category or selection changes
   useEffect(() => {
-    setComponentEditTarget(null)
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setComponentEditTarget(previous => (previous === null ? previous : null))
   }, [componentCategory, selection?.type])
   const isEditorRoute
     = selection?.type === 'new-profile'
-    || (selection?.type === 'profile' && editing)
-    || (selection?.type === 'components' && componentEditTarget !== null)
+      || (selection?.type === 'profile' && editing)
+      || (selection?.type === 'components' && componentEditTarget !== null)
 
   const selectedProfileName = selection?.type === 'profile' ? selection.name : null
   const { data: selectedProfile } = useProfile(selectedProfileName)
@@ -296,8 +297,8 @@ export function ProfilesView({ viewSwitcher }: ProfilesViewProperties) {
     if (selection === null) {
       return (
         <div>
-          <h1 className="text-[24px] font-[590] leading-[1.33] tracking-[-0.2px] text-[var(--text-primary)] mb-1">Profiles</h1>
-          <p className="text-[14px] text-[var(--text-tertiary)] mb-8">
+          <h1 className="mb-1 text-[24px] font-[590] leading-[1.33] tracking-[-0.2px] text-[var(--text-primary)]">Profiles</h1>
+          <p className="mb-8 text-[14px] text-[var(--text-tertiary)]">
             Compose, switch, and compare your <code className="text-[var(--text-secondary)]">.claude</code> setups.
           </p>
           <div className="flex flex-col gap-2">
@@ -316,7 +317,7 @@ export function ProfilesView({ viewSwitcher }: ProfilesViewProperties) {
               role="button"
               tabIndex={0}
               onKeyDown={e => e.key === 'Enter' && handleSelect({ type: 'new-profile' })}
-              className="flex cursor-pointer items-center gap-4 rounded-lg border border-[rgba(255,255,255,0.08)] px-5 py-[18px] transition-colors duration-150 hover:bg-[rgba(255,255,255,0.02)] hover:border-[rgba(255,255,255,0.12)]"
+              className="flex cursor-pointer items-center gap-4 rounded-lg border border-[rgba(255,255,255,0.08)] px-5 py-[18px] transition-colors duration-150 hover:border-[rgba(255,255,255,0.12)] hover:bg-[rgba(255,255,255,0.02)]"
             >
               <div className="flex size-9 shrink-0 items-center justify-center rounded-lg border border-[rgba(255,255,255,0.08)] bg-[rgba(255,255,255,0.02)] text-[18px] font-[300] text-[var(--text-tertiary)]">+</div>
               <div>

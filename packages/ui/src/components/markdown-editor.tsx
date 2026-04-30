@@ -63,18 +63,18 @@ export function MarkdownEditor({
   placeholder,
   minHeight = '480px',
 }: MarkdownEditorProperties) {
-  const containerReference = useRef<HTMLDivElement>(null)
-  const viewReference = useRef<EditorView | null>(null)
-  const onChangeReference = useRef(onChange)
-  const onSaveReference = useRef(onSaveShortcut)
+  const containerRef = useRef<HTMLDivElement>(null)
+  const viewRef = useRef<EditorView | null>(null)
+  const onChangeRef = useRef(onChange)
+  const onSaveRef = useRef(onSaveShortcut)
 
   useEffect(() => {
-    onChangeReference.current = onChange
-    onSaveReference.current = onSaveShortcut
+    onChangeRef.current = onChange
+    onSaveRef.current = onSaveShortcut
   })
 
   useEffect(() => {
-    if (!containerReference.current) {
+    if (!containerRef.current) {
       return
     }
 
@@ -82,7 +82,7 @@ export function MarkdownEditor({
       {
         key: 'Mod-s',
         run: () => {
-          onSaveReference.current?.()
+          onSaveRef.current?.()
           return true
         },
       },
@@ -104,7 +104,7 @@ export function MarkdownEditor({
         ...(placeholder ? [cmPlaceholder(placeholder)] : []),
         EditorView.updateListener.of((update) => {
           if (update.docChanged) {
-            onChangeReference.current(update.state.doc.toString())
+            onChangeRef.current(update.state.doc.toString())
           }
         }),
         EditorView.theme({
@@ -115,20 +115,20 @@ export function MarkdownEditor({
 
     const view = new EditorView({
       state,
-      parent: containerReference.current,
+      parent: containerRef.current,
     })
 
-    viewReference.current = view
+    viewRef.current = view
 
     return () => {
       view.destroy()
-      viewReference.current = null
+      viewRef.current = null
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   useEffect(() => {
-    const view = viewReference.current
+    const view = viewRef.current
     if (!view) {
       return
     }
@@ -140,5 +140,5 @@ export function MarkdownEditor({
     }
   }, [value])
 
-  return <div ref={containerReference} data-testid="markdown-editor" />
+  return <div ref={containerRef} data-testid="markdown-editor" />
 }

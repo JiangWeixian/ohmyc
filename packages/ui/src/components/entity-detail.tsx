@@ -1,5 +1,9 @@
 import { motion } from 'framer-motion'
-import { ChevronLeft, Pencil, Trash2 } from 'lucide-react'
+import {
+  ChevronLeft,
+  Pencil,
+  Trash2,
+} from 'lucide-react'
 
 import { MarkdownRenderer } from './markdown-renderer'
 
@@ -39,12 +43,12 @@ export function EntityDetail({
       animate={{ opacity: 1, x: 0 }}
       exit={{ opacity: 0, x: -12 }}
       transition={{ duration: 0.18, ease: 'easeOut' }}
-      className="mx-auto h-full w-full max-w-[920px]"
+      className="mx-auto size-full max-w-[920px]"
     >
       <button
         onClick={onBack}
         type="button"
-        className="-ml-2 mb-5 inline-flex items-center gap-1.5 rounded-[var(--radius-sm)] px-2 py-1.5 text-[13px] font-medium text-[var(--text-secondary)] transition-smooth hover:bg-white/[0.03] hover:text-[var(--text-primary)]"
+        className="transition-smooth -ml-2 mb-5 inline-flex items-center gap-1.5 rounded-[var(--radius-sm)] px-2 py-1.5 text-[13px] font-medium text-[var(--text-secondary)] hover:bg-white/[0.03] hover:text-[var(--text-primary)]"
       >
         <ChevronLeft size={14} />
         <span>Back to {title}</span>
@@ -80,7 +84,7 @@ export function EntityDetail({
                 <button
                   type="button"
                   onClick={onEdit}
-                  className="inline-flex items-center gap-1.5 rounded-[var(--radius-sm)] border border-[var(--border-default)] bg-white/[0.04] px-2.5 py-1.5 text-[12px] font-medium text-[var(--text-primary)] transition-smooth hover:bg-white/[0.08]"
+                  className="transition-smooth inline-flex items-center gap-1.5 rounded-[var(--radius-sm)] border border-[var(--border-default)] bg-white/[0.04] px-2.5 py-1.5 text-[12px] font-medium text-[var(--text-primary)] hover:bg-white/[0.08]"
                 >
                   <Pencil size={12} />
                   Edit
@@ -93,7 +97,7 @@ export function EntityDetail({
                   type="button"
                   onClick={onDelete}
                   aria-label="Delete"
-                  className="inline-flex size-[28px] items-center justify-center rounded-[var(--radius-sm)] border border-[var(--border-default)] bg-white/[0.04] text-[var(--text-tertiary)] transition-smooth hover:bg-white/[0.08] hover:text-[var(--text-primary)]"
+                  className="transition-smooth inline-flex size-[28px] items-center justify-center rounded-[var(--radius-sm)] border border-[var(--border-default)] bg-white/[0.04] text-[var(--text-tertiary)] hover:bg-white/[0.08] hover:text-[var(--text-primary)]"
                 >
                   <Trash2 size={12} />
                 </button>
@@ -124,7 +128,7 @@ export function EntityDetail({
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ duration: 0.18, delay: 0.05, ease: 'easeOut' }}
-        className="rounded-[var(--radius-lg)] border border-[var(--border-default)] bg-white/[0.02] px-9 py-9"
+        className="rounded-[var(--radius-lg)] border border-[var(--border-default)] bg-white/[0.02] p-9"
       >
         <MarkdownRenderer content={content} />
       </motion.article>

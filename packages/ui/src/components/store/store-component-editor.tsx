@@ -1,4 +1,9 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useState,
+} from 'react'
 
 import {
   useCreateStoreAgent,
@@ -24,7 +29,7 @@ interface StoreComponentEditorProperties {
   onCancel: () => void
 }
 
-const SCAFFOLDS: Record<'agents' | 'skills' | 'commands', string> = {
+const SCAFFOLDS: Record<'agents' | 'commands' | 'skills', string> = {
   agents: `---
 name:
 description:
@@ -51,8 +56,8 @@ Slash command body — executed when the user types /name.
 `,
 }
 
-function singularize(category: 'agents' | 'skills' | 'commands'): string {
-  return category === 'agents' ? 'agent' : category === 'skills' ? 'skill' : 'command'
+function singularize(category: 'agents' | 'commands' | 'skills'): string {
+  return category === 'agents' ? 'agent' : (category === 'skills' ? 'skill' : 'command')
 }
 
 export function StoreComponentEditor({ category, editName, onSaved, onCancel }: StoreComponentEditorProperties) {
@@ -75,7 +80,7 @@ function MarkdownDocEditor({
   onSaved,
   onCancel,
 }: {
-  category: 'agents' | 'skills' | 'commands'
+  category: 'agents' | 'commands' | 'skills'
   editName?: string
   onSaved: () => void
   onCancel: () => void
@@ -102,10 +107,10 @@ function MarkdownDocEditor({
     const initial = existing.raw && existing.raw.length > 0
       ? existing.raw
       : `---\n${stringifyFrontmatterFallback(existing.frontmatter)}---\n\n${existing.content}`
-    // eslint-disable-next-line react-hooks/set-state-in-effect
+    /* eslint-disable react-hooks/set-state-in-effect, react-hooks-extra/set-state-in-effect, react-naming-convention/set-state-in-effect */
     setBuffer(prev => (prev === initial ? prev : initial))
-    // eslint-disable-next-line react-hooks/set-state-in-effect
     setDirty(false)
+    /* eslint-enable react-hooks/set-state-in-effect, react-hooks-extra/set-state-in-effect, react-naming-convention/set-state-in-effect */
   }, [existing])
 
   const createAgent = useCreateStoreAgent()
@@ -127,7 +132,6 @@ function MarkdownDocEditor({
   const hasDescription = !!(frontmatterDescription && String(frontmatterDescription).trim())
 
   const fileSlug = isEdit ? editName! : (filename.trim() || (hasName ? String(frontmatterName).trim() : 'untitled'))
-  const filePath = `${category}/${fileSlug}.md`
 
   const canSave = parsed.ok && hasName && (!requiresDescription || hasDescription) && !isSaving && (dirty || !isEdit)
 
@@ -156,13 +160,13 @@ function MarkdownDocEditor({
       return
     }
 
-    const frontmatter = parsed.frontmatter as { name?: string }
-    if (!isEdit) {
-      // Use filename slug as canonical name when explicit, otherwise frontmatter name
-      const slug = (filename.trim() || String(frontmatter.name).trim())
-      frontmatter.name = slug
-    }
-    const body = { frontmatter: parsed.frontmatter as any, content: parsed.content }
+    const slug = isEdit
+      ? null
+      : (filename.trim() || String((parsed.frontmatter as { name?: string }).name ?? '').trim())
+    const frontmatter = slug
+      ? { ...parsed.frontmatter, name: slug }
+      : parsed.frontmatter
+    const body = { frontmatter: frontmatter as any, content: parsed.content }
     const onSuccess = () => onSaved()
     const onError = (error_: any) => setError(error_?.message ?? 'Save failed')
 
@@ -237,7 +241,7 @@ function MarkdownDocEditor({
           {dirty && (
             <span className="inline-flex items-center gap-1.5 font-mono text-[11px] text-[var(--text-tertiary)]">
               <span
-                className="w-1.5 h-1.5 rounded-full bg-[var(--text-primary)]"
+                className="size-1.5 rounded-full bg-[var(--text-primary)]"
                 style={{ boxShadow: '0 0 0 3px rgba(247,248,248,0.12)' }}
               />
               Unsaved changes
@@ -297,8 +301,8 @@ function MarkdownDocEditor({
       </header>
 
       {/* Body */}
-      <div className="flex-1 min-h-0 overflow-y-auto">
-        <div className="mx-auto max-w-[880px] px-14 pt-7 pb-16">
+      <div className="min-h-0 flex-1 overflow-y-auto">
+        <div className="mx-auto max-w-[880px] px-14 pb-16 pt-7">
           {/* Filename row */}
           <div className="mb-4 flex items-center gap-3.5">
             <div className="flex items-center font-mono text-[13px]">
@@ -316,7 +320,10 @@ function MarkdownDocEditor({
                 aria-label="Filename"
                 value={isEdit ? editName! : filename}
                 disabled={isEdit}
-                onChange={e => { setFilename(e.target.value); setDirty(true) }}
+                onChange={(e) => {
+                  setFilename(e.target.value)
+                  setDirty(true)
+                }}
                 placeholder={hasName ? String(frontmatterName) : `my-${singularize(category)}`}
                 className={cn(
                   'min-w-[280px] px-3 py-[9px] outline-none',

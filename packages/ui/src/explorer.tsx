@@ -160,15 +160,15 @@ export function Explorer({ viewSwitcher }: ExplorerProperties) {
         <span className="text-[12px] text-[var(--text-tertiary)]">Current workspace</span>
       </div>
       <div className="mt-6 grid gap-4 md:grid-cols-3">
-        <div className="panel-subtle px-5 py-4 transition-smooth hover:border-[var(--border-hover)]">
+        <div className="panel-subtle transition-smooth px-5 py-4 hover:border-[var(--border-hover)]">
           <div className="text-[12px] font-medium tracking-[0.02em] text-[var(--text-tertiary)]">Hooks</div>
           <div className="mt-1 text-[24px] font-semibold tabular-nums tracking-[-0.03em] text-[var(--text-primary)]">{hookCount}</div>
         </div>
-        <div className="panel-subtle px-5 py-4 transition-smooth hover:border-[var(--border-hover)]">
+        <div className="panel-subtle transition-smooth px-5 py-4 hover:border-[var(--border-hover)]">
           <div className="text-[12px] font-medium tracking-[0.02em] text-[var(--text-tertiary)]">MCP servers</div>
           <div className="mt-1 text-[24px] font-semibold tabular-nums tracking-[-0.03em] text-[var(--text-primary)]">{mcpCount}</div>
         </div>
-        <div className="panel-subtle px-5 py-4 transition-smooth hover:border-[var(--border-hover)]">
+        <div className="panel-subtle transition-smooth px-5 py-4 hover:border-[var(--border-hover)]">
           <div className="text-[12px] font-medium tracking-[0.02em] text-[var(--text-tertiary)]">LSP servers</div>
           <div className="mt-1 text-[24px] font-semibold tabular-nums tracking-[-0.03em] text-[var(--text-primary)]">{lspCount}</div>
         </div>
@@ -228,7 +228,7 @@ export function Explorer({ viewSwitcher }: ExplorerProperties) {
         ? (
         <>
           {SECTION_DESCRIPTIONS.commands}
-          <code className="text-[var(--text-secondary)] text-[13px]">/command-name</code>.
+          <code className="text-[13px] text-[var(--text-secondary)]">/command-name</code>.
         </>
           )
         : (
@@ -237,7 +237,7 @@ export function Explorer({ viewSwitcher }: ExplorerProperties) {
 
     if (selectedItem && selectedEntity) {
       const fm = selectedEntity.frontmatter as Record<string, unknown>
-      const meta: { label: string, value: string }[] = []
+      const meta: { label: string; value: string }[] = []
       if (selectedEntity.scope) {
         meta.push({ label: 'scope', value: selectedEntity.scope })
       }
@@ -293,7 +293,7 @@ export function Explorer({ viewSwitcher }: ExplorerProperties) {
             )
           : config.data && config.data.length > 0
             ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+          <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
             {config.data.map((entity, index) => (
               <EntityCard
                 key={entity.id}
@@ -338,9 +338,9 @@ export function Explorer({ viewSwitcher }: ExplorerProperties) {
       <h2 className="text-[22px] font-semibold tracking-[-0.02em] text-[var(--text-primary)]">
         Coming soon
       </h2>
-      <p className="text-pretty mt-3 max-w-md text-center text-[15px] leading-relaxed text-[var(--text-tertiary)]">
+      <p className="mt-3 max-w-md text-pretty text-center text-[15px] leading-relaxed text-[var(--text-tertiary)]">
         The{' '}
-        <span className="text-[var(--text-primary)] capitalize">
+        <span className="capitalize text-[var(--text-primary)]">
           {activeSection.replace('-', ' ')}
         </span>{' '}
         section is still in development. It will be available in a future release.
@@ -383,7 +383,7 @@ export function Explorer({ viewSwitcher }: ExplorerProperties) {
               return (
                 <div
                   key={plugin.id}
-                  className="panel p-7 transition-smooth hover:border-[var(--border-hover)]"
+                  className="panel transition-smooth p-7 hover:border-[var(--border-hover)]"
                 >
                   <div className="flex items-start justify-between gap-3">
                     <div>
@@ -419,12 +419,12 @@ export function Explorer({ viewSwitcher }: ExplorerProperties) {
                         )
                       : (referenceCount <= 2
                           ? (
-                      <div className="flex items-center gap-1.5 mt-1">
+                      <div className="mt-1 flex items-center gap-1.5">
                         <span className="text-[13px] tabular-nums text-[var(--text-primary)]">{referenceCount}</span>
                         {referenceNames.map(name => (
                           <span
                             key={name}
-                            className="inline-block rounded bg-[rgba(255,255,255,0.08)] px-1.5 py-0.5 text-[11px] text-[var(--text-secondary)] border border-[var(--border-standard)]"
+                            className="inline-block rounded border border-[var(--border-standard)] bg-[rgba(255,255,255,0.08)] px-1.5 py-0.5 text-[11px] text-[var(--text-secondary)]"
                           >
                             {name}
                           </span>
@@ -433,7 +433,7 @@ export function Explorer({ viewSwitcher }: ExplorerProperties) {
                             )
                           : (
                       <span
-                        className="text-[13px] text-[var(--text-secondary)] mt-1 block"
+                        className="mt-1 block text-[13px] text-[var(--text-secondary)]"
                         title={referenceNames.join(', ')}
                       >
                         Used by {referenceCount} profiles
@@ -483,7 +483,7 @@ export function Explorer({ viewSwitcher }: ExplorerProperties) {
   ) => <ConfigSection {...config} />
 
   return (
-    <div className="flex h-full min-w-0 text-[var(--text-primary)] font-sans">
+    <div className="flex h-full min-w-0 font-sans text-[var(--text-primary)]">
       <Sidebar
         title="Explorer"
         sections={SECTIONS}
@@ -500,7 +500,7 @@ export function Explorer({ viewSwitcher }: ExplorerProperties) {
         <Header />
         {/* Content */}
         <div className="flex-1 overflow-y-auto">
-          <div className="mx-auto w-full max-w-6xl px-10 py-10">
+          <div className="mx-auto w-full max-w-6xl p-10">
             {activeSection === 'agents' && renderEntityList('agents')}
             {activeSection === 'skills' && renderEntityList('skills')}
             {activeSection === 'commands' && renderEntityList('commands')}
