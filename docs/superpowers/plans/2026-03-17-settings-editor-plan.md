@@ -87,10 +87,10 @@ git commit -m "feat(settings): add dependencies for schema generation, deep-equa
 
 ```typescript
 // packages/shared/src/settingsSchema.ts
-import { z } from 'zod';
+import { z } from 'zod'
 
 // Permission rule validation (simplified - just string format)
-const permissionRule = z.string();
+const permissionRule = z.string()
 
 // General Settings
 export const GeneralSettingsSchema = z.object({
@@ -113,23 +113,23 @@ export const GeneralSettingsSchema = z.object({
   spinnerTipsEnabled: z.boolean().optional(),
   spinnerTipsOverride: z.object({
     excludeDefault: z.boolean().optional(),
-    tips: z.array(z.string()).optional()
+    tips: z.array(z.string()).optional(),
   }).optional(),
   spinnerVerbs: z.object({
     mode: z.enum(['append', 'replace']).optional(),
-    verbs: z.array(z.string()).optional()
+    verbs: z.array(z.string()).optional(),
   }).optional(),
   statusLine: z.object({
     type: z.literal('command'),
-    command: z.string()
+    command: z.string(),
   }).optional(),
   fileSuggestion: z.object({
     type: z.literal('command'),
-    command: z.string()
+    command: z.string(),
   }).optional(),
   apiKeyHelper: z.string().optional(),
-  forceLoginMethod: z.enum(['claudeai', 'console']).optional()
-}).optional();
+  forceLoginMethod: z.enum(['claudeai', 'console']).optional(),
+}).optional()
 
 // Permissions
 export const PermissionSettingsSchema = z.object({
@@ -138,8 +138,8 @@ export const PermissionSettingsSchema = z.object({
   deny: z.array(permissionRule).optional(),
   defaultMode: z.enum(['default', 'acceptEdits', 'plan', 'dontAsk', 'bypassPermissions']).optional(),
   additionalDirectories: z.array(z.string()).optional(),
-  disableBypassPermissionsMode: z.enum(['disable']).optional()
-}).optional();
+  disableBypassPermissionsMode: z.enum(['disable']).optional(),
+}).optional()
 
 // Sandbox
 export const SandboxSettingsSchema = z.object({
@@ -150,7 +150,7 @@ export const SandboxSettingsSchema = z.object({
   filesystem: z.object({
     allowWrite: z.array(z.string()).optional(),
     denyWrite: z.array(z.string()).optional(),
-    denyRead: z.array(z.string()).optional()
+    denyRead: z.array(z.string()).optional(),
   }).optional(),
   network: z.object({
     allowUnixSockets: z.array(z.string()).optional(),
@@ -159,20 +159,20 @@ export const SandboxSettingsSchema = z.object({
     allowedDomains: z.array(z.string()).optional(),
     allowManagedDomainsOnly: z.boolean().optional(),
     httpProxyPort: z.number().optional(),
-    socksProxyPort: z.number().optional()
+    socksProxyPort: z.number().optional(),
   }).optional(),
   enableWeakerNestedSandbox: z.boolean().optional(),
-  enableWeakerNetworkIsolation: z.boolean().optional()
-}).optional();
+  enableWeakerNetworkIsolation: z.boolean().optional(),
+}).optional()
 
 // Hooks - simplified for Phase 1
-export const HookSettingsSchema = z.record(z.string(), z.any()).optional();
+export const HookSettingsSchema = z.record(z.string(), z.any()).optional()
 
 // Attribution
 export const AttributionSettingsSchema = z.object({
   commit: z.string().optional(),
-  pr: z.string().optional()
-}).optional();
+  pr: z.string().optional(),
+}).optional()
 
 // MCP Control
 export const McpControlSettingsSchema = z.object({
@@ -182,15 +182,15 @@ export const McpControlSettingsSchema = z.object({
   allowedMcpServers: z.array(z.object({
     serverName: z.string().optional(),
     serverCommand: z.array(z.string()).optional(),
-    serverUrl: z.string().optional()
+    serverUrl: z.string().optional(),
   })).optional(),
   deniedMcpServers: z.array(z.object({
     serverName: z.string().optional(),
     serverCommand: z.array(z.string()).optional(),
-    serverUrl: z.string().optional()
+    serverUrl: z.string().optional(),
   })).optional(),
-  allowManagedMcpServersOnly: z.boolean().optional()
-}).optional();
+  allowManagedMcpServersOnly: z.boolean().optional(),
+}).optional()
 
 // Plugins
 export const PluginSettingsSchema = z.object({
@@ -198,11 +198,11 @@ export const PluginSettingsSchema = z.object({
   pluginTrustMessage: z.string().optional(),
   extraKnownMarketplaces: z.record(z.unknown()).optional(),
   strictKnownMarketplaces: z.array(z.unknown()).optional(),
-  blockedMarketplaces: z.array(z.unknown()).optional()
-}).optional();
+  blockedMarketplaces: z.array(z.unknown()).optional(),
+}).optional()
 
 // Environment
-export const EnvSettingsSchema = z.record(z.string()).optional();
+export const EnvSettingsSchema = z.record(z.string()).optional()
 
 // Top-level settings
 export const SettingsJsonSchema = z.object({
@@ -245,19 +245,19 @@ export const SettingsJsonSchema = z.object({
   disabledMcpjsonServers: McpControlSettingsSchema.shape.disabledMcpjsonServers,
   allowedMcpServers: McpControlSettingsSchema.shape.allowedMcpServers,
   deniedMcpServers: McpControlSettingsSchema.shape.deniedMcpServers,
-  allowManagedMcpServersOnly: McpControlSettingsSchema.shape.allowManagedMcpServersOnly
-}).passthrough();
+  allowManagedMcpServersOnly: McpControlSettingsSchema.shape.allowManagedMcpServersOnly,
+}).passthrough()
 
 // Type inference
-export type SettingsJson = z.infer<typeof SettingsJsonSchema>;
+export type SettingsJson = z.infer<typeof SettingsJsonSchema>
 ```
 
 - [ ] **Step 2: Export from index.ts**
 
 ```typescript
 // packages/shared/src/index.ts
-export * from './schemas.js';
-export * from './settingsSchema.js';  // ADD
+export * from './schemas.js'
+export * from './settingsSchema.js' // ADD
 ```
 
 - [ ] **Step 3: Commit**
@@ -281,104 +281,109 @@ git commit -m "feat(settings): add Zod schemas for settings.json"
 
 ```typescript
 // packages/cli/src/server/routes/settings.ts
-import { FastifyInstance } from 'fastify';
-import { readFile, writeFile, mkdir } from 'fs/promises';
-import { existsSync } from 'fs';
-import path from 'path';
+import { existsSync } from 'node:fs'
+import {
+  mkdir,
+  readFile,
+  writeFile,
+} from 'node:fs/promises'
+import path from 'node:path'
+
+import { FastifyInstance } from 'fastify'
 
 interface SettingsResponse {
-  path: string;
-  content: Record<string, unknown> | null;
-  exists: boolean;
-  error?: string;
+  path: string
+  content: Record<string, unknown> | null
+  exists: boolean
+  error?: string
 }
 
 export async function settingsRoutes(fastify: FastifyInstance) {
   // GET /api/settings?project=/path/to/project
   fastify.get<{
-    Querystring: { project?: string };
+    Querystring: { project?: string }
     Reply: SettingsResponse
   }>('/api/settings', async (request, reply) => {
-    const projectRoot = request.query.project || process.cwd();
-    const settingsPath = path.join(projectRoot, '.claude', 'settings.json');
+    const projectRoot = request.query.project || process.cwd()
+    const settingsPath = path.join(projectRoot, '.claude', 'settings.json')
 
     try {
       if (!existsSync(settingsPath)) {
         return {
           path: settingsPath,
           content: null,
-          exists: false
-        };
+          exists: false,
+        }
       }
 
-      const content = await readFile(settingsPath, 'utf-8');
+      const content = await readFile(settingsPath, 'utf-8')
       return {
         path: settingsPath,
         content: JSON.parse(content),
-        exists: true
-      };
+        exists: true,
+      }
     } catch (error) {
-      request.log.error(error);
+      request.log.error(error)
       return {
         path: settingsPath,
         content: null,
         exists: false,
-        error: error instanceof Error ? error.message : 'Unknown error'
-      };
+        error: error instanceof Error ? error.message : 'Unknown error',
+      }
     }
-  });
+  })
 
   // POST /api/settings?project=/path/to/project
   fastify.post<{
-    Querystring: { project?: string };
-    Body: { content: Record<string, unknown> };
+    Querystring: { project?: string }
+    Body: { content: Record<string, unknown> }
   }>('/api/settings', async (request, reply) => {
-    const projectRoot = request.query.project || process.cwd();
-    const settingsPath = path.join(projectRoot, '.claude', 'settings.json');
+    const projectRoot = request.query.project || process.cwd()
+    const settingsPath = path.join(projectRoot, '.claude', 'settings.json')
 
     try {
-      const { content } = request.body;
+      const { content } = request.body
 
       if (content === undefined) {
-        return reply.status(400).send({ success: false, error: 'content is required' });
+        return reply.status(400).send({ success: false, error: 'content is required' })
       }
 
       // Validate JSON structure (basic check)
       if (typeof content !== 'object' || content === null) {
-        return reply.status(400).send({ success: false, error: 'content must be an object' });
+        return reply.status(400).send({ success: false, error: 'content must be an object' })
       }
 
       // Ensure .claude directory exists
-      const claudeDir = path.dirname(settingsPath);
+      const claudeDir = path.dirname(settingsPath)
       if (!existsSync(claudeDir)) {
-        await mkdir(claudeDir, { recursive: true });
+        await mkdir(claudeDir, { recursive: true })
       }
 
       // Write settings.json
-      await writeFile(settingsPath, JSON.stringify(content, null, 2), 'utf-8');
+      await writeFile(settingsPath, JSON.stringify(content, null, 2), 'utf-8')
 
       return {
         success: true,
-        path: settingsPath
-      };
+        path: settingsPath,
+      }
     } catch (error) {
-      request.log.error(error);
+      request.log.error(error)
       return {
         success: false,
-        error: error instanceof Error ? error.message : 'Unknown error'
-      };
+        error: error instanceof Error ? error.message : 'Unknown error',
+      }
     }
-  });
+  })
 
   // GET /api/settings/schema
   fastify.get('/api/settings/schema', async () => {
     // Lazy import to avoid circular deps
-    const { SettingsJsonSchema } = await import('../../../../shared/src/settingsSchema.js');
-    const { zodToJsonSchema } = await import('zod-to-json-schema');
+    const { SettingsJsonSchema } = await import('../../../../shared/src/settingsSchema.js')
+    const { zodToJsonSchema } = await import('zod-to-json-schema')
 
-    const jsonSchema = zodToJsonSchema(SettingsJsonSchema, 'settings');
-    return jsonSchema;
-  });
+    const jsonSchema = zodToJsonSchema(SettingsJsonSchema, 'settings')
+    return jsonSchema
+  })
 }
 ```
 
@@ -386,10 +391,10 @@ export async function settingsRoutes(fastify: FastifyInstance) {
 
 ```typescript
 // packages/cli/src/server/index.ts - add import and register
-import { settingsRoutes } from './routes/settings.js';
+import { settingsRoutes } from './routes/settings.js'
 
 // In createServer(), after configRoutes registration:
-await fastify.register(settingsRoutes);
+await fastify.register(settingsRoutes)
 ```
 
 - [ ] **Step 3: Test the API manually**
@@ -482,51 +487,55 @@ git commit -m "feat(ui): add BrowserRouter and App routing"
 
 ```typescript
 // packages/ui/src/hooks/useSettings.ts
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { SettingsJson } from '@claudeui/shared';
+import { SettingsJson } from '@claudeui/shared'
+import {
+  useMutation,
+  useQuery,
+  useQueryClient,
+} from '@tanstack/react-query'
 
 interface SettingsResponse {
-  path: string;
-  content: SettingsJson | null;
-  exists: boolean;
-  error?: string;
+  path: string
+  content: SettingsJson | null
+  exists: boolean
+  error?: string
 }
 
-const SETTINGS_KEY = ['settings'];
+const SETTINGS_KEY = ['settings']
 
 async function fetchSettings(project?: string): Promise<SettingsResponse> {
-  const url = project ? `/api/settings?project=${encodeURIComponent(project)}` : '/api/settings';
-  const res = await fetch(url);
+  const url = project ? `/api/settings?project=${encodeURIComponent(project)}` : '/api/settings'
+  const res = await fetch(url)
   if (!res.ok) {
-    throw new Error('Failed to fetch settings');
+    throw new Error('Failed to fetch settings')
   }
-  return res.json();
+  return res.json()
 }
 
 async function saveSettings(content: SettingsJson, project?: string): Promise<{ success: boolean; path: string; error?: string }> {
-  const url = project ? `/api/settings?project=${encodeURIComponent(project)}` : '/api/settings';
+  const url = project ? `/api/settings?project=${encodeURIComponent(project)}` : '/api/settings'
   const res = await fetch(url, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ content })
-  });
-  return res.json();
+    body: JSON.stringify({ content }),
+  })
+  return res.json()
 }
 
 export function useSettings(project?: string) {
-  const queryClient = useQueryClient();
+  const queryClient = useQueryClient()
 
   const query = useQuery({
     queryKey: [...SETTINGS_KEY, project],
-    queryFn: () => fetchSettings(project)
-  });
+    queryFn: () => fetchSettings(project),
+  })
 
   const mutation = useMutation({
     mutationFn: (content: SettingsJson) => saveSettings(content, project),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: SETTINGS_KEY });
-    }
-  });
+      queryClient.invalidateQueries({ queryKey: SETTINGS_KEY })
+    },
+  })
 
   return {
     data: query.data,
@@ -536,8 +545,8 @@ export function useSettings(project?: string) {
     mutate: mutation.mutate,
     isSaving: mutation.isPending,
     saveError: mutation.error,
-    saveData: mutation.data
-  };
+    saveData: mutation.data,
+  }
 }
 ```
 
@@ -562,8 +571,8 @@ git commit -m "feat(ui): add useSettings React Query hook"
 
 ```typescript
 // packages/ui/src/components/settings/utils.ts
-export function cn(...classes: (string | undefined | null | false)[]) {
-  return classes.filter(Boolean).join(' ');
+export function cn(...classes: (string | false | null | undefined)[]) {
+  return classes.filter(Boolean).join(' ')
 }
 ```
 

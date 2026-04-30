@@ -221,30 +221,30 @@ cu --version            # 显示版本
 
 ```typescript
 export async function createServer(options: CreateServerOptions = {}): Promise<FastifyInstance> {
-  const fastify = Fastify({ logger: true });
+  const fastify = Fastify({ logger: true })
 
   // 健康检查端点
-  fastify.get('/health', async () => ({ status: 'ok' }));
+  fastify.get('/health', async () => ({ status: 'ok' }))
 
   // 静态文件服务（非 api-only 模式）
   if (!options.apiOnly) {
-    const uiDistPath = resolveStaticRoot(options.staticRoot);
+    const uiDistPath = resolveStaticRoot(options.staticRoot)
     if (uiDistPath) {
-      fastify.register(fastifyStatic, { root: uiDistPath, prefix: '/', wildcard: false });
+      fastify.register(fastifyStatic, { root: uiDistPath, prefix: '/', wildcard: false })
     }
   }
 
   // 注册所有 API 路由
-  await fastify.register(configRoutes);
-  await fastify.register(settingsRoutes);
+  await fastify.register(configRoutes)
+  await fastify.register(settingsRoutes)
   // ... 更多路由
 
   // SPA fallback：未匹配的路由返回 index.html
   fastify.setNotFoundHandler((request, reply) => {
-    reply.sendFile('index.html');
-  });
+    reply.sendFile('index.html')
+  })
 
-  return fastify;
+  return fastify
 }
 ```
 
@@ -468,10 +468,10 @@ Profile 管理的核心服务，包含复杂的激活/停用事务逻辑：
 ```typescript
 // packages/cli/tsup.config.ts
 onSuccess: async () => {
-  const uiDist = path.resolve(__dirname, '../ui/dist');
-  const cliUiDist = path.resolve(__dirname, 'dist/ui');
+  const uiDist = path.resolve(__dirname, '../ui/dist')
+  const cliUiDist = path.resolve(__dirname, 'dist/ui')
   if (existsSync(uiDist)) {
-    cpSync(uiDist, cliUiDist, { recursive: true });
+    cpSync(uiDist, cliUiDist, { recursive: true })
   }
 }
 ```
@@ -577,7 +577,7 @@ packages/ui/src/
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
-      refetchOnWindowFocus: false,  // 禁用窗口聚焦时自动刷新
+      refetchOnWindowFocus: false, // 禁用窗口聚焦时自动刷新
     },
   },
 })
@@ -591,7 +591,7 @@ export function useAgents() {
   return useQuery({
     queryKey: ['agents'],
     queryFn: fetchAgents,
-  });
+  })
 }
 
 // 详情查询（条件启用）
@@ -599,17 +599,17 @@ export function useAgent(locator: ItemLocator | null) {
   return useQuery({
     queryKey: ['agents', locator?.name, locator?.source, locator?.pluginId, locator?.scope],
     queryFn: () => fetchAgent(locator!),
-    enabled: !!locator,  // locator 为 null 时不执行查询
-  });
+    enabled: !!locator, // locator 为 null 时不执行查询
+  })
 }
 
 // 变更操作（自动失效缓存）
 export function useCreateProfile() {
-  const qc = useQueryClient();
+  const qc = useQueryClient()
   return useMutation({
     mutationFn: createProfile,
     onSuccess: () => qc.invalidateQueries({ queryKey: ['profiles'] }),
-  });
+  })
 }
 ```
 
@@ -647,11 +647,11 @@ export function useCreateProfile() {
 `packages/ui/src/components/JsonEditor.tsx` 封装了 CodeMirror 6，用于 JSON 编辑场景：
 
 ```typescript
-import { EditorView, keymap } from '@codemirror/view';
-import { EditorState } from '@codemirror/state';
-import { json } from '@codemirror/lang-json';
-import { oneDark } from '@codemirror/theme-one-dark';
-import { basicSetup } from 'codemirror';
+import { json } from '@codemirror/lang-json'
+import { EditorState } from '@codemirror/state'
+import { oneDark } from '@codemirror/theme-one-dark'
+import { EditorView, keymap } from '@codemirror/view'
+import { basicSetup } from 'codemirror'
 ```
 
 特性：
@@ -688,7 +688,7 @@ export const SettingsSchema = z.object({
 定义 Agent 的 frontmatter 结构和完整类型：
 
 ```typescript
-export const SAFE_NAME_PATTERN = /^[a-zA-Z0-9_-]+$/;
+export const SAFE_NAME_PATTERN = /^[\w-]+$/
 
 export const AgentFrontmatterSchema = z.object({
   name: z.string(),
@@ -697,7 +697,7 @@ export const AgentFrontmatterSchema = z.object({
   tools: z.array(z.string()).optional(),
   permissionMode: z.enum(['default', 'acceptEdits', 'dontAsk', 'bypassPermissions', 'plan']).optional(),
   // ... 更多字段
-}).passthrough();
+}).passthrough()
 
 export const AgentSchema = z.object({
   id: z.string(),
@@ -709,7 +709,7 @@ export const AgentSchema = z.object({
   scope: ScopeEnum.optional(),
   pluginId: z.string().optional(),
   provenance: StoreComponentProvenanceSchema.optional(),
-});
+})
 ```
 
 同时导出 `CreateAgentBodySchema` 和 `UpdateAgentBodySchema` 用于 API 请求验证。
@@ -737,7 +737,7 @@ export const AgentSchema = z.object({
 #### Profile Schema（`profileSchema.ts`）
 
 ```typescript
-export const RESERVED_PROFILE_NAMES = ['store', '.active', 'plugins', 'agents', 'skills', 'commands'];
+export const RESERVED_PROFILE_NAMES = ['store', '.active', 'plugins', 'agents', 'skills', 'commands']
 
 export const ProfileSchema = z.object({
   name: z.string(),
@@ -751,7 +751,7 @@ export const ProfileSchema = z.object({
   mcpServers: z.any().optional(),
   lspServers: z.any().optional(),
   settings: z.record(z.any()).optional(),
-});
+})
 ```
 
 #### Store Schema（`storeSchema.ts`）
@@ -772,9 +772,9 @@ export const ProfileSchema = z.object({
 每个 schema 文件都通过 `z.infer<>` 导出 TypeScript 类型：
 
 ```typescript
-export type Agent = z.infer<typeof AgentSchema>;
-export type AgentFrontmatter = z.infer<typeof AgentFrontmatterSchema>;
-export type Profile = z.infer<typeof ProfileSchema>;
+export type Agent = z.infer<typeof AgentSchema>
+export type AgentFrontmatter = z.infer<typeof AgentFrontmatterSchema>
+export type Profile = z.infer<typeof ProfileSchema>
 // ...
 ```
 
@@ -784,11 +784,13 @@ shared 包是前后端的**唯一类型契约**。后端使用 Zod schema 验证
 
 ```typescript
 // 后端验证示例（routes/profiles.ts）
-const parsed = CreateProfileBodySchema.safeParse(request.body);
-if (!parsed.success) return reply.status(400).send({ error: parsed.error.message });
-
 // 前端类型使用（hooks/useProfiles.ts）
-import type { Profile, CreateProfileBody } from '@claudeui/shared';
+import type { CreateProfileBody, Profile } from '@claudeui/shared'
+
+const parsed = CreateProfileBodySchema.safeParse(request.body)
+if (!parsed.success) {
+  return reply.status(400).send({ error: parsed.error.message })
+}
 ```
 
 ---
@@ -963,7 +965,7 @@ export default defineConfig({
     setupFiles: ['./src/test/setup.ts'],
     include: ['src/**/*.test.ts', 'src/**/*.test.tsx'],
   },
-});
+})
 ```
 
 ### 如何运行测试
@@ -1014,24 +1016,31 @@ pnpm --filter @claudeui/cli test:watch
 
 ```typescript
 // packages/cli/src/server/routes/__tests__/myFeature.test.ts
-import { describe, it, expect, vi, beforeEach } from 'vitest';
-import Fastify from 'fastify';
-import { myFeatureRoutes } from '../myFeature';
+import Fastify from 'fastify'
+import {
+  beforeEach,
+  describe,
+  expect,
+  it,
+  vi,
+} from 'vitest'
+
+import { myFeatureRoutes } from '../myFeature'
 
 describe('My Feature Routes', () => {
-  let app: Fastify.FastifyInstance;
+  let app: Fastify.FastifyInstance
 
   beforeEach(async () => {
-    app = Fastify();
-    await app.register(myFeatureRoutes, { /* options */ });
-  });
+    app = Fastify()
+    await app.register(myFeatureRoutes, { /* options */ })
+  })
 
   it('GET /api/my-feature returns data', async () => {
-    const response = await app.inject({ method: 'GET', url: '/api/my-feature' });
-    expect(response.statusCode).toBe(200);
-    expect(response.json()).toBeDefined();
-  });
-});
+    const response = await app.inject({ method: 'GET', url: '/api/my-feature' })
+    expect(response.statusCode).toBe(200)
+    expect(response.json()).toBeDefined()
+  })
+})
 ```
 
 #### UI 测试示例

@@ -99,15 +99,15 @@ git commit -m "feat: SourceBadge shows blue 'profile' badge for symlinked compon
 In `ProfileEditor`, after the existing `settingsText` state (line 23-25), add three new state variables:
 
 ```typescript
-  const [hooksText, setHooksText] = useState(
-    profile?.hooks ? JSON.stringify(profile.hooks, null, 2) : ''
-  );
-  const [mcpText, setMcpText] = useState(
-    profile?.mcpServers ? JSON.stringify(profile.mcpServers, null, 2) : ''
-  );
-  const [lspText, setLspText] = useState(
-    profile?.lspServers ? JSON.stringify(profile.lspServers, null, 2) : ''
-  );
+const [hooksText, setHooksText] = useState(
+  profile?.hooks ? JSON.stringify(profile.hooks, null, 2) : '',
+)
+const [mcpText, setMcpText] = useState(
+  profile?.mcpServers ? JSON.stringify(profile.mcpServers, null, 2) : '',
+)
+const [lspText, setLspText] = useState(
+  profile?.lspServers ? JSON.stringify(profile.lspServers, null, 2) : '',
+)
 ```
 
 - [ ] **Step 2: Update handleSave to parse and include new fields**
@@ -115,46 +115,60 @@ In `ProfileEditor`, after the existing `settingsText` state (line 23-25), add th
 Replace the `handleSave` function with:
 
 ```typescript
-  const handleSave = () => {
-    setError(null);
+const handleSave = () => {
+  setError(null)
 
-    let settings: Record<string, any> | undefined;
-    if (settingsText.trim()) {
-      try { settings = JSON.parse(settingsText); }
-      catch { setError('Settings overlay must be valid JSON'); return; }
+  let settings: Record<string, any> | undefined
+  if (settingsText.trim()) {
+    try {
+      settings = JSON.parse(settingsText)
+    } catch {
+      setError('Settings overlay must be valid JSON'); return
     }
+  }
 
-    let hooks: any;
-    if (hooksText.trim()) {
-      try { hooks = JSON.parse(hooksText); }
-      catch { setError('Hooks must be valid JSON'); return; }
+  let hooks: any
+  if (hooksText.trim()) {
+    try {
+      hooks = JSON.parse(hooksText)
+    } catch {
+      setError('Hooks must be valid JSON'); return
     }
+  }
 
-    let mcpServers: any;
-    if (mcpText.trim()) {
-      try { mcpServers = JSON.parse(mcpText); }
-      catch { setError('MCP Servers must be valid JSON'); return; }
+  let mcpServers: any
+  if (mcpText.trim()) {
+    try {
+      mcpServers = JSON.parse(mcpText)
+    } catch {
+      setError('MCP Servers must be valid JSON'); return
     }
+  }
 
-    let lspServers: any;
-    if (lspText.trim()) {
-      try { lspServers = JSON.parse(lspText); }
-      catch { setError('LSP Servers must be valid JSON'); return; }
+  let lspServers: any
+  if (lspText.trim()) {
+    try {
+      lspServers = JSON.parse(lspText)
+    } catch {
+      setError('LSP Servers must be valid JSON'); return
     }
+  }
 
-    if (isEdit) {
-      updateMut.mutate(
-        { name: profile!.name, body: { description, agents, skills, commands, plugins, hooks, mcpServers, lspServers, settings } },
-        { onSuccess: () => onSaved(profile!.name), onError: (e) => setError(e.message) }
-      );
-    } else {
-      if (!name.trim()) { setError('Name is required'); return; }
-      createMut.mutate(
-        { name, description, agents, skills, commands, plugins, hooks, mcpServers, lspServers, settings },
-        { onSuccess: () => onSaved(name), onError: (e) => setError(e.message) }
-      );
+  if (isEdit) {
+    updateMut.mutate(
+      { name: profile!.name, body: { description, agents, skills, commands, plugins, hooks, mcpServers, lspServers, settings } },
+      { onSuccess: () => onSaved(profile!.name), onError: e => setError(e.message) },
+    )
+  } else {
+    if (!name.trim()) {
+      setError('Name is required'); return
     }
-  };
+    createMut.mutate(
+      { name, description, agents, skills, commands, plugins, hooks, mcpServers, lspServers, settings },
+      { onSuccess: () => onSaved(name), onError: e => setError(e.message) },
+    )
+  }
+}
 ```
 
 - [ ] **Step 3: Add JSON textarea fields to the form**
@@ -233,7 +247,7 @@ git commit -m "feat: add hooks/MCP/LSP JSON editors to ProfileEditor"
 At the top of `StoreComponentList.tsx`, add the import:
 
 ```typescript
-import { useProfiles } from '../../hooks/useProfiles';
+import { useProfiles } from '../../hooks/useProfiles'
 ```
 
 - [ ] **Step 2: Compute reference counts**
@@ -241,19 +255,19 @@ import { useProfiles } from '../../hooks/useProfiles';
 Inside the `StoreComponentList` component, after the existing `isLoading` line (line 29), add:
 
 ```typescript
-  const { data: profilesData } = useProfiles();
-  const profiles = profilesData?.profiles ?? [];
+const { data: profilesData } = useProfiles()
+const profiles = profilesData?.profiles ?? []
 
-  // Build a map: component id → list of profile names that reference it
-  const referencedByMap = new Map<string, string[]>();
-  for (const p of profiles) {
-    const refs = category === 'agents' ? p.agents : category === 'skills' ? p.skills : p.commands;
-    for (const ref of refs) {
-      const existing = referencedByMap.get(ref) ?? [];
-      existing.push(p.name);
-      referencedByMap.set(ref, existing);
-    }
+// Build a map: component id → list of profile names that reference it
+const referencedByMap = new Map<string, string[]>()
+for (const p of profiles) {
+  const refs = category === 'agents' ? p.agents : (category === 'skills' ? p.skills : p.commands)
+  for (const ref of refs) {
+    const existing = referencedByMap.get(ref) ?? []
+    existing.push(p.name)
+    referencedByMap.set(ref, existing)
   }
+}
 ```
 
 - [ ] **Step 3: Render reference count in each item row**
