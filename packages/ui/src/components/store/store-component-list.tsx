@@ -22,7 +22,6 @@ import {
 import { maskApiKey } from '../../utils/mask-api-key'
 import { DeleteConfirmDialog } from './delete-confirm-dialog'
 import { ImportComponentsDialog } from './import-components-dialog'
-import { StoreComponentEditor } from './store-component-editor'
 import { cn } from '@/lib/utils'
 
 type Category = 'agents' | 'commands' | 'model-configs' | 'skills'
@@ -109,10 +108,10 @@ function UsedBy({ names }: { names: string[] }) {
 
 interface StoreComponentListProperties {
   category: Category
+  onEdit?: (category: Category, name?: string) => void
 }
 
-export function StoreComponentList({ category }: StoreComponentListProperties) {
-  const [editing, setEditing] = useState<{ category: Category; name?: string } | null>(null)
+export function StoreComponentList({ category, onEdit }: StoreComponentListProperties) {
   const [deleteTarget, setDeleteTarget] = useState<{ category: Category; name: string; referencedBy: string[] } | null>(null)
   const [showImportDialog, setShowImportDialog] = useState(false)
   const [search, setSearch] = useState('')
@@ -263,17 +262,6 @@ export function StoreComponentList({ category }: StoreComponentListProperties) {
     })
   }
 
-  if (editing !== null) {
-    return (
-      <StoreComponentEditor
-        category={editing.category}
-        editName={editing.name}
-        onSaved={() => setEditing(null)}
-        onCancel={() => setEditing(null)}
-      />
-    )
-  }
-
   return (
     <div>
       <div className="mb-1">
@@ -323,7 +311,7 @@ export function StoreComponentList({ category }: StoreComponentListProperties) {
         </button>
         <button
           type="button"
-          onClick={() => setEditing({ category })}
+          onClick={() => onEdit?.(category)}
           className={cn(
             'flex h-9 items-center gap-1.5 rounded-md px-3',
             'bg-[var(--text-primary)] text-[var(--bg-marketing)]',
@@ -456,7 +444,7 @@ export function StoreComponentList({ category }: StoreComponentListProperties) {
                       <button
                         type="button"
                         aria-label={`Edit ${item.name}`}
-                        onClick={() => setEditing({ category, name: item.id })}
+                        onClick={() => onEdit?.(category, item.id)}
                         className={cn(
                           'flex h-7 w-7 items-center justify-center rounded-sm',
                           'text-[var(--text-tertiary)] hover:text-[var(--text-primary)]',

@@ -236,10 +236,39 @@ export function Explorer({ viewSwitcher }: ExplorerProperties) {
           )
 
     if (selectedItem && selectedEntity) {
+      const fm = selectedEntity.frontmatter as Record<string, unknown>
+      const meta: { label: string, value: string }[] = []
+      if (selectedEntity.scope) {
+        meta.push({ label: 'scope', value: selectedEntity.scope })
+      }
+      if (selectedEntity.source) {
+        meta.push({ label: 'source', value: selectedEntity.source })
+      }
+      if (typeof fm.model === 'string') {
+        meta.push({ label: 'model', value: fm.model })
+      }
+      if (Array.isArray(fm.tools) && fm.tools.length > 0) {
+        meta.push({ label: 'tools', value: (fm.tools as string[]).join(', ') })
+      }
+      if (selectedEntity.provenance?.importPath) {
+        const date = selectedEntity.provenance.importedAt
+          ? new Date(selectedEntity.provenance.importedAt).toISOString().slice(0, 10)
+          : null
+        meta.push({
+          label: 'imported',
+          value: date ? `${date} from ${selectedEntity.provenance.importPath}` : selectedEntity.provenance.importPath,
+        })
+      }
+      const displayName = (typeof fm.name === 'string' && fm.name) || selectedEntity.id
+      const description = typeof fm.description === 'string' ? fm.description : undefined
+
       return (
         <EntityDetail
           title={sectionId}
+          name={displayName}
+          description={description}
           content={selectedEntity.content}
+          meta={meta}
           onBack={() => setSelectedItem(null)}
           scope={selectedEntity.scope}
         />

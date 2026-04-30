@@ -11,6 +11,7 @@ import { Header } from './components/header'
 import { ProfileCard } from './components/profiles/profile-card'
 import { ProfileEditor } from './components/profiles/profile-editor'
 import { ProfilesSidebar, type SidebarSelection } from './components/profiles/profiles-sidebar'
+import { StoreComponentEditor } from './components/store/store-component-editor'
 import { StoreComponentList } from './components/store/store-component-list'
 import {
   useActivateProfile,
@@ -162,7 +163,17 @@ export function ProfilesView({ viewSwitcher }: ProfilesViewProperties) {
   const active = data?.active ?? null
 
   const isCompareOpen = compareTarget !== null
-  const isEditorRoute = selection?.type === 'new-profile' || (selection?.type === 'profile' && editing)
+  const [componentEditTarget, setComponentEditTarget]
+    = useState<{ category: 'agents' | 'commands' | 'model-configs' | 'skills'; name?: string } | null>(null)
+  const componentCategory = selection?.type === 'components' ? selection.category : null
+  // Reset component-edit target when sidebar category or selection changes
+  useEffect(() => {
+    setComponentEditTarget(null)
+  }, [componentCategory, selection?.type])
+  const isEditorRoute
+    = selection?.type === 'new-profile'
+    || (selection?.type === 'profile' && editing)
+    || (selection?.type === 'components' && componentEditTarget !== null)
 
   const selectedProfileName = selection?.type === 'profile' ? selection.name : null
   const { data: selectedProfile } = useProfile(selectedProfileName)
@@ -351,7 +362,22 @@ export function ProfilesView({ viewSwitcher }: ProfilesViewProperties) {
     }
 
     if (selection.type === 'components') {
-      return <StoreComponentList category={selection.category} />
+      if (componentEditTarget && componentEditTarget.category === selection.category) {
+        return (
+          <StoreComponentEditor
+            category={componentEditTarget.category}
+            editName={componentEditTarget.name}
+            onSaved={() => setComponentEditTarget(null)}
+            onCancel={() => setComponentEditTarget(null)}
+          />
+        )
+      }
+      return (
+        <StoreComponentList
+          category={selection.category}
+          onEdit={(category, name) => setComponentEditTarget({ category, name })}
+        />
+      )
     }
 
     return null
@@ -375,17 +401,15 @@ export function ProfilesView({ viewSwitcher }: ProfilesViewProperties) {
       />
 
       <main className="relative flex min-w-0 flex-1 flex-col overflow-hidden bg-[var(--bg-marketing)]">
+        {!isEditorRoute && <Header />}
         {isEditorRoute
           ? renderBody()
           : (
-              <>
-                <Header />
-                <div className="flex-1 overflow-y-auto">
-                  <div className="mx-auto w-full max-w-[920px] px-14 py-10">
-                    {renderBody()}
-                  </div>
+              <div className="flex-1 overflow-y-auto">
+                <div className="mx-auto w-full max-w-[920px] px-14 py-10">
+                  {renderBody()}
                 </div>
-              </>
+              </div>
             )}
       </main>
 

@@ -1,0 +1,309 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CodeMirror Theme Preview</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-marketing: #08090a;
+      --bg-panel: #0f1011;
+      --bg-surface: #191a1b;
+      --text-primary: #f7f8f8;
+      --text-secondary: #d0d6e0;
+      --text-tertiary: #8a8f98;
+      --text-quaternary: #62666d;
+      --border-standard: rgba(255,255,255,0.08);
+    }
+    
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    
+    body {
+      font-family: 'Inter', -apple-system, sans-serif;
+      background: var(--bg-marketing);
+      color: var(--text-primary);
+      padding: 40px;
+      min-height: 100vh;
+    }
+    
+    h1 {
+      font-size: 24px;
+      font-weight: 400;
+      letter-spacing: -0.2px;
+      margin-bottom: 8px;
+    }
+    
+    .subtitle {
+      color: var(--text-tertiary);
+      font-size: 14px;
+      margin-bottom: 40px;
+    }
+    
+    .editor-section {
+      margin-bottom: 48px;
+    }
+    
+    .editor-label {
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--text-tertiary);
+      margin-bottom: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    
+    /* Markdown Editor - flush, no border */
+    .markdown-editor {
+      background: #08090a;
+      border-radius: 8px;
+      padding: 18px 0;
+      font-family: 'Berkeley Mono', 'SF Mono', Menlo, monospace;
+      font-size: 15px;
+      line-height: 1.6;
+      min-height: 300px;
+      position: relative;
+    }
+    
+    .markdown-editor .gutter {
+      position: absolute;
+      left: 0;
+      top: 18px;
+      width: 50px;
+      text-align: right;
+      padding-right: 14px;
+      color: var(--text-quaternary);
+      font-size: 12px;
+      line-height: 1.6;
+      user-select: none;
+    }
+    
+    .markdown-editor .content {
+      margin-left: 50px;
+      padding: 0 20px;
+      color: var(--text-primary);
+    }
+    
+    .markdown-editor .line {
+      min-height: 24px;
+    }
+    
+    /* Syntax highlighting colors (from oneDark) */
+    .token-heading { color: #e06c75; font-weight: 600; }
+    .token-bold { color: #d19a66; font-weight: 600; }
+    .token-link { color: #61afef; text-decoration: underline; }
+    .token-code { color: #98c379; background: rgba(255,255,255,0.04); padding: 1px 4px; border-radius: 3px; }
+    .token-list { color: var(--text-secondary); }
+    .token-blockquote { color: var(--text-tertiary); border-left: 2px solid var(--border-standard); padding-left: 12px; }
+    
+    /* Selection simulation */
+    .selection {
+      background: rgba(255,255,255,0.12);
+      color: var(--text-primary);
+    }
+    
+    /* Active line */
+    .active-line {
+      background: rgba(255,255,255,0.03);
+    }
+    
+    /* JSON Editor - bordered, compact */
+    .json-editor {
+      background: var(--bg-panel);
+      border: 1px solid var(--border-standard);
+      border-radius: 6px;
+      padding: 12px 0;
+      font-family: 'Berkeley Mono', 'SF Mono', Menlo, monospace;
+      font-size: 13px;
+      line-height: 1.6;
+      min-height: 120px;
+      position: relative;
+    }
+    
+    .json-editor.focused {
+      border-color: rgba(255,255,255,0.12);
+    }
+    
+    .json-editor .content {
+      padding: 0 16px;
+      color: var(--text-primary);
+    }
+    
+    .json-editor .line {
+      min-height: 20.8px;
+    }
+    
+    /* JSON syntax colors (from oneDark) */
+    .token-property { color: #e06c75; }
+    .token-string { color: #98c379; }
+    .token-number { color: #d19a66; }
+    .token-bool { color: #c678dd; }
+    .token-null { color: #d19a66; }
+    .token-bracket { color: var(--text-secondary); }
+    
+    /* Matching bracket */
+    .matching-bracket {
+      background: rgba(255,255,255,0.06);
+      text-decoration: underline 1px solid var(--text-secondary);
+      border-radius: 2px;
+    }
+    
+    /* Tooltip simulation */
+    .tooltip-demo {
+      position: relative;
+      display: inline-block;
+      margin-top: 16px;
+    }
+    
+    .tooltip {
+      position: absolute;
+      top: -8px;
+      left: 0;
+      transform: translateY(-100%);
+      background: var(--bg-surface);
+      border: 1px solid var(--border-standard);
+      border-radius: 8px;
+      box-shadow: 0 16px 40px rgba(0,0,0,0.4);
+      padding: 8px 0;
+      min-width: 200px;
+      font-size: 13px;
+    }
+    
+    .tooltip-item {
+      padding: 6px 12px;
+      color: var(--text-secondary);
+      cursor: pointer;
+    }
+    
+    .tooltip-item:hover {
+      background: rgba(255,255,255,0.04);
+      color: var(--text-primary);
+    }
+    
+    .tooltip-item.selected {
+      background: rgba(255,255,255,0.04);
+      color: var(--text-primary);
+    }
+    
+    .tooltip-icon {
+      display: inline-block;
+      width: 16px;
+      opacity: 0.7;
+      margin-right: 4px;
+    }
+    
+    /* Legend */
+    .legend {
+      margin-top: 40px;
+      padding: 20px;
+      background: rgba(255,255,255,0.02);
+      border: 1px solid var(--border-standard);
+      border-radius: 8px;
+    }
+    
+    .legend h3 {
+      font-size: 14px;
+      font-weight: 500;
+      margin-bottom: 12px;
+      color: var(--text-secondary);
+    }
+    
+    .legend-item {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 8px;
+      font-size: 13px;
+      color: var(--text-tertiary);
+    }
+    
+    .legend-swatch {
+      width: 24px;
+      height: 16px;
+      border-radius: 3px;
+    }
+  </style>
+</head>
+<body>
+  <h1>CodeMirror Theme Preview</h1>
+  <p class="subtitle">Monochrome chrome + oneDark syntax colors</p>
+  
+  <div class="editor-section">
+    <div class="editor-label">Markdown Editor</div>
+    <div class="markdown-editor">
+      <div class="gutter">
+        <div class="line">1</div>
+        <div class="line">2</div>
+        <div class="line">3</div>
+        <div class="line">4</div>
+        <div class="line">5</div>
+        <div class="line">6</div>
+        <div class="line">7</div>
+        <div class="line">8</div>
+      </div>
+      <div class="content">
+        <div class="line"><span class="token-heading"># Profile Settings</span></div>
+        <div class="line"></div>
+        <div class="line">This profile configures the <span class="token-bold">**default agent**</span> behavior.</div>
+        <div class="line"></div>
+        <div class="line"><span class="token-list">- Enable auto-save</span></div>
+        <div class="line"><span class="token-list">- Set timeout to <span class="token-code">30s</span></span></div>
+        <div class="line"></div>
+        <div class="line active-line"><span class="token-blockquote">> Note: changes apply immediately</span></div>
+      </div>
+    </div>
+  </div>
+  
+  <div class="editor-section">
+    <div class="editor-label">JSON Editor</div>
+    <div class="json-editor focused">
+      <div class="content">
+        <div class="line">{</div>
+        <div class="line">  <span class="token-property">"hooks"</span>: <span class="token-bracket">{</span></div>
+        <div class="line">    <span class="token-property">"preCommand"</span>: <span class="token-string">"echo 'starting'"</span>,</div>
+        <div class="line">    <span class="token-property">"timeout"</span>: <span class="token-number">30</span>,</div>
+        <div class="line">    <span class="token-property">"enabled"</span>: <span class="token-bool">true</span>,</div>
+        <div class="line">    <span class="token-property">"debug"</span>: <span class="token-null">null</span></div>
+        <div class="line">  <span class="token-bracket">}</span></div>
+        <div class="line"><span class="matching-bracket">}</span></div>
+      </div>
+      <div class="tooltip-demo">
+        <div class="tooltip">
+          <div class="tooltip-item selected"><span class="tooltip-icon">▢</span>enabled</div>
+          <div class="tooltip-item"><span class="tooltip-icon">▢</span>disabled</div>
+          <div class="tooltip-item"><span class="tooltip-icon">{}</span>config</div>
+        </div>
+      </div>
+    </div>
+  </div>
+  
+  <div class="legend">
+    <h3>Theme Values</h3>
+    <div class="legend-item">
+      <div class="legend-swatch" style="background: #08090a; border: 1px solid var(--border-standard)"></div>
+      <span>Markdown editor background</span>
+    </div>
+    <div class="legend-item">
+      <div class="legend-swatch" style="background: var(--bg-panel); border: 1px solid var(--border-standard)"></div>
+      <span>JSON editor background</span>
+    </div>
+    <div class="legend-item">
+      <div class="legend-swatch" style="background: rgba(255,255,255,0.12)"></div>
+      <span>Selection highlight</span>
+    </div>
+    <div class="legend-item">
+      <div class="legend-swatch" style="background: rgba(255,255,255,0.03)"></div>
+      <span>Active line</span>
+    </div>
+    <div class="legend-item">
+      <div class="legend-swatch" style="background: var(--bg-surface); border: 1px solid var(--border-standard)"></div>
+      <span>Tooltip / autocomplete</span>
+    </div>
+    <div class="legend-item">
+      <div class="legend-swatch" style="background: rgba(255,255,255,0.06)"></div>
+      <span>Matching bracket</span>
+    </div>
+  </div>
+</body>
+</html>

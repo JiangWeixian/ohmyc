@@ -1,4 +1,4 @@
-import { screen } from '@testing-library/react'
+import { screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import React from 'react'
 import {
@@ -12,12 +12,25 @@ import {
 import { renderWithProviders } from '../../../test/render-with-providers'
 import { StoreComponentEditor } from '../store-component-editor'
 
+// CodeMirror needs heavy DOM APIs; stub MarkdownEditor with a textarea so we
+// can drive it via userEvent in jsdom.
+vi.mock('../../markdown-editor', () => ({
+  MarkdownEditor: ({ value, onChange }: { value: string; onChange: (v: string) => void }) => (
+    <textarea
+      data-testid="markdown-editor"
+      value={value}
+      onChange={e => onChange(e.target.value)}
+    />
+  ),
+}))
+
 const createAgentMutate = vi.fn()
 const updateAgentMutate = vi.fn()
 const existingAgent = {
   id: 'existing-agent',
-  frontmatter: { name: 'Existing Agent', description: 'Existing description' },
+  frontmatter: { name: 'existing-agent', description: 'Existing description' },
   content: 'Existing content',
+  raw: '---\nname: existing-agent\ndescription: Existing description\n---\n\nExisting content',
 }
 
 vi.mock('../../../hooks/use-store', () => ({
@@ -34,15 +47,29 @@ vi.mock('../../../hooks/use-store', () => ({
   useUpdateStoreCommand: () => ({ mutate: vi.fn(), isPending: false }),
 }))
 
-describe('StoreComponentEditor', () => {
+describe('StoreComponentEditor (markdown-doc mode)', () => {
   beforeEach(() => {
     createAgentMutate.mockReset()
     updateAgentMutate.mockReset()
   })
 
-  it('shows validation messages for create and calls save on success', async () => {
-    const user = userEvent.setup()
+  it('renders the markdown editor with a scaffold for new agents', () => {
+    renderWithProviders(
+      <StoreComponentEditor
+        category="agents"
+        onSaved={vi.fn()}
+        onCancel={vi.fn()}
+      />,
+    )
+    const editor = screen.getByTestId('markdown-editor') as HTMLTextAreaElement
+    expect(editor.value).toContain('---')
+    expect(editor.value).toContain('name:')
+    expect(editor.value).toContain('description:')
+    expect(screen.getByLabelText('Filename')).toBeInTheDocument()
+  })
 
+  it('disables save until the doc parses and required keys are present', async () => {
+    const user = userEvent.setup()
     renderWithProviders(
       <StoreComponentEditor
         category="agents"
@@ -51,22 +78,23 @@ describe('StoreComponentEditor', () => {
       />,
     )
 
-    await user.click(screen.getByRole('button', { name: 'Save' }))
-    expect(screen.getByText('Name is required')).toBeInTheDocument()
+    const save = screen.getByRole('button', { name: /Save/ })
+    expect(save).toBeDisabled()
 
-    await user.type(screen.getByLabelText('Name'), 'fresh-agent')
-    await user.click(screen.getByRole('button', { name: 'Save' }))
-    expect(screen.getByText('Description is required for agents')).toBeInTheDocument()
+    const editor = screen.getByTestId('markdown-editor') as HTMLTextAreaElement
+    await user.clear(editor)
+    await user.type(editor,
+      '---\nname: fresh-agent\ndescription: Creates a new thing\n---\n\nSystem prompt')
 
-    await user.type(screen.getByLabelText('Description'), 'Creates a new thing')
-    await user.type(screen.getByLabelText('Content (Markdown)'), 'System prompt')
-    await user.click(screen.getByRole('button', { name: 'Save' }))
+    await waitFor(() => expect(screen.getByRole('button', { name: /Save/ })).toBeEnabled())
+
+    await user.click(screen.getByRole('button', { name: /Save/ }))
 
     expect(createAgentMutate).toHaveBeenCalledWith(
-      {
-        frontmatter: { name: 'fresh-agent', description: 'Creates a new thing' },
-        content: 'System prompt',
-      },
+      expect.objectContaining({
+        frontmatter: expect.objectContaining({ name: 'fresh-agent', description: 'Creates a new thing' }),
+        content: expect.stringContaining('System prompt'),
+      }),
       expect.objectContaining({
         onSuccess: expect.any(Function),
         onError: expect.any(Function),
@@ -74,7 +102,7 @@ describe('StoreComponentEditor', () => {
     )
   })
 
-  it('loads edit values, saves updates, and shows destructive delete copy', async () => {
+  it('hydrates the buffer from existing.raw and saves updates', async () => {
     const user = userEvent.setup()
 
     renderWithProviders(
@@ -86,20 +114,27 @@ describe('StoreComponentEditor', () => {
       />,
     )
 
-    expect(await screen.findByDisplayValue('Existing description')).toBeInTheDocument()
+    const editor = await screen.findByTestId('markdown-editor') as HTMLTextAreaElement
+    await waitFor(() => expect(editor.value).toContain('Existing description'))
 
-    await user.clear(screen.getByLabelText('Description'))
-    await user.type(screen.getByLabelText('Description'), 'Updated description')
-    await user.click(screen.getByRole('button', { name: 'Save' }))
+    await user.clear(editor)
+    await user.type(editor,
+      '---\nname: existing-agent\ndescription: Updated description\n---\n\nExisting content')
+
+    await waitFor(() => expect(screen.getByRole('button', { name: /Save/ })).toBeEnabled())
+    await user.click(screen.getByRole('button', { name: /Save/ }))
 
     expect(updateAgentMutate).toHaveBeenCalledWith(
-      {
+      expect.objectContaining({
         name: 'existing-agent',
-        body: {
-          frontmatter: { name: 'Existing Agent', description: 'Updated description' },
-          content: 'Existing content',
-        },
-      },
+        body: expect.objectContaining({
+          frontmatter: expect.objectContaining({
+            name: 'existing-agent',
+            description: 'Updated description',
+          }),
+          content: expect.stringContaining('Existing content'),
+        }),
+      }),
       expect.objectContaining({
         onSuccess: expect.any(Function),
         onError: expect.any(Function),
@@ -108,5 +143,24 @@ describe('StoreComponentEditor', () => {
 
     await user.click(screen.getByRole('button', { name: 'Delete' }))
     expect(screen.getByText('Delete this store component?')).toBeInTheDocument()
+  })
+
+  it('surfaces a parse error and keeps save disabled when frontmatter is malformed', async () => {
+    const user = userEvent.setup()
+    renderWithProviders(
+      <StoreComponentEditor
+        category="agents"
+        onSaved={vi.fn()}
+        onCancel={vi.fn()}
+      />,
+    )
+
+    const editor = screen.getByTestId('markdown-editor') as HTMLTextAreaElement
+    await user.clear(editor)
+    // Missing closing fence
+    await user.type(editor, '---\nname: broken\n\nbody without close')
+
+    expect(screen.getByText(/frontmatter invalid/)).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /Save/ })).toBeDisabled()
   })
 })
