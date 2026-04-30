@@ -83,7 +83,11 @@ describe('Launcher server', () => {
       const fastify = await createServer({ staticRoot })
       const res = await fastify.inject({ method: 'GET', url: '/health' })
       expect(res.statusCode).toBe(200)
-      expect(res.json()).toEqual({ status: 'ok' })
+      const body = res.json()
+      expect(body.status).toBe('ok')
+      expect(body.debug).toBeDefined()
+      expect(body.debug.cwd).toBeDefined()
+      expect(body.debug.agentsDir).toBeDefined()
 
       await fastify.close()
     })
@@ -161,7 +165,9 @@ describe('Launcher server', () => {
       // Health endpoint should still work
       const res = await fastify.inject({ method: 'GET', url: '/health' })
       expect(res.statusCode).toBe(200)
-      expect(res.json()).toEqual({ status: 'ok' })
+      const body = res.json()
+      expect(body.status).toBe('ok')
+      expect(body.debug).toBeDefined()
 
       await fastify.close()
     })

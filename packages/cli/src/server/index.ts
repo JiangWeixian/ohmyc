@@ -60,6 +60,7 @@ export function resolveStaticRoot(staticRoot?: string): string | undefined {
 export interface CreateServerOptions {
   staticRoot?: string
   apiOnly?: boolean
+  cwd?: string
 }
 
 export async function createServer(options: CreateServerOptions = {}): Promise<FastifyInstance> {
@@ -67,13 +68,15 @@ export async function createServer(options: CreateServerOptions = {}): Promise<F
     logger: true,
   })
 
+  const serverCwd = options.cwd || process.cwd()
+  const config = new ConfigLocator({ cwd: serverCwd })
+
   // Health check + debug
   fastify.get('/health', async () => {
-    const config = new ConfigLocator()
     return {
       status: 'ok',
       debug: {
-        cwd: process.cwd(),
+        cwd: serverCwd,
         agentsDir: config.agentsDir,
         projectAgentsDir: config.projectAgentsDir,
         projectPath: config.projectPath,
@@ -96,9 +99,7 @@ export async function createServer(options: CreateServerOptions = {}): Promise<F
 
   // REST API (must be registered before the SPA fallback)
   await fastify.register(configRoutes)
-  await fastify.register(settingsRoutes)
-
-  const config = new ConfigLocator()
+  await fastify.register(settingsRoutes, { cwd: serverCwd })
 
   await fastify.register(agentsRoutes, { agentsDir: config.agentsDir, projectAgentsDir: config.projectAgentsDir, pluginsDir: config.pluginsDir, settingsPath: config.settingsPath, baseDir: config.baseDir })
   await fastify.register(skillsRoutes, { skillsDir: config.skillsDir, projectSkillsDir: config.projectSkillsDir, pluginsDir: config.pluginsDir, settingsPath: config.settingsPath, baseDir: config.baseDir })
@@ -125,6 +126,7 @@ export interface StartServerOptions {
   defaultPort?: number
   staticRoot?: string
   apiOnly?: boolean
+  cwd?: string
 }
 
 export interface StartServerResult {
@@ -143,7 +145,7 @@ export async function startServer(options: StartServerOptions | number = {}): Pr
   const defaultPort = options_.defaultPort ?? 3000
 
   const port = await getPort({ port: [defaultPort, defaultPort + 1, defaultPort + 2, 0] })
-  const fastify = await createServer({ staticRoot: options_.staticRoot, apiOnly: options_.apiOnly })
+  const fastify = await createServer({ staticRoot: options_.staticRoot, apiOnly: options_.apiOnly, cwd: options_.cwd })
 
   try {
     const address = await fastify.listen({ port, host: '0.0.0.0' })

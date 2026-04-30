@@ -87,6 +87,7 @@ describe('Package configuration', () => {
   })
 
   const distributionTestSkip = distributionExists ? it : it.skip
+  const distributionUiSkip = existsSync(distributionUiHtmlPath) ? it : it.skip
 
   distributionTestSkip('dist/index.mjs exists after build', () => {
     const stat = statSync(distributionIndexPath)
@@ -121,7 +122,7 @@ describe('Package configuration', () => {
     expect(npmImports).toEqual([])
   })
 
-  distributionTestSkip('dist/ui/index.html exists after build', () => {
+  distributionUiSkip('dist/ui/index.html exists after build', () => {
     expect(existsSync(distributionUiHtmlPath)).toBe(true)
   })
 

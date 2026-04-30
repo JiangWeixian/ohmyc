@@ -5,12 +5,14 @@ import { startServer, type StartServerOptions } from './server/index'
 export interface LaunchOptions {
   defaultPort?: number
   apiOnly?: boolean
+  cwd?: string
 }
 
 export async function launchApp(options: LaunchOptions = {}): Promise<void> {
   const serverOptions: StartServerOptions = {
     defaultPort: options.defaultPort ?? 3000,
     apiOnly: options.apiOnly,
+    cwd: options.cwd,
   }
 
   console.log('Starting ClaudeUI server...')

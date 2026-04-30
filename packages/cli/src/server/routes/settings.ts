@@ -18,10 +18,16 @@ interface SettingsBody {
   content: unknown
 }
 
-export async function settingsRoutes(fastify: FastifyInstance) {
+interface SettingsRouteOptions {
+  cwd?: string
+}
+
+export async function settingsRoutes(fastify: FastifyInstance, options: SettingsRouteOptions = {}) {
+  const baseCwd = options.cwd || process.cwd()
+
   // GET /api/settings?project=<path> - reads {AGENT_DIR_NAME}/settings.json from project directory
   fastify.get<{ Querystring: SettingsQuery }>('/api/settings', async (request, reply) => {
-    const project = request.query.project || process.cwd()
+    const project = request.query.project || baseCwd
     const settingsPath = path.join(project, AGENT_DIR_NAME, 'settings.json')
 
     try {
@@ -51,7 +57,7 @@ export async function settingsRoutes(fastify: FastifyInstance) {
 
   // POST /api/settings?project=<path> - writes content to {AGENT_DIR_NAME}/settings.json
   fastify.post<{ Querystring: SettingsQuery; Body: SettingsBody }>('/api/settings', async (request, reply) => {
-    const project = request.query.project || process.cwd()
+    const project = request.query.project || baseCwd
     const claudeDir = path.join(project, AGENT_DIR_NAME)
     const settingsPath = path.join(claudeDir, 'settings.json')
 
