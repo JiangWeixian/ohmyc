@@ -16,7 +16,6 @@ interface JsonEditorProperties {
   value: string
   onChange: (value: string) => void
   placeholder?: string
-  minHeight?: string
 }
 
 const jsonEditorOverlay = EditorView.theme({
@@ -40,7 +39,7 @@ const jsonEditorOverlay = EditorView.theme({
   },
 })
 
-export function JsonEditor({ value, onChange, placeholder, minHeight: _minHeight = '100px' }: JsonEditorProperties) {
+export function JsonEditor({ value, onChange, placeholder }: JsonEditorProperties) {
   const containerRef = useRef<HTMLDivElement>(null)
   const viewRef = useRef<EditorView | null>(null)
   const onChangeRef = useRef(onChange)
@@ -84,7 +83,7 @@ export function JsonEditor({ value, onChange, placeholder, minHeight: _minHeight
       view.destroy()
       viewRef.current = null
     }
-    // Only create editor once on mount
+    // Only create editor once on mount; value changes synced below
     /* eslint-disable react-hooks/exhaustive-deps, react/exhaustive-deps, react-hooks-extra/exhaustive-deps, react-naming-convention/exhaustive-deps */
   }, [])
   /* eslint-enable react-hooks/exhaustive-deps, react/exhaustive-deps, react-hooks-extra/exhaustive-deps, react-naming-convention/exhaustive-deps */
