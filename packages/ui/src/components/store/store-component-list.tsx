@@ -1,9 +1,9 @@
-import { AnimatePresence, motion } from 'framer-motion'
 import {
-  ChevronDown,
+  Download,
   Edit2,
   Loader2,
   Plus,
+  Search,
   Trash2,
 } from 'lucide-react'
 import { useMemo, useState } from 'react'
@@ -25,57 +25,97 @@ import { ImportComponentsDialog } from './import-components-dialog'
 import { StoreComponentEditor } from './store-component-editor'
 import { cn } from '@/lib/utils'
 
-function ProfileReferences({
-  itemType,
-  itemId,
-  referencedByMap,
-}: {
-  itemType: string
-  itemId: string
-  referencedByMap: Map<string, string[]>
-}) {
-  const referenceNames = referencedByMap.get(`${itemType}:${itemId}`) ?? []
-  const referenceCount = referenceNames.length
+type Category = 'agents' | 'commands' | 'model-configs' | 'skills'
 
-  if (referenceCount === 0) {
-    return <span className="text-[13px] tabular-nums text-[var(--text-tertiary)]">0</span>
+const CATEGORY_LABEL: Record<Category, { plural: string; singular: string }> = {
+  agents: { plural: 'agents', singular: 'agent' },
+  skills: { plural: 'skills', singular: 'skill' },
+  commands: { plural: 'commands', singular: 'command' },
+  'model-configs': { plural: 'model configs', singular: 'model config' },
+}
+
+const CATEGORY_HEADING: Record<Category, { title: string; description: string }> = {
+  agents: {
+    title: 'Agents',
+    description: 'Canonical library of agent components. Profiles reference these — edit here changes them everywhere.',
+  },
+  skills: {
+    title: 'Skills',
+    description: 'Canonical library of skill components. Profiles reference these — edit here changes them everywhere.',
+  },
+  commands: {
+    title: 'Commands',
+    description: 'Canonical library of slash commands. Profiles reference these — edit here changes them everywhere.',
+  },
+  'model-configs': {
+    title: 'Model configs',
+    description: 'Canonical library of API connection presets. Profiles reference these — edit here changes them everywhere.',
+  },
+}
+
+function makeInitials(name: string): string {
+  const cleaned = name.replaceAll(/[^a-z0-9]/gi, ' ').trim()
+  if (!cleaned) {
+    return '··'
   }
+  const parts = cleaned.split(/\s+/)
+  if (parts.length >= 2) {
+    return (parts[0][0] + parts[1][0]).toUpperCase()
+  }
+  return cleaned.slice(0, 2).toUpperCase()
+}
 
-  if (referenceCount <= 2) {
+function UsedBy({ names }: { names: string[] }) {
+  const count = names.length
+  if (count === 0) {
+    return (
+      <span className="font-mono text-[11px] italic text-[var(--text-quaternary)]">
+        Unused
+      </span>
+    )
+  }
+  if (count <= 2) {
     return (
       <div className="flex items-center gap-1.5">
-        <span className="text-[13px] tabular-nums text-[var(--text-primary)]">{referenceCount}</span>
-        {referenceNames.map(name => (
+        <span className="font-mono text-[11px] text-[var(--text-tertiary)]">Used by</span>
+        {names.map(n => (
           <span
-            key={name}
-            aria-label={`${name} profile`}
-            className="inline-block rounded bg-[var(--accent-blue)]/8 px-1.5 py-0.5 text-[11px] text-[var(--accent-blue)] border border-[var(--accent-blue)]/15"
+            key={n}
+            className={cn(
+              'inline-flex items-center rounded-full px-2 py-[2px]',
+              'border border-[rgba(255,255,255,0.08)] bg-[rgba(255,255,255,0.02)]',
+              'text-[11px] font-[510] text-[var(--text-secondary)]',
+            )}
           >
-            {name}
+            {n}
           </span>
         ))}
       </div>
     )
   }
-
   return (
     <span
-      className="text-[13px] text-[var(--accent-blue)]"
-      title={referenceNames.join(', ')}
+      title={names.join(', ')}
+      className={cn(
+        'inline-flex items-center rounded-full px-2.5 py-[3px]',
+        'border border-[rgba(255,255,255,0.08)] bg-[rgba(255,255,255,0.04)]',
+        'font-mono text-[11px] text-[var(--text-secondary)]',
+      )}
     >
-      Used by {referenceCount} profiles
+      Used by {count} profiles
     </span>
   )
 }
 
 interface StoreComponentListProperties {
-  category: 'agents' | 'all' | 'commands' | 'model-configs' | 'skills'
+  category: Category
 }
 
 export function StoreComponentList({ category }: StoreComponentListProperties) {
-  const [editing, setEditing] = useState<{ category: 'agents' | 'commands' | 'model-configs' | 'skills'; name?: string } | null>(null)
-  const [deleteTarget, setDeleteTarget] = useState<{ category: 'agents' | 'commands' | 'model-configs' | 'skills'; name: string; referencedBy: string[] } | null>(null)
+  const [editing, setEditing] = useState<{ category: Category; name?: string } | null>(null)
+  const [deleteTarget, setDeleteTarget] = useState<{ category: Category; name: string; referencedBy: string[] } | null>(null)
   const [showImportDialog, setShowImportDialog] = useState(false)
+  const [search, setSearch] = useState('')
 
   const agentsQ = useStoreAgents()
   const skillsQ = useStoreSkills()
@@ -87,118 +127,127 @@ export function StoreComponentList({ category }: StoreComponentListProperties) {
   const deleteCommandMut = useDeleteStoreCommand()
   const deleteModelConfigMut = useDeleteStoreModelConfig()
 
-  const [search, setSearch] = useState('')
-  const [typeFilter, setTypeFilter] = useState<'agents' | 'all' | 'commands' | 'model-configs' | 'skills'>(
-    category === 'all' ? 'all' : category,
-  )
-
-  const items = useMemo(() => {
-    const agentItems = (agentsQ.data ?? []).map(item => ({
-      id: item.id,
-      type: 'agents' as const,
-      name: item.frontmatter.name || item.id,
-      description: item.frontmatter.description || '',
-      provenance: item.provenance,
-    }))
-    const skillItems = (skillsQ.data ?? []).map(item => ({
-      id: item.id,
-      type: 'skills' as const,
-      name: item.frontmatter.name || item.id,
-      description: item.frontmatter.description || '',
-      provenance: item.provenance,
-    }))
-    const commandItems = (commandsQ.data ?? []).map(item => ({
-      id: item.id,
-      type: 'commands' as const,
-      name: item.frontmatter.name || item.id,
-      description: item.frontmatter.description || '',
-      provenance: item.provenance,
-    }))
-
-    const modelConfigItems = (modelConfigsQ.data ?? []).map(item => ({
-      id: item.name,
-      type: 'model-configs' as const,
-      name: item.name,
-      description: '',
-      provider: item.provider,
-      baseUrl: item.baseUrl,
-      apiKey: item.apiKey,
-      provenance: undefined as any,
-    }))
-
-    const baseItems = [...agentItems, ...skillItems, ...commandItems, ...modelConfigItems]
-
-    return baseItems.filter((item) => {
-      const matchesSearch = item.name.toLowerCase().includes(search.toLowerCase())
-      const matchesType = typeFilter === 'all' || item.type === typeFilter
-      return matchesSearch && matchesType
-    })
-  }, [agentsQ.data, category, commandsQ.data, modelConfigsQ.data, search, skillsQ.data, typeFilter])
-
-  /* eslint-disable unicorn/no-nested-ternary */
-  const isLoading = category === 'all'
-    ? agentsQ.isLoading || skillsQ.isLoading || commandsQ.isLoading || modelConfigsQ.isLoading
-    : category === 'agents'
-      ? agentsQ.isLoading
-      : category === 'skills'
-        ? skillsQ.isLoading
-        : category === 'commands'
-          ? commandsQ.isLoading
-          : modelConfigsQ.isLoading
-  /* eslint-enable unicorn/no-nested-ternary */
-
   const { data: profilesData } = useProfiles()
   const allProfiles = profilesData?.profiles ?? []
 
-  const referencedByMap = new Map<string, string[]>()
-  for (const p of allProfiles) {
-    for (const reference of p.agents) {
-      const key = `agents:${reference}`
-      const existing = referencedByMap.get(key) ?? []
-      existing.push(p.name)
-      referencedByMap.set(key, existing)
+  const referencedByMap = useMemo(() => {
+    const m = new Map<string, string[]>()
+    for (const p of allProfiles) {
+      for (const r of p.agents) {
+        const k = `agents:${r}`
+        m.set(k, [...(m.get(k) ?? []), p.name])
+      }
+      for (const r of p.skills) {
+        const k = `skills:${r}`
+        m.set(k, [...(m.get(k) ?? []), p.name])
+      }
+      for (const r of p.commands) {
+        const k = `commands:${r}`
+        m.set(k, [...(m.get(k) ?? []), p.name])
+      }
+      if (p.modelConfig) {
+        const k = `model-configs:${p.modelConfig}`
+        m.set(k, [...(m.get(k) ?? []), p.name])
+      }
     }
-    for (const reference of p.skills) {
-      const key = `skills:${reference}`
-      const existing = referencedByMap.get(key) ?? []
-      existing.push(p.name)
-      referencedByMap.set(key, existing)
-    }
-    for (const reference of p.commands) {
-      const key = `commands:${reference}`
-      const existing = referencedByMap.get(key) ?? []
-      existing.push(p.name)
-      referencedByMap.set(key, existing)
-    }
-    if (p.modelConfig) {
-      const key = `model-configs:${p.modelConfig}`
-      const existing = referencedByMap.get(key) ?? []
-      existing.push(p.name)
-      referencedByMap.set(key, existing)
-    }
-  }
+    return m
+  }, [allProfiles])
 
-  function getDeleteMutation(itemCategory: 'agents' | 'commands' | 'model-configs' | 'skills') {
-    if (itemCategory === 'agents') {
+  const items = useMemo(() => {
+    if (category === 'agents') {
+      return (agentsQ.data ?? []).map(it => ({
+        id: it.id,
+        name: it.frontmatter.name || it.id,
+        description: it.frontmatter.description || '',
+        meta: [
+          (it as any).scope || (it as any).source,
+          it.frontmatter.model,
+          it.provenance?.importPath ? `imported from ${it.provenance.importPath}` : null,
+        ],
+      }))
+    }
+    if (category === 'skills') {
+      return (skillsQ.data ?? []).map(it => ({
+        id: it.id,
+        name: it.frontmatter.name || it.id,
+        description: it.frontmatter.description || '',
+        meta: [
+          (it as any).scope || (it as any).source,
+          it.provenance?.importPath ? `imported from ${it.provenance.importPath}` : null,
+        ],
+      }))
+    }
+    if (category === 'commands') {
+      return (commandsQ.data ?? []).map(it => ({
+        id: it.id,
+        name: it.frontmatter.name || it.id,
+        description: it.frontmatter.description || '',
+        meta: [
+          (it as any).scope || (it as any).source,
+          it.provenance?.importPath ? `imported from ${it.provenance.importPath}` : null,
+        ],
+      }))
+    }
+    return (modelConfigsQ.data ?? []).map(it => ({
+      id: it.name,
+      name: it.name,
+      description: `${it.provider ?? 'custom'} · ${it.baseUrl}`,
+      meta: [
+        it.provider,
+        `key ${maskApiKey(it.apiKey)}`,
+      ],
+    }))
+  }, [category, agentsQ.data, skillsQ.data, commandsQ.data, modelConfigsQ.data])
+
+  const filteredItems = useMemo(() => {
+    const q = search.trim().toLowerCase()
+    if (!q) {
+      return items
+    }
+    return items.filter(it => it.name.toLowerCase().includes(q) || it.description.toLowerCase().includes(q))
+  }, [items, search])
+
+  const isLoading = (() => {
+    if (category === 'agents') {
+      return agentsQ.isLoading
+    }
+    if (category === 'skills') {
+      return skillsQ.isLoading
+    }
+    if (category === 'commands') {
+      return commandsQ.isLoading
+    }
+    return modelConfigsQ.isLoading
+  })()
+
+  const labels = CATEGORY_LABEL[category]
+  const heading = CATEGORY_HEADING[category]
+
+  const totalCount = items.length
+  const referencedCount = items.filter(it => (referencedByMap.get(`${category}:${it.id}`) ?? []).length > 0).length
+  const unusedCount = totalCount - referencedCount
+
+  function getDeleteMutation(c: Category) {
+    if (c === 'agents') {
       return deleteAgentMut
     }
-    if (itemCategory === 'skills') {
+    if (c === 'skills') {
       return deleteSkillMut
     }
-    if (itemCategory === 'commands') {
+    if (c === 'commands') {
       return deleteCommandMut
     }
     return deleteModelConfigMut
   }
 
-  const handleDelete = (itemCategory: 'agents' | 'commands' | 'model-configs' | 'skills', name: string) => {
-    const deleteMut = getDeleteMutation(itemCategory)
-    deleteMut.mutate({ name, force: false }, {
+  const handleDelete = (name: string) => {
+    const mut = getDeleteMutation(category)
+    mut.mutate({ name, force: false }, {
       onSuccess: () => setDeleteTarget(null),
       onError: (error: any) => {
         const references = error.data?.referencedBy
         if (references) {
-          setDeleteTarget({ category: itemCategory, name, referencedBy: references })
+          setDeleteTarget({ category, name, referencedBy: references })
         }
       },
     })
@@ -208,8 +257,8 @@ export function StoreComponentList({ category }: StoreComponentListProperties) {
     if (!deleteTarget) {
       return
     }
-    const deleteMut = getDeleteMutation(deleteTarget.category)
-    deleteMut.mutate({ name: deleteTarget.name, force: true }, {
+    const mut = getDeleteMutation(deleteTarget.category)
+    mut.mutate({ name: deleteTarget.name, force: true }, {
       onSuccess: () => setDeleteTarget(null),
     })
   }
@@ -225,248 +274,217 @@ export function StoreComponentList({ category }: StoreComponentListProperties) {
     )
   }
 
-  const createCategory = typeFilter === 'all' ? 'agents' : typeFilter
-  const createLabel = createCategory === 'model-configs' ? 'New model config' : `New ${createCategory.slice(0, -1)}`
-
   return (
     <div>
-      <div className="mb-6 flex items-center justify-between">
-        <div>
-          <h1 className="text-xl font-semibold text-[var(--text-primary)]">Store Components</h1>
-          <p className="text-[13px] text-[var(--text-tertiary)] mt-0.5">
-            Browse agents, skills, and commands in your canonical store. Profiles reference these components.
-          </p>
-        </div>
-        <div className="flex items-center gap-2">
-          <button
-            type="button"
-            onClick={() => setShowImportDialog(true)}
-            className={cn(
-              'rounded-[var(--radius-md)] border border-[var(--border-default)] bg-[var(--surface-overlay)] px-3 py-1.5 text-[13px] font-medium text-[var(--text-primary)]',
-              'hover:border-[var(--border-hover)] hover:bg-[var(--surface-panel)]',
-              'transition-colors duration-150',
-            )}
-          >
-            Import Components
-          </button>
-          <button
-            onClick={() => setEditing({ category: createCategory })}
-            className={cn(
-              'flex items-center gap-1.5 px-2.5 py-1.5 text-[13px] font-medium rounded-[var(--radius-md)]',
-              'bg-[var(--text-primary)] text-[var(--bg-marketing)]',
-              'hover:bg-[var(--text-secondary)]',
-              'transition-colors duration-150',
-            )}
-          >
-            <Plus size={14} /> {createLabel}
-          </button>
-        </div>
+      <div className="mb-1">
+        <h1 className="text-[24px] font-[510] tracking-[-0.2px] text-[var(--text-primary)]">
+          {heading.title}
+        </h1>
+        <p className="mt-1 text-[13px] text-[var(--text-tertiary)]">
+          {heading.description}
+        </p>
       </div>
 
-      <div className="mb-6 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-        <input
-          aria-label="Search store components"
-          value={search}
-          onChange={event => setSearch(event.target.value)}
-          placeholder="Search by name"
+      {/* Toolbar */}
+      <div className="mt-6 flex items-center gap-3">
+        <div
           className={cn(
-            'w-full rounded-[var(--radius-md)] px-3 py-2 text-[13px] md:max-w-sm',
-            'bg-[var(--surface-base)] border border-[var(--border-default)]',
-            'text-[var(--text-primary)] placeholder:text-[var(--text-tertiary)]',
-            'focus:outline-none focus:border-[var(--accent-blue)]',
+            'flex h-9 flex-1 items-center gap-2 rounded-md px-3',
+            'border border-[rgba(255,255,255,0.08)] bg-[rgba(255,255,255,0.02)]',
+            'focus-within:border-[rgba(255,255,255,0.14)]',
             'transition-colors duration-150',
           )}
-        />
-        <label className="flex items-center gap-2 text-[12px] text-[var(--text-tertiary)]">
-          Type
-          <select
-            aria-label="Filter by type"
-            value={typeFilter}
-            onChange={event => setTypeFilter(event.target.value as typeof typeFilter)}
+        >
+          <Search size={14} className="shrink-0 text-[var(--text-tertiary)]" />
+          <input
+            aria-label="Search store components"
+            value={search}
+            onChange={e => setSearch(e.target.value)}
+            placeholder={`Search ${labels.plural} by name…`}
             className={cn(
-              'rounded-[var(--radius-md)] border border-[var(--border-default)] bg-[var(--surface-base)] px-3 py-2 text-[13px] text-[var(--text-primary)]',
-              'focus:outline-none focus:border-[var(--accent-blue)]',
-              'transition-colors duration-150',
+              'flex-1 bg-transparent text-[13px] outline-none',
+              'text-[var(--text-primary)] placeholder:text-[var(--text-tertiary)]',
             )}
-          >
-            <option value="all">all</option>
-            <option value="agents">agents</option>
-            <option value="skills">skills</option>
-            <option value="commands">commands</option>
-            <option value="model-configs">model-configs</option>
-          </select>
-        </label>
+          />
+        </div>
+        <button
+          type="button"
+          onClick={() => setShowImportDialog(true)}
+          className={cn(
+            'flex h-9 items-center gap-1.5 rounded-md px-3',
+            'border border-[rgba(255,255,255,0.08)] bg-[rgba(255,255,255,0.02)]',
+            'text-[13px] font-[510] text-[var(--text-secondary)]',
+            'hover:bg-[rgba(255,255,255,0.04)] hover:text-[var(--text-primary)] hover:border-[rgba(255,255,255,0.14)]',
+            'transition-colors duration-150',
+          )}
+        >
+          <Download size={14} />
+          Import
+        </button>
+        <button
+          type="button"
+          onClick={() => setEditing({ category })}
+          className={cn(
+            'flex h-9 items-center gap-1.5 rounded-md px-3',
+            'bg-[var(--text-primary)] text-[var(--bg-marketing)]',
+            'text-[13px] font-[510]',
+            'hover:bg-[var(--text-secondary)]',
+            'transition-colors duration-150',
+          )}
+        >
+          <Plus size={14} />
+          New {labels.singular}
+        </button>
       </div>
 
-      {/* eslint-disable unicorn/no-nested-ternary */}
+      {/* Counter line */}
+      <div
+        className={cn(
+          'mt-4 mb-3 font-mono text-[12px] text-[var(--text-tertiary)]',
+          'tracking-[0.01em]',
+        )}
+      >
+        {totalCount} {labels.plural}
+        <span className="mx-1.5 text-[var(--text-quaternary)]">·</span>
+        {referencedCount} referenced
+        <span className="mx-1.5 text-[var(--text-quaternary)]">·</span>
+        {unusedCount} unused
+      </div>
+
       {isLoading
         ? (
-        <div className="flex justify-center py-20">
-          <Loader2 size={20} className="animate-spin text-[var(--text-tertiary)]" />
-        </div>
+          <div className="flex justify-center py-20">
+            <Loader2 size={20} className="animate-spin text-[var(--text-tertiary)]" />
+          </div>
           )
-        : items.length === 0
-          ? (
-              typeFilter === 'model-configs'
-                ? (
-          <motion.div
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="rounded-[var(--radius-md)] border border-[var(--border-default)] bg-[var(--surface-raised)] px-6 py-20 text-center"
-          >
-            <h2 className="text-lg font-semibold text-[var(--text-primary)]">
-              No model configs yet
-            </h2>
-            <p className="mt-2 text-[13px] text-[var(--text-tertiary)]">
-              Create a model config to define an API connection preset for your profiles.
-            </p>
-            <button
-              type="button"
-              onClick={() => setEditing({ category: 'model-configs' })}
+        : (filteredItems.length === 0
+            ? (
+            <div
               className={cn(
-                'mt-4 rounded-[var(--radius-md)] bg-[var(--text-primary)] px-3 py-1.5 text-[13px] font-medium text-[var(--bg-marketing)]',
-                'hover:bg-[var(--text-secondary)]',
-                'transition-colors duration-150',
+                'rounded-lg border border-[rgba(255,255,255,0.08)]',
+                'bg-[rgba(255,255,255,0.02)] px-6 py-20 text-center',
               )}
             >
-              New Model Config
-            </button>
-          </motion.div>
-                  )
-                : (
-        <motion.div
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="rounded-[var(--radius-md)] border border-[var(--border-default)] bg-[var(--surface-raised)] px-6 py-20 text-center"
-        >
-          <h2 className="text-lg font-semibold text-[var(--text-primary)]">
-            No components in this store yet
-          </h2>
-          <p className="mt-2 text-[13px] text-[var(--text-tertiary)]">
-            Import agents, skills, or commands from an existing Claude-compatible directory to start building a canonical local store.
-          </p>
-          <button
-            type="button"
-            onClick={() => setShowImportDialog(true)}
-            className={cn(
-              'mt-4 rounded-[var(--radius-md)] bg-[var(--text-primary)] px-3 py-1.5 text-[13px] font-medium text-[var(--bg-marketing)]',
-              'hover:bg-[var(--text-secondary)]',
-              'transition-colors duration-150',
-            )}
-          >
-            Import Components
-          </button>
-        </motion.div>
-                  )
-            )
-          : (
-        <div className="space-y-3">
-          <AnimatePresence mode="popLayout">
-            {items.map((item, index) => (
-              <motion.div
-                key={`${item.type}:${item.id}`}
-                initial={{ opacity: 0, x: -20 }}
-                animate={{ opacity: 1, x: 0 }}
-                exit={{ opacity: 0, x: -20, scale: 0.95 }}
-                transition={{ delay: index * 0.03, duration: 0.2 }}
-                className={cn(
-                  'rounded-[var(--radius-md)] px-4 py-4',
-                  'bg-[var(--surface-raised)] border border-[var(--border-default)]',
-                  'hover:border-[var(--border-hover)] hover:shadow-[var(--shadow-sm)]',
-                  'transition-all duration-150',
-                )}
-              >
-                <div className="flex items-start justify-between gap-4">
-                  <div className="min-w-0 flex-1 space-y-3">
-                    {item.type === 'model-configs'
-                      ? (
-                      <div className="grid gap-3 md:grid-cols-[minmax(0,1fr)_minmax(0,0.8fr)_minmax(0,1.2fr)_100px_80px]">
-                        <div>
-                          <div className="text-[10px] font-semibold uppercase tracking-wide text-[var(--text-tertiary)]">name</div>
-                          <div className="text-[13px] font-medium text-[var(--text-primary)]">{item.name}</div>
-                        </div>
-                        <div>
-                          <div className="text-[10px] font-semibold uppercase tracking-wide text-[var(--text-tertiary)]">provider</div>
-                          <div className="text-[13px] text-[var(--text-secondary)]">{(item as any).provider || '-'}</div>
-                        </div>
-                        <div>
-                          <div className="text-[10px] font-semibold uppercase tracking-wide text-[var(--text-tertiary)]">base url</div>
-                          <div className="text-[13px] text-[var(--text-secondary)] truncate">{(item as any).baseUrl}</div>
-                        </div>
-                        <div>
-                          <div className="text-[10px] font-semibold uppercase tracking-wide text-[var(--text-tertiary)]">api key</div>
-                          <div className="text-[13px] font-mono text-[var(--text-secondary)]">{maskApiKey((item as any).apiKey)}</div>
-                        </div>
-                        <div>
-                          <div className="text-[10px] font-semibold uppercase tracking-wide text-[var(--text-tertiary)]">profiles</div>
-                          <ProfileReferences itemType={item.type} itemId={item.id} referencedByMap={referencedByMap} />
-                        </div>
-                      </div>
-                        )
-                      : (
-                    <div className={typeFilter === 'all'
-                      ? 'grid gap-3 md:grid-cols-[minmax(0,120px)_minmax(0,1fr)_minmax(0,1.4fr)_140px]'
-                      : 'grid gap-3 md:grid-cols-[minmax(0,1fr)_minmax(0,1.6fr)_140px]'}
-                    >
-                      {typeFilter === 'all' && (
-                      <div>
-                        <div className="text-[10px] font-semibold uppercase tracking-wide text-[var(--text-tertiary)]">type</div>
-                        <div className="text-[13px] font-medium text-[var(--text-primary)]">{item.type}</div>
-                      </div>
+              <h2 className="text-[18px] font-[510] text-[var(--text-primary)]">
+                {search ? `No ${labels.plural} match "${search}"` : `No ${labels.plural} in your store yet`}
+              </h2>
+              {!search && (
+                <>
+                  <p className="mt-2 text-[13px] text-[var(--text-tertiary)]">
+                    Import {labels.plural} from an existing Claude-compatible directory to start building a canonical local store.
+                  </p>
+                  <button
+                    type="button"
+                    onClick={() => setShowImportDialog(true)}
+                    className={cn(
+                      'mt-4 inline-flex h-9 items-center gap-1.5 rounded-md px-3',
+                      'bg-[var(--text-primary)] text-[var(--bg-marketing)]',
+                      'text-[13px] font-[510]',
+                      'hover:bg-[var(--text-secondary)] transition-colors duration-150',
+                    )}
+                  >
+                    Import components
+                  </button>
+                </>
+              )}
+            </div>
+              )
+            : (
+            <div className="space-y-1.5">
+              {filteredItems.map((item) => {
+                const refs = referencedByMap.get(`${category}:${item.id}`) ?? []
+                const isUnused = refs.length === 0
+                const metaParts = item.meta.filter(Boolean) as string[]
+                return (
+                  <div
+                    key={item.id}
+                    className={cn(
+                      'group relative flex items-center gap-3 px-4 py-3.5',
+                      'rounded-lg border border-[rgba(255,255,255,0.08)]',
+                      'bg-[rgba(255,255,255,0.02)] hover:bg-[rgba(255,255,255,0.04)]',
+                      'transition-colors duration-150',
+                    )}
+                  >
+                    <div
+                      className={cn(
+                        'flex h-9 w-9 shrink-0 items-center justify-center rounded-md',
+                        'border border-[rgba(255,255,255,0.08)] bg-[rgba(255,255,255,0.04)]',
+                        'font-mono text-[11px] font-[510]',
+                        isUnused ? 'text-[var(--text-tertiary)]' : 'text-[var(--text-secondary)]',
                       )}
-                      <div>
-                        <div className="text-[10px] font-semibold uppercase tracking-wide text-[var(--text-tertiary)]">name</div>
-                        <div className="text-[13px] font-medium text-[var(--text-primary)]">{item.name}</div>
-                      </div>
-                      <div>
-                        <div className="text-[10px] font-semibold uppercase tracking-wide text-[var(--text-tertiary)]">description</div>
-                        <div className="line-clamp-3 text-[13px] text-[var(--text-secondary)]">{item.description || 'No description'}</div>
-                      </div>
-                      <div>
-                        <div className="text-[10px] font-semibold uppercase tracking-wide text-[var(--text-tertiary)]">profiles</div>
-                        <ProfileReferences itemType={item.type} itemId={item.id} referencedByMap={referencedByMap} />
-                      </div>
+                    >
+                      {makeInitials(item.name)}
                     </div>
+
+                    <div className="min-w-0 flex-1">
+                      <div
+                        className={cn(
+                          'truncate text-[14px] font-[510]',
+                          isUnused ? 'text-[var(--text-secondary)]' : 'text-[var(--text-primary)]',
                         )}
-                    {item.type !== 'model-configs' && item.provenance
-                      ? (
-                      <details className="group rounded-[var(--radius-md)] border border-[var(--border-default)]/80 bg-[var(--surface-overlay)]/40 px-3 py-2">
-                        <summary className="flex cursor-pointer list-none items-center gap-2 text-[12px] text-[var(--text-tertiary)]">
-                          <ChevronDown size={14} className="transition-transform group-open:rotate-180" />
-                          Source details
-                        </summary>
-                        <div className="mt-2 space-y-1 text-[12px] text-[var(--text-secondary)]">
-                          <div><span className="font-medium text-[var(--text-primary)]">importPath</span>: {item.provenance.importPath}</div>
-                          <div><span className="font-medium text-[var(--text-primary)]">importedAt</span>: {new Date(item.provenance.importedAt).toLocaleString()}</div>
+                      >
+                        {item.name}
+                      </div>
+                      {item.description && (
+                        <div className="mt-0.5 line-clamp-1 text-[12px] leading-[1.4] text-[var(--text-secondary)]">
+                          {item.description}
                         </div>
-                      </details>
-                        )
-                      : null}
+                      )}
+                      {metaParts.length > 0 && (
+                        <div className="mt-1 truncate font-mono text-[11px] text-[var(--text-tertiary)]">
+                          {metaParts.map((part, i) => (
+                            <span key={i}>
+                              {i > 0 && <span className="mx-1.5 text-[var(--text-quaternary)]">·</span>}
+                              {part}
+                            </span>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="shrink-0">
+                      <UsedBy names={refs} />
+                    </div>
+
+                    <div
+                      className={cn(
+                        'flex shrink-0 items-center gap-0.5 opacity-0',
+                        'group-hover:opacity-100 focus-within:opacity-100',
+                        'transition-opacity duration-150',
+                      )}
+                    >
+                      <button
+                        type="button"
+                        aria-label={`Edit ${item.name}`}
+                        onClick={() => setEditing({ category, name: item.id })}
+                        className={cn(
+                          'flex h-7 w-7 items-center justify-center rounded-sm',
+                          'text-[var(--text-tertiary)] hover:text-[var(--text-primary)]',
+                          'hover:bg-[rgba(255,255,255,0.04)]',
+                          'transition-colors duration-150',
+                        )}
+                      >
+                        <Edit2 size={13} />
+                      </button>
+                      <button
+                        type="button"
+                        aria-label={`Delete ${item.name}`}
+                        onClick={() => handleDelete(item.id)}
+                        className={cn(
+                          'flex h-7 w-7 items-center justify-center rounded-sm',
+                          'text-[var(--text-tertiary)] hover:text-[var(--text-primary)]',
+                          'hover:bg-[rgba(255,255,255,0.04)]',
+                          'transition-colors duration-150',
+                        )}
+                      >
+                        <Trash2 size={13} />
+                      </button>
+                    </div>
                   </div>
-                  <div className="flex gap-0.5">
-                  <motion.button
-                    onClick={() => setEditing({ category: item.type, name: item.id })}
-                    whileHover={{ scale: 1.1 }}
-                    whileTap={{ scale: 0.9 }}
-                    className="p-1.5 text-[var(--text-tertiary)] hover:text-[var(--text-primary)] rounded-[var(--radius-sm)] hover:bg-[var(--surface-overlay)] transition-colors"
-                  >
-                    <Edit2 size={14} />
-                  </motion.button>
-                  <motion.button
-                    onClick={() => handleDelete(item.type, item.id)}
-                    whileHover={{ scale: 1.1 }}
-                    whileTap={{ scale: 0.9 }}
-                    className="p-1.5 text-[var(--text-tertiary)] hover:text-[var(--accent-red)] rounded-[var(--radius-sm)] hover:bg-red-500/10 transition-colors"
-                  >
-                    <Trash2 size={14} />
-                  </motion.button>
-                  </div>
-                </div>
-              </motion.div>
-            ))}
-          </AnimatePresence>
-        </div>
-            )}
+                )
+              })}
+            </div>
+              ))}
 
       {deleteTarget && (
         <DeleteConfirmDialog
@@ -477,11 +495,9 @@ export function StoreComponentList({ category }: StoreComponentListProperties) {
         />
       )}
 
-      {showImportDialog
-        ? (
+      {showImportDialog && (
         <ImportComponentsDialog onClose={() => setShowImportDialog(false)} />
-          )
-        : null}
+      )}
     </div>
   )
 }

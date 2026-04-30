@@ -4,29 +4,28 @@ import { ActiveProfileChip } from './active-profile-chip'
 import { CommandPaletteTrigger } from './command-palette-trigger'
 import { cn } from '@/lib/utils'
 
-function useBreadcrumb() {
+function useBreadcrumb(): { root: string; current: string } {
   const { pathname } = useLocation()
   if (pathname.startsWith('/profiles/new')) {
-    return 'New Profile'
+    return { root: 'Profiles', current: 'New profile' }
   }
-  if (pathname.startsWith('/profiles/agents')) {
-    return 'Agents'
+  const profileComponents: Record<string, string> = {
+    agents: 'Agents',
+    skills: 'Skills',
+    commands: 'Commands',
+    'model-configs': 'Model Configs',
   }
-  if (pathname.startsWith('/profiles/skills')) {
-    return 'Skills'
-  }
-  if (pathname.startsWith('/profiles/commands')) {
-    return 'Commands'
-  }
-  if (pathname.startsWith('/profiles/model-configs')) {
-    return 'Model Configs'
+  for (const [key, label] of Object.entries(profileComponents)) {
+    if (pathname.startsWith(`/profiles/${key}`)) {
+      return { root: 'Profiles', current: label }
+    }
   }
   if (pathname.startsWith('/profiles/')) {
     const name = pathname.slice('/profiles/'.length)
-    return name || 'Profiles'
+    return { root: 'Profiles', current: name || 'All profiles' }
   }
   if (pathname.startsWith('/profiles')) {
-    return 'Profiles'
+    return { root: 'Profiles', current: 'All profiles' }
   }
   if (pathname.startsWith('/explore/')) {
     const tab = pathname.slice('/explore/'.length)
@@ -40,9 +39,9 @@ function useBreadcrumb() {
       lsp: 'LSP Servers',
       settings: 'Settings',
     }
-    return labels[tab] ?? tab
+    return { root: 'Explorer', current: labels[tab] ?? tab }
   }
-  return 'Explorer'
+  return { root: 'Explorer', current: '' }
 }
 
 interface HeaderProps {
@@ -59,9 +58,15 @@ export function Header({ onCompare }: HeaderProps) {
         'flex items-center justify-between px-6 shrink-0',
       )}
     >
-      <span className="text-[13px] font-[510] text-[var(--text-tertiary)] tracking-[-0.01em]">
-        {breadcrumb}
-      </span>
+      <nav className="flex items-center gap-2 text-[13px] tracking-[-0.01em]">
+        <span className="text-[var(--text-tertiary)]">{breadcrumb.root}</span>
+        {breadcrumb.current && (
+          <>
+            <span className="text-[rgba(255,255,255,0.08)]">/</span>
+            <span className="font-[510] text-[var(--text-primary)]">{breadcrumb.current}</span>
+          </>
+        )}
+      </nav>
       <div className="flex items-center gap-3">
         <CommandPaletteTrigger />
         <ActiveProfileChip onCompare={onCompare} />

@@ -61,23 +61,21 @@ export function ActiveProfileChip({ onCompare, onNavigateToProfiles }: ActivePro
           )}
         >
           {hasActive && (
-            <span className="w-1.5 h-1.5 rounded-full bg-[#f7f8f8]" />
+            <span className="w-1.5 h-1.5 rounded-full bg-[#f7f8f8] shadow-[0_0_0_3px_rgba(247,248,248,0.12)]" />
           )}
-          <span className="text-[12px] font-[510]">
-            {hasActive
-              ? (
-              <>
-                <span className="text-[#8a8f98]">Active</span>{' '}
-                <span className="text-[#d0d6e0]">{activeProfile.name}</span>
-              </>
-                )
-              : (
-              <span className="text-[#62666d]">
-                {isLoading ? '…' : 'No active profile'}
-              </span>
-                )}
-          </span>
-          <ChevronDown size={12} className="text-[#8a8f98]" />
+          {hasActive
+            ? (
+            <>
+              <span className="text-[11px] font-[510] tracking-[0.02em] uppercase text-[#8a8f98]">Active</span>
+              <span className="text-[13px] font-[510] text-[#f7f8f8]">{activeProfile.name}</span>
+            </>
+              )
+            : (
+            <span className="text-[12px] font-[510] text-[#62666d]">
+              {isLoading ? '…' : 'No active profile'}
+            </span>
+              )}
+          <ChevronDown size={12} className="text-[#8a8f98] ml-0.5" />
         </button>
       </DropdownMenuTrigger>
       <DropdownMenuContent

@@ -1,4 +1,4 @@
-import { Loader2 } from 'lucide-react'
+import { AlertCircle } from 'lucide-react'
 
 import { SectionHeader } from './section-header'
 import { SourceBadge } from './source-badge'
@@ -39,7 +39,6 @@ interface ConfigSectionProperties {
   title: string
   description: ReactNode
   data: ConfigEntry[] | undefined
-  isLoading: boolean
   isError: boolean
   icon: IconType
   iconColor: string
@@ -50,26 +49,17 @@ export function ConfigSection({
   title,
   description,
   data,
-  isLoading,
   isError,
   icon,
   iconColor,
   emptyMessage,
 }: ConfigSectionProperties) {
   function renderContent() {
-    if (isLoading) {
-      return (
-        <div className="flex items-center justify-center py-20">
-          <Loader2 size={20} className="animate-spin text-[var(--text-tertiary)]" />
-        </div>
-      )
-    }
-
     if (isError) {
       return (
         <div className="panel-subtle flex flex-col items-center justify-center py-20 text-center">
           <div className="mb-3 flex size-12 items-center justify-center rounded-[var(--radius-md)] border border-[var(--border-default)] bg-[var(--surface-panel)]">
-            <Loader2 size={20} className="text-[var(--accent-red)]" />
+            <AlertCircle size={20} className="text-[var(--text-tertiary)]" />
           </div>
           <h3 className="text-[16px] font-medium text-[var(--text-primary)]">Failed to load {title.toLowerCase()}</h3>
           <p className="mt-2 max-w-sm text-[14px] text-[var(--text-tertiary)]">

@@ -116,7 +116,7 @@ export function CommandPalette({ commands, placeholder = 'Search commands...' }:
                       cmd.action()
                       close()
                     }}
-                    className="flex items-center gap-3 px-4 py-2.5 text-[14px] text-[var(--text-primary)] cursor-pointer data-[selected=true]:bg-[var(--accent-blue)]/15 data-[selected=true]:text-[var(--accent-blue)] rounded mx-1"
+                    className="flex items-center gap-3 px-4 py-2.5 text-[14px] text-[var(--text-primary)] cursor-pointer data-[selected=true]:bg-[rgba(255,255,255,0.06)] rounded mx-1"
                   >
                     {cmd.icon && <span className="text-[var(--text-secondary)] w-5">{cmd.icon}</span>}
                     <span className="flex-1">{cmd.label}</span>

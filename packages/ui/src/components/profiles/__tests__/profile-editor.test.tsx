@@ -77,34 +77,35 @@ describe('ProfileEditor', () => {
     mockUpdateMutate.mockReset()
   })
 
-  it('renders section headings Basics, Selections, and Runtime config in order', () => {
+  it('renders section headings Basics, Components, Plugins & model, Runtime config, and Settings overlay in order', () => {
     renderWithProviders(
       <ProfileEditor onSaved={vi.fn()} onCancel={vi.fn()} />,
     )
 
-    const headings = screen.getAllByRole('heading', { level: 3 })
+    const headings = screen.getAllByRole('heading', { level: 2 })
     const headingTexts = headings.map(h => h.textContent)
 
-    const basicsIndex = headingTexts.indexOf('Basics')
-    const selectionsIndex = headingTexts.indexOf('Selections')
-    const runtimeIndex = headingTexts.indexOf('Runtime config')
-
-    expect(basicsIndex).toBeGreaterThanOrEqual(0)
-    expect(selectionsIndex).toBeGreaterThanOrEqual(0)
-    expect(runtimeIndex).toBeGreaterThanOrEqual(0)
-    expect(basicsIndex).toBeLessThan(selectionsIndex)
-    expect(selectionsIndex).toBeLessThan(runtimeIndex)
+    const expected = ['Basics', 'Components', 'Plugins & model', 'Runtime config', 'Settings overlay']
+    for (const label of expected) {
+      expect(headingTexts).toContain(label)
+    }
+    const indexes = expected.map(l => headingTexts.indexOf(l))
+    for (let i = 1; i < indexes.length; i++) {
+      expect(indexes[i - 1]).toBeLessThan(indexes[i])
+    }
   })
 
-  it('renders the save button with text Save Profile', () => {
+  it('renders the save button (disabled until dirty)', () => {
     renderWithProviders(
       <ProfileEditor onSaved={vi.fn()} onCancel={vi.fn()} />,
     )
 
-    expect(screen.getByRole('button', { name: /Save Profile/i })).toBeInTheDocument()
+    const button = screen.getByRole('button', { name: /Create profile/i })
+    expect(button).toBeInTheDocument()
+    expect(button).toBeDisabled()
   })
 
-  it('renders grouped picker labels Agents, Skills, Commands, Plugins, and Model Config in the Selections section', () => {
+  it('renders Agents, Skills, Commands picker cards and Plugins / Model Config panels', () => {
     renderWithProviders(
       <ProfileEditor onSaved={vi.fn()} onCancel={vi.fn()} />,
     )
@@ -112,19 +113,19 @@ describe('ProfileEditor', () => {
     expect(screen.getByText('Agents')).toBeInTheDocument()
     expect(screen.getByText('Skills')).toBeInTheDocument()
     expect(screen.getByText('Commands')).toBeInTheDocument()
-    expect(screen.getByText('Plugins')).toBeInTheDocument()
+    expect(screen.getByText(/Plugins \(/)).toBeInTheDocument()
     expect(screen.getByText('Model Config')).toBeInTheDocument()
   })
 
-  it('renders New Profile title in create mode', () => {
+  it('renders New profile breadcrumb in create mode', () => {
     renderWithProviders(
       <ProfileEditor onSaved={vi.fn()} onCancel={vi.fn()} />,
     )
 
-    expect(screen.getByText('New Profile')).toBeInTheDocument()
+    expect(screen.getByText('New profile')).toBeInTheDocument()
   })
 
-  it('renders Edit {name} title in edit mode', () => {
+  it('renders breadcrumb with profile name and Edit in edit mode', () => {
     const profile: Profile = {
       name: 'my-profile',
       agents: [],
@@ -137,7 +138,8 @@ describe('ProfileEditor', () => {
       <ProfileEditor profile={profile} onSaved={vi.fn()} onCancel={vi.fn()} />,
     )
 
-    expect(screen.getByText('Edit my-profile')).toBeInTheDocument()
+    expect(screen.getByText('my-profile')).toBeInTheDocument()
+    expect(screen.getByText('Edit')).toBeInTheDocument()
   })
 
   it('disables name input in edit mode', () => {
@@ -170,86 +172,46 @@ describe('ProfileEditor', () => {
     fireEvent.change(screen.getByPlaceholderText('my-profile'), {
       target: { value: 'test-profile' },
     })
-    fireEvent.click(screen.getByRole('button', { name: /Save Profile/i }))
+    fireEvent.click(screen.getByRole('button', { name: /Create profile/i }))
 
     expect(mockCreateMutate).toHaveBeenCalledTimes(1)
     const call = mockCreateMutate.mock.calls[0]
     expect(call[0].name).toBe('test-profile')
   })
 
-  it('shows inline error for invalid hooks JSON near the Hooks field', () => {
+  it('shows live error in the hooks code panel when JSON is invalid', () => {
     renderWithProviders(
       <ProfileEditor onSaved={vi.fn()} onCancel={vi.fn()} />,
     )
-
-    // Enter a name so we pass the name-required check
-    fireEvent.change(screen.getByPlaceholderText('my-profile'), {
-      target: { value: 'test-profile' },
-    })
-
-    // Find the hooks json textarea and enter invalid JSON
     const textareas = screen.getAllByTestId('json-textarea')
-    // First textarea is Hooks (first runtime config field)
     fireEvent.change(textareas[0], { target: { value: '{invalid' } })
-
-    // Click save to trigger validation
-    fireEvent.click(screen.getByRole('button', { name: /Save Profile/i }))
-
-    // Expect inline error message near the Hooks field
     expect(screen.getByText(/Hooks must be valid JSON/i)).toBeInTheDocument()
   })
 
-  it('shows inline error for invalid MCP Servers JSON', () => {
+  it('shows live error in the mcpServers code panel when JSON is invalid', () => {
     renderWithProviders(
       <ProfileEditor onSaved={vi.fn()} onCancel={vi.fn()} />,
     )
-
-    fireEvent.change(screen.getByPlaceholderText('my-profile'), {
-      target: { value: 'test-profile' },
-    })
-
     const textareas = screen.getAllByTestId('json-textarea')
-    // Second textarea is MCP Servers
     fireEvent.change(textareas[1], { target: { value: 'not-json' } })
-
-    fireEvent.click(screen.getByRole('button', { name: /Save Profile/i }))
-
     expect(screen.getByText(/MCP Servers must be valid JSON/i)).toBeInTheDocument()
   })
 
-  it('shows inline error for invalid LSP Servers JSON', () => {
+  it('shows live error in the lspServers code panel when JSON is invalid', () => {
     renderWithProviders(
       <ProfileEditor onSaved={vi.fn()} onCancel={vi.fn()} />,
     )
-
-    fireEvent.change(screen.getByPlaceholderText('my-profile'), {
-      target: { value: 'test-profile' },
-    })
-
     const textareas = screen.getAllByTestId('json-textarea')
-    // Third textarea is LSP Servers
     fireEvent.change(textareas[2], { target: { value: '}' } })
-
-    fireEvent.click(screen.getByRole('button', { name: /Save Profile/i }))
-
     expect(screen.getByText(/LSP Servers must be valid JSON/i)).toBeInTheDocument()
   })
 
-  it('shows inline error for invalid Settings Overlay JSON', () => {
+  it('shows live error in the settings code panel when JSON is invalid', () => {
     renderWithProviders(
       <ProfileEditor onSaved={vi.fn()} onCancel={vi.fn()} />,
     )
-
-    fireEvent.change(screen.getByPlaceholderText('my-profile'), {
-      target: { value: 'test-profile' },
-    })
-
     const textareas = screen.getAllByTestId('json-textarea')
-    // Fourth textarea is Settings Overlay
     fireEvent.change(textareas[3], { target: { value: 'not valid' } })
-
-    fireEvent.click(screen.getByRole('button', { name: /Save Profile/i }))
-
     expect(screen.getByText(/Settings Overlay must be valid JSON/i)).toBeInTheDocument()
   })
 

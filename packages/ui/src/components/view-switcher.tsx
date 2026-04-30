@@ -1,10 +1,10 @@
-import { FolderOpen, LayoutGrid } from 'lucide-react'
+import { LayoutGrid, List } from 'lucide-react'
 
 import { cn } from '@/lib/utils'
 
 const VIEWS = [
-  { id: 'profiles', label: 'Profiles', icon: FolderOpen },
-  { id: 'agent-home', label: 'Agent Home', icon: LayoutGrid },
+  { id: 'profiles', label: 'Profiles', icon: List },
+  { id: 'agent-home', label: 'Explorer', icon: LayoutGrid },
 ] as const
 
 export type ViewId = (typeof VIEWS)[number]['id']
@@ -16,22 +16,22 @@ interface ViewSwitcherProperties {
 
 export function ViewSwitcher({ active, onChange }: ViewSwitcherProperties) {
   return (
-    <div className="flex items-center rounded-lg border border-[rgba(255,255,255,0.08)] bg-[rgba(255,255,255,0.02)] p-1 w-full">
-      {VIEWS.map(({ id, icon: Icon }) => {
+    <div className="flex items-center rounded-lg border border-[rgba(255,255,255,0.08)] bg-[rgba(255,255,255,0.02)] p-1 gap-0.5 w-full">
+      {VIEWS.map(({ id, label, icon: Icon }) => {
         const isActive = active === id
         return (
           <button
             key={id}
             onClick={() => onChange(id)}
-            title={id === 'profiles' ? 'Profiles' : 'Agent Home'}
             className={cn(
-              'flex flex-1 items-center justify-center rounded-md py-2 transition-colors',
+              'flex flex-1 items-center justify-center gap-1.5 rounded-md py-2 text-[12px] font-[510] transition-colors duration-150',
               isActive
                 ? 'bg-[rgba(255,255,255,0.08)] text-[var(--text-primary)]'
                 : 'text-[var(--text-tertiary)] hover:text-[var(--text-secondary)] hover:bg-[rgba(255,255,255,0.03)]',
             )}
           >
-            <Icon size={16} />
+            <Icon size={14} />
+            {label}
           </button>
         )
       })}

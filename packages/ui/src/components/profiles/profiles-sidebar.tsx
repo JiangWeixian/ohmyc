@@ -1,5 +1,6 @@
 import {
   Bot,
+  LayoutGrid,
   Plus,
   Settings,
   Sparkles,
@@ -30,12 +31,15 @@ interface ProfilesSidebarProperties {
 }
 
 function SidebarHeader({ headerSlot }: { headerSlot?: React.ReactNode }) {
-  if (!headerSlot) {
-    return null
-  }
   return (
-    <div className="border-b border-[rgba(255,255,255,0.05)] px-4 py-3">
-      <div className="w-full overflow-hidden">{headerSlot}</div>
+    <div className="border-b border-[rgba(255,255,255,0.05)] px-4 pb-4 pt-5">
+      <div className="mb-5 flex items-center gap-3">
+        <div className="flex size-10 shrink-0 items-center justify-center rounded-[10px] border border-[rgba(255,255,255,0.08)] bg-[rgba(255,255,255,0.02)]">
+          <LayoutGrid size={18} className="text-[var(--text-secondary)]" />
+        </div>
+        <span className="text-[15px] font-[590] text-[var(--text-primary)]">Profiles</span>
+      </div>
+      {headerSlot && <div className="w-full overflow-hidden">{headerSlot}</div>}
     </div>
   )
 }
@@ -91,7 +95,7 @@ export function ProfilesSidebar({ profiles, active, selection, onSelect, onCompa
     <aside className="flex w-60 flex-col border-r border-[rgba(255,255,255,0.05)] bg-[var(--bg-panel)]">
       <SidebarHeader headerSlot={headerSlot} />
       <nav className="flex-1 overflow-y-auto px-3 py-3">
-        <div className="mb-3 px-1 text-[13px] font-medium text-[var(--text-tertiary)]">
+        <div className="mb-2 px-2 pt-1 text-[11px] font-[510] tracking-[0.04em] uppercase text-[var(--text-tertiary)]">
           My Profiles
         </div>
         <Tabs
@@ -99,7 +103,7 @@ export function ProfilesSidebar({ profiles, active, selection, onSelect, onCompa
           onValueChange={handleValueChange}
           orientation="vertical"
         >
-          <TabsList className="flex w-full flex-col gap-1 bg-transparent p-0 border-0">
+          <TabsList className="flex w-full flex-col bg-transparent p-0 border-0">
             {profiles.map((p) => {
               const isActive = active === p.name
               const value = `profile:${p.name}`
@@ -109,19 +113,19 @@ export function ProfilesSidebar({ profiles, active, selection, onSelect, onCompa
                   key={p.name}
                   value={value}
                   className={cn(
-                    'group relative w-full flex items-center justify-start gap-3 rounded-md px-3 py-2.5 text-left text-[13px] font-medium transition-colors duration-150',
+                    'group relative mb-0.5 w-full flex items-center justify-start gap-2.5 rounded-md px-3 py-2 text-left text-[13px] font-[510] transition-colors duration-150',
                     isSelected
                       ? 'bg-[rgba(255,255,255,0.08)] text-[var(--text-primary)]'
                       : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[rgba(255,255,255,0.03)]',
                   )}
                 >
-                  <span className={cn('relative z-10', isSelected ? 'text-[var(--text-primary)]' : 'text-[var(--text-tertiary)]')}>
+                  <span className={cn('relative z-10 shrink-0', isSelected ? 'text-[var(--text-primary)]' : 'text-[var(--text-tertiary)]')}>
                     <User size={16} />
                   </span>
                   <span className="relative z-10 truncate">{p.name}</span>
                   <span className="relative z-10 ml-auto flex items-center gap-1">
                     {isActive && (
-                      <span className="text-[10px] font-medium text-[#f7f8f8] bg-[rgba(255,255,255,0.08)] px-1.5 py-0.5 rounded">
+                      <span className="shrink-0 rounded bg-[var(--text-primary)] px-1.5 py-0.5 text-[10px] font-[590] text-[var(--bg-marketing)] tracking-[0.04em] uppercase">
                         Active
                       </span>
                     )}
@@ -135,7 +139,7 @@ export function ProfilesSidebar({ profiles, active, selection, onSelect, onCompa
                           }}
                           role="button"
                           tabIndex={0}
-                          className="text-[10px] font-medium px-1.5 py-0.5 rounded bg-[rgba(255,255,255,0.08)] text-[#f7f8f8] hover:bg-[rgba(255,255,255,0.12)] cursor-pointer"
+                          className="rounded border border-transparent bg-[var(--text-primary)] px-1.5 py-0.5 text-[10px] font-[510] text-[var(--bg-marketing)] hover:bg-[var(--text-secondary)] cursor-pointer"
                         >
                           Activate
                         </span>
@@ -148,7 +152,7 @@ export function ProfilesSidebar({ profiles, active, selection, onSelect, onCompa
                           }}
                           role="button"
                           tabIndex={0}
-                          className="text-[10px] font-medium px-1.5 py-0.5 rounded border border-[rgba(255,255,255,0.08)] text-[#d0d6e0] hover:bg-[rgba(255,255,255,0.04)] hover:text-[#f7f8f8] cursor-pointer"
+                          className="rounded border border-[rgba(255,255,255,0.08)] bg-[rgba(255,255,255,0.04)] px-1.5 py-0.5 text-[10px] font-[510] text-[var(--text-secondary)] hover:bg-[rgba(255,255,255,0.06)] hover:text-[var(--text-primary)] cursor-pointer"
                         >
                           Compare
                         </span>
@@ -162,13 +166,13 @@ export function ProfilesSidebar({ profiles, active, selection, onSelect, onCompa
             <TabsTrigger
               value="new-profile"
               className={cn(
-                'relative w-full flex items-center justify-start gap-3 rounded-md px-3 py-2.5 text-left text-[13px] font-medium transition-colors duration-150',
+                'relative mb-0.5 w-full flex items-center justify-start gap-2.5 rounded-md px-3 py-2 text-left text-[13px] font-[510] transition-colors duration-150',
                 currentValue === 'new-profile'
                   ? 'bg-[rgba(255,255,255,0.08)] text-[var(--text-primary)]'
                   : 'text-[var(--text-tertiary)] hover:text-[var(--text-primary)] hover:bg-[rgba(255,255,255,0.03)]',
               )}
             >
-              <span className={cn('relative z-10', currentValue === 'new-profile' ? 'text-[var(--text-primary)]' : 'text-[var(--text-tertiary)]')}>
+              <span className={cn('relative z-10 shrink-0', currentValue === 'new-profile' ? 'text-[var(--text-primary)]' : 'text-[var(--text-tertiary)]')}>
                 <Plus size={16} />
               </span>
               <span className="relative z-10">New Profile</span>
@@ -176,7 +180,7 @@ export function ProfilesSidebar({ profiles, active, selection, onSelect, onCompa
           </TabsList>
         </Tabs>
 
-        <div className="mt-5 mb-3 px-1 text-[13px] font-medium text-[var(--text-tertiary)]">
+        <div className="mb-2 mt-5 px-2 text-[11px] font-[510] tracking-[0.04em] uppercase text-[var(--text-tertiary)]">
           Components
         </div>
         <Tabs
@@ -184,7 +188,7 @@ export function ProfilesSidebar({ profiles, active, selection, onSelect, onCompa
           onValueChange={handleValueChange}
           orientation="vertical"
         >
-          <TabsList className="flex w-full flex-col gap-1 bg-transparent p-0 border-0">
+          <TabsList className="flex w-full flex-col bg-transparent p-0 border-0">
             {COMPONENTS.map(({ category, label, icon: Icon }) => {
               const value = `component:${category}`
               const isSelected = currentValue === value
@@ -193,13 +197,13 @@ export function ProfilesSidebar({ profiles, active, selection, onSelect, onCompa
                   key={category}
                   value={value}
                   className={cn(
-                    'relative w-full flex items-center justify-start gap-3 rounded-md px-3 py-2.5 text-left text-[13px] font-medium transition-colors duration-150',
+                    'relative mb-0.5 w-full flex items-center justify-start gap-2.5 rounded-md px-3 py-2 text-left text-[13px] font-[510] transition-colors duration-150',
                     isSelected
                       ? 'bg-[rgba(255,255,255,0.08)] text-[var(--text-primary)]'
                       : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[rgba(255,255,255,0.03)]',
                   )}
                 >
-                  <span className={cn('relative z-10', isSelected ? 'text-[var(--text-primary)]' : 'text-[var(--text-tertiary)]')}>
+                  <span className={cn('relative z-10 shrink-0', isSelected ? 'text-[var(--text-primary)]' : 'text-[var(--text-tertiary)]')}>
                     <Icon size={16} />
                   </span>
                   <span className="relative z-10">{label}</span>

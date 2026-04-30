@@ -1,5 +1,3 @@
-import { AnimatePresence, motion } from 'framer-motion'
-import { FolderOpen, Loader2 } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import {
   useNavigate,
@@ -9,6 +7,7 @@ import {
 import { toast } from 'sonner'
 
 import { ComparePanel } from './components/compare-panel'
+import { Header } from './components/header'
 import { ProfileCard } from './components/profiles/profile-card'
 import { ProfileEditor } from './components/profiles/profile-editor'
 import { ProfilesSidebar, type SidebarSelection } from './components/profiles/profiles-sidebar'
@@ -20,8 +19,108 @@ import {
   useProfile,
   useProfiles,
 } from './hooks/use-profiles'
+import { cn } from '@/lib/utils'
 
 import type { Profile } from '@claudeui/shared'
+
+function getInitials(name: string): string {
+  return name
+    .split(/[-_\s]/)
+    .slice(0, 2)
+    .map(w => w[0]?.toUpperCase() ?? '')
+    .join('')
+}
+
+function ProfileRow({
+  profile,
+  isActive,
+  onActivate,
+  onCompare,
+  onSelect,
+}: {
+  profile: Profile
+  isActive: boolean
+  onActivate: () => void
+  onCompare: () => void
+  onSelect: () => void
+}) {
+  const agentCount = profile.agents?.length ?? 0
+  const skillCount = profile.skills?.length ?? 0
+  const commandCount = profile.commands?.length ?? 0
+  const pluginCount = profile.plugins?.length ?? 0
+
+  const parts: string[] = []
+  if (pluginCount > 0) {
+    parts.push(`${pluginCount} plugin${pluginCount === 1 ? '' : 's'}`)
+  }
+  if (agentCount > 0) {
+    parts.push(`${agentCount} agent${agentCount === 1 ? '' : 's'}`)
+  }
+  if (skillCount > 0) {
+    parts.push(`${skillCount} skill${skillCount === 1 ? '' : 's'}`)
+  }
+  if (commandCount > 0) {
+    parts.push(`${commandCount} command${commandCount === 1 ? '' : 's'}`)
+  }
+  const detail = parts.join(' · ') || 'Empty profile'
+
+  return (
+    <div
+      onClick={onSelect}
+      role="button"
+      tabIndex={0}
+      onKeyDown={e => e.key === 'Enter' && onSelect()}
+      className={cn(
+        'group flex cursor-pointer items-center gap-4 rounded-lg border px-5 py-[18px] transition-colors duration-150',
+        'bg-[rgba(255,255,255,0.02)] hover:bg-[rgba(255,255,255,0.04)]',
+        isActive
+          ? 'border-[rgba(255,255,255,0.18)]'
+          : 'border-[rgba(255,255,255,0.08)] hover:border-[rgba(255,255,255,0.12)]',
+      )}
+    >
+      <div className="flex size-9 shrink-0 items-center justify-center rounded-lg border border-[rgba(255,255,255,0.08)] bg-[rgba(255,255,255,0.06)] text-[12px] font-[590] text-[var(--text-secondary)] tracking-[0.02em]">
+        {getInitials(profile.name)}
+      </div>
+
+      <div className="flex-1 min-w-0">
+        <div className="flex items-center gap-2 mb-0.5">
+          <span className="text-[15px] font-[510] text-[var(--text-primary)] truncate">{profile.name}</span>
+          {isActive && (
+            <span className="shrink-0 rounded-[3px] bg-[var(--text-primary)] px-1.5 py-px text-[10px] font-[590] text-[var(--bg-marketing)] tracking-[0.04em] uppercase">
+              Active
+            </span>
+          )}
+        </div>
+        <div className="font-mono text-[12px] tracking-[0.01em] text-[var(--text-tertiary)]">{detail}</div>
+      </div>
+
+      {!isActive && (
+        <div className="flex shrink-0 items-center gap-1.5 opacity-0 transition-opacity duration-150 group-hover:opacity-100 focus-within:opacity-100">
+          <button
+            onClick={(e) => {
+              e.stopPropagation()
+              onCompare()
+            }}
+            type="button"
+            className="rounded-md border border-[rgba(255,255,255,0.08)] bg-[rgba(255,255,255,0.04)] px-3 py-1.5 text-[12px] font-[510] text-[var(--text-secondary)] hover:bg-[rgba(255,255,255,0.06)] hover:text-[var(--text-primary)] transition-colors"
+          >
+            Compare with active
+          </button>
+          <button
+            onClick={(e) => {
+              e.stopPropagation()
+              onActivate()
+            }}
+            type="button"
+            className="rounded-md border-transparent bg-[var(--text-primary)] px-3 py-1.5 text-[12px] font-[510] text-[var(--bg-marketing)] hover:bg-[var(--text-secondary)] transition-colors"
+          >
+            Activate
+          </button>
+        </div>
+      )}
+    </div>
+  )
+}
 
 function parseSelection(parameters: Record<string, string | undefined>): SidebarSelection | null {
   const { '*': rest } = parameters
@@ -58,11 +157,12 @@ export function ProfilesView({ viewSwitcher }: ProfilesViewProperties) {
   const [compareTarget, setCompareTarget] = useState<Profile | null>(null)
   const [searchParams, setSearchParams] = useSearchParams()
 
-  const { data, isLoading } = useProfiles()
+  const { data } = useProfiles()
   const profiles = data?.profiles ?? []
   const active = data?.active ?? null
 
   const isCompareOpen = compareTarget !== null
+  const isEditorRoute = selection?.type === 'new-profile' || (selection?.type === 'profile' && editing)
 
   const selectedProfileName = selection?.type === 'profile' ? selection.name : null
   const { data: selectedProfile } = useProfile(selectedProfileName)
@@ -89,12 +189,8 @@ export function ProfilesView({ viewSwitcher }: ProfilesViewProperties) {
 
   const handleActivate = (name: string) => {
     activateMut.mutate(name, {
-      onSuccess: (result) => {
-        if (result.warnings?.length) {
-          toast.success(`Activated ${name}`)
-        } else {
-          toast.success(`Activated ${name}`)
-        }
+      onSuccess: () => {
+        toast.success(`Activated ${name}`)
       },
       onError: () => {
         toast.error(`Failed to activate ${name}`)
@@ -144,7 +240,6 @@ export function ProfilesView({ viewSwitcher }: ProfilesViewProperties) {
         return
       }
 
-      // ⌘1/⌘2/⌘3 — activate 1st/2nd/3rd profile
       if ((e.metaKey || e.ctrlKey) && ['1', '2', '3'].includes(e.key)) {
         e.preventDefault()
         const index = Number.parseInt(e.key, 10) - 1
@@ -155,7 +250,6 @@ export function ProfilesView({ viewSwitcher }: ProfilesViewProperties) {
         return
       }
 
-      // c — open compare with first non-active profile
       if (e.key === 'c' && !e.metaKey && !e.ctrlKey && active) {
         const target = profiles.find(p => p.name !== active)
         if (target) {
@@ -169,21 +263,99 @@ export function ProfilesView({ viewSwitcher }: ProfilesViewProperties) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [profiles, active])
 
-  // Handle ?action=compare query param
   useEffect(() => {
     const action = searchParams.get('action')
-    if (action === 'compare' && active) {
-      const target = profiles.find(p => p.name !== active)
+    const compareName = searchParams.get('compare')
+    if ((action === 'compare' || compareName) && active) {
+      const target = compareName
+        ? profiles.find(p => p.name === compareName && p.name !== active)
+        : profiles.find(p => p.name !== active)
       if (target) {
         // eslint-disable-next-line react-hooks/set-state-in-effect
         setCompareTarget(target)
       }
-      // Clear the query param
       const newParams = new URLSearchParams(searchParams)
       newParams.delete('action')
+      newParams.delete('compare')
       setSearchParams(newParams, { replace: true })
     }
   }, [searchParams, active, profiles, setSearchParams])
+
+  const renderBody = () => {
+    if (selection === null) {
+      return (
+        <div>
+          <h1 className="text-[24px] font-[590] leading-[1.33] tracking-[-0.2px] text-[var(--text-primary)] mb-1">Profiles</h1>
+          <p className="text-[14px] text-[var(--text-tertiary)] mb-8">
+            Compose, switch, and compare your <code className="text-[var(--text-secondary)]">.claude</code> setups.
+          </p>
+          <div className="flex flex-col gap-2">
+            {profiles.map(profile => (
+              <ProfileRow
+                key={profile.name}
+                profile={profile}
+                isActive={active === profile.name}
+                onActivate={() => handleActivate(profile.name)}
+                onCompare={() => setCompareTarget(profile)}
+                onSelect={() => handleSelect({ type: 'profile', name: profile.name })}
+              />
+            ))}
+            <div
+              onClick={() => handleSelect({ type: 'new-profile' })}
+              role="button"
+              tabIndex={0}
+              onKeyDown={e => e.key === 'Enter' && handleSelect({ type: 'new-profile' })}
+              className="flex cursor-pointer items-center gap-4 rounded-lg border border-[rgba(255,255,255,0.08)] px-5 py-[18px] transition-colors duration-150 hover:bg-[rgba(255,255,255,0.02)] hover:border-[rgba(255,255,255,0.12)]"
+            >
+              <div className="flex size-9 shrink-0 items-center justify-center rounded-lg border border-[rgba(255,255,255,0.08)] bg-[rgba(255,255,255,0.02)] text-[18px] font-[300] text-[var(--text-tertiary)]">+</div>
+              <div>
+                <div className="text-[15px] font-[510] text-[var(--text-tertiary)]">Create new profile</div>
+                <div className="font-mono text-[12px] text-[var(--text-quaternary)]">Empty composition you can build from store components</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )
+    }
+
+    if (selection.type === 'profile' && selectedProfile) {
+      if (editing) {
+        return (
+          <ProfileEditor
+            profile={selectedProfile}
+            onSaved={() => setEditing(false)}
+            onCancel={() => setEditing(false)}
+          />
+        )
+      }
+      return (
+        <ProfileCard
+          profile={selectedProfile}
+          isActive={active === selectedProfile.name}
+          activeProfileName={active}
+          onActivate={() => handleActivate(selectedProfile.name)}
+          onDeactivate={() => handleDeactivate(selectedProfile.name)}
+          onDelete={() => handleDelete(selectedProfile.name)}
+          onEdit={() => setEditing(true)}
+        />
+      )
+    }
+
+    if (selection.type === 'new-profile') {
+      return (
+        <ProfileEditor
+          onSaved={name => navigate(`/profiles/${name}`)}
+          onCancel={() => navigate('/profiles')}
+        />
+      )
+    }
+
+    if (selection.type === 'components') {
+      return <StoreComponentList category={selection.category} />
+    }
+
+    return null
+  }
 
   return (
     <div className="flex h-full min-w-0">
@@ -202,109 +374,19 @@ export function ProfilesView({ viewSwitcher }: ProfilesViewProperties) {
         headerSlot={viewSwitcher}
       />
 
-      <main className="flex-1 overflow-y-auto bg-[var(--surface-base)]">
-        <AnimatePresence mode="wait">
-          <motion.div
-            key={isLoading ? 'loading' : selection?.type || 'empty'}
-            initial={{ opacity: 0, x: 20 }}
-            animate={{ opacity: 1, x: 0 }}
-            exit={{ opacity: 0, x: -20 }}
-            transition={{ duration: 0.2 }}
-            className="mx-auto w-full max-w-6xl px-8 py-8"
-          >
-            {isLoading
-              ? (
-              <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                className="flex flex-col items-center justify-center py-20 text-center"
-              >
-                <Loader2 size={20} className="animate-spin text-[var(--text-tertiary)]" />
-                <p className="mt-4 text-[14px] text-[var(--text-tertiary)]">Loading profiles...</p>
-              </motion.div>
-                )
-              : (selection === null
-                  ? (
-              <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="panel-subtle flex flex-col items-center justify-center py-20 text-center">
-                <div className="mb-3 flex size-12 items-center justify-center rounded-[var(--radius-md)] border border-[var(--border-default)] bg-[var(--surface-panel)]">
-                  <FolderOpen size={20} className="text-[var(--text-tertiary)]" />
+      <main className="relative flex min-w-0 flex-1 flex-col overflow-hidden bg-[var(--bg-marketing)]">
+        {isEditorRoute
+          ? renderBody()
+          : (
+              <>
+                <Header />
+                <div className="flex-1 overflow-y-auto">
+                  <div className="mx-auto w-full max-w-[920px] px-14 py-10">
+                    {renderBody()}
+                  </div>
                 </div>
-                <h3 className="text-[16px] font-medium text-[var(--text-primary)]">Select a profile</h3>
-                <p className="mt-2 max-w-sm text-[14px] text-[var(--text-tertiary)]">
-                  Choose a profile or component type from the sidebar to view details.
-                </p>
-              </motion.div>
-                    )
-                  : (
-              <AnimatePresence mode="wait">
-                {selection.type === 'profile' && selectedProfile && (
-                  editing
-                    ? (
-                    <motion.div
-                      key="editor"
-                      initial={{ opacity: 0, x: 20 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      exit={{ opacity: 0, x: -20 }}
-                      transition={{ duration: 0.2 }}
-                    >
-                      <ProfileEditor
-                        profile={selectedProfile}
-                        onSaved={() => {
-                          setEditing(false)
-                        }}
-                        onCancel={() => setEditing(false)}
-                      />
-                    </motion.div>
-                      )
-                    : (
-                    <motion.div
-                      key="card"
-                      initial={{ opacity: 0, scale: 0.95 }}
-                      animate={{ opacity: 1, scale: 1 }}
-                      exit={{ opacity: 0, scale: 0.95 }}
-                      transition={{ duration: 0.2 }}
-                    >
-                      <ProfileCard
-                        profile={selectedProfile}
-                        isActive={active === selectedProfile.name}
-                        activeProfileName={active}
-                        onActivate={() => handleActivate(selectedProfile.name)}
-                        onDeactivate={() => handleDeactivate(selectedProfile.name)}
-                        onDelete={() => handleDelete(selectedProfile.name)}
-                        onEdit={() => setEditing(true)}
-                      />
-                    </motion.div>
-                      )
-                )}
-                {selection.type === 'new-profile' && (
-                  <motion.div
-                    key="new-editor"
-                    initial={{ opacity: 0, x: 20 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    exit={{ opacity: 0, x: -20 }}
-                    transition={{ duration: 0.2 }}
-                  >
-                    <ProfileEditor
-                      onSaved={name => navigate(`/profiles/${name}`)}
-                      onCancel={() => navigate('/profiles')}
-                    />
-                  </motion.div>
-                )}
-                {selection.type === 'components' && (
-                  <motion.div
-                    key={`components-${selection.category}`}
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: -20 }}
-                    transition={{ duration: 0.2 }}
-                  >
-                    <StoreComponentList category={selection.category} />
-                  </motion.div>
-                )}
-              </AnimatePresence>
-                    ))}
-          </motion.div>
-        </AnimatePresence>
+              </>
+            )}
       </main>
 
       <ComparePanel

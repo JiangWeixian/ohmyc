@@ -51,33 +51,23 @@ describe('StoreComponentList', () => {
       data: [
         {
           id: 'alpha-agent',
-          frontmatter: { name: 'Alpha Agent', description: 'Primary agent' },
+          frontmatter: { name: 'Alpha Agent', description: 'Primary agent', model: 'sonnet' },
+          source: 'local',
           provenance: {
             importPath: '/tmp/source/alpha-agent.md',
             importedAt: '2026-03-29T00:00:00.000Z',
           },
         },
-      ],
-      isLoading: false,
-    })
-    mockUseStoreSkills.mockReturnValue({
-      data: [
         {
-          id: 'review-skill',
-          frontmatter: { name: 'Review Skill', description: 'Checks diffs' },
+          id: 'lonely-agent',
+          frontmatter: { name: 'Lonely Agent', description: 'Nobody references me' },
+          source: 'local',
         },
       ],
       isLoading: false,
     })
-    mockUseStoreCommands.mockReturnValue({
-      data: [
-        {
-          id: 'ship-command',
-          frontmatter: { name: 'Ship Command', description: 'Publishes changes' },
-        },
-      ],
-      isLoading: false,
-    })
+    mockUseStoreSkills.mockReturnValue({ data: [], isLoading: false })
+    mockUseStoreCommands.mockReturnValue({ data: [], isLoading: false })
     mockUseStoreModelConfigs.mockReturnValue({ data: [], isLoading: false })
     mockUseProfiles.mockReturnValue({
       data: {
@@ -86,38 +76,35 @@ describe('StoreComponentList', () => {
     })
   })
 
-  it('filters by name and type while keeping provenance secondary', async () => {
-    const user = userEvent.setup()
+  it('renders heading, counter line, used-by chips, and an Unused row', () => {
+    renderWithProviders(<StoreComponentList category="agents" />)
 
-    renderWithProviders(<StoreComponentList category="all" />)
+    expect(screen.getByRole('heading', { name: 'Agents', level: 1 })).toBeInTheDocument()
+    expect(screen.getByText(/2 agents/)).toBeInTheDocument()
+    expect(screen.getByText(/1 referenced/)).toBeInTheDocument()
+    expect(screen.getByText(/1 unused/)).toBeInTheDocument()
 
-    await user.type(screen.getByLabelText('Search store components'), 'alpha')
     expect(screen.getByText('Alpha Agent')).toBeInTheDocument()
-    await user.click(screen.getByText('Source details'))
-    expect(screen.getByText(/importPath/i)).toBeInTheDocument()
-    expect(screen.getByText(/\/tmp\/source\/alpha-agent\.md/)).toBeInTheDocument()
-    expect(screen.getByText(/importedAt/i)).toBeInTheDocument()
-    expect(screen.getByText('1')).toBeInTheDocument()
-
-    await user.clear(screen.getByLabelText('Search store components'))
-    await user.selectOptions(screen.getByLabelText('Filter by type'), 'commands')
-
-    expect(screen.getByText('Ship Command')).toBeInTheDocument()
+    expect(screen.getByText('daily')).toBeInTheDocument()
+    expect(screen.getByText('Unused')).toBeInTheDocument()
   })
 
-  it('shows the exact empty state copy when the store has no components', () => {
+  it('filters items by name via the toolbar search', async () => {
+    const user = userEvent.setup()
+    renderWithProviders(<StoreComponentList category="agents" />)
+
+    await user.type(screen.getByLabelText('Search store components'), 'alpha')
+
+    expect(screen.getByText('Alpha Agent')).toBeInTheDocument()
+    expect(screen.queryByText('Lonely Agent')).not.toBeInTheDocument()
+  })
+
+  it('shows the empty state when the store has no components', () => {
     mockUseStoreAgents.mockReturnValue({ data: [], isLoading: false })
-    mockUseStoreSkills.mockReturnValue({ data: [], isLoading: false })
-    mockUseStoreCommands.mockReturnValue({ data: [], isLoading: false })
-    mockUseStoreModelConfigs.mockReturnValue({ data: [], isLoading: false })
 
-    renderWithProviders(<StoreComponentList category="all" />)
+    renderWithProviders(<StoreComponentList category="agents" />)
 
-    expect(screen.getByText('No components in this store yet')).toBeInTheDocument()
-    expect(
-      screen.getByText(
-        'Import agents, skills, or commands from an existing Claude-compatible directory to start building a canonical local store.',
-      ),
-    ).toBeInTheDocument()
+    expect(screen.getByText('No agents in your store yet')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Import components' })).toBeInTheDocument()
   })
 })

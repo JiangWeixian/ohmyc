@@ -4,7 +4,6 @@ import {
   Bot,
   Code,
   Info,
-  Loader2,
   Search,
   Server,
   Sparkles,
@@ -17,6 +16,7 @@ import { Badge, MonoBadge } from './components/badge'
 import { ConfigSection } from './components/config-section'
 import { EntityCard } from './components/entity-card'
 import { EntityDetail } from './components/entity-detail'
+import { Header } from './components/header'
 import { SectionHeader } from './components/section-header'
 import { SettingsLayout } from './components/settings/settings-layout'
 import { Sidebar, type SidebarSection } from './components/sidebar'
@@ -120,19 +120,19 @@ export function Explorer({ viewSwitcher }: ExplorerProperties) {
   const [selectedItem, setSelectedItem] = useState<ItemLocator | null>(null)
 
   // Data hooks
-  const { data: agents, isLoading: agentsLoading, isError: agentsError } = useAgents()
+  const { data: agents, isError: agentsError } = useAgents()
   const { data: selectedAgent } = useAgent(activeSection === 'agents' ? selectedItem : null)
 
-  const { data: skills, isLoading: skillsLoading, isError: skillsError } = useSkills()
+  const { data: skills, isError: skillsError } = useSkills()
   const { data: selectedSkill } = useSkill(activeSection === 'skills' ? selectedItem : null)
 
-  const { data: commands, isLoading: commandsLoading, isError: commandsError } = useCommands()
+  const { data: commands, isError: commandsError } = useCommands()
   const { data: selectedCommand } = useCommand(activeSection === 'commands' ? selectedItem : null)
 
-  const { data: mcpServers, isLoading: mcpLoading, isError: mcpError } = useMcpServers()
-  const { data: hooks, isLoading: hooksLoading, isError: hooksError } = useHooks()
-  const { data: lspServers, isLoading: lspLoading, isError: lspError } = useLspServers()
-  const { data: plugins, isLoading: pluginsLoading, isError: pluginsError } = usePlugins()
+  const { data: mcpServers, isError: mcpError } = useMcpServers()
+  const { data: hooks, isError: hooksError } = useHooks()
+  const { data: lspServers, isError: lspError } = useLspServers()
+  const { data: plugins, isError: pluginsError } = usePlugins()
   const { data: marketplaces } = useMarketplaces()
   const { data: profilesData } = useProfiles()
 
@@ -181,7 +181,6 @@ export function Explorer({ viewSwitcher }: ExplorerProperties) {
     if (sectionId === 'agents') {
       return {
         data: agents,
-        isLoading: agentsLoading,
         isError: agentsError,
         icon: Bot,
         emptyMessage: 'No agents found in ',
@@ -191,7 +190,6 @@ export function Explorer({ viewSwitcher }: ExplorerProperties) {
     if (sectionId === 'skills') {
       return {
         data: skills,
-        isLoading: skillsLoading,
         isError: skillsError,
         icon: Sparkles,
         emptyMessage: 'No skills found in ',
@@ -201,7 +199,6 @@ export function Explorer({ viewSwitcher }: ExplorerProperties) {
     if (sectionId === 'commands') {
       return {
         data: commands,
-        isLoading: commandsLoading,
         isError: commandsError,
         icon: TerminalSquare,
         emptyMessage: 'No commands found in ',
@@ -253,14 +250,8 @@ export function Explorer({ viewSwitcher }: ExplorerProperties) {
       <div>
         <SectionHeader title={sectionId.charAt(0).toUpperCase() + sectionId.slice(1)} description={description} />
         {/* eslint-disable unicorn/no-nested-ternary */}
-        {config.isLoading
+        {config.isError
           ? (
-          <div className="flex items-center justify-center py-20">
-            <Loader2 size={20} className="animate-spin text-[var(--text-tertiary)]" />
-          </div>
-            )
-          : config.isError
-            ? (
           <div className="panel-subtle flex flex-col items-center justify-center py-20 text-center">
             <div className="mb-3 flex size-12 items-center justify-center rounded-md border border-[var(--border-standard)] bg-[rgba(255,255,255,0.02)]">
               <Info size={20} className="text-[var(--text-tertiary)]" />
@@ -270,9 +261,9 @@ export function Explorer({ viewSwitcher }: ExplorerProperties) {
               Something went wrong while fetching your {sectionId}. Try refreshing the page.
             </p>
           </div>
-              )
-            : config.data && config.data.length > 0
-              ? (
+            )
+          : config.data && config.data.length > 0
+            ? (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
             {config.data.map((entity, index) => (
               <EntityCard
@@ -292,8 +283,8 @@ export function Explorer({ viewSwitcher }: ExplorerProperties) {
               />
             ))}
           </div>
-                )
-              : (
+              )
+            : (
           <div className="panel-subtle flex flex-col items-center justify-center py-20 text-center">
             <div className="mb-3 flex size-12 items-center justify-center rounded-md border border-[var(--border-standard)] bg-[rgba(255,255,255,0.02)]">
               <Search size={20} className="text-[var(--text-tertiary)]" />
@@ -303,7 +294,7 @@ export function Explorer({ viewSwitcher }: ExplorerProperties) {
               {config.emptyMessage}<code className="text-[var(--text-secondary)]">{config.emptyPath}</code>
             </p>
           </div>
-                )}
+              )}
         {/* eslint-enable unicorn/no-nested-ternary */}
       </div>
     )
@@ -339,14 +330,8 @@ export function Explorer({ viewSwitcher }: ExplorerProperties) {
           description="Inspect installed plugins, enabled state, and bundled component counts for the current environment."
         />
         {/* eslint-disable unicorn/no-nested-ternary */}
-        {pluginsLoading
+        {pluginsError
           ? (
-          <div className="flex items-center justify-center py-20">
-            <Loader2 size={20} className="animate-spin text-[var(--text-tertiary)]" />
-          </div>
-            )
-          : pluginsError
-            ? (
           <div className="panel-subtle flex flex-col items-center justify-center py-20 text-center">
             <div className="mb-3 flex size-12 items-center justify-center rounded-md border border-[var(--border-standard)] bg-[rgba(255,255,255,0.02)]">
               <Info size={20} className="text-[var(--text-tertiary)]" />
@@ -356,9 +341,9 @@ export function Explorer({ viewSwitcher }: ExplorerProperties) {
               Something went wrong while fetching your plugins. Try refreshing the page.
             </p>
           </div>
-              )
-            : plugins && plugins.length > 0
-              ? (
+            )
+          : plugins && plugins.length > 0
+            ? (
           <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
             {plugins.map((plugin) => {
               const installCount = plugin.installs.length
@@ -437,8 +422,8 @@ export function Explorer({ viewSwitcher }: ExplorerProperties) {
               )
             })}
           </div>
-                )
-              : (
+              )
+            : (
           <div className="panel-subtle flex flex-col items-center justify-center py-20 text-center">
             <div className="mb-3 flex size-12 items-center justify-center rounded-md border border-[var(--border-standard)] bg-[rgba(255,255,255,0.02)]">
               <Blocks size={20} className="text-[var(--text-tertiary)]" />
@@ -448,7 +433,7 @@ export function Explorer({ viewSwitcher }: ExplorerProperties) {
               There are no plugins in the current environment.
             </p>
           </div>
-                )}
+              )}
         {/* eslint-enable unicorn/no-nested-ternary */}
       </section>
     </div>
@@ -461,17 +446,12 @@ export function Explorer({ viewSwitcher }: ExplorerProperties) {
       title: string
       description: string
       data: ConfigEntry[] | undefined
-      isLoading: boolean
       isError: boolean
       icon: typeof Server
       iconColor: string
       emptyMessage: string
     },
-  ) => (
-    <div className="space-y-6">
-      <ConfigSection {...config} />
-    </div>
-  )
+  ) => <ConfigSection {...config} />
 
   return (
     <div className="flex h-full min-w-0 text-[var(--text-primary)] font-sans">
@@ -488,6 +468,7 @@ export function Explorer({ viewSwitcher }: ExplorerProperties) {
 
       {/* Main Content */}
       <main className="relative flex min-w-0 flex-1 flex-col overflow-hidden bg-[var(--bg-marketing)]">
+        <Header />
         {/* Content */}
         <div className="flex-1 overflow-y-auto">
           <div className="mx-auto w-full max-w-6xl px-10 py-10">
@@ -499,7 +480,6 @@ export function Explorer({ viewSwitcher }: ExplorerProperties) {
                 title: 'MCP Servers',
                 description: SECTION_DESCRIPTIONS['mcp-servers'],
                 data: mcpServers,
-                isLoading: mcpLoading,
                 isError: mcpError,
                 icon: Server,
                 iconColor: 'text-[var(--text-primary)]',
@@ -511,7 +491,6 @@ export function Explorer({ viewSwitcher }: ExplorerProperties) {
                 title: 'Hooks',
                 description: SECTION_DESCRIPTIONS.hooks,
                 data: hooks?.map((h: HookEntry) => ({ ...h, config: h.data })),
-                isLoading: hooksLoading,
                 isError: hooksError,
                 icon: Anchor,
                 iconColor: 'text-[var(--text-secondary)]',
@@ -523,7 +502,6 @@ export function Explorer({ viewSwitcher }: ExplorerProperties) {
                 title: 'LSP Servers',
                 description: SECTION_DESCRIPTIONS['lsp-servers'],
                 data: lspServers,
-                isLoading: lspLoading,
                 isError: lspError,
                 icon: Code,
                 iconColor: 'text-[var(--text-tertiary)]',
