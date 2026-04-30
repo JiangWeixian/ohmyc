@@ -11,21 +11,19 @@ import {
 } from '@codemirror/view'
 import { useEffect, useRef } from 'react'
 
+import { claudeUIContainerTheme } from './codemirror-container-theme'
+
 interface MarkdownEditorProperties {
   value: string
   onChange: (value: string) => void
   onSaveShortcut?: () => void
   placeholder?: string
-  minHeight?: string
 }
 
-const theme = EditorView.theme({
+const markdownEditorOverlay = EditorView.theme({
   '&': {
     fontSize: '15px',
     backgroundColor: '#08090a',
-  },
-  '&.cm-focused': {
-    outline: 'none',
   },
   '.cm-scroller': {
     fontFamily: '"Berkeley Mono", ui-monospace, SFMono-Regular, "SF Mono", Menlo, monospace',
@@ -38,21 +36,6 @@ const theme = EditorView.theme({
   },
   '.cm-gutters': {
     backgroundColor: '#08090a',
-    border: 'none',
-    color: 'var(--text-quaternary)',
-    fontSize: '12px',
-    paddingRight: '14px',
-  },
-  '.cm-lineNumbers .cm-gutterElement': {
-    minWidth: '32px',
-    padding: '0 0 0 14px',
-  },
-  '.cm-activeLineGutter': {
-    backgroundColor: 'rgba(255,255,255,0.04)',
-    color: 'var(--text-tertiary)',
-  },
-  '.cm-activeLine': {
-    backgroundColor: 'rgba(255,255,255,0.025)',
   },
 })
 
@@ -61,7 +44,6 @@ export function MarkdownEditor({
   onChange,
   onSaveShortcut,
   placeholder,
-  minHeight = '480px',
 }: MarkdownEditorProperties) {
   const containerRef = useRef<HTMLDivElement>(null)
   const viewRef = useRef<EditorView | null>(null)
@@ -99,16 +81,14 @@ export function MarkdownEditor({
         // detects fenced frontmatter; we attach a base yaml() pass for keys/values.
         yaml(),
         oneDark,
-        theme,
+        claudeUIContainerTheme,
+        markdownEditorOverlay,
         EditorView.lineWrapping,
         ...(placeholder ? [cmPlaceholder(placeholder)] : []),
         EditorView.updateListener.of((update) => {
           if (update.docChanged) {
             onChangeRef.current(update.state.doc.toString())
           }
-        }),
-        EditorView.theme({
-          '.cm-scroller': { minHeight },
         }),
       ],
     })
@@ -128,6 +108,7 @@ export function MarkdownEditor({
   }, [])
   /* eslint-enable react-hooks/exhaustive-deps, react/exhaustive-deps, react-hooks-extra/exhaustive-deps, react-naming-convention/exhaustive-deps */
 
+  // Sync external value changes
   useEffect(() => {
     const view = viewRef.current
     if (!view) {

@@ -398,7 +398,6 @@ function MarkdownDocEditor({
               onChange={handleBufferChange}
               onSaveShortcut={() => canSave && handleSave()}
               placeholder="Edit the .md file directly — frontmatter between --- fences, body below."
-              minHeight="520px"
             />
 
             {/* Footer parse status */}
