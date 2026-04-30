@@ -18,9 +18,6 @@ export const claudeUIContainerTheme = EditorView.theme({
   '.cm-selectionBackground': {
     background: 'rgba(255,255,255,0.12)',
   },
-  '.cm-selectionBackground *': {
-    color: 'var(--text-primary)',
-  },
 
   // Cursor — white
   '.cm-cursor': {
