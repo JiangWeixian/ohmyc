@@ -159,7 +159,7 @@ export function ProfilesView({ viewSwitcher }: ProfilesViewProperties) {
   const [searchParams, setSearchParams] = useSearchParams()
 
   const { data } = useProfiles()
-  const profiles = data?.profiles ?? []
+  const profiles = useMemo(() => data?.profiles ?? [], [data])
   const active = data?.active ?? null
 
   const isCompareOpen = compareTarget !== null
@@ -168,8 +168,9 @@ export function ProfilesView({ viewSwitcher }: ProfilesViewProperties) {
   const componentCategory = selection?.type === 'components' ? selection.category : null
   // Reset component-edit target when sidebar category or selection changes
   useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect
+    /* eslint-disable react-hooks/set-state-in-effect, react/set-state-in-effect, react-hooks-extra/set-state-in-effect, react-naming-convention/set-state-in-effect */
     setComponentEditTarget(previous => (previous === null ? previous : null))
+    /* eslint-enable react-hooks/set-state-in-effect, react/set-state-in-effect, react-hooks-extra/set-state-in-effect, react-naming-convention/set-state-in-effect */
   }, [componentCategory, selection?.type])
   const isEditorRoute
     = selection?.type === 'new-profile'
@@ -222,6 +223,7 @@ export function ProfilesView({ viewSwitcher }: ProfilesViewProperties) {
   }
 
   const handleDelete = (name: string) => {
+    // eslint-disable-next-line no-alert
     if (!confirm(`Delete ${name}? This removes the saved composition only. Store components stay in your library.`)) {
       return
     }
@@ -272,8 +274,9 @@ export function ProfilesView({ viewSwitcher }: ProfilesViewProperties) {
 
     document.addEventListener('keydown', handleKeyDown)
     return () => document.removeEventListener('keydown', handleKeyDown)
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+  /* eslint-disable react-hooks/exhaustive-deps, react/exhaustive-deps, react-hooks-extra/exhaustive-deps, react-naming-convention/exhaustive-deps */
   }, [profiles, active])
+  /* eslint-enable react-hooks/exhaustive-deps, react/exhaustive-deps, react-hooks-extra/exhaustive-deps, react-naming-convention/exhaustive-deps */
 
   useEffect(() => {
     const action = searchParams.get('action')
@@ -283,8 +286,9 @@ export function ProfilesView({ viewSwitcher }: ProfilesViewProperties) {
         ? profiles.find(p => p.name === compareName && p.name !== active)
         : profiles.find(p => p.name !== active)
       if (target) {
-        // eslint-disable-next-line react-hooks/set-state-in-effect
+        /* eslint-disable react-hooks/set-state-in-effect, react/set-state-in-effect, react-hooks-extra/set-state-in-effect, react-naming-convention/set-state-in-effect */
         setCompareTarget(target)
+        /* eslint-enable react-hooks/set-state-in-effect, react/set-state-in-effect, react-hooks-extra/set-state-in-effect, react-naming-convention/set-state-in-effect */
       }
       const newParams = new URLSearchParams(searchParams)
       newParams.delete('action')

@@ -25,10 +25,10 @@ export function ModelConfigEditor({ editName, onSaved, onCancel }: ModelConfigEd
 
   const [name, setName] = useState('')
   const existingData = existingQ.data
-  const [apiKey, setApiKey] = useState(existingData ? maskApiKey(existingData.apiKey) : '')
-  const [baseUrl, setBaseUrl] = useState(existingData?.baseUrl || '')
-  const [modelName, setModelName] = useState(existingData?.modelName || '')
-  const [provider, setProvider] = useState(existingData?.provider || '')
+  const [apiKey, setApiKey] = useState(() => existingData ? maskApiKey(existingData.apiKey) : '')
+  const [baseUrl, setBaseUrl] = useState(() => existingData?.baseUrl || '')
+  const [modelName, setModelName] = useState(() => existingData?.modelName || '')
+  const [provider, setProvider] = useState(() => existingData?.provider || '')
   const [error, setError] = useState<string | null>(null)
   const [showDeleteDialog, setShowDeleteDialog] = useState(false)
 
@@ -37,11 +37,12 @@ export function ModelConfigEditor({ editName, onSaved, onCancel }: ModelConfigEd
     if (!existingData) {
       return
     }
-    // eslint-disable-next-line react-hooks/set-state-in-effect
+    /* eslint-disable react-hooks/set-state-in-effect, react/set-state-in-effect, react-hooks-extra/set-state-in-effect, react-naming-convention/set-state-in-effect */
     setApiKey(previous => (previous === maskApiKey(existingData.apiKey) ? previous : maskApiKey(existingData.apiKey)))
     setBaseUrl(previous => (previous === existingData.baseUrl ? previous : existingData.baseUrl))
     setModelName(previous => (previous === existingData.modelName ? previous : existingData.modelName))
     setProvider(previous => (previous === existingData.provider ? previous : existingData.provider))
+    /* eslint-enable react-hooks/set-state-in-effect, react/set-state-in-effect, react-hooks-extra/set-state-in-effect, react-naming-convention/set-state-in-effect */
   }, [existingData])
 
   const createMut = useCreateStoreModelConfig()

@@ -107,10 +107,10 @@ function MarkdownDocEditor({
     const initial = existing.raw && existing.raw.length > 0
       ? existing.raw
       : `---\n${stringifyFrontmatterFallback(existing.frontmatter)}---\n\n${existing.content}`
-    /* eslint-disable react-hooks/set-state-in-effect, react-hooks-extra/set-state-in-effect, react-naming-convention/set-state-in-effect */
+    /* eslint-disable react-hooks/set-state-in-effect, react/set-state-in-effect, react-hooks-extra/set-state-in-effect, react-naming-convention/set-state-in-effect */
     setBuffer(prev => (prev === initial ? prev : initial))
     setDirty(false)
-    /* eslint-enable react-hooks/set-state-in-effect, react-hooks-extra/set-state-in-effect, react-naming-convention/set-state-in-effect */
+    /* eslint-enable react-hooks/set-state-in-effect, react/set-state-in-effect, react-hooks-extra/set-state-in-effect, react-naming-convention/set-state-in-effect */
   }, [existing])
 
   const createAgent = useCreateStoreAgent()

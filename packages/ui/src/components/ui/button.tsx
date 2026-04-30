@@ -62,4 +62,5 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProperties>(
 )
 Button.displayName = 'Button'
 
+// eslint-disable-next-line react-refresh/only-export-components
 export { Button, buttonVariants, type ButtonProperties as ButtonProps }

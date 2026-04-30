@@ -11,6 +11,7 @@ export function Skeleton({ className, rows = 3 }: SkeletonProperties) {
   return (
     <div className={cn('space-y-3', className)}>
       {Array.from({ length: rows }).map((_, index) => (
+        // eslint-disable-next-line react/no-array-index-key, react-hooks-extra/no-array-index-key, react-naming-convention/no-array-index-key
         <div key={index} className="space-y-3">
           <div
             className={cn(

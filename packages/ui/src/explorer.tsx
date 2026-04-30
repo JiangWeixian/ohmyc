@@ -140,8 +140,8 @@ export function Explorer({ viewSwitcher }: ExplorerProperties) {
   const mcpCount = (mcpServers ?? []).length
   const lspCount = (lspServers ?? []).length
 
-  const allProfiles = profilesData?.profiles ?? []
   const pluginReferenceMap = useMemo(() => {
+    const allProfiles = profilesData?.profiles ?? []
     const map = new Map<string, string[]>()
     for (const p of allProfiles) {
       for (const pluginId of p.plugins) {
@@ -151,7 +151,7 @@ export function Explorer({ viewSwitcher }: ExplorerProperties) {
       }
     }
     return map
-  }, [allProfiles])
+  }, [profilesData])
 
   const renderEnvironmentSummary = () => (
     <section className="panel p-7">
@@ -294,7 +294,7 @@ export function Explorer({ viewSwitcher }: ExplorerProperties) {
           : config.data && config.data.length > 0
             ? (
           <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
-            {config.data.map((entity, index) => (
+            {config.data.map((entity, _index) => (
               <EntityCard
                 key={entity.id}
                 icon={config.icon}

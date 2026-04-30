@@ -121,7 +121,7 @@ function RuntimeGroup({ label, keys }: { label: string; keys: string[]; emptyTex
   )
 }
 
-export function ProfileCard({ profile, isActive, activeProfileName, onActivate, onDeactivate, onDelete, onEdit }: ProfileCardProperties) {
+export function ProfileCard({ profile, isActive, activeProfileName: _activeProfileName, onActivate, onDeactivate, onDelete, onEdit }: ProfileCardProperties) {
   const hooksKeys = profile.hooks ? Object.keys(profile.hooks) : []
   const mcpKeys = profile.mcpServers ? Object.keys(profile.mcpServers) : []
   const lspKeys = profile.lspServers ? Object.keys(profile.lspServers) : []

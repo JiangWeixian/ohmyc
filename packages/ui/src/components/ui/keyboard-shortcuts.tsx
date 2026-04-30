@@ -1,15 +1,10 @@
 import { useCallback, useEffect } from 'react'
-import { useNavigate } from 'react-router-dom'
 
 interface Shortcut {
   key: string
   label: string
   category: string
   action: () => void
-}
-
-interface KeyboardShortcutsProperties {
-  shortcuts?: Shortcut[]
 }
 
 const DEFAULT_SHORTCUTS: Shortcut[] = [
@@ -23,8 +18,6 @@ const DEFAULT_SHORTCUTS: Shortcut[] = [
 ]
 
 export function useKeyboardShortcuts(customShortcuts?: Shortcut[]) {
-  const navigate = useNavigate()
-
   const shortcuts = customShortcuts || DEFAULT_SHORTCUTS
 
   const handleKeyDown = useCallback((e: KeyboardEvent) => {
@@ -61,7 +54,7 @@ export function useKeyboardShortcuts(customShortcuts?: Shortcut[]) {
       e.preventDefault()
       shortcut.action()
     }
-  }, [shortcuts, navigate])
+  }, [shortcuts])
 
   useEffect(() => {
     globalThis.addEventListener('keydown', handleKeyDown)

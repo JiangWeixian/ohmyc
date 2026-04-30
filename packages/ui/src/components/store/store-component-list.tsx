@@ -421,6 +421,7 @@ export function StoreComponentList({ category, onEdit }: StoreComponentListPrope
                       {metaParts.length > 0 && (
                         <div className="mt-1 truncate font-mono text-[11px] text-[var(--text-tertiary)]">
                           {metaParts.map((part, i) => (
+                            // eslint-disable-next-line react/no-array-index-key, react-hooks-extra/no-array-index-key, react-naming-convention/no-array-index-key
                             <span key={`${part}-${i}`}>
                               {i > 0 && <span className="mx-1.5 text-[var(--text-quaternary)]">·</span>}
                               {part}

@@ -103,7 +103,7 @@ function PickerCard({
 }) {
   const [search, setSearch] = useState('')
   const [open, setOpen] = useState(false)
-  const containerReference = useRef<HTMLDivElement>(null)
+  const containerRef = useRef<HTMLDivElement>(null)
 
   const unselected = useMemo(() => {
     const set = new Set(selected)
@@ -118,7 +118,7 @@ function PickerCard({
       return
     }
     const handler = (e: MouseEvent) => {
-      if (containerReference.current && !containerReference.current.contains(e.target as Node)) {
+      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
         setOpen(false)
       }
     }
@@ -136,7 +136,7 @@ function PickerCard({
 
   return (
     <div
-      ref={containerReference}
+      ref={containerRef}
       className={cn(
         'rounded-lg border border-[rgba(255,255,255,0.08)] bg-[rgba(255,255,255,0.02)]',
         'overflow-hidden',
@@ -491,17 +491,17 @@ export function ProfileEditor({ profile, onSaved, onCancel }: ProfileEditorPrope
   }, [canSave, handleSave])
 
   // Scroll-spy
-  const sectionReferences = useRef<Record<SectionId, HTMLElement | null>>({
+  const sectionElementsRef = useRef<Record<SectionId, HTMLElement | null>>({
     basics: null,
     components: null,
     'plugins-model': null,
     runtime: null,
     settings: null,
   })
-  const scrollContainerReference = useRef<HTMLDivElement>(null)
+  const scrollContainerRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
-    const root = scrollContainerReference.current
+    const root = scrollContainerRef.current
     if (!root || typeof IntersectionObserver === 'undefined') {
       return
     }
@@ -519,7 +519,7 @@ export function ProfileEditor({ profile, onSaved, onCancel }: ProfileEditorPrope
       },
       { root, rootMargin: '-20% 0px -60% 0px', threshold: 0 },
     )
-    for (const el of Object.values(sectionReferences.current)) {
+    for (const el of Object.values(sectionElementsRef.current)) {
       if (el) {
         observer.observe(el)
       }
@@ -528,12 +528,12 @@ export function ProfileEditor({ profile, onSaved, onCancel }: ProfileEditorPrope
   }, [])
 
   const scrollTo = (id: SectionId) => {
-    const el = sectionReferences.current[id]
+    const el = sectionElementsRef.current[id]
     el?.scrollIntoView({ behavior: 'smooth', block: 'start' })
   }
 
   const setSectionReference = useCallback((id: SectionId) => (el: HTMLElement | null) => {
-    sectionReferences.current[id] = el
+    sectionElementsRef.current[id] = el
   }, [])
 
   const breadcrumb = isEdit
@@ -671,7 +671,7 @@ export function ProfileEditor({ profile, onSaved, onCancel }: ProfileEditorPrope
         </aside>
 
         {/* Scrollable content */}
-        <div ref={scrollContainerReference} className="flex-1 overflow-y-auto min-w-0">
+        <div ref={scrollContainerRef} className="flex-1 overflow-y-auto min-w-0">
           <div className="max-w-[760px] mx-auto px-14 py-9 pb-24">
 
             {error && (

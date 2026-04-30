@@ -64,16 +64,16 @@ const theme = EditorView.theme({
 })
 
 export function JsonEditor({ value, onChange, placeholder, minHeight = '100px' }: JsonEditorProperties) {
-  const containerReference = useRef<HTMLDivElement>(null)
-  const viewReference = useRef<EditorView | null>(null)
-  const onChangeReference = useRef(onChange)
+  const containerRef = useRef<HTMLDivElement>(null)
+  const viewRef = useRef<EditorView | null>(null)
+  const onChangeRef = useRef(onChange)
 
   useEffect(() => {
-    onChangeReference.current = onChange
+    onChangeRef.current = onChange
   })
 
   useEffect(() => {
-    if (!containerReference.current) {
+    if (!containerRef.current) {
       return
     }
 
@@ -89,7 +89,7 @@ export function JsonEditor({ value, onChange, placeholder, minHeight = '100px' }
         ...(placeholder ? [cmPlaceholder(placeholder)] : []),
         EditorView.updateListener.of((update) => {
           if (update.docChanged) {
-            onChangeReference.current(update.state.doc.toString())
+            onChangeRef.current(update.state.doc.toString())
           }
         }),
         EditorView.theme({
@@ -100,22 +100,23 @@ export function JsonEditor({ value, onChange, placeholder, minHeight = '100px' }
 
     const view = new EditorView({
       state,
-      parent: containerReference.current,
+      parent: containerRef.current,
     })
 
-    viewReference.current = view
+    viewRef.current = view
 
     return () => {
       view.destroy()
-      viewReference.current = null
+      viewRef.current = null
     }
-    // Only create editor once on mount
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    // Only create editor once on mount; minHeight/placeholder/value handled below
+    /* eslint-disable react-hooks/exhaustive-deps, react/exhaustive-deps, react-hooks-extra/exhaustive-deps, react-naming-convention/exhaustive-deps */
   }, [])
+  /* eslint-enable react-hooks/exhaustive-deps, react/exhaustive-deps, react-hooks-extra/exhaustive-deps, react-naming-convention/exhaustive-deps */
 
   // Sync external value changes
   useEffect(() => {
-    const view = viewReference.current
+    const view = viewRef.current
     if (!view) {
       return
     }
@@ -127,5 +128,5 @@ export function JsonEditor({ value, onChange, placeholder, minHeight = '100px' }
     }
   }, [value])
 
-  return <div ref={containerReference} />
+  return <div ref={containerRef} />
 }

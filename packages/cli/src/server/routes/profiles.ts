@@ -100,7 +100,7 @@ export const profilesRoutes: FastifyPluginAsync<ProfilesRoutesOptions> = async (
     }
   })
 
-  fastify.post<{ Params: { name: string } }>('/api/profiles/:name/deactivate', async (request, reply) => {
+  fastify.post<{ Params: { name: string } }>('/api/profiles/:name/deactivate', async () => {
     await service.deactivate()
     return { success: true }
   })

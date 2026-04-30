@@ -44,10 +44,11 @@ export function GeneralSettingsPanel() {
   useEffect(() => {
     if (data?.content?.general) {
       const next = { ...DEFAULT_GENERAL_SETTINGS, ...data.content.general }
-      // eslint-disable-next-line react-hooks/set-state-in-effect
+      /* eslint-disable react-hooks/set-state-in-effect, react/set-state-in-effect, react-hooks-extra/set-state-in-effect, react-naming-convention/set-state-in-effect */
       setFormData((previous) => {
         return fastDeepEqual(previous, next) ? previous : next
       })
+      /* eslint-enable react-hooks/set-state-in-effect, react/set-state-in-effect, react-hooks-extra/set-state-in-effect, react-naming-convention/set-state-in-effect */
     }
   }, [data])
 

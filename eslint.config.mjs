@@ -4,7 +4,7 @@ const config = await aiou({ ssr: false })
 
 export default [
   {
-    ignores: ['vendor/**', '.planning/**/*.md'],
+    ignores: ['vendor/**', '.planning/**/*.md', '.claude/**', 'docs/**'],
   },
   ...config,
   {

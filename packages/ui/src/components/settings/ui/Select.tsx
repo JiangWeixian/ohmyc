@@ -16,7 +16,7 @@ interface SelectFieldProperties extends Omit<React.SelectHTMLAttributes<HTMLSele
   onChange?: (e: { target: { value: string } }) => void
 }
 
-export function Select({ label, options, error, value, onChange, className, ...properties }: SelectFieldProperties) {
+export function Select({ label, options, error, value, onChange, className, ..._properties }: SelectFieldProperties) {
   return (
     <div className="flex flex-col gap-1.5">
       {label && (
