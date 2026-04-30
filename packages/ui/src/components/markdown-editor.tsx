@@ -37,7 +37,7 @@ const markdownEditorOverlay = EditorView.theme({
   '.cm-gutters': {
     backgroundColor: '#08090a',
   },
-})
+}, { dark: true })
 
 export function MarkdownEditor({
   value,

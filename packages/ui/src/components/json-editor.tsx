@@ -37,7 +37,7 @@ const jsonEditorOverlay = EditorView.theme({
     padding: '12px 0',
     caretColor: 'var(--text-primary)',
   },
-})
+}, { dark: true })
 
 export function JsonEditor({ value, onChange, placeholder }: JsonEditorProperties) {
   const containerRef = useRef<HTMLDivElement>(null)
