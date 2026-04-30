@@ -36,6 +36,7 @@ const jsonEditorOverlay = EditorView.theme({
   '.cm-content': {
     padding: '12px 0',
     caretColor: 'var(--text-primary)',
+    backgroundColor: 'transparent',
   },
 }, { dark: true })
 

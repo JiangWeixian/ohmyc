@@ -33,6 +33,7 @@ const markdownEditorOverlay = EditorView.theme({
     padding: '18px 0',
     caretColor: 'var(--text-primary)',
     color: 'var(--text-primary)',
+    backgroundColor: 'transparent',
   },
   '.cm-gutters': {
     backgroundColor: '#08090a',
