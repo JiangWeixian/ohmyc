@@ -30,10 +30,21 @@ log_info() {
 # Determine transcript path
 # ---------------------------------------------------------------------------
 
-# Prefer hook input (stdin) for transcript_path when invoked by Claude Code
-# Fallback to command-line argument for manual invocation
-if [ -p /dev/stdin ]; then
-  # stdin is a pipe — invoked by Claude Code hook
+# If a command-line argument is provided, use manual invocation mode.
+# Otherwise, read hook input from stdin (Claude Code Stop hook API).
+if [ -n "${1:-}" ]; then
+  # Manual invocation
+  SESSION_ID="$1"
+
+  CLAUDE_HOME="${AGENT_HOME:-$HOME/.claude}"
+  TRANSCRIPT_PATH=$(find "$CLAUDE_HOME/projects" -name "${SESSION_ID}.jsonl" -print -quit 2>/dev/null || true)
+
+  if [ -z "$TRANSCRIPT_PATH" ] || [ ! -f "$TRANSCRIPT_PATH" ]; then
+    log_error "Transcript not found for session $SESSION_ID"
+    exit 0
+  fi
+else
+  # Hook invocation — read from stdin
   HOOK_INPUT=$(cat)
   TRANSCRIPT_PATH=$(echo "$HOOK_INPUT" | jq -r '.transcript_path // empty' 2>/dev/null || true)
 
@@ -43,31 +54,18 @@ if [ -p /dev/stdin ]; then
   fi
 
   SESSION_ID=$(basename "$TRANSCRIPT_PATH" .jsonl)
-else
-  # stdin is a terminal — manual invocation
-  SESSION_ID="${1:-}"
-  if [ -z "$SESSION_ID" ]; then
-    log_error "Usage: $0 <session-id>"
-    exit 1
-  fi
-
-  CLAUDE_HOME="${AGENT_HOME:-$HOME/.claude}"
-  TRANSCRIPT_PATH=$(find "$CLAUDE_HOME/projects" -name "${SESSION_ID}.jsonl" -print -quit 2>/dev/null || true)
-
-  if [ -z "$TRANSCRIPT_PATH" ] || [ ! -f "$TRANSCRIPT_PATH" ]; then
-    log_error "Transcript not found for session $SESSION_ID"
-    exit 0
-  fi
 fi
 
 # ---------------------------------------------------------------------------
 # Find claudeui CLI
 # ---------------------------------------------------------------------------
 
-CLI_CMD=""
-
+# Allow overriding CLI discovery via environment
+if [ "${CLI_CMD+isset}" = "isset" ]; then
+  # CLI_CMD is explicitly set (even to empty) — respect it
+  :
 # 1. Check if 'claudeui' is in PATH
-if command -v claudeui >/dev/null 2>&1; then
+elif command -v claudeui >/dev/null 2>&1; then
   CLI_CMD="claudeui"
 # 2. Check if 'cu' is our CLI (not the Unix utility)
 elif command -v cu >/dev/null 2>&1 && cu --help 2>&1 | grep -q "dashboard"; then
@@ -98,6 +96,8 @@ if command -v jq >/dev/null 2>&1; then
   log_info "Using jq fast path for session $SESSION_ID"
 
   # Extract all session metadata in one pass with jq
+  # Disable set -e temporarily so jq failure doesn't abort the script
+  set +e
   EXTRACTED=$(jq -s '
     {
       sessionId: $sessionId,
@@ -113,10 +113,12 @@ if command -v jq >/dev/null 2>&1; then
       summary: ([.[] | select(.type == "system" and .subtype == "away_summary") | .content] | last // null),
       firstUserMessage: ([.[] | select(.type == "user" and .message.role == "user" and (.message.content | type) == "string") | .message.content] | first // null)
     }
-  ' --arg sessionId "$SESSION_ID" --arg transcriptPath "$TRANSCRIPT_PATH" "$TRANSCRIPT_PATH")
+  ' --arg sessionId "$SESSION_ID" --arg transcriptPath "$TRANSCRIPT_PATH" "$TRANSCRIPT_PATH" 2>/dev/null)
+  JQ_STATUS=$?
+  set -e
 
   # Validate jq output
-  if [ -z "$EXTRACTED" ] || [ "$EXTRACTED" = "null" ]; then
+  if [ $JQ_STATUS -ne 0 ] || [ -z "$EXTRACTED" ] || [ "$EXTRACTED" = "null" ]; then
     log_error "jq extraction failed for $SESSION_ID, falling back to CLI"
     # Fall through to CLI path below
   else
