@@ -6,6 +6,9 @@ import { cn } from '@/lib/utils'
 
 function useBreadcrumb(): { root: string; current: string } {
   const { pathname } = useLocation()
+  if (pathname.startsWith('/timeline')) {
+    return { root: 'Activity', current: 'Timeline' }
+  }
   if (pathname.startsWith('/profiles/new')) {
     return { root: 'Profiles', current: 'New profile' }
   }

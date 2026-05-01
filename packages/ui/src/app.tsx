@@ -1,4 +1,5 @@
 import {
+  Activity,
   Bot,
   Check,
   Copy,
@@ -19,6 +20,9 @@ import {
 } from 'react-router-dom'
 import { Toaster } from 'sonner'
 
+import { Header } from './components/header'
+import { ProfilesSidebar } from './components/profiles/profiles-sidebar'
+import { TimelineView } from './components/timeline/timeline-view'
 import { CommandPalette, CommandPaletteProvider } from './components/ui/command-palette'
 import { type ViewId, ViewSwitcher } from './components/view-switcher'
 import { Explorer } from './explorer'
@@ -115,6 +119,14 @@ function AppCommandPalette() {
       action: () => navigate('/explore/commands'),
     },
     {
+      id: 'goto-timeline',
+      label: 'Timeline',
+      shortcut: 'g t',
+      icon: <Activity size={14} />,
+      category: 'Go to',
+      action: () => navigate('/timeline'),
+    },
+    {
       id: 'goto-settings',
       label: 'Settings',
       icon: <Settings size={14} />,
@@ -168,6 +180,40 @@ function AppCommandPalette() {
     />
   )
 }
+function TimelineRoute({ viewSwitcher }: { viewSwitcher: React.ReactNode }) {
+  const navigate = useNavigate()
+  const { data } = useProfiles()
+  const profiles = data?.profiles ?? []
+  const active = data?.active ?? null
+
+  return (
+    <div className="flex h-full min-w-0">
+      <ProfilesSidebar
+        profiles={profiles}
+        active={active}
+        selection={null}
+        timelineActive
+        onSelect={(sel) => {
+          if (sel.type === 'new-profile') {
+            navigate('/profiles/new')
+          } else if (sel.type === 'components') {
+            navigate(`/profiles/${sel.category}`)
+          } else {
+            navigate(`/profiles/${sel.name}`)
+          }
+        }}
+        headerSlot={viewSwitcher}
+      />
+      <main className="relative flex min-w-0 flex-1 flex-col overflow-hidden bg-[var(--bg-marketing)]">
+        <Header />
+        <div className="flex-1 overflow-y-auto">
+          <TimelineView />
+        </div>
+      </main>
+    </div>
+  )
+}
+
 function AppLayout() {
   const location = useLocation()
   const navigate = useNavigate()
@@ -183,6 +229,7 @@ function AppLayout() {
   return (
     <div className="h-dvh overflow-hidden bg-[var(--surface-base)] text-[var(--text-primary)]">
       <Routes>
+        <Route path="/timeline" element={<TimelineRoute viewSwitcher={<ViewSwitcher active={active} onChange={handleChange} />} />} />
         <Route path="/profiles/*" element={<ProfilesView viewSwitcher={<ViewSwitcher active={active} onChange={handleChange} />} />} />
         <Route path="/explore/:tab" element={<Explorer viewSwitcher={<ViewSwitcher active={active} onChange={handleChange} />} />} />
         <Route path="/explore" element={<Navigate to="/explore/agents" replace />} />
