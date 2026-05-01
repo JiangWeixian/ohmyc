@@ -112,7 +112,7 @@ export const CURRENT_SCHEMA_VERSION = 1
 
 /** Complete SQL to create all tables and indexes. */
 export const SCHEMA_SQL = `
-CREATE TABLE IF NOT EXISTS sessions (
+CREATE TABLE sessions (
   session_id        TEXT PRIMARY KEY,
   project           TEXT NOT NULL,
   started_at        INTEGER NOT NULL,
@@ -123,29 +123,29 @@ CREATE TABLE IF NOT EXISTS sessions (
   tokens_output     INTEGER NOT NULL DEFAULT 0,
   tokens_cached     INTEGER NOT NULL DEFAULT 0,
   summary           TEXT,
-  summary_source    TEXT NOT NULL DEFAULT 'first_message',
+  summary_source    TEXT NOT NULL,
   transcript_path   TEXT NOT NULL,
-  last_offset       INTEGER NOT NULL DEFAULT 0,
+  last_offset       INTEGER NOT NULL,
   ingested_at       INTEGER NOT NULL
 );
 
-CREATE INDEX IF NOT EXISTS idx_sessions_started_at ON sessions(started_at DESC);
-CREATE INDEX IF NOT EXISTS idx_sessions_project    ON sessions(project, started_at DESC);
+CREATE INDEX idx_sessions_started_at ON sessions(started_at DESC);
+CREATE INDEX idx_sessions_project    ON sessions(project, started_at DESC);
 
-CREATE TABLE IF NOT EXISTS session_tools (
+CREATE TABLE session_tools (
   session_id  TEXT NOT NULL REFERENCES sessions(session_id) ON DELETE CASCADE,
   tool_name   TEXT NOT NULL,
   call_count  INTEGER NOT NULL DEFAULT 1,
   PRIMARY KEY (session_id, tool_name)
 );
 
-CREATE TABLE IF NOT EXISTS session_skills (
+CREATE TABLE session_skills (
   session_id  TEXT NOT NULL REFERENCES sessions(session_id) ON DELETE CASCADE,
   skill_name  TEXT NOT NULL,
   PRIMARY KEY (session_id, skill_name)
 );
 
-CREATE TABLE IF NOT EXISTS meta (
+CREATE TABLE meta (
   key    TEXT PRIMARY KEY,
   value  TEXT NOT NULL
 );
