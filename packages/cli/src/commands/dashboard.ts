@@ -61,8 +61,15 @@ export function hasJq(): boolean {
 }
 
 export function getPluginSourceDir(): string {
-  // Resolve from the CLI package location: packages/cli/../../plugins/timeline
-  return path.resolve(fileURLToPath(import.meta.url), '..', '..', '..', '..', 'plugins', 'timeline')
+  // In development: resolve from src/commands/dashboard.ts → ../../plugins/timeline
+  // In production (bundled): resolve from dist/index.mjs → ./plugins/timeline
+  const srcPath = path.resolve(fileURLToPath(import.meta.url), '..', '..', '..', '..', 'plugins', 'timeline')
+  const distPath = path.resolve(fileURLToPath(import.meta.url), '..', '..', 'plugins', 'timeline')
+
+  if (existsSync(distPath)) {
+    return distPath
+  }
+  return srcPath
 }
 
 function formatDate(ts: number | undefined): string {
