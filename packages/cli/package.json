@@ -23,6 +23,7 @@
   },
   "dependencies": {
     "@claudeui/shared": "workspace:*",
+    "@claudeui/timeline": "workspace:*",
     "@fastify/static": "^7.0.3",
     "cac": "^6.7.14",
     "fastify": "^4.26.2",

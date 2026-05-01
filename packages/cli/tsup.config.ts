@@ -16,6 +16,7 @@ export default defineConfig({
   },
   noExternal: [
     '@claudeui/shared',
+    '@claudeui/timeline',
     '@fastify/static',
     'cac',
     'fastify',
