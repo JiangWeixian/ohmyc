@@ -10,7 +10,7 @@ import {
   it,
 } from 'vitest'
 
-import { closeDatabase, openDatabase } from './db.js'
+import { closeDatabase, openDatabase } from '../src/db.js'
 import {
   getEvents,
   getHeatmap,
@@ -18,7 +18,7 @@ import {
   getSession,
   getStatus,
   getYears,
-} from './query.js'
+} from '../src/query.js'
 
 import type Database from 'better-sqlite3'
 

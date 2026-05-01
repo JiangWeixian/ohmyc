@@ -16,7 +16,7 @@ import {
   getDefaultDbPath,
   migrate,
   openDatabase,
-} from './db.js'
+} from '../src/db.js'
 
 describe('db', () => {
   let tmpDir: string

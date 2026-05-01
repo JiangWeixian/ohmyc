@@ -16,13 +16,13 @@ import {
   it,
 } from 'vitest'
 
-import { closeDatabase, openDatabase } from './db.js'
-import { ingestSession } from './ingest.js'
+import { closeDatabase, openDatabase } from '../src/db.js'
+import { ingestSession } from '../src/ingest.js'
 
 import type Database from 'better-sqlite3'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
-const fixturesDir = path.resolve(__dirname, '../test/fixtures')
+const fixturesDir = path.resolve(__dirname, './fixtures')
 
 describe('ingestSession', () => {
   let tmpDir: string
