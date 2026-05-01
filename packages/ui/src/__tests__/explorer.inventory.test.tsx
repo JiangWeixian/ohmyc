@@ -91,6 +91,9 @@ vi.mock('../hooks/use-profiles', () => ({
     isLoading: false,
     isError: false,
   }),
+  useActivateProfile: () => ({ mutate: vi.fn() }),
+  useDeactivateProfile: () => ({ mutate: vi.fn() }),
+  useDeleteProfile: () => ({ mutate: vi.fn() }),
 }))
 
 describe('Explorer inventory views', () => {

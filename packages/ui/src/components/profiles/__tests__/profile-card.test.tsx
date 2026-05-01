@@ -135,7 +135,7 @@ describe('ProfileCard', () => {
     expect(screen.queryByText('Active')).not.toBeInTheDocument()
   })
 
-  it('renders empty-state strings for empty groups', () => {
+  it('hides empty groups instead of rendering placeholders', () => {
     renderWithProviders(
       <ProfileCard
         profile={baseProfile}
@@ -148,15 +148,15 @@ describe('ProfileCard', () => {
       />,
     )
 
-    expect(screen.getByText('No agents selected')).toBeInTheDocument()
-    expect(screen.getByText('No skills selected')).toBeInTheDocument()
-    expect(screen.getByText('No commands selected')).toBeInTheDocument()
-    expect(screen.getByText('No plugins selected')).toBeInTheDocument()
-    expect(screen.getByText('No model config selected')).toBeInTheDocument()
-    expect(screen.getByText('No hooks configured')).toBeInTheDocument()
-    expect(screen.getByText('No MCP servers configured')).toBeInTheDocument()
-    expect(screen.getByText('No LSP servers configured')).toBeInTheDocument()
-    expect(screen.getByText('No settings configured')).toBeInTheDocument()
+    expect(screen.queryByText(/No agents selected/i)).not.toBeInTheDocument()
+    expect(screen.queryByText(/No skills selected/i)).not.toBeInTheDocument()
+    expect(screen.queryByText(/No commands selected/i)).not.toBeInTheDocument()
+    expect(screen.queryByText(/No plugins selected/i)).not.toBeInTheDocument()
+    expect(screen.queryByText(/No model config selected/i)).not.toBeInTheDocument()
+    expect(screen.queryByText(/No hooks configured/i)).not.toBeInTheDocument()
+    expect(screen.queryByText(/No MCP servers configured/i)).not.toBeInTheDocument()
+    expect(screen.queryByText(/No LSP servers configured/i)).not.toBeInTheDocument()
+    expect(screen.queryByText(/No settings configured/i)).not.toBeInTheDocument()
   })
 
   it('does not render a <pre> element for raw settings JSON', () => {
