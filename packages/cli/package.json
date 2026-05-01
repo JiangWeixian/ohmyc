@@ -2,21 +2,21 @@
   "name": "@claudeui/cli",
   "version": "0.1.0",
   "type": "module",
+  "files": ["dist", "README.md"],
   "bin": {
-    "cu": "dist/index.cjs",
-    "claudeui": "dist/index.cjs"
+    "cu": "dist/index.mjs",
+    "claudeui": "dist/index.mjs"
   },
   "scripts": {
     "build": "tsup",
     "build:full": "pnpm --filter @claudeui/ui build && tsup",
-    "dev": "tsup --watch --onSuccess 'node dist/index.cjs'",
-    "dev:server": "tsup --watch --onSuccess 'node dist/index.cjs start --api-only'",
-    "start": "node dist/index.cjs",
+    "dev": "tsup --watch --onSuccess 'node dist/index.mjs'",
+    "dev:server": "tsup --watch --onSuccess 'node dist/index.mjs start --api-only --port 3000 --cwd $INIT_CWD'",
+    "start": "node dist/index.mjs",
     "test": "vitest run",
     "test:watch": "vitest",
     "prepublishOnly": "pnpm build:full && node scripts/prepublish.mjs"
   },
-  "files": ["dist", "README.md"],
   "publishConfig": {
     "access": "public",
     "registry": "https://registry.npmjs.org/"
@@ -30,6 +30,7 @@
     "gray-matter": "^4.0.3",
     "open": "^11.0.0",
     "proper-lockfile": "^4.1.2",
+    "untildify": "^6.0.0",
     "zod-to-json-schema": "^3.23.5"
   },
   "devDependencies": {

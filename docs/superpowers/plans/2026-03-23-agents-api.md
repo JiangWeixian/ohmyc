@@ -62,26 +62,30 @@ In `packages/cli/package.json`, add to `"scripts"`:
 
 ```typescript
 // packages/cli/vitest.config.ts
-import { defineConfig } from 'vitest/config';
+import { defineConfig } from 'vitest/config'
 
 export default defineConfig({
   test: {
     environment: 'node',
   },
-});
+})
 ```
 
 - [ ] **Step 5: Create a smoke test to verify vitest works**
 
 Create `packages/cli/src/__tests__/smoke.test.ts`:
 ```typescript
-import { describe, it, expect } from 'vitest';
+import {
+  describe,
+  expect,
+  it,
+} from 'vitest'
 
 describe('vitest setup', () => {
   it('works', () => {
-    expect(1 + 1).toBe(2);
-  });
-});
+    expect(1 + 1).toBe(2)
+  })
+})
 ```
 
 - [ ] **Step 6: Run the smoke test**
@@ -110,9 +114,9 @@ git commit -m "chore: configure vitest and add gray-matter dependency"
 
 ```typescript
 // packages/shared/src/agentSchema.ts
-import { z } from 'zod';
+import { z } from 'zod'
 
-export const SAFE_NAME_PATTERN = /^[a-zA-Z0-9_-]+$/;
+export const SAFE_NAME_PATTERN = /^[\w-]+$/
 
 export const AgentFrontmatterSchema = z.object({
   name: z.string(),
@@ -129,7 +133,7 @@ export const AgentFrontmatterSchema = z.object({
   isolation: z.enum(['worktree']).optional(),
   mcpServers: z.any().optional(),
   hooks: z.any().optional(),
-}).passthrough();
+}).passthrough()
 
 export const AgentSchema = z.object({
   id: z.string(),
@@ -138,29 +142,29 @@ export const AgentSchema = z.object({
   raw: z.string(),
   filename: z.string(),
   source: z.enum(['user', 'project', 'plugin']),
-});
+})
 
 export const CreateAgentBodySchema = z.object({
   frontmatter: AgentFrontmatterSchema,
   content: z.string(),
-});
+})
 
 export const UpdateAgentBodySchema = z.object({
   frontmatter: AgentFrontmatterSchema.partial().optional(),
   content: z.string().optional(),
-});
+})
 
-export type AgentFrontmatter = z.infer<typeof AgentFrontmatterSchema>;
-export type Agent = z.infer<typeof AgentSchema>;
-export type CreateAgentBody = z.infer<typeof CreateAgentBodySchema>;
-export type UpdateAgentBody = z.infer<typeof UpdateAgentBodySchema>;
+export type AgentFrontmatter = z.infer<typeof AgentFrontmatterSchema>
+export type Agent = z.infer<typeof AgentSchema>
+export type CreateAgentBody = z.infer<typeof CreateAgentBodySchema>
+export type UpdateAgentBody = z.infer<typeof UpdateAgentBodySchema>
 ```
 
 - [ ] **Step 2: Update index.ts to re-export**
 
 Add to `packages/shared/src/index.ts`:
 ```typescript
-export * from './agentSchema.js';
+export * from './agentSchema.js'
 ```
 
 - [ ] **Step 3: Commit**
@@ -182,32 +186,40 @@ git commit -m "feat: add agent Zod schemas to shared package"
 
 ```typescript
 // packages/cli/src/server/services/__tests__/agentService.test.ts
-import { describe, it, expect, beforeEach, afterEach } from 'vitest';
-import { mkdtempSync, rmSync } from 'fs';
-import path from 'path';
-import os from 'os';
-import { AgentService } from '../agentService.js';
+import { mkdtempSync, rmSync } from 'node:fs'
+import os from 'node:os'
+import path from 'node:path'
+
+import {
+  afterEach,
+  beforeEach,
+  describe,
+  expect,
+  it,
+} from 'vitest'
+
+import { AgentService } from '../agentService.js'
 
 describe('AgentService', () => {
-  let tmpDir: string;
-  let service: AgentService;
+  let tmpDir: string
+  let service: AgentService
 
   beforeEach(() => {
-    tmpDir = mkdtempSync(path.join(os.tmpdir(), 'agents-test-'));
-    service = new AgentService(tmpDir);
-  });
+    tmpDir = mkdtempSync(path.join(os.tmpdir(), 'agents-test-'))
+    service = new AgentService(tmpDir)
+  })
 
   afterEach(() => {
-    rmSync(tmpDir, { recursive: true, force: true });
-  });
+    rmSync(tmpDir, { recursive: true, force: true })
+  })
 
   describe('list()', () => {
     it('returns empty array for empty directory', async () => {
-      const agents = await service.list();
-      expect(agents).toEqual([]);
-    });
-  });
-});
+      const agents = await service.list()
+      expect(agents).toEqual([])
+    })
+  })
+})
 ```
 
 - [ ] **Step 2: Run test to verify it fails**
@@ -221,25 +233,36 @@ Expected: FAIL — cannot find `../agentService.js`
 
 ```typescript
 // packages/cli/src/server/services/agentService.ts
-import { readdir, readFile, writeFile, mkdir, unlink, access } from 'fs/promises';
-import path from 'path';
-import matter from 'gray-matter';
-import type { Agent, AgentFrontmatter } from '@claudeui/shared';
-import { SAFE_NAME_PATTERN } from '@claudeui/shared';
+import {
+  access,
+  mkdir,
+  readdir,
+  readFile,
+  unlink,
+  writeFile,
+} from 'node:fs/promises'
+import path from 'node:path'
+
+import { SAFE_NAME_PATTERN } from '@claudeui/shared'
+import matter from 'gray-matter'
+
+import type { Agent, AgentFrontmatter } from '@claudeui/shared'
 
 export class AgentService {
   constructor(private agentsDir: string) {}
 
   private validateName(name: string): void {
     if (!SAFE_NAME_PATTERN.test(name)) {
-      throw new Error(`Agent name "${name}" is invalid: must match [a-zA-Z0-9_-]`);
+      throw new Error(`Agent name "${name}" is invalid: must match [a-zA-Z0-9_-]`)
     }
   }
 
   private parseAgentFile(filename: string, raw: string): Agent | null {
-    const parsed = matter(raw);
-    const frontmatter = parsed.data as AgentFrontmatter;
-    if (!frontmatter.name || !frontmatter.description) return null;
+    const parsed = matter(raw)
+    const frontmatter = parsed.data as AgentFrontmatter
+    if (!frontmatter.name || !frontmatter.description) {
+      return null
+    }
     return {
       id: filename.replace(/\.md$/, ''),
       frontmatter,
@@ -247,32 +270,34 @@ export class AgentService {
       raw,
       filename,
       source: 'user',
-    };
+    }
   }
 
   async list(): Promise<Agent[]> {
     try {
-      await access(this.agentsDir);
+      await access(this.agentsDir)
     } catch {
-      return [];
+      return []
     }
 
-    const files = await readdir(this.agentsDir);
-    const mdFiles = files.filter(f => f.endsWith('.md')).sort();
+    const files = await readdir(this.agentsDir)
+    const mdFiles = files.filter(f => f.endsWith('.md')).sort()
 
-    const agents: Agent[] = [];
+    const agents: Agent[] = []
     for (const filename of mdFiles) {
-      const filePath = path.join(this.agentsDir, filename);
+      const filePath = path.join(this.agentsDir, filename)
       try {
-        const raw = await readFile(filePath, 'utf-8');
-        const agent = this.parseAgentFile(filename, raw);
-        if (agent) agents.push(agent);
+        const raw = await readFile(filePath, 'utf-8')
+        const agent = this.parseAgentFile(filename, raw)
+        if (agent) {
+          agents.push(agent)
+        }
       } catch {
-        continue;
+        continue
       }
     }
 
-    return agents;
+    return agents
   }
 }
 ```
@@ -302,76 +327,80 @@ git commit -m "feat: AgentService.list() with empty directory support"
 
 Add `writeFileSync` to the imports:
 ```typescript
-import { mkdtempSync, rmSync, writeFileSync } from 'fs';
+import {
+  mkdtempSync,
+  rmSync,
+  writeFileSync,
+} from 'node:fs'
 ```
 
 Add to the `describe('list()')` block:
 ```typescript
-    it('returns parsed agents sorted alphabetically', async () => {
-      writeFileSync(path.join(tmpDir, 'zebra-agent.md'), [
-        '---',
-        'name: zebra-agent',
-        'description: Z agent',
-        'model: sonnet',
-        'tools:',
-        '  - Read',
-        '  - Grep',
-        '---',
-        'You are a zebra agent.',
-      ].join('\n'));
+it('returns parsed agents sorted alphabetically', async () => {
+  writeFileSync(path.join(tmpDir, 'zebra-agent.md'), [
+    '---',
+    'name: zebra-agent',
+    'description: Z agent',
+    'model: sonnet',
+    'tools:',
+    '  - Read',
+    '  - Grep',
+    '---',
+    'You are a zebra agent.',
+  ].join('\n'))
 
-      writeFileSync(path.join(tmpDir, 'alpha-agent.md'), [
-        '---',
-        'name: alpha-agent',
-        'description: A agent',
-        '---',
-        'You are an alpha agent.',
-      ].join('\n'));
+  writeFileSync(path.join(tmpDir, 'alpha-agent.md'), [
+    '---',
+    'name: alpha-agent',
+    'description: A agent',
+    '---',
+    'You are an alpha agent.',
+  ].join('\n'))
 
-      const agents = await service.list();
-      expect(agents).toHaveLength(2);
-      expect(agents[0].id).toBe('alpha-agent');
-      expect(agents[1].id).toBe('zebra-agent');
-      expect(agents[1].frontmatter.tools).toEqual(['Read', 'Grep']);
-      expect(agents[0].content).toBe('You are an alpha agent.');
-      expect(agents[0].raw).toContain('---');
-    });
+  const agents = await service.list()
+  expect(agents).toHaveLength(2)
+  expect(agents[0].id).toBe('alpha-agent')
+  expect(agents[1].id).toBe('zebra-agent')
+  expect(agents[1].frontmatter.tools).toEqual(['Read', 'Grep'])
+  expect(agents[0].content).toBe('You are an alpha agent.')
+  expect(agents[0].raw).toContain('---')
+})
 
-    it('ignores non-.md files', async () => {
-      writeFileSync(path.join(tmpDir, 'notes.txt'), 'not an agent');
-      writeFileSync(path.join(tmpDir, 'agent.md'), [
-        '---',
-        'name: agent',
-        'description: An agent',
-        '---',
-        'prompt',
-      ].join('\n'));
+it('ignores non-.md files', async () => {
+  writeFileSync(path.join(tmpDir, 'notes.txt'), 'not an agent')
+  writeFileSync(path.join(tmpDir, 'agent.md'), [
+    '---',
+    'name: agent',
+    'description: An agent',
+    '---',
+    'prompt',
+  ].join('\n'))
 
-      const agents = await service.list();
-      expect(agents).toHaveLength(1);
-      expect(agents[0].id).toBe('agent');
-    });
+  const agents = await service.list()
+  expect(agents).toHaveLength(1)
+  expect(agents[0].id).toBe('agent')
+})
 
-    it('skips files with malformed frontmatter', async () => {
-      writeFileSync(path.join(tmpDir, 'bad.md'), 'no frontmatter here');
-      writeFileSync(path.join(tmpDir, 'good.md'), [
-        '---',
-        'name: good',
-        'description: Good agent',
-        '---',
-        'prompt',
-      ].join('\n'));
+it('skips files with malformed frontmatter', async () => {
+  writeFileSync(path.join(tmpDir, 'bad.md'), 'no frontmatter here')
+  writeFileSync(path.join(tmpDir, 'good.md'), [
+    '---',
+    'name: good',
+    'description: Good agent',
+    '---',
+    'prompt',
+  ].join('\n'))
 
-      const agents = await service.list();
-      expect(agents).toHaveLength(1);
-      expect(agents[0].id).toBe('good');
-    });
+  const agents = await service.list()
+  expect(agents).toHaveLength(1)
+  expect(agents[0].id).toBe('good')
+})
 
-    it('returns empty array when directory does not exist', async () => {
-      const noDir = new AgentService('/tmp/nonexistent-agents-dir-xyz');
-      const agents = await noDir.list();
-      expect(agents).toEqual([]);
-    });
+it('returns empty array when directory does not exist', async () => {
+  const noDir = new AgentService('/tmp/nonexistent-agents-dir-xyz')
+  const agents = await noDir.list()
+  expect(agents).toEqual([])
+})
 ```
 
 - [ ] **Step 2: Run tests to verify they pass**
@@ -400,42 +429,42 @@ git commit -m "test: add list() edge case tests for AgentService"
 
 Add new `describe('get()')` block after `describe('list()')`:
 ```typescript
-  describe('get()', () => {
-    it('returns agent by name', async () => {
-      writeFileSync(path.join(tmpDir, 'my-agent.md'), [
-        '---',
-        'name: my-agent',
-        'description: My agent',
-        'model: opus',
-        '---',
-        'You are my agent.',
-      ].join('\n'));
+describe('get()', () => {
+  it('returns agent by name', async () => {
+    writeFileSync(path.join(tmpDir, 'my-agent.md'), [
+      '---',
+      'name: my-agent',
+      'description: My agent',
+      'model: opus',
+      '---',
+      'You are my agent.',
+    ].join('\n'))
 
-      const agent = await service.get('my-agent');
-      expect(agent).not.toBeNull();
-      expect(agent!.id).toBe('my-agent');
-      expect(agent!.frontmatter.name).toBe('my-agent');
-      expect(agent!.frontmatter.model).toBe('opus');
-      expect(agent!.content).toBe('You are my agent.');
-      expect(agent!.source).toBe('user');
-    });
+    const agent = await service.get('my-agent')
+    expect(agent).not.toBeNull()
+    expect(agent!.id).toBe('my-agent')
+    expect(agent!.frontmatter.name).toBe('my-agent')
+    expect(agent!.frontmatter.model).toBe('opus')
+    expect(agent!.content).toBe('You are my agent.')
+    expect(agent!.source).toBe('user')
+  })
 
-    it('returns null when agent does not exist', async () => {
-      const agent = await service.get('nonexistent');
-      expect(agent).toBeNull();
-    });
+  it('returns null when agent does not exist', async () => {
+    const agent = await service.get('nonexistent')
+    expect(agent).toBeNull()
+  })
 
-    it('returns null when directory does not exist', async () => {
-      const noDir = new AgentService('/tmp/nonexistent-agents-dir-xyz');
-      const agent = await noDir.get('anything');
-      expect(agent).toBeNull();
-    });
+  it('returns null when directory does not exist', async () => {
+    const noDir = new AgentService('/tmp/nonexistent-agents-dir-xyz')
+    const agent = await noDir.get('anything')
+    expect(agent).toBeNull()
+  })
 
-    it('returns null for invalid name', async () => {
-      const agent = await service.get('../evil');
-      expect(agent).toBeNull();
-    });
-  });
+  it('returns null for invalid name', async () => {
+    const agent = await service.get('../evil')
+    expect(agent).toBeNull()
+  })
+})
 ```
 
 - [ ] **Step 2: Run tests to verify they fail**
@@ -487,75 +516,81 @@ git commit -m "feat: AgentService.get() to retrieve agent by name"
 
 Add `readFileSync, existsSync` to the `fs` import:
 ```typescript
-import { mkdtempSync, rmSync, writeFileSync, readFileSync, existsSync } from 'fs';
+import {
+  existsSync,
+  mkdtempSync,
+  readFileSync,
+  rmSync,
+  writeFileSync,
+} from 'node:fs'
 ```
 
 Add new `describe('create()')` block:
 ```typescript
-  describe('create()', () => {
-    it('creates agent file and returns agent', async () => {
-      const agent = await service.create(
-        { name: 'new-agent', description: 'A new agent' },
-        'You are a new agent.'
-      );
+describe('create()', () => {
+  it('creates agent file and returns agent', async () => {
+    const agent = await service.create(
+      { name: 'new-agent', description: 'A new agent' },
+      'You are a new agent.',
+    )
 
-      expect(agent.id).toBe('new-agent');
-      expect(agent.frontmatter.name).toBe('new-agent');
-      expect(agent.content).toBe('You are a new agent.');
-      expect(agent.filename).toBe('new-agent.md');
-      expect(agent.source).toBe('user');
+    expect(agent.id).toBe('new-agent')
+    expect(agent.frontmatter.name).toBe('new-agent')
+    expect(agent.content).toBe('You are a new agent.')
+    expect(agent.filename).toBe('new-agent.md')
+    expect(agent.source).toBe('user')
 
-      // Verify file was written
-      const written = readFileSync(path.join(tmpDir, 'new-agent.md'), 'utf-8');
-      expect(written).toContain('name: new-agent');
-      expect(written).toContain('You are a new agent.');
-    });
+    // Verify file was written
+    const written = readFileSync(path.join(tmpDir, 'new-agent.md'), 'utf-8')
+    expect(written).toContain('name: new-agent')
+    expect(written).toContain('You are a new agent.')
+  })
 
-    it('round-trips correctly (create then get returns same data)', async () => {
-      const created = await service.create(
-        { name: 'roundtrip', description: 'Roundtrip test' },
-        'prompt content'
-      );
-      const fetched = await service.get('roundtrip');
-      expect(fetched).not.toBeNull();
-      expect(fetched!.id).toBe(created.id);
-      expect(fetched!.frontmatter.name).toBe(created.frontmatter.name);
-      expect(fetched!.content).toBe(created.content);
-    });
+  it('round-trips correctly (create then get returns same data)', async () => {
+    const created = await service.create(
+      { name: 'roundtrip', description: 'Roundtrip test' },
+      'prompt content',
+    )
+    const fetched = await service.get('roundtrip')
+    expect(fetched).not.toBeNull()
+    expect(fetched!.id).toBe(created.id)
+    expect(fetched!.frontmatter.name).toBe(created.frontmatter.name)
+    expect(fetched!.content).toBe(created.content)
+  })
 
-    it('auto-creates directory if it does not exist', async () => {
-      const nestedDir = path.join(tmpDir, 'nested', 'agents');
-      const nestedService = new AgentService(nestedDir);
+  it('auto-creates directory if it does not exist', async () => {
+    const nestedDir = path.join(tmpDir, 'nested', 'agents')
+    const nestedService = new AgentService(nestedDir)
 
-      const agent = await nestedService.create(
-        { name: 'test', description: 'Test' },
-        'prompt'
-      );
+    const agent = await nestedService.create(
+      { name: 'test', description: 'Test' },
+      'prompt',
+    )
 
-      expect(agent.id).toBe('test');
-      expect(existsSync(path.join(nestedDir, 'test.md'))).toBe(true);
-    });
+    expect(agent.id).toBe('test')
+    expect(existsSync(path.join(nestedDir, 'test.md'))).toBe(true)
+  })
 
-    it('throws when agent with same name already exists', async () => {
-      writeFileSync(path.join(tmpDir, 'existing.md'), [
-        '---',
-        'name: existing',
-        'description: Existing agent',
-        '---',
-        'prompt',
-      ].join('\n'));
+  it('throws when agent with same name already exists', async () => {
+    writeFileSync(path.join(tmpDir, 'existing.md'), [
+      '---',
+      'name: existing',
+      'description: Existing agent',
+      '---',
+      'prompt',
+    ].join('\n'))
 
-      await expect(
-        service.create({ name: 'existing', description: 'Duplicate' }, 'prompt')
-      ).rejects.toThrow('already exists');
-    });
+    await expect(
+      service.create({ name: 'existing', description: 'Duplicate' }, 'prompt'),
+    ).rejects.toThrow('already exists')
+  })
 
-    it('throws when name contains invalid characters', async () => {
-      await expect(
-        service.create({ name: '../evil', description: 'Bad' }, 'prompt')
-      ).rejects.toThrow('invalid');
-    });
-  });
+  it('throws when name contains invalid characters', async () => {
+    await expect(
+      service.create({ name: '../evil', description: 'Bad' }, 'prompt'),
+    ).rejects.toThrow('invalid')
+  })
+})
 ```
 
 - [ ] **Step 2: Run tests to verify they fail**
@@ -624,57 +659,57 @@ git commit -m "feat: AgentService.create() with validation and conflict detectio
 
 Add new `describe('update()')` block:
 ```typescript
-  describe('update()', () => {
-    beforeEach(() => {
-      writeFileSync(path.join(tmpDir, 'updatable.md'), [
-        '---',
-        'name: updatable',
-        'description: Original description',
-        'model: sonnet',
-        '---',
-        'Original prompt.',
-      ].join('\n'));
-    });
+describe('update()', () => {
+  beforeEach(() => {
+    writeFileSync(path.join(tmpDir, 'updatable.md'), [
+      '---',
+      'name: updatable',
+      'description: Original description',
+      'model: sonnet',
+      '---',
+      'Original prompt.',
+    ].join('\n'))
+  })
 
-    it('updates frontmatter fields with shallow merge', async () => {
-      const agent = await service.update('updatable', {
-        frontmatter: { description: 'Updated description' },
-      });
+  it('updates frontmatter fields with shallow merge', async () => {
+    const agent = await service.update('updatable', {
+      frontmatter: { description: 'Updated description' },
+    })
 
-      expect(agent).not.toBeNull();
-      expect(agent!.frontmatter.description).toBe('Updated description');
-      expect(agent!.frontmatter.model).toBe('sonnet');
-      expect(agent!.content).toBe('Original prompt.');
-    });
+    expect(agent).not.toBeNull()
+    expect(agent!.frontmatter.description).toBe('Updated description')
+    expect(agent!.frontmatter.model).toBe('sonnet')
+    expect(agent!.content).toBe('Original prompt.')
+  })
 
-    it('updates content only', async () => {
-      const agent = await service.update('updatable', {
-        content: 'New prompt.',
-      });
+  it('updates content only', async () => {
+    const agent = await service.update('updatable', {
+      content: 'New prompt.',
+    })
 
-      expect(agent).not.toBeNull();
-      expect(agent!.content).toBe('New prompt.');
-      expect(agent!.frontmatter.description).toBe('Original description');
-    });
+    expect(agent).not.toBeNull()
+    expect(agent!.content).toBe('New prompt.')
+    expect(agent!.frontmatter.description).toBe('Original description')
+  })
 
-    it('updates both frontmatter and content', async () => {
-      const agent = await service.update('updatable', {
-        frontmatter: { description: 'New desc' },
-        content: 'New prompt.',
-      });
+  it('updates both frontmatter and content', async () => {
+    const agent = await service.update('updatable', {
+      frontmatter: { description: 'New desc' },
+      content: 'New prompt.',
+    })
 
-      expect(agent).not.toBeNull();
-      expect(agent!.frontmatter.description).toBe('New desc');
-      expect(agent!.content).toBe('New prompt.');
-    });
+    expect(agent).not.toBeNull()
+    expect(agent!.frontmatter.description).toBe('New desc')
+    expect(agent!.content).toBe('New prompt.')
+  })
 
-    it('returns null when agent does not exist', async () => {
-      const agent = await service.update('nonexistent', {
-        frontmatter: { description: 'nope' },
-      });
-      expect(agent).toBeNull();
-    });
-  });
+  it('returns null when agent does not exist', async () => {
+    const agent = await service.update('nonexistent', {
+      frontmatter: { description: 'nope' },
+    })
+    expect(agent).toBeNull()
+  })
+})
 ```
 
 - [ ] **Step 2: Run tests to verify they fail**
@@ -742,31 +777,31 @@ git commit -m "feat: AgentService.update() with shallow merge"
 
 Add new `describe('delete()')` block:
 ```typescript
-  describe('delete()', () => {
-    it('deletes existing agent file', async () => {
-      writeFileSync(path.join(tmpDir, 'doomed.md'), [
-        '---',
-        'name: doomed',
-        'description: To be deleted',
-        '---',
-        'goodbye',
-      ].join('\n'));
+describe('delete()', () => {
+  it('deletes existing agent file', async () => {
+    writeFileSync(path.join(tmpDir, 'doomed.md'), [
+      '---',
+      'name: doomed',
+      'description: To be deleted',
+      '---',
+      'goodbye',
+    ].join('\n'))
 
-      const result = await service.delete('doomed');
-      expect(result).toBe(true);
-      expect(existsSync(path.join(tmpDir, 'doomed.md'))).toBe(false);
-    });
+    const result = await service.delete('doomed')
+    expect(result).toBe(true)
+    expect(existsSync(path.join(tmpDir, 'doomed.md'))).toBe(false)
+  })
 
-    it('returns false when agent does not exist', async () => {
-      const result = await service.delete('nonexistent');
-      expect(result).toBe(false);
-    });
+  it('returns false when agent does not exist', async () => {
+    const result = await service.delete('nonexistent')
+    expect(result).toBe(false)
+  })
 
-    it('returns false for invalid name', async () => {
-      const result = await service.delete('../evil');
-      expect(result).toBe(false);
-    });
-  });
+  it('returns false for invalid name', async () => {
+    const result = await service.delete('../evil')
+    expect(result).toBe(false)
+  })
+})
 ```
 
 - [ ] **Step 2: Run tests to verify they fail**
@@ -819,111 +854,125 @@ git commit -m "feat: AgentService.delete() with name validation"
 
 ```typescript
 // packages/cli/src/server/routes/agents.ts
-import { FastifyPluginAsync } from 'fastify';
-import { AgentService } from '../services/agentService.js';
 import {
-  SAFE_NAME_PATTERN,
   CreateAgentBodySchema,
+  SAFE_NAME_PATTERN,
   UpdateAgentBodySchema,
-} from '@claudeui/shared';
+} from '@claudeui/shared'
+import { FastifyPluginAsync } from 'fastify'
+
+import { AgentService } from '../services/agentService.js'
 
 interface AgentsRoutesOptions {
-  agentsDir: string;
+  agentsDir: string
 }
 
 export const agentsRoutes: FastifyPluginAsync<AgentsRoutesOptions> = async (fastify, options) => {
-  const service = new AgentService(options.agentsDir);
+  const service = new AgentService(options.agentsDir)
 
   function validateName(name: string): string | null {
     if (!SAFE_NAME_PATTERN.test(name)) {
-      return 'Invalid agent name: must match [a-zA-Z0-9_-]';
+      return 'Invalid agent name: must match [a-zA-Z0-9_-]'
     }
-    return null;
+    return null
   }
 
   // GET /api/agents
   fastify.get('/api/agents', async () => {
-    const agents = await service.list();
-    return { agents };
-  });
+    const agents = await service.list()
+    return { agents }
+  })
 
   // GET /api/agents/:name
   fastify.get<{ Params: { name: string } }>('/api/agents/:name', async (request, reply) => {
-    const { name } = request.params;
-    const error = validateName(name);
-    if (error) return reply.status(400).send({ error });
+    const { name } = request.params
+    const error = validateName(name)
+    if (error) {
+      return reply.status(400).send({ error })
+    }
 
-    const agent = await service.get(name);
-    if (!agent) return reply.status(404).send({ error: 'Agent not found' });
-    return { agent };
-  });
+    const agent = await service.get(name)
+    if (!agent) {
+      return reply.status(404).send({ error: 'Agent not found' })
+    }
+    return { agent }
+  })
 
   // POST /api/agents
   fastify.post('/api/agents', async (request, reply) => {
-    const parsed = CreateAgentBodySchema.safeParse(request.body);
+    const parsed = CreateAgentBodySchema.safeParse(request.body)
     if (!parsed.success) {
-      return reply.status(400).send({ error: parsed.error.message });
+      return reply.status(400).send({ error: parsed.error.message })
     }
 
-    const { frontmatter, content } = parsed.data;
+    const { frontmatter, content } = parsed.data
 
     try {
-      const agent = await service.create(frontmatter, content);
-      return reply.status(201).send({ agent });
-    } catch (err: any) {
-      if (err.message.includes('already exists')) {
-        return reply.status(409).send({ error: err.message });
+      const agent = await service.create(frontmatter, content)
+      return reply.status(201).send({ agent })
+    } catch (error: any) {
+      if (error.message.includes('already exists')) {
+        return reply.status(409).send({ error: error.message })
       }
-      if (err.message.includes('invalid')) {
-        return reply.status(400).send({ error: err.message });
+      if (error.message.includes('invalid')) {
+        return reply.status(400).send({ error: error.message })
       }
-      throw err;
+      throw error
     }
-  });
+  })
 
   // PUT /api/agents/:name
   fastify.put<{ Params: { name: string } }>('/api/agents/:name', async (request, reply) => {
-    const { name } = request.params;
-    const nameError = validateName(name);
-    if (nameError) return reply.status(400).send({ error: nameError });
-
-    const parsed = UpdateAgentBodySchema.safeParse(request.body);
-    if (!parsed.success) {
-      return reply.status(400).send({ error: parsed.error.message });
+    const { name } = request.params
+    const nameError = validateName(name)
+    if (nameError) {
+      return reply.status(400).send({ error: nameError })
     }
 
-    const agent = await service.update(name, parsed.data);
-    if (!agent) return reply.status(404).send({ error: 'Agent not found' });
-    return { agent };
-  });
+    const parsed = UpdateAgentBodySchema.safeParse(request.body)
+    if (!parsed.success) {
+      return reply.status(400).send({ error: parsed.error.message })
+    }
+
+    const agent = await service.update(name, parsed.data)
+    if (!agent) {
+      return reply.status(404).send({ error: 'Agent not found' })
+    }
+    return { agent }
+  })
 
   // DELETE /api/agents/:name
   fastify.delete<{ Params: { name: string } }>('/api/agents/:name', async (request, reply) => {
-    const { name } = request.params;
-    const error = validateName(name);
-    if (error) return reply.status(400).send({ error });
+    const { name } = request.params
+    const error = validateName(name)
+    if (error) {
+      return reply.status(400).send({ error })
+    }
 
-    const deleted = await service.delete(name);
-    if (!deleted) return reply.status(404).send({ error: 'Agent not found' });
-    return { success: true };
-  });
-};
+    const deleted = await service.delete(name)
+    if (!deleted) {
+      return reply.status(404).send({ error: 'Agent not found' })
+    }
+    return { success: true }
+  })
+}
 ```
 
 - [ ] **Step 2: Register route in server/index.ts**
 
 Add import at top of `packages/cli/src/server/index.ts`:
 ```typescript
-import { agentsRoutes } from './routes/agents.js';
-import os from 'os';
+import os from 'node:os'
+
+import { agentsRoutes } from './routes/agents.js'
 ```
 
 Note: `path` is already imported.
 
 Add registration after existing routes (after `await fastify.register(settingsRoutes);`):
 ```typescript
-  const agentsDir = path.join(os.homedir(), '.claude', 'agents');
-  await fastify.register(agentsRoutes, { agentsDir });
+const agentsDir = path.join(os.homedir(), '.claude', 'agents')
+await fastify.register(agentsRoutes, { agentsDir })
 ```
 
 - [ ] **Step 3: Commit**
@@ -944,62 +993,74 @@ git commit -m "feat: add agents CRUD route handlers"
 
 ```typescript
 // packages/cli/src/server/routes/__tests__/agents.test.ts
-import { describe, it, expect, beforeEach, afterEach } from 'vitest';
-import { mkdtempSync, rmSync, writeFileSync } from 'fs';
-import path from 'path';
-import os from 'os';
-import Fastify from 'fastify';
-import { agentsRoutes } from '../agents.js';
+import {
+  mkdtempSync,
+  rmSync,
+  writeFileSync,
+} from 'node:fs'
+import os from 'node:os'
+import path from 'node:path'
+
+import Fastify from 'fastify'
+import {
+  afterEach,
+  beforeEach,
+  describe,
+  expect,
+  it,
+} from 'vitest'
+
+import { agentsRoutes } from '../agents.js'
 
 describe('agents routes', () => {
-  let tmpDir: string;
-  let app: ReturnType<typeof Fastify>;
+  let tmpDir: string
+  let app: ReturnType<typeof Fastify>
 
   beforeEach(async () => {
-    tmpDir = mkdtempSync(path.join(os.tmpdir(), 'agents-route-test-'));
-    app = Fastify();
-    await app.register(agentsRoutes, { agentsDir: tmpDir });
-    await app.ready();
-  });
+    tmpDir = mkdtempSync(path.join(os.tmpdir(), 'agents-route-test-'))
+    app = Fastify()
+    await app.register(agentsRoutes, { agentsDir: tmpDir })
+    await app.ready()
+  })
 
   afterEach(async () => {
-    await app.close();
-    rmSync(tmpDir, { recursive: true, force: true });
-  });
+    await app.close()
+    rmSync(tmpDir, { recursive: true, force: true })
+  })
 
   describe('GET /api/agents', () => {
     it('returns empty list', async () => {
-      const res = await app.inject({ method: 'GET', url: '/api/agents' });
-      expect(res.statusCode).toBe(200);
-      expect(res.json()).toEqual({ agents: [] });
-    });
+      const res = await app.inject({ method: 'GET', url: '/api/agents' })
+      expect(res.statusCode).toBe(200)
+      expect(res.json()).toEqual({ agents: [] })
+    })
 
     it('returns agents list', async () => {
-      writeFileSync(path.join(tmpDir, 'test.md'), '---\nname: test\ndescription: Test\n---\nprompt');
-      const res = await app.inject({ method: 'GET', url: '/api/agents' });
-      expect(res.statusCode).toBe(200);
-      expect(res.json().agents).toHaveLength(1);
-    });
-  });
+      writeFileSync(path.join(tmpDir, 'test.md'), '---\nname: test\ndescription: Test\n---\nprompt')
+      const res = await app.inject({ method: 'GET', url: '/api/agents' })
+      expect(res.statusCode).toBe(200)
+      expect(res.json().agents).toHaveLength(1)
+    })
+  })
 
   describe('GET /api/agents/:name', () => {
     it('returns 404 for nonexistent agent', async () => {
-      const res = await app.inject({ method: 'GET', url: '/api/agents/nope' });
-      expect(res.statusCode).toBe(404);
-    });
+      const res = await app.inject({ method: 'GET', url: '/api/agents/nope' })
+      expect(res.statusCode).toBe(404)
+    })
 
     it('returns 400 for invalid name with special chars', async () => {
-      const res = await app.inject({ method: 'GET', url: '/api/agents/agent%40home' });
-      expect(res.statusCode).toBe(400);
-    });
+      const res = await app.inject({ method: 'GET', url: '/api/agents/agent%40home' })
+      expect(res.statusCode).toBe(400)
+    })
 
     it('returns agent', async () => {
-      writeFileSync(path.join(tmpDir, 'test.md'), '---\nname: test\ndescription: Test\n---\nprompt');
-      const res = await app.inject({ method: 'GET', url: '/api/agents/test' });
-      expect(res.statusCode).toBe(200);
-      expect(res.json().agent.id).toBe('test');
-    });
-  });
+      writeFileSync(path.join(tmpDir, 'test.md'), '---\nname: test\ndescription: Test\n---\nprompt')
+      const res = await app.inject({ method: 'GET', url: '/api/agents/test' })
+      expect(res.statusCode).toBe(200)
+      expect(res.json().agent.id).toBe('test')
+    })
+  })
 
   describe('POST /api/agents', () => {
     it('creates agent and returns 201', async () => {
@@ -1010,13 +1071,13 @@ describe('agents routes', () => {
           frontmatter: { name: 'new-agent', description: 'New' },
           content: 'prompt',
         },
-      });
-      expect(res.statusCode).toBe(201);
-      expect(res.json().agent.id).toBe('new-agent');
-    });
+      })
+      expect(res.statusCode).toBe(201)
+      expect(res.json().agent.id).toBe('new-agent')
+    })
 
     it('returns 409 for duplicate', async () => {
-      writeFileSync(path.join(tmpDir, 'dup.md'), '---\nname: dup\ndescription: Dup\n---\nprompt');
+      writeFileSync(path.join(tmpDir, 'dup.md'), '---\nname: dup\ndescription: Dup\n---\nprompt')
       const res = await app.inject({
         method: 'POST',
         url: '/api/agents',
@@ -1024,61 +1085,61 @@ describe('agents routes', () => {
           frontmatter: { name: 'dup', description: 'Duplicate' },
           content: 'prompt',
         },
-      });
-      expect(res.statusCode).toBe(409);
-    });
+      })
+      expect(res.statusCode).toBe(409)
+    })
 
     it('returns 400 for invalid body', async () => {
       const res = await app.inject({
         method: 'POST',
         url: '/api/agents',
         payload: { frontmatter: { name: 'x' } },
-      });
-      expect(res.statusCode).toBe(400);
-    });
-  });
+      })
+      expect(res.statusCode).toBe(400)
+    })
+  })
 
   describe('PUT /api/agents/:name', () => {
     it('updates agent', async () => {
-      writeFileSync(path.join(tmpDir, 'up.md'), '---\nname: up\ndescription: Old\n---\nold');
+      writeFileSync(path.join(tmpDir, 'up.md'), '---\nname: up\ndescription: Old\n---\nold')
       const res = await app.inject({
         method: 'PUT',
         url: '/api/agents/up',
         payload: { frontmatter: { description: 'New' } },
-      });
-      expect(res.statusCode).toBe(200);
-      expect(res.json().agent.frontmatter.description).toBe('New');
-    });
+      })
+      expect(res.statusCode).toBe(200)
+      expect(res.json().agent.frontmatter.description).toBe('New')
+    })
 
     it('returns 404 for nonexistent', async () => {
       const res = await app.inject({
         method: 'PUT',
         url: '/api/agents/nope',
         payload: { content: 'x' },
-      });
-      expect(res.statusCode).toBe(404);
-    });
-  });
+      })
+      expect(res.statusCode).toBe(404)
+    })
+  })
 
   describe('DELETE /api/agents/:name', () => {
     it('deletes agent', async () => {
-      writeFileSync(path.join(tmpDir, 'del.md'), '---\nname: del\ndescription: Del\n---\nprompt');
-      const res = await app.inject({ method: 'DELETE', url: '/api/agents/del' });
-      expect(res.statusCode).toBe(200);
-      expect(res.json()).toEqual({ success: true });
-    });
+      writeFileSync(path.join(tmpDir, 'del.md'), '---\nname: del\ndescription: Del\n---\nprompt')
+      const res = await app.inject({ method: 'DELETE', url: '/api/agents/del' })
+      expect(res.statusCode).toBe(200)
+      expect(res.json()).toEqual({ success: true })
+    })
 
     it('returns 404 for nonexistent', async () => {
-      const res = await app.inject({ method: 'DELETE', url: '/api/agents/nope' });
-      expect(res.statusCode).toBe(404);
-    });
+      const res = await app.inject({ method: 'DELETE', url: '/api/agents/nope' })
+      expect(res.statusCode).toBe(404)
+    })
 
     it('returns 400 for invalid name', async () => {
-      const res = await app.inject({ method: 'DELETE', url: '/api/agents/agent%40home' });
-      expect(res.statusCode).toBe(400);
-    });
-  });
-});
+      const res = await app.inject({ method: 'DELETE', url: '/api/agents/agent%40home' })
+      expect(res.statusCode).toBe(400)
+    })
+  })
+})
 ```
 
 - [ ] **Step 2: Run all tests**

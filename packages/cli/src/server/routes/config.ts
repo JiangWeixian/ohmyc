@@ -1,17 +1,17 @@
-import { FastifyInstance } from 'fastify';
+import type { FastifyInstance } from 'fastify'
 
 export async function configRoutes(fastify: FastifyInstance) {
-  fastify.get('/api/config', async (request, reply) => {
+  fastify.get('/api/config', async () => {
     return {
       message: 'Get config placeholder',
-      config: {}
-    };
-  });
+      config: {},
+    }
+  })
 
-  fastify.post('/api/config', async (request, reply) => {
+  fastify.post('/api/config', async (request) => {
     return {
       message: 'Post config placeholder',
-      received: request.body
-    };
-  });
+      received: request.body,
+    }
+  })
 }

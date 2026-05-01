@@ -1,23 +1,18 @@
-import { defineConfig } from 'tsup';
-import { cpSync, existsSync } from 'fs';
-import path from 'path';
-import { fileURLToPath } from 'url';
+import { cpSync, existsSync } from 'node:fs'
+import path from 'node:path'
 
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
+import { defineConfig } from 'tsup'
 
 export default defineConfig({
   entry: ['src/index.ts'],
-  format: ['cjs'],
+  format: ['esm'],
   splitting: false,
   clean: true,
-  esbuildOptions(options) {
-    // In CJS output, import.meta is not available. Inject a banner variable
-    // that provides import.meta.url from __filename, then define import.meta.url
-    // to reference it. This keeps source code using standard ESM patterns.
-    options.banner = options.banner || {};
-    options.banner.js = `var _importMetaUrl = require("url").pathToFileURL(__filename).href;`;
-    options.define = options.define || {};
-    options.define['import.meta.url'] = '_importMetaUrl';
+  platform: 'node',
+  target: 'node18',
+  outExtension: () => ({ js: '.mjs' }),
+  banner: {
+    js: "import { createRequire } from 'module'; const require = createRequire(import.meta.url);",
   },
   noExternal: [
     '@claudeui/shared',
@@ -28,17 +23,18 @@ export default defineConfig({
     'gray-matter',
     'open',
     'proper-lockfile',
+    'untildify',
     'zod-to-json-schema',
   ],
   onSuccess: async () => {
-    const uiDist = path.resolve(__dirname, '../ui/dist');
-    const cliUiDist = path.resolve(__dirname, 'dist/ui');
+    const uiDistribution = path.resolve(import.meta.dirname, '../ui/dist')
+    const cliUiDistribution = path.resolve(import.meta.dirname, 'dist/ui')
 
-    if (existsSync(uiDist)) {
-      cpSync(uiDist, cliUiDist, { recursive: true });
-      console.log(`Copied UI assets from ${uiDist} to ${cliUiDist}`);
+    if (existsSync(uiDistribution)) {
+      cpSync(uiDistribution, cliUiDistribution, { recursive: true })
+      console.log(`Copied UI assets from ${uiDistribution} to ${cliUiDistribution}`)
     } else {
-      console.warn(`Warning: UI dist not found at ${uiDist}. Run 'pnpm --filter @claudeui/ui build' first.`);
+      console.warn(`Warning: UI dist not found at ${uiDistribution}. Run 'pnpm --filter @claudeui/ui build' first.`)
     }
   },
-});
+})

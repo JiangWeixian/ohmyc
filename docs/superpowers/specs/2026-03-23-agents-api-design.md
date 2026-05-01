@@ -35,11 +35,11 @@ API 返回的完整 agent 对象：
 
 ```typescript
 const AgentSchema = z.object({
-  id: z.string(),                               // 文件名去掉 .md，如 "code-reviewer"
+  id: z.string(), // 文件名去掉 .md，如 "code-reviewer"
   frontmatter: AgentFrontmatterSchema,
-  content: z.string(),                           // markdown body (system prompt)
-  raw: z.string(),                               // 原始文件完整内容
-  filename: z.string(),                          // 文件名，如 "code-reviewer.md"
+  content: z.string(), // markdown body (system prompt)
+  raw: z.string(), // 原始文件完整内容
+  filename: z.string(), // 文件名，如 "code-reviewer.md"
   source: z.enum(['user', 'project', 'plugin']), // 来源类型，当前固定 "user"
 })
 ```

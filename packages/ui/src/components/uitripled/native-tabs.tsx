@@ -1,36 +1,42 @@
-"use client";
+'use client'
 
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { cn } from "@/lib/utils";
-import { motion } from "framer-motion";
-import { useState } from "react";
+import { motion } from 'framer-motion'
+import { useState } from 'react'
 
-interface NativeTabsProps {
+import {
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger,
+} from '@/components/ui/tabs'
+import { cn } from '@/lib/utils'
+
+interface NativeTabsProperties {
   items: {
-    id: string;
-    label: string;
-    content: React.ReactNode;
-  }[];
-  defaultValue?: string;
-  className?: string;
+    id: string
+    label: string
+    content: React.ReactNode
+  }[]
+  defaultValue?: string
+  className?: string
 }
 
 export function NativeTabs({
   items,
   defaultValue,
   className,
-}: NativeTabsProps) {
-  const [activeTab, setActiveTab] = useState(defaultValue || items[0].id);
+}: NativeTabsProperties) {
+  const [activeTab, setActiveTab] = useState(defaultValue || items[0].id)
 
   return (
     <Tabs
       value={activeTab}
       onValueChange={setActiveTab}
-      className={cn("w-full max-w-md", className)}
+      className={cn('w-full max-w-md', className)}
     >
       <TabsList className="relative flex w-full items-center gap-1 rounded-xl bg-muted/50 p-1 border border-black/5 dark:border-white/5">
         {items.map((tab) => {
-          const isActive = activeTab === tab.id;
+          const isActive = activeTab === tab.id
           return (
             <TabsTrigger
               key={tab.id}
@@ -41,15 +47,15 @@ export function NativeTabs({
                 <motion.div
                   layoutId="active-tab"
                   className="absolute inset-0 z-[-1] rounded-lg bg-background shadow-sm border border-black/5 dark:border-white/5"
-                  transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
+                  transition={{ type: 'spring', bounce: 0.2, duration: 0.6 }}
                 />
               )}
               {tab.label}
             </TabsTrigger>
-          );
+          )
         })}
       </TabsList>
-      {items.map((item) => (
+      {items.map(item => (
         <TabsContent
           key={item.id}
           value={item.id}
@@ -66,5 +72,5 @@ export function NativeTabs({
         </TabsContent>
       ))}
     </Tabs>
-  );
+  )
 }

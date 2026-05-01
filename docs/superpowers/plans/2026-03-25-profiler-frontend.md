@@ -45,25 +45,38 @@
 
 ```typescript
 // packages/ui/src/hooks/useProfiles.ts
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import type { Profile, CreateProfileBody, UpdateProfileBody } from '@claudeui/shared';
+import {
+  useMutation,
+  useQuery,
+  useQueryClient,
+} from '@tanstack/react-query'
+
+import type {
+  CreateProfileBody,
+  Profile,
+  UpdateProfileBody,
+} from '@claudeui/shared'
 
 interface ProfilesListResponse {
-  profiles: Profile[];
-  active: string | null;
+  profiles: Profile[]
+  active: string | null
 }
 
 async function fetchProfiles(): Promise<ProfilesListResponse> {
-  const res = await fetch('/api/profiles');
-  if (!res.ok) throw new Error('Failed to fetch profiles');
-  return res.json();
+  const res = await fetch('/api/profiles')
+  if (!res.ok) {
+    throw new Error('Failed to fetch profiles')
+  }
+  return res.json()
 }
 
 async function fetchProfile(name: string): Promise<Profile> {
-  const res = await fetch(`/api/profiles/${encodeURIComponent(name)}`);
-  if (!res.ok) throw new Error('Profile not found');
-  const data = await res.json();
-  return data.profile;
+  const res = await fetch(`/api/profiles/${encodeURIComponent(name)}`)
+  if (!res.ok) {
+    throw new Error('Profile not found')
+  }
+  const data = await res.json()
+  return data.profile
 }
 
 async function createProfile(body: CreateProfileBody): Promise<Profile> {
@@ -71,12 +84,12 @@ async function createProfile(body: CreateProfileBody): Promise<Profile> {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(body),
-  });
+  })
   if (!res.ok) {
-    const err = await res.json();
-    throw new Error(err.error || 'Failed to create profile');
+    const err = await res.json()
+    throw new Error(err.error || 'Failed to create profile')
   }
-  return (await res.json()).profile;
+  return (await res.json()).profile
 }
 
 async function updateProfile(name: string, body: UpdateProfileBody): Promise<Profile> {
@@ -84,35 +97,39 @@ async function updateProfile(name: string, body: UpdateProfileBody): Promise<Pro
     method: 'PUT',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(body),
-  });
+  })
   if (!res.ok) {
-    const err = await res.json();
-    throw new Error(err.error || 'Failed to update profile');
+    const err = await res.json()
+    throw new Error(err.error || 'Failed to update profile')
   }
-  return (await res.json()).profile;
+  return (await res.json()).profile
 }
 
 async function deleteProfile(name: string): Promise<void> {
-  const res = await fetch(`/api/profiles/${encodeURIComponent(name)}`, { method: 'DELETE' });
-  if (!res.ok) throw new Error('Failed to delete profile');
+  const res = await fetch(`/api/profiles/${encodeURIComponent(name)}`, { method: 'DELETE' })
+  if (!res.ok) {
+    throw new Error('Failed to delete profile')
+  }
 }
 
 async function activateProfile(name: string): Promise<{ warnings: string[] }> {
-  const res = await fetch(`/api/profiles/${encodeURIComponent(name)}/activate`, { method: 'POST' });
+  const res = await fetch(`/api/profiles/${encodeURIComponent(name)}/activate`, { method: 'POST' })
   if (!res.ok) {
-    const err = await res.json();
-    throw new Error(err.error || 'Failed to activate');
+    const err = await res.json()
+    throw new Error(err.error || 'Failed to activate')
   }
-  return res.json();
+  return res.json()
 }
 
 async function deactivateProfile(name: string): Promise<void> {
-  const res = await fetch(`/api/profiles/${encodeURIComponent(name)}/deactivate`, { method: 'POST' });
-  if (!res.ok) throw new Error('Failed to deactivate');
+  const res = await fetch(`/api/profiles/${encodeURIComponent(name)}/deactivate`, { method: 'POST' })
+  if (!res.ok) {
+    throw new Error('Failed to deactivate')
+  }
 }
 
 export function useProfiles() {
-  return useQuery({ queryKey: ['profiles'], queryFn: fetchProfiles });
+  return useQuery({ queryKey: ['profiles'], queryFn: fetchProfiles })
 }
 
 export function useProfile(name: string | null) {
@@ -120,47 +137,47 @@ export function useProfile(name: string | null) {
     queryKey: ['profiles', name],
     queryFn: () => fetchProfile(name!),
     enabled: !!name,
-  });
+  })
 }
 
 export function useCreateProfile() {
-  const qc = useQueryClient();
+  const qc = useQueryClient()
   return useMutation({
     mutationFn: createProfile,
     onSuccess: () => qc.invalidateQueries({ queryKey: ['profiles'] }),
-  });
+  })
 }
 
 export function useUpdateProfile() {
-  const qc = useQueryClient();
+  const qc = useQueryClient()
   return useMutation({
     mutationFn: ({ name, body }: { name: string; body: UpdateProfileBody }) => updateProfile(name, body),
     onSuccess: () => qc.invalidateQueries({ queryKey: ['profiles'] }),
-  });
+  })
 }
 
 export function useDeleteProfile() {
-  const qc = useQueryClient();
+  const qc = useQueryClient()
   return useMutation({
     mutationFn: deleteProfile,
     onSuccess: () => qc.invalidateQueries({ queryKey: ['profiles'] }),
-  });
+  })
 }
 
 export function useActivateProfile() {
-  const qc = useQueryClient();
+  const qc = useQueryClient()
   return useMutation({
     mutationFn: activateProfile,
     onSuccess: () => qc.invalidateQueries({ queryKey: ['profiles'] }),
-  });
+  })
 }
 
 export function useDeactivateProfile() {
-  const qc = useQueryClient();
+  const qc = useQueryClient()
   return useMutation({
     mutationFn: deactivateProfile,
     onSuccess: () => qc.invalidateQueries({ queryKey: ['profiles'] }),
-  });
+  })
 }
 ```
 
@@ -168,20 +185,32 @@ export function useDeactivateProfile() {
 
 ```typescript
 // packages/ui/src/hooks/useStore.ts
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import {
+  useMutation,
+  useQuery,
+  useQueryClient,
+} from '@tanstack/react-query'
+
 import type {
-  Agent, Skill, Command,
-  CreateAgentBody, UpdateAgentBody,
-  CreateSkillBody, UpdateSkillBody,
-  CreateCommandBody, UpdateCommandBody,
-} from '@claudeui/shared';
+  Agent,
+  Command,
+  CreateAgentBody,
+  CreateCommandBody,
+  CreateSkillBody,
+  Skill,
+  UpdateAgentBody,
+  UpdateCommandBody,
+  UpdateSkillBody,
+} from '@claudeui/shared'
 
 // --- Fetch helpers ---
 
 async function fetchJson<T>(url: string): Promise<T> {
-  const res = await fetch(url);
-  if (!res.ok) throw new Error(`Failed to fetch ${url}`);
-  return res.json();
+  const res = await fetch(url)
+  if (!res.ok) {
+    throw new Error(`Failed to fetch ${url}`)
+  }
+  return res.json()
 }
 
 async function mutateJson<T>(url: string, method: string, body?: any): Promise<T> {
@@ -189,12 +218,12 @@ async function mutateJson<T>(url: string, method: string, body?: any): Promise<T
     method,
     headers: body ? { 'Content-Type': 'application/json' } : undefined,
     body: body ? JSON.stringify(body) : undefined,
-  });
+  })
   if (!res.ok) {
-    const err = await res.json().catch(() => ({ error: 'Request failed' }));
-    throw Object.assign(new Error(err.error || 'Request failed'), { data: err });
+    const err = await res.json().catch(() => ({ error: 'Request failed' }))
+    throw Object.assign(new Error(err.error || 'Request failed'), { data: err })
   }
-  return res.json();
+  return res.json()
 }
 
 // --- Store Agents ---
@@ -203,7 +232,7 @@ export function useStoreAgents() {
   return useQuery({
     queryKey: ['store', 'agents'],
     queryFn: () => fetchJson<{ agents: Agent[] }>('/api/store/agents').then(d => d.agents),
-  });
+  })
 }
 
 export function useStoreAgent(name: string | null) {
@@ -211,33 +240,33 @@ export function useStoreAgent(name: string | null) {
     queryKey: ['store', 'agents', name],
     queryFn: () => fetchJson<{ agent: Agent }>(`/api/store/agents/${encodeURIComponent(name!)}`).then(d => d.agent),
     enabled: !!name,
-  });
+  })
 }
 
 export function useCreateStoreAgent() {
-  const qc = useQueryClient();
+  const qc = useQueryClient()
   return useMutation({
     mutationFn: (body: CreateAgentBody) => mutateJson<{ agent: Agent }>('/api/store/agents', 'POST', body),
     onSuccess: () => qc.invalidateQueries({ queryKey: ['store', 'agents'] }),
-  });
+  })
 }
 
 export function useUpdateStoreAgent() {
-  const qc = useQueryClient();
+  const qc = useQueryClient()
   return useMutation({
     mutationFn: ({ name, body }: { name: string; body: UpdateAgentBody }) =>
       mutateJson<{ agent: Agent }>(`/api/store/agents/${encodeURIComponent(name)}`, 'PUT', body),
     onSuccess: () => qc.invalidateQueries({ queryKey: ['store', 'agents'] }),
-  });
+  })
 }
 
 export function useDeleteStoreAgent() {
-  const qc = useQueryClient();
+  const qc = useQueryClient()
   return useMutation({
     mutationFn: ({ name, force }: { name: string; force?: boolean }) =>
       mutateJson(`/api/store/agents/${encodeURIComponent(name)}${force ? '?force=true' : ''}`, 'DELETE'),
     onSuccess: () => qc.invalidateQueries({ queryKey: ['store', 'agents'] }),
-  });
+  })
 }
 
 // --- Store Skills ---
@@ -246,7 +275,7 @@ export function useStoreSkills() {
   return useQuery({
     queryKey: ['store', 'skills'],
     queryFn: () => fetchJson<{ skills: Skill[] }>('/api/store/skills').then(d => d.skills),
-  });
+  })
 }
 
 export function useStoreSkill(name: string | null) {
@@ -254,33 +283,33 @@ export function useStoreSkill(name: string | null) {
     queryKey: ['store', 'skills', name],
     queryFn: () => fetchJson<{ skill: Skill }>(`/api/store/skills/${encodeURIComponent(name!)}`).then(d => d.skill),
     enabled: !!name,
-  });
+  })
 }
 
 export function useCreateStoreSkill() {
-  const qc = useQueryClient();
+  const qc = useQueryClient()
   return useMutation({
     mutationFn: (body: CreateSkillBody) => mutateJson<{ skill: Skill }>('/api/store/skills', 'POST', body),
     onSuccess: () => qc.invalidateQueries({ queryKey: ['store', 'skills'] }),
-  });
+  })
 }
 
 export function useUpdateStoreSkill() {
-  const qc = useQueryClient();
+  const qc = useQueryClient()
   return useMutation({
     mutationFn: ({ name, body }: { name: string; body: UpdateSkillBody }) =>
       mutateJson<{ skill: Skill }>(`/api/store/skills/${encodeURIComponent(name)}`, 'PUT', body),
     onSuccess: () => qc.invalidateQueries({ queryKey: ['store', 'skills'] }),
-  });
+  })
 }
 
 export function useDeleteStoreSkill() {
-  const qc = useQueryClient();
+  const qc = useQueryClient()
   return useMutation({
     mutationFn: ({ name, force }: { name: string; force?: boolean }) =>
       mutateJson(`/api/store/skills/${encodeURIComponent(name)}${force ? '?force=true' : ''}`, 'DELETE'),
     onSuccess: () => qc.invalidateQueries({ queryKey: ['store', 'skills'] }),
-  });
+  })
 }
 
 // --- Store Commands ---
@@ -289,7 +318,7 @@ export function useStoreCommands() {
   return useQuery({
     queryKey: ['store', 'commands'],
     queryFn: () => fetchJson<{ commands: Command[] }>('/api/store/commands').then(d => d.commands),
-  });
+  })
 }
 
 export function useStoreCommand(name: string | null) {
@@ -297,44 +326,44 @@ export function useStoreCommand(name: string | null) {
     queryKey: ['store', 'commands', name],
     queryFn: () => fetchJson<{ command: Command }>(`/api/store/commands/${encodeURIComponent(name!)}`).then(d => d.command),
     enabled: !!name,
-  });
+  })
 }
 
 export function useCreateStoreCommand() {
-  const qc = useQueryClient();
+  const qc = useQueryClient()
   return useMutation({
     mutationFn: (body: CreateCommandBody) => mutateJson<{ command: Command }>('/api/store/commands', 'POST', body),
     onSuccess: () => qc.invalidateQueries({ queryKey: ['store', 'commands'] }),
-  });
+  })
 }
 
 export function useUpdateStoreCommand() {
-  const qc = useQueryClient();
+  const qc = useQueryClient()
   return useMutation({
     mutationFn: ({ name, body }: { name: string; body: UpdateCommandBody }) =>
       mutateJson<{ command: Command }>(`/api/store/commands/${encodeURIComponent(name)}`, 'PUT', body),
     onSuccess: () => qc.invalidateQueries({ queryKey: ['store', 'commands'] }),
-  });
+  })
 }
 
 export function useDeleteStoreCommand() {
-  const qc = useQueryClient();
+  const qc = useQueryClient()
   return useMutation({
     mutationFn: ({ name, force }: { name: string; force?: boolean }) =>
       mutateJson(`/api/store/commands/${encodeURIComponent(name)}${force ? '?force=true' : ''}`, 'DELETE'),
     onSuccess: () => qc.invalidateQueries({ queryKey: ['store', 'commands'] }),
-  });
+  })
 }
 
 // --- Store Import ---
 
 export function useStoreImport() {
-  const qc = useQueryClient();
+  const qc = useQueryClient()
   return useMutation({
     mutationFn: (sourceDir: string) =>
       mutateJson<{ imported: number; skipped: number; errors: string[] }>('/api/store/import', 'POST', { sourceDir }),
     onSuccess: () => qc.invalidateQueries({ queryKey: ['store'] }),
-  });
+  })
 }
 ```
 
