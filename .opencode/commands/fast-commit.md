@@ -20,6 +20,7 @@ Analyze the diff, then generate exactly 3 commit message candidates. Each candid
 
 Pick the most appropriate one yourself (do NOT ask the user), then commit with it immediately.
 
-Always append this trailer to the commit body:
+If the `OPENCODE` environment variable is set, append this trailer to the commit body:
 
-Co-authored-by: opencode <opencode@ai>
+Co-authored-by: !`echo opencode` <!`echo opencode`@ai>
+
