@@ -4,7 +4,7 @@
 
 ## Summary
 
-Timeline is a session-activity view for ClaudeUI. It records every Claude Code session the user runs (across all projects) and presents them as (1) a GitHub-style contribution heatmap and (2) a chronological grouped event list. Data is ingested from Claude Code's session transcripts (`~/.claude/projects/**/*.jsonl`) and persisted in a local SQLite database. Ingest is triggered by a Claude Code **Stop hook** so the database stays in near-real-time sync without a long-running watcher.
+Timeline is a session-activity view for ClaudeUI. It records every Claude Code session the user runs (across all projects) and presents them as (1) a GitHub-style contribution heatmap and (2) a chronological grouped event list. Data is ingested from Claude Code's session transcripts (`~/.claude/projects/**/*.jsonl`) and persisted in a local SQLite database. Ingest is triggered automatically via a built-in Claude Code **plugin** that registers a Stop hook — installed with `claudeui dashboard --install`.
 
 The killer question Timeline answers: **"What have I actually been doing with Claude Code?"** — surfaced as a calendar of activity intensity plus a scannable, expandable list of sessions with token / turn / tool / skill metadata.
 
@@ -14,6 +14,7 @@ The killer question Timeline answers: **"What have I actually been doing with Cl
 - Per session, show: summary, project, start time, duration, turns, tokens (in/out/cached), distinct tools used, distinct skills used.
 - Stay in sync with Claude Code's transcripts automatically (no manual refresh in the common case).
 - Cross-platform: zero-friction install on macOS (Intel + Apple Silicon), Windows x64, standard Linux.
+- Zero-config data collection: a single `claudeui dashboard --install` sets up the plugin and hooks; no manual `settings.json` editing required.
 
 ## Non-goals (V1)
 
@@ -43,9 +44,19 @@ packages/timeline/
 ```
 
 Consumed by:
-- `@claudeui/cli` — `claudeui timeline ingest|backfill` subcommands invoked by the Stop hook and on first install.
+- `@claudeui/cli` — `claudeui dashboard` subcommand with `--install`, `--uninstall`, `--sync`, `--ingest`, `--doctor` flags. Invoked by the plugin's Stop hook and for one-time backfill.
 - `@claudeui/cli` server — exposes HTTP endpoints (`GET /api/timeline/heatmap`, `GET /api/timeline/events`) that delegate to `query.ts`.
 - `@claudeui/ui` — Timeline route, no direct DB access; goes through the server endpoints.
+
+Built-in plugin at `plugins/timeline/`:
+```
+plugins/timeline/
+├── .claude-plugin/
+│   └── plugin.json            # manifest
+└── hooks/
+    ├── hooks.json             # Stop hook config
+    └── ingest.sh              # shell preprocessing + Node.js ingest
+```
 
 ### Database
 
@@ -113,31 +124,40 @@ CREATE TABLE meta (
 
 **Triggers:**
 
-- **Primary — Claude Code Stop hook.** Configured in `~/.claude/settings.json`:
+- **Primary — Claude Code plugin (recommended).** A built-in plugin `plugins/timeline/` ships with claudeui. `claudeui dashboard --install` registers it in `~/.claude/plugins/installed_plugins.json`. The plugin declares a Stop hook via `hooks/hooks.json`:
   ```json
   {
     "hooks": {
-      "Stop": [
-        {
-          "matcher": "",
-          "hooks": [
-            { "type": "command", "command": "claudeui timeline ingest --session $CLAUDE_SESSION_ID" }
-          ]
-        }
-      ]
+      "Stop": [{
+        "matcher": "",
+        "hooks": [
+          { "type": "command", "command": "<plugin-install-path>/hooks/ingest.sh $CLAUDE_SESSION_ID" }
+        ]
+      }]
     }
   }
   ```
   Stop fires on every agent turn — fine because ingest is idempotent and incremental.
+- **Fallback — manual hook in settings.json.** If the user prefers not to use the plugin system, they can paste a Stop hook snippet into `~/.claude/settings.json` directly (documented but not the primary path).
 - **Fallback — SessionEnd hook.** Documented as an alternative for users who find Stop too chatty.
-- **One-time backfill.** `claudeui timeline backfill` walks `~/.claude/projects/**/*.jsonl` and ingests every transcript not yet in the DB. Runs automatically on first launch (gated by `meta.last_full_backfill_at`); also invokable manually.
+- **One-time sync.** `claudeui dashboard --sync` walks `~/.claude/projects/**/*.jsonl` and ingests every transcript not yet in the DB. Runs automatically during `--install` (gated by `meta.last_full_backfill_at`); also invokable manually.
+
+**Ingest pipeline (`plugins/timeline/hooks/ingest.sh`):**
+
+The hook triggers a shell script that preprocesses the transcript, then hands off to Node.js for database writes:
+
+1. **Shell preprocessing:** locate the `.jsonl` file for `$CLAUDE_SESSION_ID` under `~/.claude/projects/`. Use `jq` to extract: first/last timestamps, turn count, token usage, tool calls, skill invocations, summary text. Output as a single JSON object.
+2. **Node.js ingest:** pipe the extracted JSON to `packages/timeline` ingest logic (better-sqlite3 upsert). This reuses the same `ingest.ts` code path as the `--ingest` flag.
+3. **Graceful degradation:** if `jq` is not available, the script falls back to calling `claudeui dashboard --ingest --session <id>` which does full JSONL parsing in Node.js. The script logs a one-time warning about missing `jq`.
 
 **CLI surface:**
 
 ```
-claudeui timeline ingest [--session <id>] [--file <path>]   # one session, idempotent
-claudeui timeline backfill [--force]                        # walk all transcripts
-claudeui timeline doctor                                     # diagnose hook setup, DB health
+claudeui dashboard --install                              # install plugin + first sync
+claudeui dashboard --uninstall                            # remove plugin, keep database
+claudeui dashboard --sync                                 # scan all transcripts, import missing
+claudeui dashboard --ingest --session <id> [--file <path>] # single session (hook or manual)
+claudeui dashboard --doctor                               # diagnose plugin, hooks, DB health
 ```
 
 ### Read API
@@ -220,6 +240,53 @@ Expanded session rows (indented 28px under their rollup, separated by a 1px `bor
 
 ## Cross-cutting concerns
 
+### Plugin
+
+**Plugin manifest** (`plugins/timeline/.claude-plugin/plugin.json`):
+```json
+{
+  "name": "claudeui-timeline",
+  "version": "1.0.0",
+  "description": "Auto-collects Claude Code session data for ClaudeUI Timeline dashboard"
+}
+```
+
+The plugin contains no agents, skills, commands, MCP servers, or LSP servers. Its sole purpose is declaring the Stop hook so Claude Code triggers ingest automatically.
+
+**Install flow** (`claudeui dashboard --install`):
+
+1. Copy or symlink `plugins/timeline/` to a stable location (or reference the monorepo path directly).
+2. Register in `~/.claude/plugins/installed_plugins.json`:
+   ```json
+   {
+     "claudeui-timeline": [{
+       "version": "1.0.0",
+       "installedAt": "<iso-timestamp>",
+       "lastUpdated": "<iso-timestamp>",
+       "installPath": "<absolute-path-to-plugins/timeline>",
+       "isLocal": true,
+       "scope": "user"
+     }]
+   }
+   ```
+3. Verify `jq` is on PATH. If missing, print a one-time notice: "jq not found. Ingest will use Node.js fallback (slower). Install jq for best performance."
+4. Run `--sync` automatically (first-time backfill).
+5. Print summary: plugin registered, N sessions indexed, hook active.
+
+**Uninstall flow** (`claudeui dashboard --uninstall`):
+
+1. Remove `claudeui-timeline` entry from `installed_plugins.json`.
+2. Keep `~/.cui/timeline.db` intact.
+3. Print: "Plugin removed. Database preserved at ~/.cui/timeline.db. Run `claudeui dashboard --install` to resume."
+
+**Doctor flow** (`claudeui dashboard --doctor`):
+
+1. Check `installed_plugins.json` has `claudeui-timeline` entry.
+2. Check `jq` is available.
+3. Check `~/.cui/timeline.db` exists and is readable (try `PRAGMA integrity_check`).
+4. Print session count and last sync time from `meta` table.
+5. If plugin not installed, suggest `claudeui dashboard --install`.
+
 ### Performance
 
 - Backfill of ~1k sessions × ~5k JSONL lines each ≈ 5M lines. With better-sqlite3's prepared-statement upserts in a single transaction, target backfill < 30s on a 2024 MacBook. Show a progress indicator if it exceeds 2s.
@@ -235,7 +302,7 @@ Expanded session rows (indented 28px under their rollup, separated by a 1px `bor
 - **Malformed JSONL line:** skip the line, log to stderr, continue. Do not abort the whole session ingest.
 - **Transcript file deleted:** corresponding session row is retained (last known state). A future "purge orphans" command can clean these up; not in V1.
 - **Two parallel `ingest` invocations on the same session** (e.g., overlapping Stop hooks): better-sqlite3's transaction + `last_offset` check serializes them safely. The second sees no new bytes and no-ops.
-- **Stop hook not configured:** `claudeui timeline doctor` detects this and prints the snippet to add to `~/.claude/settings.json`.
+- **Stop hook not configured:** `claudeui dashboard --doctor` detects this and suggests running `claudeui dashboard --install`.
 
 ### Testing
 
@@ -243,13 +310,16 @@ Expanded session rows (indented 28px under their rollup, separated by a 1px `bor
 - Integration test: ingest a fixture, query, assert shape.
 - Idempotency test: ingest the same file twice, assert exactly one row and identical aggregates.
 - Migration test: open a V0 DB, apply migrations, assert schema_version = 1.
+- Plugin install test: `--install` creates the entry in `installed_plugins.json`, `--uninstall` removes it.
+- Ingest pipeline test: `ingest.sh` with `jq` extracts correct fields from a fixture JSONL and produces valid JSON for the Node.js ingest step.
+- Fallback test: `ingest.sh` without `jq` falls back to `claudeui dashboard --ingest` without error.
 
 ## Open questions
 
-- **Hook installation UX:** Should `claudeui` offer a one-shot `claudeui timeline install-hook` that edits `~/.claude/settings.json` for the user, or should we document the snippet and let the user paste it? Lean toward the auto-install with a confirmation prompt.
 - **Token formatting in dense rows:** `84k` vs `84,231`? Lean toward `k`/`m` rounding everywhere — the wireframe uses rounded throughout. Exact numbers add visual weight that fights the "scannable list" job.
 - **Cell luminance scaling:** absolute (a global threshold) or relative (per-user p95 = darkest)? GitHub uses a per-user dynamic scale — we match, but the buckets stay fixed at 5.
 - **Tool/skill names:** rollup and session meta lines now show counts only (`4 tools · 1 skill`). If users need to see *which* tools/skills, a hover popover on the count is the natural V2 affordance — costs nothing to add later.
+- **Marketplace publishing:** plugin is built-in initially. When publishing to a Claude Code marketplace, the `plugins/timeline/` directory becomes a standalone repo or npm package. Structure stays the same; only distribution changes.
 
 ## Design decisions (locked, 2026-05-01)
 
@@ -260,6 +330,11 @@ These were resolved during wireframe iteration. Decisions Log entries in DESIGN.
 - **Counts over names in dense rows.** Rollup and session meta lines show `N tools · N skills`. Names belong in a hover/detail surface, not the row.
 - **No connector lines between rollup and expanded sessions.** A 28px indent + 1px `border-subtle` left rail is enough; vertical connectors read as gantt-energy.
 - **Sticky day headings with fade-to-bg gradient.** Content slides under the heading cleanly without a hard rule.
+- **Plugin for hook registration, CLI for ingest execution.** The built-in plugin only declares the Stop hook in `hooks/hooks.json`. Ingest logic lives in `packages/timeline` and is invoked via a shell script (`ingest.sh`) that preprocesses with `jq` and hands off to Node.js. This separates "how the hook fires" (plugin) from "what the hook does" (CLI + packages/timeline).
+- **Shell + Node.js ingest pipeline.** Shell handles IO-heavy JSONL parsing with `jq` (fast, low overhead). Node.js handles SQLite writes via `better-sqlite3` (reuse existing schema and upsert logic). Falls back to pure Node.js if `jq` is unavailable.
+- **CLI subcommand is `dashboard`, not `timeline`.** The command manages the full dashboard data lifecycle (install, sync, ingest, doctor). `timeline` was too narrow — the feature may grow beyond just the timeline view.
+- **Built-in first, marketplace later.** Plugin ships inside the claudeui monorepo at `plugins/timeline/`. Registered locally via `claudeui dashboard --install`. Publishing to a Claude Code marketplace is a future step with no structural changes.
+- **Install preserves data on uninstall.** `--uninstall` removes the plugin entry but keeps `~/.cui/timeline.db`. Re-installing resumes where the user left off.
 
 ## Wireframe
 
@@ -272,3 +347,5 @@ Open it before changing controls bar / heatmap / event list layout — the place
 - DESIGN.md — Timeline component spec (visual), Layout & Interaction rules, Decisions Log.
 - `~/.claude/projects/**/*.jsonl` — Claude Code transcript format (one JSON object per line: user/assistant messages with `usage`, `content`, tool calls).
 - Claude Code hooks reference (Stop, SessionEnd) — used for ingest triggers.
+- Claude Code plugin system — `installed_plugins.json`, `.claude-plugin/plugin.json`, plugin directory structure.
+- Existing plugin implementations in repo: `PluginService`, `PluginResolver`, `installed_plugins.json` schema.
