@@ -190,27 +190,66 @@ On dark surfaces, elevation is communicated through background luminance steps, 
   - Border: none
 
 ### Timeline
-- Layout:
-  - Top: Contribution graph (GitHub-style)
-  - Bottom: Event list (chronological)
-- Contribution graph:
-  - Grid: 53 weeks × 7 days
-  - Cell size: 10px × 10px
-  - Cell gap: 4px
-  - Colors (grayscale opacity):
-    - 0: `rgba(255,255,255,0.05)`
-    - 1–2: `rgba(255,255,255,0.15)`
-    - 3–5: `rgba(255,255,255,0.3)`
-    - 6–9: `rgba(255,255,255,0.5)`
-    - 10+: `rgba(255,255,255,0.7)`
-  - Tooltip on hover: "X events on [date]"
-  - Click filters event list
-- Event list item:
-  - Padding: `20px`
-  - Gap: `20px`
-  - Border-radius: `rounded-lg` (8px)
-  - Hover: `rgba(255,255,255,0.02)`
-  - Dot: `10px` circle, grayscale gradient
+Sidebar entry sits in **both** Profiles' and Explorer's sidebars under a new `Activity` group (lucide `Activity` icon — heartbeat line). Same `/timeline` route, two doors.
+
+- **Page layout (top to bottom):**
+  - Controls bar: metric toggle (`Activity | Tokens`), Project filter, Year picker, right-aligned summary meta (`N sessions · N turns · N tokens` in Berkeley Mono `text-quaternary`).
+  - Heatmap inside a Level-1 surface card (`rgba(255,255,255,0.02)` bg, `border-default`, `rounded-lg`, `padding 20px 22px 18px`).
+  - Event list: chronological, newest first, grouped by day → project → expanded sessions.
+
+- **Heatmap (contribution graph):**
+  - Grid: 53 weeks × 7 days, scoped to the selected calendar year (Jan 1 → Dec 31). Future cells render as bucket 0.
+  - Cell size: 10×10, gap: 4. `border-radius: 2px`.
+  - Day-of-week labels (M / W / F) in `text-quaternary` Berkeley Mono `9px` — present, not loud.
+  - Month strip on top in `text-quaternary` Berkeley Mono `10px`, `letter-spacing 0.04em`, uppercase.
+  - 5-bucket grayscale luminance, scaled relative to selected metric's distribution:
+    - 0: `rgba(255,255,255,0.04)`
+    - 1: `rgba(255,255,255,0.15)`
+    - 2: `rgba(255,255,255,0.30)`
+    - 3: `rgba(255,255,255,0.50)`
+    - 4: `rgba(255,255,255,0.78)`
+  - Tooltip (Berkeley Mono, `surface-overlay` bg, `border-default`, `shadow-md`):
+    - `Activity` mode → `<N> sessions · <N> turns` headline + `<date>` subline.
+    - `Tokens` mode → `<N> tokens` headline + `<date>` subline.
+  - Footer below grid: window caption (`Jan 1 → Dec 31, YYYY`) on the left, `Less … More` legend with 5-cell gradient on the right.
+  - Click cell → scrolls event list to that day's heading.
+
+- **Metric toggle (segmented control):**
+  - Two options: `Activity` (default, composite of `sessions + turns`) and `Tokens`.
+  - Background `rgba(255,255,255,0.02)`, `border-default`, `rounded-md`, `padding 3px`.
+  - Active button: `rgba(255,255,255,0.08)` bg, `text-primary`, `rounded-sm` (4px), `padding 6px 12px`, `12px / 510`.
+  - Inactive: transparent bg, `text-tertiary`.
+
+- **Year picker (dropdown):**
+  - Lists only years with ≥1 session (no empty years).
+  - Same chrome as the Project filter (`rounded-md`, `border-default`, `padding 7px 10px 7px 12px`).
+
+- **Day heading:**
+  - Berkeley Mono `13px / 510 / text-primary`, sticky, `padding 12px 8px 6px`.
+  - Trailing summary in Berkeley Mono `text-quaternary` (`5 sessions · 142 turns · 410k tokens`).
+  - Sticky background uses `linear-gradient(to bottom, var(--bg-marketing) 70%, transparent)` so content slides under cleanly.
+
+- **Project rollup row:**
+  - Collapsed: `padding 7px 14px`, `margin-bottom 1px`, `rounded-md`. Open: `padding 10px 14px` for breathing room above expanded sessions.
+  - Hover bg `rgba(255,255,255,0.02)`.
+  - Anatomy: `[caret] [project name in Inter 13/510] [counts in Berkeley Mono 12 text-tertiary] [right: time-range Berkeley Mono 11 text-quaternary]`.
+  - Counts: `N sessions · N turns · Nk tokens · N tools · N skills`. **Counts only — no names.**
+  - Caret: lucide ChevronRight, rotates 90° on open, `text-tertiary` → `text-primary` when open.
+
+- **Expanded session rows:**
+  - Indented 28px under rollup, with a 1px `border-subtle` left rail (no vertical connector lines).
+  - Two lines per row:
+    - Line 1: `[8px grayscale dot] [summary 14/510 text-primary, ellipsis] [right: HH:MM · <duration> Berkeley Mono 11 text-tertiary]`.
+    - Line 2 (Berkeley Mono 11 text-tertiary, indented 20px): `<turns> · <tokens> · <N> tools · <N> skills`.
+  - Dot intensity matches the day's heatmap bucket (l1/l2/l3 grayscale variants).
+  - Summary rendering rule:
+    - `summary_source = 'auto'` → render plain (curated title).
+    - `summary_source = 'first_message'` → wrap in typographic quotes (`""`) — quote marks are the trust signal for raw user input.
+
+- **States:**
+  - First-load (no DB): centered card, "Setting up your timeline. This runs once and indexes your past Claude Code sessions." No skeleton.
+  - Empty (no sessions ever): centered card, "No Claude Code sessions yet. Run a Claude Code session in any project and your activity will show up here."
+  - Filter empty: inline `text-tertiary` Berkeley Mono row with `border-subtle` top and bottom — `No sessions match the current filters. [Reset filters]`.
 
 ## File Structure
 
@@ -364,9 +403,9 @@ The editor replaces the prior wall-of-cards layout. Three structural pieces — 
 - **Empty profile (new):** all chip clouds empty, all JSON editors empty, dirty bit only flips after first edit. Save button reads `Create profile` instead of `Save profile`.
 
 ### Wireframe reference
-- Pixel-level reference: `~/.gstack/projects/JiangWeixian-claudeui/designs/layout-interaction-20260426/wireframe.html`
-- Six screens: Profiles front door · ⌘K palette open · Compare side panel · Explorer view (chrome propagation) · Profiles → Agents store · Profile editor.
-- Open it before changing header / palette / compare / store / editor layout — the placement is settled there, not in this doc.
+- **Layout & Interaction wireframe:** `~/.gstack/projects/JiangWeixian-claudeui/designs/layout-interaction-20260426/wireframe.html` — six screens: Profiles front door · ⌘K palette open · Compare side panel · Explorer view (chrome propagation) · Profiles → Agents store · Profile editor.
+- **Timeline wireframe:** `~/.gstack/projects/JiangWeixian-claudeui/designs/timeline-20260430/wireframe.html` — single Timeline screen: sidebar entry, controls bar, 53×7 heatmap, day/project/session event list.
+- Open the relevant wireframe before changing the surfaces it covers — placement is settled there, not in this doc.
 
 ## Decisions Log
 
@@ -396,6 +435,13 @@ The editor replaces the prior wall-of-cards layout. Three structural pieces — 
 | 2026-04-29 | Active-profile chip + ⌘K pill hidden on editor route | Editor is modal-like focus; chrome propagation rule has an explicit exception for forms with their own save bar |
 | 2026-04-29 | JSON errors propagate to section nav as a dot | Users scrolled past a broken section don't lose track of where the error is |
 | 2026-04-29 | Editor uses single-column stacked fields, no in-section 2-col grids | Side-by-side Name/Description and Plugins/Model broke the form's vertical rhythm; stacking improves scanability and works at narrower widths |
+| 2026-05-01 | Timeline lives under new sidebar group `Activity`, in both Profiles and Explorer sidebars | Same `/timeline` route, two doors — discoverable from either view without duplicating IA |
+| 2026-05-01 | Heatmap metric toggle = `Activity \| Tokens` (not Sessions/Turns/Tokens) | Activity is composite (sessions + turns); turns dominate naturally and that's the better intensity signal. Tooltip surfaces both numbers |
+| 2026-05-01 | Heatmap range filter is a Year picker, not date-range presets | 53×7 grid is fundamentally a calendar year; arbitrary windows break the shape. Picker only lists years with activity |
+| 2026-05-01 | Rollup and session meta lines show counts only (`N tools · N skills`), no names | Comma-separated names blow up row width and force truncation; counts give the same signal at a fraction of the visual cost. Names belong in a future hover/detail surface |
+| 2026-05-01 | Expanded sessions use 28px indent + 1px `border-subtle` left rail, no connector lines | Vertical connectors read as gantt-energy; the rail is enough to communicate child-of-rollup |
+| 2026-05-01 | Day headings sticky with fade-to-bg gradient under them | Content slides under the heading without a hard rule; matches the "no decoration" rule for chrome separations |
+| 2026-05-01 | first_message summaries wrap in typographic quotes; auto summaries render plain | The quote marks are the trust signal — readers know unquoted text is a generated title and quoted text is what the user actually typed |
 
 ## Migration Checklist
 
