@@ -28,31 +28,65 @@ export function openDatabase(options?: OpenDatabaseOptions): Database.Database {
   db.pragma('journal_mode = WAL')
   db.pragma('foreign_keys = ON')
 
-  db.exec(SCHEMA_SQL)
+  migrate(db)
+
+  return db
+}
+
+export interface MigrateOptions {
+  currentSchemaVersion?: number
+  migrations?: Record<number, string>
+}
+
+export function migrate(db: Database.Database, options?: MigrateOptions): void {
+  const targetVersion = options?.currentSchemaVersion ?? CURRENT_SCHEMA_VERSION
+  const migrations = options?.migrations ?? MIGRATIONS
+
+  // Check if meta table exists
+  const metaTable = db.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name='meta'").get()
+
+  if (!metaTable) {
+    // Fresh DB — run schema creation
+    db.exec(SCHEMA_SQL)
+    db.prepare("INSERT OR REPLACE INTO meta (key, value) VALUES ('schema_version', ?)")
+      .run(String(targetVersion))
+    return
+  }
 
   const versionRow = db.prepare("SELECT value FROM meta WHERE key = 'schema_version'").get() as
     | { value: string }
     | undefined
 
-  const currentVersion = versionRow ? Number.parseInt(versionRow.value, 10) : 0
+  let currentVersion = versionRow ? Number.parseInt(versionRow.value, 10) : 0
+  if (Number.isNaN(currentVersion)) {
+    currentVersion = 0
+  }
 
   if (currentVersion === 0) {
-    db.prepare("INSERT INTO meta (key, value) VALUES ('schema_version', ?)").run(
-      String(CURRENT_SCHEMA_VERSION),
-    )
-  } else if (currentVersion < CURRENT_SCHEMA_VERSION) {
-    for (let v = currentVersion + 1; v <= CURRENT_SCHEMA_VERSION; v++) {
-      const migrationSql = MIGRATIONS[v]
+    // Schema exists but no version recorded — just set version
+    db.prepare("INSERT OR REPLACE INTO meta (key, value) VALUES ('schema_version', ?)")
+      .run(String(targetVersion))
+    return
+  }
+
+  // Apply missing migrations in a transaction
+  const applyMigrations = db.transaction(() => {
+    while (currentVersion < targetVersion) {
+      const nextVersion = currentVersion + 1
+      const migrationSql = migrations[nextVersion]
+      if (migrationSql === undefined) {
+        throw new Error(`Missing migration for version ${nextVersion}`)
+      }
       if (migrationSql) {
         db.exec(migrationSql)
       }
+      db.prepare("INSERT OR REPLACE INTO meta (key, value) VALUES ('schema_version', ?)")
+        .run(String(nextVersion))
+      currentVersion = nextVersion
     }
-    db.prepare("UPDATE meta SET value = ? WHERE key = 'schema_version'").run(
-      String(CURRENT_SCHEMA_VERSION),
-    )
-  }
+  })
 
-  return db
+  applyMigrations()
 }
 
 export function closeDatabase(db: Database.Database): void {
