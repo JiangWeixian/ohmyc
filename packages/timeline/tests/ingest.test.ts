@@ -61,7 +61,7 @@ describe('ingestSession', () => {
     expect(session.turns).toBe(2)
     expect(session.tokens_input).toBe(18)
     expect(session.tokens_output).toBe(37)
-    expect(session.tokens_cached).toBe(80)
+    expect(session.tokens_cached).toBe(30)
     expect(session.summary).toBe('Helped user set up timeline feature in their project. Next: review the wireframe. (disable recaps in /config)')
     expect(session.summary_source).toBe('auto')
     expect(session.last_offset).toBeGreaterThan(0)

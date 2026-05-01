@@ -128,13 +128,15 @@ export function parseTranscript(
             for (const iter of iterations) {
               tokensInput += Number(iter.input_tokens) || 0
               tokensOutput += Number(iter.output_tokens) || 0
-              tokensCached += Number(iter.cache_read_input_tokens) || 0
-              tokensCached += Number(iter.cache_creation_input_tokens) || 0
             }
+            // Only record cache from the last assistant message (cumulative state)
+            const lastIter = iterations.at(-1)
+            tokensCached = Number(lastIter.cache_read_input_tokens) || 0
+            tokensCached += Number(lastIter.cache_creation_input_tokens) || 0
           } else {
             tokensInput += Number(usage.input_tokens) || 0
             tokensOutput += Number(usage.output_tokens) || 0
-            tokensCached += Number(usage.cache_read_input_tokens) || 0
+            tokensCached = Number(usage.cache_read_input_tokens) || 0
             tokensCached += Number(usage.cache_creation_input_tokens) || 0
           }
         }

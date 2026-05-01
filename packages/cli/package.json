@@ -36,6 +36,7 @@
     "zod-to-json-schema": "^3.23.5"
   },
   "devDependencies": {
+    "@types/better-sqlite3": "^7.6.12",
     "@types/node": "^20.12.7",
     "@types/proper-lockfile": "^4.1.4",
     "tsup": "^8.0.2",
