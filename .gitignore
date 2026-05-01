@@ -44,3 +44,4 @@ Thumbs.db
 *.sw?
 .claude/
 log/
+.gstack/

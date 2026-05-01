@@ -1,23 +1,25 @@
-import Fastify, { type FastifyInstance } from 'fastify';
-import fastifyStatic from '@fastify/static';
-import path from 'path';
-import { existsSync } from 'fs';
-import getPort from 'get-port';
-import { configRoutes } from './routes/config';
-import { settingsRoutes } from './routes/settings';
-import { agentsRoutes } from './routes/agents';
-import { skillsRoutes } from './routes/skills';
-import { commandsRoutes } from './routes/commands';
-import { pluginsRoutes } from './routes/plugins';
-import { configsRoutes } from './routes/configs';
-import { profilesRoutes } from './routes/profiles';
-import { storeRoutes } from './routes/store';
-import { ConfigLocator } from './services/configLocator';
-import { fileURLToPath } from 'url';
+import { existsSync } from 'node:fs'
+import path from 'node:path'
+import { fileURLToPath } from 'node:url'
 
-// Handling __dirname in ESM context
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+import fastifyStatic from '@fastify/static'
+import Fastify, { type FastifyInstance } from 'fastify'
+import getPort from 'get-port'
+
+import { agentsRoutes } from './routes/agents'
+import { commandsRoutes } from './routes/commands'
+import { configRoutes } from './routes/config'
+import { configsRoutes } from './routes/configs'
+import { pluginsRoutes } from './routes/plugins'
+import { profilesRoutes } from './routes/profiles'
+import { settingsRoutes } from './routes/settings'
+import { skillsRoutes } from './routes/skills'
+import { storeRoutes } from './routes/store'
+import { ConfigLocator } from './services/config-locator'
+
+// Handling import.meta.dirname in ESM context
+const __filename = fileURLToPath(import.meta.url)
+const __dirname = path.dirname(__filename)
 
 /**
  * Candidate paths to search for packaged UI assets, ordered by priority.
@@ -28,11 +30,11 @@ const __dirname = path.dirname(__filename);
  */
 function getDefaultCandidatePaths(): string[] {
   return [
-    path.resolve(__dirname, 'ui'),              // packaged: dist/ui/ or dist/server/ui/
-    path.resolve(__dirname, '../../ui/dist'),    // monorepo: dist/index.js -> ../../ui/dist
-    path.resolve(__dirname, '../../../ui/dist'), // monorepo: dist/server/index.js -> ../../../ui/dist
-    path.resolve(__dirname, '../../../../ui/dist'), // source: src/server/index.ts -> ../../../../ui/dist
-  ];
+    path.resolve(import.meta.dirname, 'ui'), // packaged: dist/ui/ or dist/server/ui/
+    path.resolve(import.meta.dirname, '../../ui/dist'), // monorepo: dist/index.js -> ../../ui/dist
+    path.resolve(import.meta.dirname, '../../../ui/dist'), // monorepo: dist/server/index.js -> ../../../ui/dist
+    path.resolve(import.meta.dirname, '../../../../ui/dist'), // source: src/server/index.ts -> ../../../../ui/dist
+  ]
 }
 
 /**
@@ -44,108 +46,119 @@ function getDefaultCandidatePaths(): string[] {
  * Throws a descriptive error when no valid UI asset directory is found.
  */
 export function resolveStaticRoot(staticRoot?: string): string | undefined {
-  const candidates = staticRoot ? [staticRoot] : getDefaultCandidatePaths();
+  const candidates = staticRoot ? [staticRoot] : getDefaultCandidatePaths()
 
   for (const candidate of candidates) {
     if (existsSync(candidate) && existsSync(path.join(candidate, 'index.html'))) {
-      return candidate;
+      return candidate
     }
   }
 
-  return undefined;
+  return undefined
 }
 
 export interface CreateServerOptions {
-  staticRoot?: string;
-  apiOnly?: boolean;
+  staticRoot?: string
+  apiOnly?: boolean
+  cwd?: string
 }
 
 export async function createServer(options: CreateServerOptions = {}): Promise<FastifyInstance> {
   const fastify = Fastify({
-    logger: true
-  });
+    logger: true,
+  })
 
-  // Health check
+  const serverCwd = options.cwd || process.cwd()
+  const config = new ConfigLocator({ cwd: serverCwd })
+
+  // Health check + debug
   fastify.get('/health', async () => {
-    return { status: 'ok' };
-  });
+    return {
+      status: 'ok',
+      debug: {
+        cwd: serverCwd,
+        agentsDir: config.agentsDir,
+        projectAgentsDir: config.projectAgentsDir,
+        projectPath: config.projectPath,
+      },
+    }
+  })
 
   if (!options.apiOnly) {
-    const uiDistPath = resolveStaticRoot(options.staticRoot);
+    const uiDistributionPath = resolveStaticRoot(options.staticRoot)
 
-    if (uiDistPath) {
-      console.log(`Serving static files from: ${uiDistPath}`);
+    if (uiDistributionPath) {
+      console.log(`Serving static files from: ${uiDistributionPath}`)
       fastify.register(fastifyStatic, {
-        root: uiDistPath,
+        root: uiDistributionPath,
         prefix: '/',
         wildcard: false,
-      });
+      })
     }
   }
 
   // REST API (must be registered before the SPA fallback)
-  await fastify.register(configRoutes);
-  await fastify.register(settingsRoutes);
+  await fastify.register(configRoutes)
+  await fastify.register(settingsRoutes, { cwd: serverCwd })
 
-  const config = new ConfigLocator();
+  await fastify.register(agentsRoutes, { agentsDir: config.agentsDir, projectAgentsDir: config.projectAgentsDir, pluginsDir: config.pluginsDir, settingsPath: config.settingsPath, baseDir: config.baseDir })
+  await fastify.register(skillsRoutes, { skillsDir: config.skillsDir, projectSkillsDir: config.projectSkillsDir, pluginsDir: config.pluginsDir, settingsPath: config.settingsPath, baseDir: config.baseDir })
+  await fastify.register(commandsRoutes, { commandsDir: config.commandsDir, projectCommandsDir: config.projectCommandsDir, pluginsDir: config.pluginsDir, settingsPath: config.settingsPath, baseDir: config.baseDir })
+  await fastify.register(pluginsRoutes, { pluginsDir: config.pluginsDir, settingsPath: config.settingsPath })
+  await fastify.register(configsRoutes, { baseDir: config.baseDir, projectBaseDir: config.projectPath, pluginsDir: config.pluginsDir, settingsPath: config.settingsPath })
+  await fastify.register(profilesRoutes, { baseDir: config.baseDir })
+  await fastify.register(storeRoutes, { baseDir: config.baseDir })
 
-  await fastify.register(agentsRoutes, { agentsDir: config.agentsDir, projectAgentsDir: config.projectAgentsDir, pluginsDir: config.pluginsDir, settingsPath: config.settingsPath, baseDir: config.baseDir });
-  await fastify.register(skillsRoutes, { skillsDir: config.skillsDir, projectSkillsDir: config.projectSkillsDir, pluginsDir: config.pluginsDir, settingsPath: config.settingsPath, baseDir: config.baseDir });
-  await fastify.register(commandsRoutes, { commandsDir: config.commandsDir, projectCommandsDir: config.projectCommandsDir, pluginsDir: config.pluginsDir, settingsPath: config.settingsPath, baseDir: config.baseDir });
-  await fastify.register(pluginsRoutes, { pluginsDir: config.pluginsDir, settingsPath: config.settingsPath });
-  await fastify.register(configsRoutes, { baseDir: config.baseDir, projectBaseDir: config.projectPath, pluginsDir: config.pluginsDir, settingsPath: config.settingsPath });
-  await fastify.register(profilesRoutes, { baseDir: config.baseDir });
-  await fastify.register(storeRoutes, { baseDir: config.baseDir });
-
-  if (!options.apiOnly) {
+  if (options.apiOnly) {
     fastify.setNotFoundHandler((request, reply) => {
-      reply.sendFile('index.html');
-    });
+      reply.status(404).send({ error: 'Not found' })
+    })
   } else {
     fastify.setNotFoundHandler((request, reply) => {
-      reply.status(404).send({ error: 'Not found' });
-    });
+      reply.sendFile('index.html')
+    })
   }
 
-  return fastify;
+  return fastify
 }
 
 export interface StartServerOptions {
-  defaultPort?: number;
-  staticRoot?: string;
-  apiOnly?: boolean;
+  defaultPort?: number
+  staticRoot?: string
+  apiOnly?: boolean
+  cwd?: string
 }
 
 export interface StartServerResult {
-  port: number;
-  address: string;
-  staticRoot?: string;
-  fallback: boolean;
-  close: () => Promise<void>;
+  port: number
+  address: string
+  staticRoot?: string
+  fallback: boolean
+  close: () => Promise<void>
 }
 
 export async function startServer(options: StartServerOptions | number = {}): Promise<StartServerResult> {
-  const opts: StartServerOptions = typeof options === 'number'
+  const options_: StartServerOptions = typeof options === 'number'
     ? { defaultPort: options }
-    : options;
+    : options
 
-  const defaultPort = opts.defaultPort ?? 3000;
+  const defaultPort = options_.defaultPort ?? 3000
 
-  const port = await getPort({ port: [defaultPort, defaultPort + 1, defaultPort + 2, 0] });
-  const fastify = await createServer({ staticRoot: opts.staticRoot, apiOnly: opts.apiOnly });
+  const port = await getPort({ port: [defaultPort, defaultPort + 1, defaultPort + 2, 0] })
+  const fastify = await createServer({ staticRoot: options_.staticRoot, apiOnly: options_.apiOnly, cwd: options_.cwd })
 
   try {
-    const address = await fastify.listen({ port, host: '0.0.0.0' });
-    console.log(`Server listening on ${address}`);
+    const address = await fastify.listen({ port, host: '0.0.0.0' })
+    console.log(`Server listening on ${address}`)
     return {
       port,
       address,
-      staticRoot: resolveStaticRoot(opts.staticRoot),
+      staticRoot: resolveStaticRoot(options_.staticRoot),
       fallback: defaultPort !== 0 && port !== defaultPort,
       close: () => fastify.close(),
-    };
-  } catch (err) {
-    fastify.log.error(err);
-    throw err;
+    }
+  } catch (error) {
+    fastify.log.error(error)
+    throw error
   }
 }

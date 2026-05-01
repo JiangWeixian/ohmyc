@@ -67,7 +67,7 @@ export const ProfileSchema = z.object({
   mcpServers: z.any().optional(),
   lspServers: z.any().optional(),
   settings: z.record(z.any()).optional(),
-});
+})
 ```
 
 - `agents`/`skills`/`commands`：引用 store 中组件的 name

@@ -128,53 +128,53 @@ CLI 启动时通过以下优先级确定项目根目录：
 **General**
 ```typescript
 interface GeneralSettings {
-  model?: string;
-  availableModels?: string[];
-  modelOverrides?: Record<string, string>;
-  language?: string;
-  autoUpdatesChannel?: 'stable' | 'beta';
-  alwaysThinkingEnabled?: boolean;
-  fastModePerSessionOptIn?: boolean;
-  showTurnDuration?: boolean;
-  prefersReducedMotion?: boolean;
-  plansDirectory?: string;
-  outputStyle?: string;
-  cleanupPeriodDays?: number;
-  respectGitignore?: boolean;
-  includeGitInstructions?: boolean;
-  includeCoAuthoredBy?: boolean;
-  terminalProgressBarEnabled?: boolean;
-  spinnerTipsEnabled?: boolean;
+  model?: string
+  availableModels?: string[]
+  modelOverrides?: Record<string, string>
+  language?: string
+  autoUpdatesChannel?: 'beta' | 'stable'
+  alwaysThinkingEnabled?: boolean
+  fastModePerSessionOptIn?: boolean
+  showTurnDuration?: boolean
+  prefersReducedMotion?: boolean
+  plansDirectory?: string
+  outputStyle?: string
+  cleanupPeriodDays?: number
+  respectGitignore?: boolean
+  includeGitInstructions?: boolean
+  includeCoAuthoredBy?: boolean
+  terminalProgressBarEnabled?: boolean
+  spinnerTipsEnabled?: boolean
   spinnerTipsOverride?: {
-    excludeDefault?: boolean;
-    tips?: string[];
-  };
+    excludeDefault?: boolean
+    tips?: string[]
+  }
   spinnerVerbs?: {
-    mode?: 'append' | 'replace';
-    verbs?: string[];
-  };
+    mode?: 'append' | 'replace'
+    verbs?: string[]
+  }
   statusLine?: {
-    type: 'command';
-    command: string;
-  };
+    type: 'command'
+    command: string
+  }
   fileSuggestion?: {
-    type: 'command';
-    command: string;
-  };
-  apiKeyHelper?: string;
-  forceLoginMethod?: 'claudeai' | 'console';
+    type: 'command'
+    command: string
+  }
+  apiKeyHelper?: string
+  forceLoginMethod?: 'claudeai' | 'console'
 }
 ```
 
 **Permissions**
 ```typescript
 interface PermissionSettings {
-  allow?: string[];   // e.g. ["Bash(npm run *)", "Read", "Edit(/docs/**)"]
-  ask?: string[];     // e.g. ["Bash(git push *)"]
-  deny?: string[];    // e.g. ["Bash(curl *)", "Read(./.env)"]
-  defaultMode?: 'default' | 'acceptEdits' | 'plan' | 'dontAsk' | 'bypassPermissions';
-  additionalDirectories?: string[];
-  disableBypassPermissionsMode?: 'disable';
+  allow?: string[] // e.g. ["Bash(npm run *)", "Read", "Edit(/docs/**)"]
+  ask?: string[] // e.g. ["Bash(git push *)"]
+  deny?: string[] // e.g. ["Bash(curl *)", "Read(./.env)"]
+  defaultMode?: 'acceptEdits' | 'bypassPermissions' | 'default' | 'dontAsk' | 'plan'
+  additionalDirectories?: string[]
+  disableBypassPermissionsMode?: 'disable'
 }
 ```
 
@@ -194,99 +194,87 @@ interface PermissionSettings {
 **Sandbox**
 ```typescript
 interface SandboxSettings {
-  enabled?: boolean;
-  autoAllowBashIfSandboxed?: boolean;
-  excludedCommands?: string[];
-  allowUnsandboxedCommands?: boolean;
+  enabled?: boolean
+  autoAllowBashIfSandboxed?: boolean
+  excludedCommands?: string[]
+  allowUnsandboxedCommands?: boolean
   filesystem?: {
-    allowWrite?: string[];   // 路径前缀: // ~ / ./
-    denyWrite?: string[];
-    denyRead?: string[];
-  };
+    allowWrite?: string[] // 路径前缀: // ~ / ./
+    denyWrite?: string[]
+    denyRead?: string[]
+  }
   network?: {
-    allowUnixSockets?: string[];
-    allowAllUnixSockets?: boolean;
-    allowLocalBinding?: boolean;
-    allowedDomains?: string[];   // 支持通配符 e.g. "*.npmjs.org"
-    allowManagedDomainsOnly?: boolean;
-    httpProxyPort?: number;
-    socksProxyPort?: number;
-  };
-  enableWeakerNestedSandbox?: boolean;
-  enableWeakerNetworkIsolation?: boolean;
+    allowUnixSockets?: string[]
+    allowAllUnixSockets?: boolean
+    allowLocalBinding?: boolean
+    allowedDomains?: string[] // 支持通配符 e.g. "*.npmjs.org"
+    allowManagedDomainsOnly?: boolean
+    httpProxyPort?: number
+    socksProxyPort?: number
+  }
+  enableWeakerNestedSandbox?: boolean
+  enableWeakerNetworkIsolation?: boolean
 }
 ```
 
 **Hooks**
 ```typescript
-type HookEvent =
-  | 'SessionStart' | 'SessionEnd'
-  | 'InstructionsLoaded'
-  | 'UserPromptSubmit'
-  | 'PreToolUse' | 'PostToolUse' | 'PostToolUseFailure'
-  | 'PermissionRequest'
-  | 'Notification'
-  | 'SubagentStart' | 'SubagentStop'
-  | 'Stop'
-  | 'PreCompact'
-  | 'ConfigChange'
-  | 'WorktreeCreate' | 'WorktreeRemove'
-  | 'TaskCompleted'
-  | 'TeammateIdle';
+type HookEvent
+  = 'ConfigChange' | 'InstructionsLoaded' | 'Notification' | 'PermissionRequest' | 'PostToolUse' | 'PostToolUseFailure' | 'PreCompact' | 'PreToolUse' | 'SessionEnd' | 'SessionStart' | 'Stop' | 'SubagentStart' | 'SubagentStop' | 'TaskCompleted' | 'TeammateIdle' | 'UserPromptSubmit' | 'WorktreeCreate' | 'WorktreeRemove'
 
 interface HookMatcher {
-  tool?: string;      // e.g. "Bash", "Read", "mcp__server__tool"
-  args?: string;      // glob pattern e.g. "npm run *"
-  domain?: string;    // for WebFetch
-  event?: string;     // for event-specific matching
+  tool?: string // e.g. "Bash", "Read", "mcp__server__tool"
+  args?: string // glob pattern e.g. "npm run *"
+  domain?: string // for WebFetch
+  event?: string // for event-specific matching
 }
 
 interface CommandHook {
-  type: 'command';
-  command: string;
-  matchers?: HookMatcher[];
-  async?: boolean;
+  type: 'command'
+  command: string
+  matchers?: HookMatcher[]
+  async?: boolean
 }
 
 interface HttpHook {
-  type: 'http';
-  url: string;
-  method?: string;
-  matchers?: HookMatcher[];
-  allowedEnvVars?: string[];
+  type: 'http'
+  url: string
+  method?: string
+  matchers?: HookMatcher[]
+  allowedEnvVars?: string[]
 }
 
 interface PromptHook {
-  type: 'prompt';
-  prompt: string;
-  matchers?: HookMatcher[];
+  type: 'prompt'
+  prompt: string
+  matchers?: HookMatcher[]
 }
 
 interface AgentHook {
-  type: 'agent';
-  agentPath: string;
-  matchers?: HookMatcher[];
+  type: 'agent'
+  agentPath: string
+  matchers?: HookMatcher[]
 }
 
-type HookHandler = CommandHook | HttpHook | PromptHook | AgentHook;
+type HookHandler = AgentHook | CommandHook | HttpHook | PromptHook
 
-type HookSettings = Partial<Record<HookEvent, HookHandler | HookHandler[]>>;
+type HookSettings = Partial<Record<HookEvent, HookHandler | HookHandler[]>>
 
 // 顶层 hook 相关设置
 interface HookGlobalSettings {
-  hooks?: HookSettings;
-  disableAllHooks?: boolean;
-  allowManagedHooksOnly?: boolean;
-  allowedHttpHookUrls?: string[];
-  httpHookAllowedEnvVars?: string[];
+  hooks?: HookSettings
+  disableAllHooks?: boolean
+  allowManagedHooksOnly?: boolean
+  allowedHttpHookUrls?: string[]
+  httpHookAllowedEnvVars?: string[]
 }
 ```
 
 **Attribution**
 ```typescript
 interface AttributionSettings {
-  commit?: string;   // commit message 后缀模板
-  pr?: string;       // PR body 后缀模板
+  commit?: string // commit message 后缀模板
+  pr?: string // PR body 后缀模板
 }
 ```
 注: `includeCoAuthoredBy`（在 General 中）控制是否自动添加 Co-Authored-By 行。`attribution.commit` 用于自定义额外的 commit 署名格式。两者独立。
@@ -294,18 +282,18 @@ interface AttributionSettings {
 **MCP (服务器控制)**
 ```typescript
 interface McpServerRule {
-  serverName?: string;
-  serverCommand?: string[];
-  serverUrl?: string;
+  serverName?: string
+  serverCommand?: string[]
+  serverUrl?: string
 }
 
 interface McpControlSettings {
-  enableAllProjectMcpServers?: boolean;
-  enabledMcpjsonServers?: string[];
-  disabledMcpjsonServers?: string[];
-  allowedMcpServers?: McpServerRule[];
-  deniedMcpServers?: McpServerRule[];
-  allowManagedMcpServersOnly?: boolean;
+  enableAllProjectMcpServers?: boolean
+  enabledMcpjsonServers?: string[]
+  disabledMcpjsonServers?: string[]
+  allowedMcpServers?: McpServerRule[]
+  deniedMcpServers?: McpServerRule[]
+  allowManagedMcpServersOnly?: boolean
 }
 ```
 注: MCP 服务器的实际定义在 `.mcp.json` 中，settings.json 仅控制启用/禁用和访问规则。
@@ -313,12 +301,12 @@ interface McpControlSettings {
 **Plugins**
 ```typescript
 interface PluginSettings {
-  enabledPlugins?: Record<string, boolean>;  // 表单：toggle 列表
-  pluginTrustMessage?: string;               // 表单：text input
+  enabledPlugins?: Record<string, boolean> // 表单：toggle 列表
+  pluginTrustMessage?: string // 表单：text input
   // 以下字段结构复杂且不常编辑，使用 raw JSON 编辑器
-  extraKnownMarketplaces?: Record<string, unknown>;
-  strictKnownMarketplaces?: unknown[];
-  blockedMarketplaces?: unknown[];
+  extraKnownMarketplaces?: Record<string, unknown>
+  strictKnownMarketplaces?: unknown[]
+  blockedMarketplaces?: unknown[]
 }
 ```
 
@@ -327,7 +315,7 @@ interface PluginSettings {
 // JSON 路径: settings.json 顶层 "env" 字段
 // e.g. { "env": { "CLAUDE_CODE_ENABLE_TELEMETRY": "1" } }
 interface EnvSettings {
-  [key: string]: string;   // 所有值为字符串类型
+  [key: string]: string // 所有值为字符串类型
 }
 ```
 
