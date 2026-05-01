@@ -56,6 +56,7 @@ describe('ingestSession', () => {
       summary: string | null
       summary_source: string
       last_offset: number
+      model: string | null
     }
 
     expect(session.turns).toBe(2)
@@ -65,6 +66,7 @@ describe('ingestSession', () => {
     expect(session.summary).toBe('Helped user set up timeline feature in their project. Next: review the wireframe. (disable recaps in /config)')
     expect(session.summary_source).toBe('auto')
     expect(session.last_offset).toBeGreaterThan(0)
+    expect(session.model).toBe('claude-sonnet-4')
 
     const tools = db
       .prepare('SELECT * FROM session_tools WHERE session_id = ?')

@@ -23,6 +23,7 @@ export interface SessionRow {
   transcript_path: string
   last_offset: number
   ingested_at: number
+  model: string | null
 }
 
 /** A single tool usage record in the `session_tools` table. */
@@ -108,7 +109,7 @@ export interface ProjectGroup {
 // ------------------------------------------------------------------
 
 /** Current schema version. Increment this when adding migrations. */
-export const CURRENT_SCHEMA_VERSION = 1
+export const CURRENT_SCHEMA_VERSION = 2
 
 /** Complete SQL to create all tables and indexes. */
 export const SCHEMA_SQL = `
@@ -126,7 +127,8 @@ CREATE TABLE sessions (
   summary_source    TEXT NOT NULL,
   transcript_path   TEXT NOT NULL,
   last_offset       INTEGER NOT NULL,
-  ingested_at       INTEGER NOT NULL
+  ingested_at       INTEGER NOT NULL,
+  model             TEXT
 );
 
 CREATE INDEX idx_sessions_started_at ON sessions(started_at DESC);
@@ -154,4 +156,5 @@ CREATE TABLE meta (
 /** Migrations map: version → SQL string. V1 is the baseline (empty). */
 export const MIGRATIONS: Record<number, string> = {
   1: '',
+  2: 'ALTER TABLE sessions ADD COLUMN model TEXT;',
 }

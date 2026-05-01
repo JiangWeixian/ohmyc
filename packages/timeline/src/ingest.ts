@@ -39,6 +39,8 @@ export interface ParsedSessionData {
   tools: Array<{ toolName: string; callCount: number }>
   /** Skills invoked during the session */
   skills: string[]
+  /** Model used in the session (e.g., claude-opus-4-7) */
+  model: string | null
 }
 
 // ---------------------------------------------------------------------------
@@ -78,6 +80,7 @@ export function parseTranscript(
   const skills = new Set<string>()
   let summary: string | null = null
   let summarySource: 'auto' | 'first_message' | null = null
+  let model: string | null = null
 
   for (const line of lines) {
     const trimmed = line.trim()
@@ -121,6 +124,9 @@ export function parseTranscript(
     if (type === 'assistant') {
       const message = parsed.message as Record<string, unknown> | undefined
       if (message?.role === 'assistant') {
+        if (typeof message.model === 'string') {
+          model = message.model
+        }
         const usage = message.usage as Record<string, unknown> | undefined
         if (usage) {
           const iterations = usage.iterations as Array<Record<string, unknown>> | undefined
@@ -202,6 +208,7 @@ export function parseTranscript(
     fileSize,
     tools: [...toolCounts.entries()].map(([toolName, callCount]) => ({ toolName, callCount })),
     skills: [...skills],
+    model,
   }
 }
 
@@ -226,8 +233,8 @@ export function upsertSessionData(
     INSERT OR REPLACE INTO sessions (
       session_id, project, started_at, ended_at, duration_ms,
       turns, tokens_input, tokens_output, tokens_cached,
-      summary, summary_source, transcript_path, last_offset, ingested_at
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      summary, summary_source, transcript_path, last_offset, ingested_at, model
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `)
 
   const deleteTools = db.prepare('DELETE FROM session_tools WHERE session_id = ?')
@@ -251,6 +258,7 @@ export function upsertSessionData(
       data.transcriptPath,
       data.fileSize,
       ingestedAt,
+      data.model,
     )
 
     deleteTools.run(sessionId)

@@ -47,7 +47,7 @@ describe('db', () => {
     const versionRow = db
       .prepare("SELECT value FROM meta WHERE key = 'schema_version'")
       .get() as { value: string }
-    expect(versionRow.value).toBe('1')
+    expect(versionRow.value).toBe('2')
 
     closeDatabase(db)
   })
@@ -77,7 +77,7 @@ describe('db', () => {
     const versionRow = db2
       .prepare("SELECT value FROM meta WHERE key = 'schema_version'")
       .get() as { value: string }
-    expect(versionRow.value).toBe('1')
+    expect(versionRow.value).toBe('2')
     closeDatabase(db2)
   })
 
