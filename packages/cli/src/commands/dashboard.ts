@@ -8,6 +8,7 @@ import {
 } from 'node:fs'
 import os from 'node:os'
 import path from 'node:path'
+import { fileURLToPath } from 'node:url'
 
 import {
   backfillAll,
@@ -61,7 +62,7 @@ export function hasJq(): boolean {
 
 export function getPluginSourceDir(): string {
   // Resolve from the CLI package location: packages/cli/../../plugins/timeline
-  return path.resolve(import.meta.dirname, '..', '..', '..', 'plugins', 'timeline')
+  return path.resolve(fileURLToPath(import.meta.url), '..', '..', '..', '..', 'plugins', 'timeline')
 }
 
 function formatDate(ts: number | undefined): string {

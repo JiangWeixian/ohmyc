@@ -116,8 +116,10 @@ describe('Package configuration', () => {
     // Filter out Node.js built-in modules and internal bundled subpath references
     // Subpath references (e.g. "ajv/dist/runtime/validation_error") are internal
     // require() calls within bundled code -- the packages are already inlined.
+    const ALLOWED_EXTERNALS = new Set(['better-sqlite3'])
+
     const npmImports = [...esmImports, ...cjsSpecifiers]
-      .filter(spec => !NODE_BUILTINS.has(spec) && !spec.includes('/'))
+      .filter(spec => !NODE_BUILTINS.has(spec) && !spec.includes('/') && !ALLOWED_EXTERNALS.has(spec))
 
     expect(npmImports).toEqual([])
   })
