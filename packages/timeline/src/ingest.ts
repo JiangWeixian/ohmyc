@@ -39,19 +39,11 @@ export function ingestSession(
     .prepare('SELECT last_offset FROM sessions WHERE session_id = ?')
     .get(sessionId) as { last_offset: number } | undefined
 
-  const startOffset = existingRow?.last_offset ?? 0
-
-  if (startOffset >= fileSize) {
-    return {
-      sessionId,
-      project: extractProjectFromPath(transcriptPath),
-      sessionsInserted: 0,
-      sessionsUpdated: 0,
-    }
-  }
-
+  // Always parse the full file to ensure complete data on incremental ingests.
+  // The last_offset optimization is disabled to prevent data loss when the file
+  // grows between ingests. See: incremental ingest bug fix.
   const buffer = readFileSync(transcriptPath)
-  const content = buffer.toString('utf8', startOffset)
+  const content = buffer.toString('utf8', 0)
   const lines = content.split('\n')
 
   let firstTimestamp: number | null = null
