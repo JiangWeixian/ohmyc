@@ -17,12 +17,84 @@ import {
 } from 'vitest'
 
 import { closeDatabase, openDatabase } from '../src/db.js'
-import { ingestSession } from '../src/ingest.js'
+import { ingestSession, parseTranscript } from '../src/ingest.js'
 
 import type Database from 'better-sqlite3'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 const fixturesDir = path.resolve(__dirname, './fixtures')
+
+// ====================================================================
+// parseTranscript — pure parsing, no database
+// ====================================================================
+
+describe('parseTranscript', () => {
+  it('parses a simple session from fixture', () => {
+    const transcriptPath = path.join(fixturesDir, 'simple-session.jsonl')
+    const data = parseTranscript('test-session-001', transcriptPath)
+
+    expect(data.sessionId).toBe('test-session-001')
+    expect(data.turns).toBe(2)
+    expect(data.tokensInput).toBe(18)
+    expect(data.tokensOutput).toBe(37)
+    expect(data.tokensCached).toBe(30)
+    expect(data.model).toBe('claude-sonnet-4')
+    expect(data.summary).toBe('Helped user set up timeline feature in their project. Next: review the wireframe. (disable recaps in /config)')
+    expect(data.summarySource).toBe('auto')
+  })
+
+  it('counts tool calls correctly', () => {
+    const transcriptPath = path.join(fixturesDir, 'session-with-tools.jsonl')
+    const data = parseTranscript('test-session-tools', transcriptPath)
+
+    expect(data.tools).toHaveLength(2)
+    const bash = data.tools.find(t => t.toolName === 'Bash')
+    const read = data.tools.find(t => t.toolName === 'Read')
+    expect(bash?.callCount).toBe(1)
+    expect(read?.callCount).toBe(1)
+  })
+
+  it('detects skill invocations', () => {
+    const transcriptPath = path.join(fixturesDir, 'session-with-skills.jsonl')
+    const data = parseTranscript('test-session-skills', transcriptPath)
+
+    expect(data.skills).toEqual(['design-consultation'])
+  })
+
+  describe('project path decoding', () => {
+    let tmpDir: string
+
+    beforeEach(() => {
+      tmpDir = mkdtempSync(path.join(os.tmpdir(), 'timeline-parse-test-'))
+    })
+
+    afterEach(() => {
+      rmSync(tmpDir, { recursive: true, force: true })
+    })
+
+    it('decodes project from encoded Claude Code path format', () => {
+      const transcriptPath = path.join(tmpDir, 'projects', '-home-user-project-a', 'session.jsonl')
+      mkdirSync(path.dirname(transcriptPath), { recursive: true })
+      writeFileSync(transcriptPath, '{"type":"user","timestamp":"2026-04-30T10:00:00.000Z","message":{"role":"user","content":"Hello"}}\n')
+
+      const data = parseTranscript('test-session', transcriptPath)
+      expect(data.project).toBe('/home/user/project/a')
+    })
+
+    it('decodes project from real Claude Code path format', () => {
+      const transcriptPath = path.join(tmpDir, 'projects', '-Volumes-Users-foo-work-project', 'session.jsonl')
+      mkdirSync(path.dirname(transcriptPath), { recursive: true })
+      writeFileSync(transcriptPath, '{"type":"user","timestamp":"2026-04-30T10:00:00.000Z","message":{"role":"user","content":"Hello"}}\n')
+
+      const data = parseTranscript('test-session', transcriptPath)
+      expect(data.project).toBe('/Volumes/Users/foo/work/project')
+    })
+  })
+})
+
+// ====================================================================
+// ingestSession — database writes via ingestSession / upsertSessionData
+// ====================================================================
 
 describe('ingestSession', () => {
   let tmpDir: string
@@ -38,7 +110,7 @@ describe('ingestSession', () => {
     rmSync(tmpDir, { recursive: true, force: true })
   })
 
-  it('ingests a simple session from fixture', () => {
+  it('writes a simple session into the database', () => {
     const transcriptPath = path.join(fixturesDir, 'simple-session.jsonl')
     const result = ingestSession(db, 'test-session-001', transcriptPath)
 
@@ -79,6 +151,33 @@ describe('ingestSession', () => {
     expect(skills).toHaveLength(0)
   })
 
+  it('writes tool usage into session_tools table', () => {
+    const transcriptPath = path.join(fixturesDir, 'session-with-tools.jsonl')
+    ingestSession(db, 'test-session-tools', transcriptPath)
+
+    const tools = db
+      .prepare('SELECT * FROM session_tools WHERE session_id = ? ORDER BY tool_name')
+      .all('test-session-tools') as { tool_name: string; call_count: number }[]
+
+    expect(tools).toHaveLength(2)
+    expect(tools[0].tool_name).toBe('Bash')
+    expect(tools[0].call_count).toBe(1)
+    expect(tools[1].tool_name).toBe('Read')
+    expect(tools[1].call_count).toBe(1)
+  })
+
+  it('writes skill invocations into session_skills table', () => {
+    const transcriptPath = path.join(fixturesDir, 'session-with-skills.jsonl')
+    ingestSession(db, 'test-session-skills', transcriptPath)
+
+    const skills = db
+      .prepare('SELECT * FROM session_skills WHERE session_id = ?')
+      .all('test-session-skills') as { skill_name: string }[]
+
+    expect(skills).toHaveLength(1)
+    expect(skills[0].skill_name).toBe('design-consultation')
+  })
+
   it('is idempotent: re-ingesting same file updates with identical data', () => {
     const transcriptPath = path.join(fixturesDir, 'simple-session.jsonl')
     const result1 = ingestSession(db, 'test-session-001', transcriptPath)
@@ -93,66 +192,6 @@ describe('ingestSession', () => {
       .prepare('SELECT * FROM sessions WHERE session_id = ?')
       .get('test-session-001') as { turns: number }
     expect(session.turns).toBe(2)
-  })
-
-  it('ingests with correct project from path', () => {
-    const transcriptPath = path.join(tmpDir, 'projects', '-home-user-project-a', 'test-session-001.jsonl')
-    const transcriptDir = path.dirname(transcriptPath)
-    mkdirSync(transcriptDir, { recursive: true })
-    writeFileSync(transcriptPath, '{"type":"user","timestamp":"2026-04-30T10:00:00.000Z","sessionId":"test-session-path","message":{"role":"user","content":"Hello"},"cwd":"/home/user/project-a"}\n')
-
-    const result = ingestSession(db, 'test-session-path', transcriptPath)
-    expect(result.project).toBe('/home/user/project/a')
-
-    const session = db
-      .prepare('SELECT * FROM sessions WHERE session_id = ?')
-      .get('test-session-path') as { project: string }
-    expect(session.project).toBe('/home/user/project/a')
-  })
-
-  it('counts tool calls correctly', () => {
-    const transcriptPath = path.join(fixturesDir, 'session-with-tools.jsonl')
-    const result = ingestSession(db, 'test-session-tools', transcriptPath)
-
-    expect(result.sessionsInserted).toBe(1)
-
-    const tools = db
-      .prepare('SELECT * FROM session_tools WHERE session_id = ? ORDER BY tool_name')
-      .all('test-session-tools') as { tool_name: string; call_count: number }[]
-
-    expect(tools).toHaveLength(2)
-    expect(tools[0].tool_name).toBe('Bash')
-    expect(tools[0].call_count).toBe(1)
-    expect(tools[1].tool_name).toBe('Read')
-    expect(tools[1].call_count).toBe(1)
-  })
-
-  it('detects skill invocations', () => {
-    const transcriptPath = path.join(fixturesDir, 'session-with-skills.jsonl')
-    const result = ingestSession(db, 'test-session-skills', transcriptPath)
-
-    expect(result.sessionsInserted).toBe(1)
-
-    const skills = db
-      .prepare('SELECT * FROM session_skills WHERE session_id = ?')
-      .all('test-session-skills') as { skill_name: string }[]
-
-    expect(skills).toHaveLength(1)
-    expect(skills[0].skill_name).toBe('design-consultation')
-  })
-
-  it('correctly decodes project path from real Claude Code path format', () => {
-    const transcriptPath = path.join(tmpDir, 'projects', '-Volumes-Users-foo-work-project', 'session.jsonl')
-    mkdirSync(path.dirname(transcriptPath), { recursive: true })
-    writeFileSync(transcriptPath, '{"type":"user","timestamp":"2026-04-30T10:00:00.000Z","sessionId":"test-session-real","message":{"role":"user","content":"Hello"},"cwd":"/Volumes/Users/foo/work/project"}\n')
-
-    const result = ingestSession(db, 'test-session-real', transcriptPath)
-    expect(result.project).toBe('/Volumes/Users/foo/work/project')
-
-    const session = db
-      .prepare('SELECT * FROM sessions WHERE session_id = ?')
-      .get('test-session-real') as { project: string }
-    expect(session.project).toBe('/Volumes/Users/foo/work/project')
   })
 
   it('incremental ingest captures complete session data', () => {
