@@ -3,6 +3,48 @@ import path from 'node:path'
 
 import type Database from 'better-sqlite3'
 
+// ---------------------------------------------------------------------------
+// Parsed result type — this object contains all data extracted from JSONL,
+// and can be serialized to JSON for piping between processes.
+// ---------------------------------------------------------------------------
+
+export interface ParsedSessionData {
+  /** Session ID (extracted from filename) */
+  sessionId: string
+  /** Project path (decoded from transcript directory name) */
+  project: string
+  /** Start timestamp (first message timestamp) */
+  startedAt: number
+  /** End timestamp (last message timestamp) */
+  endedAt: number
+  /** Session duration in milliseconds */
+  durationMs: number
+  /** Number of user/assistant turn pairs */
+  turns: number
+  /** Input tokens */
+  tokensInput: number
+  /** Output tokens */
+  tokensOutput: number
+  /** Cached tokens (read + creation) */
+  tokensCached: number
+  /** Summary text */
+  summary: string
+  /** Source of the summary */
+  summarySource: 'auto' | 'first_message'
+  /** Absolute path to the transcript file */
+  transcriptPath: string
+  /** File size in bytes */
+  fileSize: number
+  /** Tool usage statistics */
+  tools: Array<{ toolName: string; callCount: number }>
+  /** Skills invoked during the session */
+  skills: string[]
+}
+
+// ---------------------------------------------------------------------------
+// Result type
+// ---------------------------------------------------------------------------
+
 export interface IngestResult {
   sessionId: string
   project: string
@@ -10,40 +52,19 @@ export interface IngestResult {
   sessionsUpdated: number
 }
 
-function decodeProjectName(encodedName: string): string {
-  if (encodedName.startsWith('-')) {
-    return `/${encodedName.slice(1).replaceAll('-', '/')}`
-  }
-  return encodedName.replaceAll('-', '/')
-}
+// ---------------------------------------------------------------------------
+// Parser — pure function, does not touch the database
+// ---------------------------------------------------------------------------
 
-function extractProjectFromPath(transcriptPath: string): string {
-  const parts = transcriptPath.split(path.sep)
-  const projectsIndex = parts.indexOf('projects')
-  if (projectsIndex !== -1 && projectsIndex + 1 < parts.length) {
-    const encodedName = parts[projectsIndex + 1]
-    return decodeProjectName(encodedName)
-  }
-  return 'unknown'
-}
-
-export function ingestSession(
-  db: Database.Database,
+export function parseTranscript(
   sessionId: string,
   transcriptPath: string,
-): IngestResult {
+): ParsedSessionData {
   const fileStat = statSync(transcriptPath)
   const fileSize = fileStat.size
 
-  const existingRow = db
-    .prepare('SELECT last_offset FROM sessions WHERE session_id = ?')
-    .get(sessionId) as { last_offset: number } | undefined
-
-  // Always parse the full file to ensure complete data on incremental ingests.
-  // The last_offset optimization is disabled to prevent data loss when the file
-  // grows between ingests. See: incremental ingest bug fix.
   const buffer = readFileSync(transcriptPath)
-  const content = buffer.toString('utf8', 0)
+  const content = buffer.toString('utf8')
   const lines = content.split('\n')
 
   let firstTimestamp: number | null = null
@@ -56,7 +77,7 @@ export function ingestSession(
   const toolCounts = new Map<string, number>()
   const skills = new Set<string>()
   let summary: string | null = null
-  let summarySource: string | null = null
+  let summarySource: 'auto' | 'first_message' | null = null
 
   for (const line of lines) {
     const trimmed = line.trim()
@@ -162,10 +183,42 @@ export function ingestSession(
   const startedAt = firstTimestamp ?? Date.now()
   const endedAt = lastTimestamp ?? Date.now()
   const durationMs = endedAt - startedAt
-  const ingestedAt = Date.now()
+
+  return {
+    sessionId,
+    project,
+    startedAt,
+    endedAt,
+    durationMs,
+    turns,
+    tokensInput,
+    tokensOutput,
+    tokensCached,
+    summary,
+    summarySource,
+    transcriptPath,
+    fileSize,
+    tools: [...toolCounts.entries()].map(([toolName, callCount]) => ({ toolName, callCount })),
+    skills: [...skills],
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Writer — receives parsed data and writes to the database
+// ---------------------------------------------------------------------------
+
+export function upsertSessionData(
+  db: Database.Database,
+  sessionId: string,
+  data: ParsedSessionData,
+): IngestResult {
+  const existingRow = db
+    .prepare('SELECT 1 FROM sessions WHERE session_id = ?')
+    .get(sessionId) as { 1: number } | undefined
 
   const sessionsInserted = existingRow ? 0 : 1
   const sessionsUpdated = existingRow ? 1 : 0
+  const ingestedAt = Date.now()
 
   const upsertSession = db.prepare(`
     INSERT OR REPLACE INTO sessions (
@@ -183,28 +236,28 @@ export function ingestSession(
   const transaction = db.transaction(() => {
     upsertSession.run(
       sessionId,
-      project,
-      startedAt,
-      endedAt,
-      durationMs,
-      turns,
-      tokensInput,
-      tokensOutput,
-      tokensCached,
-      summary,
-      summarySource,
-      transcriptPath,
-      fileSize,
+      data.project,
+      data.startedAt,
+      data.endedAt,
+      data.durationMs,
+      data.turns,
+      data.tokensInput,
+      data.tokensOutput,
+      data.tokensCached,
+      data.summary,
+      data.summarySource,
+      data.transcriptPath,
+      data.fileSize,
       ingestedAt,
     )
 
     deleteTools.run(sessionId)
-    for (const [toolName, callCount] of toolCounts) {
-      insertTool.run(sessionId, toolName, callCount)
+    for (const tool of data.tools) {
+      insertTool.run(sessionId, tool.toolName, tool.callCount)
     }
 
     deleteSkills.run(sessionId)
-    for (const skillName of skills) {
+    for (const skillName of data.skills) {
       insertSkill.run(sessionId, skillName)
     }
   })
@@ -213,8 +266,42 @@ export function ingestSession(
 
   return {
     sessionId,
-    project,
+    project: data.project,
     sessionsInserted,
     sessionsUpdated,
   }
+}
+
+// ---------------------------------------------------------------------------
+// Original entry point — combines parse + write (for CLI direct calls)
+// ---------------------------------------------------------------------------
+
+export function ingestSession(
+  db: Database.Database,
+  sessionId: string,
+  transcriptPath: string,
+): IngestResult {
+  const data = parseTranscript(sessionId, transcriptPath)
+  return upsertSessionData(db, sessionId, data)
+}
+
+// ---------------------------------------------------------------------------
+// Utility functions
+// ---------------------------------------------------------------------------
+
+function decodeProjectName(encodedName: string): string {
+  if (encodedName.startsWith('-')) {
+    return `/${encodedName.slice(1).replaceAll('-', '/')}`
+  }
+  return encodedName.replaceAll('-', '/')
+}
+
+function extractProjectFromPath(transcriptPath: string): string {
+  const parts = transcriptPath.split(path.sep)
+  const projectsIndex = parts.indexOf('projects')
+  if (projectsIndex !== -1 && projectsIndex + 1 < parts.length) {
+    const encodedName = parts[projectsIndex + 1]
+    return decodeProjectName(encodedName)
+  }
+  return 'unknown'
 }
