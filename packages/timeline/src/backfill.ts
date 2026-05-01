@@ -1,3 +1,9 @@
+// ============================================================
+// @claudeui/timeline — Batch Backfill
+// Scans the Claude Code projects directory for all JSONL
+// transcripts and ingests any sessions not yet in the database.
+// ============================================================
+
 import { readdirSync } from 'node:fs'
 import os from 'node:os'
 import path from 'node:path'
@@ -6,17 +12,25 @@ import { ingestSession } from './ingest.js'
 
 import type Database from 'better-sqlite3'
 
+/** Options for {@link backfillAll}. */
 export interface BackfillOptions {
+  /** Custom Claude Code projects directory. Defaults to `~/.claude/projects` or `$AGENT_HOME/projects`. */
   claudeProjectsDir?: string
+  /** Progress callback invoked after each transcript is processed. */
   onProgress?: (indexed: number, total: number) => void
 }
 
+/** Result of a batch backfill operation. */
 export interface BackfillResult {
+  /** Number of new sessions successfully indexed. */
   indexed: number
+  /** Number of transcripts skipped (already in DB). */
   skipped: number
+  /** Number of transcripts that failed to parse. */
   errors: number
 }
 
+/** Returns the default Claude Code projects directory (`$AGENT_HOME/projects` or `~/.claude/projects`). */
 export function getDefaultProjectsDir(): string {
   const agentHome = process.env.AGENT_HOME
   if (agentHome) {
@@ -45,6 +59,11 @@ function findJsonlFiles(dir: string): string[] {
   return results
 }
 
+/**
+ * Recursively finds all `.jsonl` files under the Claude Code projects directory
+ * and ingests each one, skipping sessions that already exist in the database.
+ * Records the completion timestamp in the `meta` table.
+ */
 export function backfillAll(
   db: Database.Database,
   options?: BackfillOptions,

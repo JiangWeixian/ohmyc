@@ -1,3 +1,9 @@
+// ============================================================
+// @claudeui/timeline — Transcript Ingest
+// Parses Claude Code JSONL transcript files and upserts
+// session data (turns, tokens, tools, skills) into SQLite.
+// ============================================================
+
 import { readFileSync, statSync } from 'node:fs'
 import path from 'node:path'
 
@@ -8,6 +14,11 @@ import type Database from 'better-sqlite3'
 // and can be serialized to JSON for piping between processes.
 // ---------------------------------------------------------------------------
 
+/**
+ * Parsed result of a single Claude Code transcript file.
+ * Contains all extracted session data — tokens, turns, tools, skills — and
+ * can be serialized to JSON for piping between processes (e.g. jq → CLI).
+ */
 export interface ParsedSessionData {
   /** Session ID (extracted from filename) */
   sessionId: string
@@ -47,6 +58,7 @@ export interface ParsedSessionData {
 // Result type
 // ---------------------------------------------------------------------------
 
+/** Summary of an ingest operation — how many sessions were inserted vs updated. */
 export interface IngestResult {
   sessionId: string
   project: string
@@ -58,6 +70,12 @@ export interface IngestResult {
 // Parser — pure function, does not touch the database
 // ---------------------------------------------------------------------------
 
+/**
+ * Pure-function parser: reads a Claude Code JSONL transcript and returns
+ * structured session data without touching the database.
+ * This is separated from the writer so it can be called independently
+ * (e.g. from a shell pipeline via jq).
+ */
 export function parseTranscript(
   sessionId: string,
   transcriptPath: string,
@@ -216,6 +234,11 @@ export function parseTranscript(
 // Writer — receives parsed data and writes to the database
 // ---------------------------------------------------------------------------
 
+/**
+ * Writes parsed session data into the database using INSERT OR REPLACE.
+ * Deletes and re-inserts tool/skill rows for the session to stay in sync.
+ * Returns a summary of whether the session was new or an update.
+ */
 export function upsertSessionData(
   db: Database.Database,
   sessionId: string,
@@ -286,6 +309,10 @@ export function upsertSessionData(
 // Original entry point — combines parse + write (for CLI direct calls)
 // ---------------------------------------------------------------------------
 
+/**
+ * Convenience entry point that combines {@link parseTranscript} and
+ * {@link upsertSessionData}. Used by the backfill process and CLI.
+ */
 export function ingestSession(
   db: Database.Database,
   sessionId: string,
@@ -299,6 +326,12 @@ export function ingestSession(
 // Utility functions
 // ---------------------------------------------------------------------------
 
+/**
+ * Decodes a Claude Code project directory name back to its original path.
+ * Claude encodes paths by replacing `/` with `-`; absolute paths are
+ * prefixed with an extra `-` to distinguish them from relative paths.
+ * For example `-Volumes-Users-foo-bar` decodes to `/Volumes/Users/foo/bar`.
+ */
 function decodeProjectName(encodedName: string): string {
   if (encodedName.startsWith('-')) {
     return `/${encodedName.slice(1).replaceAll('-', '/')}`
@@ -306,6 +339,7 @@ function decodeProjectName(encodedName: string): string {
   return encodedName.replaceAll('-', '/')
 }
 
+/** Extracts the project path from a transcript file path by finding the `projects` directory segment. */
 function extractProjectFromPath(transcriptPath: string): string {
   const parts = transcriptPath.split(path.sep)
   const projectsIndex = parts.indexOf('projects')

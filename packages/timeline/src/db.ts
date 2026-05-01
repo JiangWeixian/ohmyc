@@ -1,3 +1,8 @@
+// ============================================================
+// @claudeui/timeline — Database Lifecycle & Schema Migration
+// Opens/creates the SQLite database and applies pending migrations.
+// ============================================================
+
 import { mkdirSync } from 'node:fs'
 import os from 'node:os'
 import path from 'node:path'
@@ -10,15 +15,23 @@ import {
   SCHEMA_SQL,
 } from './schema.js'
 
+/** Returns the default database path: `$CUI_HOME/timeline.db` (defaults to `~/.cui/timeline.db`). */
 export function getDefaultDbPath(): string {
   const home = process.env.CUI_HOME ?? path.join(os.homedir(), '.cui')
   return path.join(home, 'timeline.db')
 }
 
+/** Options for {@link openDatabase}. */
 export interface OpenDatabaseOptions {
+  /** Custom path to the SQLite database file. Defaults to {@link getDefaultDbPath}. */
   dbPath?: string
 }
 
+/**
+ * Opens (or creates) the timeline SQLite database, enables WAL mode and foreign
+ * keys, and runs any pending schema migrations. Returns the raw `better-sqlite3`
+ * instance — callers are responsible for closing it via {@link closeDatabase}.
+ */
 export function openDatabase(options?: OpenDatabaseOptions): Database.Database {
   const dbPath = options?.dbPath ?? getDefaultDbPath()
   const dbDir = path.dirname(dbPath)
@@ -33,11 +46,20 @@ export function openDatabase(options?: OpenDatabaseOptions): Database.Database {
   return db
 }
 
+/** Options for {@link migrate}. */
 export interface MigrateOptions {
+  /** Target schema version. Defaults to {@link CURRENT_SCHEMA_VERSION}. */
   currentSchemaVersion?: number
+  /** Custom migration map. Defaults to the built-in {@link MIGRATIONS}. */
   migrations?: Record<number, string>
 }
 
+/**
+ * Applies pending schema migrations to an open database.
+ * For a fresh database (no `meta` table) it runs the full schema creation SQL.
+ * For existing databases it increments the schema version one step at a time
+ * inside a transaction, recording each applied version in the `meta` table.
+ */
 export function migrate(db: Database.Database, options?: MigrateOptions): void {
   const targetVersion = options?.currentSchemaVersion ?? CURRENT_SCHEMA_VERSION
   const migrations = options?.migrations ?? MIGRATIONS
@@ -89,6 +111,7 @@ export function migrate(db: Database.Database, options?: MigrateOptions): void {
   applyMigrations()
 }
 
+/** Closes the database connection. */
 export function closeDatabase(db: Database.Database): void {
   db.close()
 }

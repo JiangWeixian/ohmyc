@@ -1,3 +1,9 @@
+// ============================================================
+// @claudeui/timeline — Read-only Query Functions
+// Provides heatmap, paginated events, session detail, project
+// list, year list, and sync-status queries against the SQLite DB.
+// ============================================================
+
 import type Database from 'better-sqlite3'
 import type {
   DayEvents,
@@ -11,7 +17,8 @@ import type {
 } from './schema.js'
 
 // ------------------------------------------------------------------
-// Date helpers (YYYY-MM-DD  milliseconds)
+// Date helpers (YYYY-MM-DD <-> milliseconds)
+// All conversions use UTC to avoid timezone-dependent results.
 // ------------------------------------------------------------------
 
 function dateToMs(date: string): number {
@@ -44,6 +51,11 @@ function generateDateRange(from: string, to: string): string[] {
 // Heatmap
 // ------------------------------------------------------------------
 
+/**
+ * Returns daily aggregate values for a date range, suitable for a heatmap chart.
+ * Gaps in the range are filled with `0` values. Supports sessions, turns, or
+ * tokens as the aggregation metric, with optional project filtering.
+ */
 export function getHeatmap(
   db: Database.Database,
   params: HeatmapParams,
@@ -103,6 +115,12 @@ export function getHeatmap(
 // Events (paginated session list grouped by day / project)
 // ------------------------------------------------------------------
 
+/**
+ * Returns sessions grouped by calendar day and project, paginated by day
+ * (newest first). Each page contains up to `limit` distinct days. The
+ * `nextCursor` value is the last day string in the page — pass it as
+ * `cursor` to fetch the next page.
+ */
 export function getEvents(
   db: Database.Database,
   params: EventsParams = {},
@@ -133,6 +151,7 @@ export function getEvents(
   const whereClause = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : ''
 
   // 1. Fetch distinct days (newest first), limit + 1 to detect next page
+  // Using date() in SQLite converts the millisecond timestamp to YYYY-MM-DD
   const daySql = `
     SELECT DISTINCT date(started_at / 1000, 'unixepoch') AS day
     FROM sessions
@@ -248,6 +267,10 @@ export function getEvents(
 // Single session (with tools + skills)
 // ------------------------------------------------------------------
 
+/**
+ * Returns a single session enriched with its tool usage and skill invocation
+ * records. Returns `null` if the session ID is not found.
+ */
 export function getSession(
   db: Database.Database,
   sessionId: string,
@@ -275,6 +298,7 @@ export function getSession(
 // Projects list
 // ------------------------------------------------------------------
 
+/** Returns all distinct project names that have at least one session, sorted alphabetically. */
 export function getProjects(db: Database.Database): string[] {
   const rows = db
     .prepare('SELECT DISTINCT project FROM sessions ORDER BY project')
@@ -287,6 +311,7 @@ export function getProjects(db: Database.Database): string[] {
 // Years list
 // ------------------------------------------------------------------
 
+/** Returns all distinct years that contain sessions, sorted ascending. */
 export function getYears(db: Database.Database): number[] {
   const rows = db
     .prepare("SELECT DISTINCT CAST(strftime('%Y', started_at / 1000, 'unixepoch') AS INTEGER) AS year FROM sessions ORDER BY year")
@@ -299,6 +324,7 @@ export function getYears(db: Database.Database): number[] {
 // Status
 // ------------------------------------------------------------------
 
+/** Returns database status: total session count and timestamp of the last sync (if any). */
 export function getStatus(db: Database.Database): { sessionCount: number; lastSyncAt?: number } {
   const countRow = db
     .prepare('SELECT COUNT(*) AS cnt FROM sessions')
