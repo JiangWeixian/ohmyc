@@ -12,17 +12,12 @@ import { createAccumulator, createEventHandler } from '../opencode'
 import {
   assistantMessageUpdatedEvent,
   ignoredMessagePartEvent,
-  lowercaseSkillExecuteAfterEvent,
   messagePartUpdatedEvent,
-  nonSkillToolExecuteAfterEvent,
   sessionCreatedEvent,
   sessionDeletedEvent,
   sessionErrorEvent,
   sessionIdleEvent,
-  skillExecuteAfterEvent,
-  skillExecuteBeforeEvent,
   syntheticMessagePartEvent,
-  toolExecuteBeforeEvent,
   userMessageUpdatedEvent,
 } from './fixtures/events'
 
@@ -210,20 +205,20 @@ describe('createEventHandler', () => {
 
   describe('tool.execute.before', () => {
     it('counts tool executions', async () => {
-      const { handler, sessions } = createHandler()
+      const { toolExecuteBefore, sessions } = createHandler()
 
-      await handler({ event: toolExecuteBeforeEvent })
-      await handler({ event: toolExecuteBeforeEvent })
+      await toolExecuteBefore({ sessionID: 'test-session-001', tool: 'Read' })
+      await toolExecuteBefore({ sessionID: 'test-session-001', tool: 'Read' })
 
       const acc = sessions.get('test-session-001')
       expect(acc!.tools.get('Read')).toBe(2)
     })
 
     it('tracks multiple different tools', async () => {
-      const { handler, sessions } = createHandler()
+      const { toolExecuteBefore, sessions } = createHandler()
 
-      await handler({ event: toolExecuteBeforeEvent })
-      await handler({ event: skillExecuteBeforeEvent })
+      await toolExecuteBefore({ sessionID: 'test-session-001', tool: 'Read' })
+      await toolExecuteBefore({ sessionID: 'test-session-001', tool: 'Skill' })
 
       const acc = sessions.get('test-session-001')
       expect(acc!.tools.get('Read')).toBe(1)
@@ -233,42 +228,38 @@ describe('createEventHandler', () => {
 
   describe('tool.execute.after', () => {
     it('tracks skill usage for Skill tool', async () => {
-      const { handler, sessions } = createHandler()
+      const { toolExecuteAfter, sessions } = createHandler()
 
-      // Need to create session first so it exists
-      await handler({ event: sessionCreatedEvent })
-      await handler({ event: skillExecuteAfterEvent })
+      await toolExecuteAfter({ sessionID: 'test-session-001', tool: 'Skill', args: { name: 'github' } })
 
       const acc = sessions.get('test-session-001')
       expect(acc!.skills.has('github')).toBe(true)
     })
 
     it('tracks skill usage for lowercase skill tool', async () => {
-      const { handler, sessions } = createHandler()
+      const { toolExecuteAfter, sessions } = createHandler()
 
-      await handler({ event: sessionCreatedEvent })
-      await handler({ event: lowercaseSkillExecuteAfterEvent })
+      await toolExecuteAfter({ sessionID: 'test-session-001', tool: 'skill', args: { name: 'docker' } })
 
       const acc = sessions.get('test-session-001')
       expect(acc!.skills.has('docker')).toBe(true)
     })
 
     it('ignores non-skill tools', async () => {
-      const { handler, sessions } = createHandler()
+      const { handler, toolExecuteAfter, sessions } = createHandler()
 
       await handler({ event: sessionCreatedEvent })
-      await handler({ event: nonSkillToolExecuteAfterEvent })
+      await toolExecuteAfter({ sessionID: 'test-session-001', tool: 'Read', args: {} })
 
       const acc = sessions.get('test-session-001')
       expect(acc!.skills.size).toBe(0)
     })
 
     it('tracks multiple skills', async () => {
-      const { handler, sessions } = createHandler()
+      const { toolExecuteAfter, sessions } = createHandler()
 
-      await handler({ event: sessionCreatedEvent })
-      await handler({ event: skillExecuteAfterEvent })
-      await handler({ event: lowercaseSkillExecuteAfterEvent })
+      await toolExecuteAfter({ sessionID: 'test-session-001', tool: 'Skill', args: { name: 'github' } })
+      await toolExecuteAfter({ sessionID: 'test-session-001', tool: 'skill', args: { name: 'docker' } })
 
       const acc = sessions.get('test-session-001')
       expect(acc!.skills.has('github')).toBe(true)
@@ -294,16 +285,23 @@ describe('createEventHandler', () => {
       expect(written.agentName).toBe('opencode')
     })
 
-    it('warns when session not found', async () => {
+    it('writes session and removes from memory', async () => {
       const { handler } = createHandler()
 
+      await handler({ event: sessionCreatedEvent })
+      await handler({ event: userMessageUpdatedEvent })
       await handler({ event: sessionIdleEvent })
 
-      expect(mockLog).toHaveBeenCalledWith(
-        'warn',
-        'Session idle but not found',
-        expect.objectContaining({ sessionID: 'test-session-001' }),
-      )
+      expect(mockWriter.writeSession).toHaveBeenCalledTimes(1)
+    })
+
+    it('removes session from map after idle', async () => {
+      const { handler, sessions } = createHandler()
+
+      await handler({ event: sessionCreatedEvent })
+      await handler({ event: sessionIdleEvent })
+
+      expect(sessions.has('test-session-001')).toBe(false)
     })
   })
 
@@ -334,7 +332,7 @@ describe('createEventHandler', () => {
 
   describe('end-to-end session', () => {
     it('handles complete conversation flow', async () => {
-      const { handler } = createHandler()
+      const { handler, toolExecuteBefore, toolExecuteAfter } = createHandler()
 
       // Session created
       await handler({ event: sessionCreatedEvent })
@@ -344,8 +342,8 @@ describe('createEventHandler', () => {
       await handler({ event: userMessageUpdatedEvent })
 
       // Tool is called
-      await handler({ event: toolExecuteBeforeEvent })
-      await handler({ event: skillExecuteAfterEvent })
+      await toolExecuteBefore({ sessionID: 'test-session-001', tool: 'Read' })
+      await toolExecuteAfter({ sessionID: 'test-session-001', tool: 'Skill', args: { name: 'github' } })
 
       // Assistant responds
       await handler({ event: assistantMessageUpdatedEvent })
@@ -380,6 +378,7 @@ describe('createEventHandler', () => {
       const written = mockWriter.writeSession.mock.calls[0][0]
       expect(written.turns).toBe(0)
       expect(written.summary).toBe('(untitled session)')
+      expect(written.summarySource).toBe('auto')
     })
   })
 })

@@ -122,7 +122,7 @@ export const skillExecuteAfterEvent = {
     sessionID: 'test-session-001',
     tool: 'Skill',
     args: {
-      skill: 'github',
+      name: 'github',
     },
   },
 }
@@ -133,7 +133,7 @@ export const lowercaseSkillExecuteAfterEvent = {
     sessionID: 'test-session-001',
     tool: 'skill',
     args: {
-      skill: 'docker',
+      name: 'docker',
     },
   },
 }

@@ -5,16 +5,17 @@ import path from 'node:path'
 
 import { Database } from 'bun:sqlite'
 
+import { CURRENT_SCHEMA_VERSION, SCHEMA_SQL } from '../../packages/timeline/src/schema.js'
 import { createWriter } from '../../packages/timeline/src/writer.js'
 
 import type { Plugin } from '@opencode-ai/plugin'
-import type { ParsedSessionData } from '../../packages/timeline/src/schema.js'
+import type { ParsedSessionData } from '../../packages/timeline/src/ingest.js'
 
 // ---------------------------------------------------------------------------
 // Logging helper - writes to file since console.log may not be visible
 // ---------------------------------------------------------------------------
 
-const LOG_FILE = '/tmp/timeline-plugin.log'
+const LOG_FILE = path.join(os.tmpdir(), 'timeline-plugin.log')
 
 function log(level: string, message: string, extra?: Record<string, unknown>): void {
   const entry = `[${new Date().toISOString()}] [${level}] ${message}${extra ? ` ${JSON.stringify(extra)}` : ''}\n`
@@ -55,46 +56,8 @@ function ensureSchema(db: Database): void {
     return
   }
 
-  db.exec(`
-    CREATE TABLE sessions (
-      session_id        TEXT PRIMARY KEY,
-      project           TEXT NOT NULL,
-      agent_name        TEXT,
-      started_at        INTEGER NOT NULL,
-      ended_at          INTEGER NOT NULL,
-      duration_ms       INTEGER NOT NULL,
-      turns             INTEGER NOT NULL,
-      tokens_input      INTEGER NOT NULL DEFAULT 0,
-      tokens_output     INTEGER NOT NULL DEFAULT 0,
-      tokens_cached     INTEGER NOT NULL DEFAULT 0,
-      summary           TEXT,
-      summary_source    TEXT NOT NULL,
-      transcript_path   TEXT NOT NULL,
-      last_offset       INTEGER NOT NULL,
-      ingested_at       INTEGER NOT NULL,
-      model             TEXT
-    );
-    CREATE INDEX idx_sessions_started_at ON sessions(started_at DESC);
-    CREATE INDEX idx_sessions_project    ON sessions(project, started_at DESC);
-
-    CREATE TABLE session_tools (
-      session_id  TEXT NOT NULL REFERENCES sessions(session_id) ON DELETE CASCADE,
-      tool_name   TEXT NOT NULL,
-      call_count  INTEGER NOT NULL DEFAULT 1,
-      PRIMARY KEY (session_id, tool_name)
-    );
-
-    CREATE TABLE session_skills (
-      session_id  TEXT NOT NULL REFERENCES sessions(session_id) ON DELETE CASCADE,
-      skill_name  TEXT NOT NULL,
-      PRIMARY KEY (session_id, skill_name)
-    );
-
-    CREATE TABLE meta (
-      key    TEXT PRIMARY KEY,
-      value  TEXT NOT NULL
-    );
-  `)
+  db.exec(SCHEMA_SQL)
+  db.query('INSERT OR REPLACE INTO meta (key, value) VALUES (?, ?)').run('schema_version', String(CURRENT_SCHEMA_VERSION))
 }
 
 // ---------------------------------------------------------------------------
@@ -158,7 +121,7 @@ function toParsedSessionData(acc: SessionAccumulator): ParsedSessionData {
     tokensOutput: acc.tokensOutput,
     tokensCached: acc.tokensCached,
     summary: acc.summary ?? acc.firstUserMessage ?? '(untitled session)',
-    summarySource: acc.summary ? 'auto' : 'first_message',
+    summarySource: acc.firstUserMessage ? 'first_message' : 'auto',
     transcriptPath: `opencode://${acc.sessionId}`,
     fileSize: 0,
     tools: [...acc.tools.entries()].map(([toolName, callCount]) => ({ toolName, callCount })),
@@ -201,6 +164,7 @@ export function createEventHandler(deps: EventHandlerDeps) {
 
   return {
     sessions,
+
     handler: async ({ event }: { event: any }) => {
       try {
         deps.log('debug', 'Event received', { eventType: event.type })
@@ -227,8 +191,16 @@ export function createEventHandler(deps: EventHandlerDeps) {
               acc.endedAt = Date.now()
               const data = toParsedSessionData(acc)
               deps.log('debug', 'Writing session', { sessionID, turns: data.turns })
-              deps.writer.writeSession(data)
-              deps.log('info', 'Session written', { sessionID })
+              try {
+                deps.writer.writeSession(data)
+                sessions.delete(sessionID)
+                deps.log('info', 'Session written', { sessionID })
+              } catch (writeError) {
+                deps.log('error', 'Failed to write session on idle', {
+                  sessionID,
+                  error: writeError instanceof Error ? writeError.message : String(writeError),
+                })
+              }
             }
             break
           }
@@ -304,32 +276,35 @@ export function createEventHandler(deps: EventHandlerDeps) {
             }
             break
           }
-
-          case 'tool.execute.before': {
-            const sessionID = event.properties?.sessionID
-            const toolName = event.properties?.tool
-            if (sessionID && toolName) {
-              const acc = getAccumulator(sessionID)
-              acc.tools.set(toolName, (acc.tools.get(toolName) || 0) + 1)
-            }
-            break
-          }
-
-          case 'tool.execute.after': {
-            const sessionID = event.properties?.sessionID
-            const toolName = event.properties?.tool
-            const args = event.properties?.args
-            if (sessionID && (toolName === 'Skill' || toolName === 'skill') && args?.skill) {
-              const acc = sessions.get(sessionID)
-              if (acc) {
-                acc.skills.add(args.skill)
-              }
-            }
-            break
-          }
         }
       } catch (error) {
         deps.log('error', 'Event handler error', { error: error instanceof Error ? error.message : String(error) })
+      }
+    },
+
+    toolExecuteBefore: async (hookInput: { sessionID: string; tool: string }) => {
+      try {
+        const acc = getAccumulator(hookInput.sessionID)
+        acc.tools.set(hookInput.tool, (acc.tools.get(hookInput.tool) || 0) + 1)
+        deps.log('debug', 'Tool execute before', { sessionID: hookInput.sessionID, tool: hookInput.tool })
+      } catch (error) {
+        deps.log('error', 'Tool execute before error', { error: error instanceof Error ? error.message : String(error) })
+      }
+    },
+
+    toolExecuteAfter: async (hookInput: { sessionID: string; tool: string; args: any }) => {
+      try {
+        deps.log('debug', 'Tool execute after', { sessionID: hookInput.sessionID, tool: hookInput.tool })
+        if (hookInput.tool === 'Skill' || hookInput.tool === 'skill') {
+          const acc = getAccumulator(hookInput.sessionID)
+          const args = hookInput.args
+          if (args && typeof args === 'object' && typeof args.name === 'string') {
+            acc.skills.add(args.name)
+            deps.log('debug', 'Skill tracked', { sessionID: hookInput.sessionID, skill: args.name })
+          }
+        }
+      } catch (error) {
+        deps.log('error', 'Tool execute after error', { error: error instanceof Error ? error.message : String(error) })
       }
     },
   }
@@ -355,10 +330,12 @@ export const TimelinePlugin: Plugin = async (input) => {
     return {}
   }
 
-  const { handler } = createEventHandler({ project, writer: writer!, log })
+  const { handler, toolExecuteBefore, toolExecuteAfter } = createEventHandler({ project, writer: writer!, log })
 
   return {
     event: handler,
+    'tool.execute.before': toolExecuteBefore,
+    'tool.execute.after': toolExecuteAfter,
   }
 }
 
