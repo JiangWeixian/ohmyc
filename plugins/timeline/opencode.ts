@@ -117,29 +117,22 @@ interface SessionAccumulator {
   model: string | null
 }
 
-const sessions = new Map<string, SessionAccumulator>()
-
-function getAccumulator(sessionId: string, project?: string): SessionAccumulator {
-  let acc = sessions.get(sessionId)
-  if (!acc) {
-    acc = {
-      sessionId,
-      project: project ?? 'unknown',
-      startedAt: Date.now(),
-      endedAt: Date.now(),
-      turns: 0,
-      tokensInput: 0,
-      tokensOutput: 0,
-      tokensCached: 0,
-      tools: new Map(),
-      skills: new Set(),
-      firstUserMessage: null,
-      summary: null,
-      model: null,
-    }
-    sessions.set(sessionId, acc)
+export function createAccumulator(sessionId: string, project?: string): SessionAccumulator {
+  return {
+    sessionId,
+    project: project ?? 'unknown',
+    startedAt: Date.now(),
+    endedAt: Date.now(),
+    turns: 0,
+    tokensInput: 0,
+    tokensOutput: 0,
+    tokensCached: 0,
+    tools: new Map(),
+    skills: new Set(),
+    firstUserMessage: null,
+    summary: null,
+    model: null,
   }
-  return acc
 }
 
 function getProjectName(input: { project?: { worktree?: string }; directory?: string }): string {
@@ -185,6 +178,164 @@ function getEventSessionID(event: any): string | undefined {
 }
 
 // ---------------------------------------------------------------------------
+// Event handler
+// ---------------------------------------------------------------------------
+
+export interface EventHandlerDeps {
+  project: string
+  writer: ReturnType<typeof createWriter>
+  log: typeof log
+}
+
+export function createEventHandler(deps: EventHandlerDeps) {
+  const sessions = new Map<string, SessionAccumulator>()
+
+  function getAccumulator(sessionId: string): SessionAccumulator {
+    let acc = sessions.get(sessionId)
+    if (!acc) {
+      acc = createAccumulator(sessionId, deps.project)
+      sessions.set(sessionId, acc)
+    }
+    return acc
+  }
+
+  return {
+    sessions,
+    handler: async ({ event }: { event: any }) => {
+      try {
+        deps.log('debug', 'Event received', { eventType: event.type })
+
+        switch (event.type) {
+          case 'session.created': {
+            const sessionID = getEventSessionID(event)
+            if (sessionID) {
+              const acc = getAccumulator(sessionID)
+              acc.startedAt = Date.now()
+              deps.log('debug', 'Session created', { sessionID })
+            }
+            break
+          }
+
+          case 'session.idle': {
+            const sessionID = getEventSessionID(event)
+            if (sessionID) {
+              const acc = sessions.get(sessionID)
+              if (!acc) {
+                deps.log('warn', 'Session idle but not found', { sessionID })
+                return
+              }
+              acc.endedAt = Date.now()
+              const data = toParsedSessionData(acc)
+              deps.log('debug', 'Writing session', { sessionID, turns: data.turns })
+              deps.writer.writeSession(data)
+              deps.log('info', 'Session written', { sessionID })
+            }
+            break
+          }
+
+          case 'session.deleted': {
+            const sessionID = getEventSessionID(event)
+            if (sessionID) {
+              const acc = sessions.get(sessionID)
+              if (acc) {
+                acc.endedAt = Date.now()
+                deps.writer.writeSession(toParsedSessionData(acc))
+                sessions.delete(sessionID)
+                deps.log('info', 'Session deleted', { sessionID })
+              }
+            }
+            break
+          }
+
+          case 'session.error': {
+            const sessionID = getEventSessionID(event)
+            if (sessionID) {
+              const acc = sessions.get(sessionID)
+              if (acc) {
+                acc.endedAt = Date.now()
+                deps.writer.writeSession(toParsedSessionData(acc))
+                deps.log('info', 'Session error written', { sessionID })
+              }
+            }
+            break
+          }
+
+          case 'message.updated': {
+            const info = event.properties?.info || event.properties?.message
+            if (info) {
+              const sessionID = info.sessionID || info.session_id
+              deps.log('debug', 'Message updated via event', { sessionID, role: info.role, hasTokens: !!info.tokens, modelID: info.modelID })
+              if (sessionID) {
+                const acc = getAccumulator(sessionID)
+
+                if (info.role === 'user') {
+                  acc.turns += 1
+                  deps.log('debug', 'Turn counted', { sessionID, turns: acc.turns })
+                }
+
+                if (info.role === 'assistant' && info.tokens) {
+                  acc.tokensInput += info.tokens.input || 0
+                  acc.tokensOutput += info.tokens.output || 0
+                  if (info.tokens.cache) {
+                    acc.tokensCached += (info.tokens.cache.read || 0) + (info.tokens.cache.write || 0)
+                  }
+                  deps.log('debug', 'Tokens updated', { sessionID, input: info.tokens.input, output: info.tokens.output })
+                }
+
+                if (info.modelID) {
+                  acc.model = info.modelID
+                }
+              }
+            }
+            break
+          }
+
+          case 'message.part.updated': {
+            const part = event.properties?.part
+            if (part && part.type === 'text' && !part.synthetic && !part.ignored) {
+              const sessionID = part.sessionID || part.session_id
+              if (sessionID && part.text?.trim()) {
+                const acc = getAccumulator(sessionID)
+                if (!acc.firstUserMessage) {
+                  acc.firstUserMessage = part.text.trim()
+                  deps.log('debug', 'First user message captured', { sessionID })
+                }
+              }
+            }
+            break
+          }
+
+          case 'tool.execute.before': {
+            const sessionID = event.properties?.sessionID
+            const toolName = event.properties?.tool
+            if (sessionID && toolName) {
+              const acc = getAccumulator(sessionID)
+              acc.tools.set(toolName, (acc.tools.get(toolName) || 0) + 1)
+            }
+            break
+          }
+
+          case 'tool.execute.after': {
+            const sessionID = event.properties?.sessionID
+            const toolName = event.properties?.tool
+            const args = event.properties?.args
+            if (sessionID && (toolName === 'Skill' || toolName === 'skill') && args?.skill) {
+              const acc = sessions.get(sessionID)
+              if (acc) {
+                acc.skills.add(args.skill)
+              }
+            }
+            break
+          }
+        }
+      } catch (error) {
+        deps.log('error', 'Event handler error', { error: error instanceof Error ? error.message : String(error) })
+      }
+    },
+  }
+}
+
+// ---------------------------------------------------------------------------
 // Plugin
 // ---------------------------------------------------------------------------
 
@@ -204,142 +355,10 @@ export const TimelinePlugin: Plugin = async (input) => {
     return {}
   }
 
+  const { handler } = createEventHandler({ project, writer: writer!, log })
+
   return {
-    'message.updated': async (hookInput) => {
-      try {
-        const info = hookInput.info
-        log('debug', 'Message updated', { sessionID: info.sessionID, role: info.role, hasTokens: !!info.tokens, modelID: info.modelID })
-        const acc = getAccumulator(info.sessionID, project)
-
-        if (info.role === 'user') {
-          acc.turns += 1
-          log('debug', 'Turn counted', { sessionID: info.sessionID, turns: acc.turns })
-        }
-
-        if (info.role === 'assistant' && info.tokens) {
-          acc.tokensInput += info.tokens.input || 0
-          acc.tokensOutput += info.tokens.output || 0
-          if (info.tokens.cache) {
-            acc.tokensCached += (info.tokens.cache.read || 0) + (info.tokens.cache.write || 0)
-          }
-          log('debug', 'Tokens updated', { sessionID: info.sessionID, input: info.tokens.input, output: info.tokens.output })
-        }
-
-        if (info.modelID) {
-          acc.model = info.modelID
-        }
-      } catch (error) {
-        log('error', 'Message updated error', { error: error instanceof Error ? error.message : String(error) })
-      }
-    },
-
-    'message.part.updated': async (hookInput) => {
-      try {
-        const part = hookInput.part
-        if (part.type !== 'text' || part.synthetic || part.ignored) {
-          return
-        }
-
-        const acc = getAccumulator(part.sessionID, project)
-        if (!acc.firstUserMessage && part.text.trim()) {
-          acc.firstUserMessage = part.text.trim()
-        }
-      } catch (error) {
-        log('error', 'Message part updated error', { error: error instanceof Error ? error.message : String(error) })
-      }
-    },
-
-    'tool.execute.before': async (hookInput) => {
-      try {
-        const acc = getAccumulator(hookInput.sessionID, project)
-        const toolName = hookInput.tool
-        acc.tools.set(toolName, (acc.tools.get(toolName) || 0) + 1)
-      } catch (error) {
-        log('error', 'Tool execute before error', { error: error instanceof Error ? error.message : String(error) })
-      }
-    },
-
-    'tool.execute.after': async (hookInput) => {
-      try {
-        const acc = sessions.get(hookInput.sessionID)
-        if (!acc) {
-          return
-        }
-
-        if (hookInput.tool === 'Skill' || hookInput.tool === 'skill') {
-          const args = hookInput.args
-          if (args && typeof args === 'object' && typeof args.skill === 'string') {
-            acc.skills.add(args.skill)
-          }
-        }
-      } catch (error) {
-        log('error', 'Tool execute after error', { error: error instanceof Error ? error.message : String(error) })
-      }
-    },
-
-    event: async ({ event }) => {
-      try {
-        log('debug', 'Event received', { eventType: event.type })
-
-        switch (event.type) {
-          case 'session.created': {
-            const sessionID = getEventSessionID(event)
-            if (sessionID) {
-              const acc = getAccumulator(sessionID, project)
-              acc.startedAt = Date.now()
-              log('debug', 'Session created', { sessionID })
-            }
-            break
-          }
-
-          case 'session.idle': {
-            const sessionID = getEventSessionID(event)
-            if (sessionID) {
-              const acc = sessions.get(sessionID)
-              if (!acc) {
-                log('warn', 'Session idle but not found', { sessionID })
-                return
-              }
-              acc.endedAt = Date.now()
-              const data = toParsedSessionData(acc)
-              log('debug', 'Writing session', { sessionID, turns: data.turns })
-              writer!.writeSession(data)
-              log('info', 'Session written', { sessionID })
-            }
-            break
-          }
-
-          case 'session.deleted': {
-            const sessionID = getEventSessionID(event)
-            if (sessionID) {
-              const acc = sessions.get(sessionID)
-              if (acc) {
-                acc.endedAt = Date.now()
-                writer!.writeSession(toParsedSessionData(acc))
-                sessions.delete(sessionID)
-                log('info', 'Session deleted', { sessionID })
-              }
-            }
-            break
-          }
-
-          case 'session.error': {
-            const sessionID = getEventSessionID(event)
-            if (sessionID) {
-              const acc = sessions.get(sessionID)
-              if (acc) {
-                acc.endedAt = Date.now()
-                writer!.writeSession(toParsedSessionData(acc))
-                log('info', 'Session error written', { sessionID })
-              }
-            }
-            break
-          }
-        }
-      } catch (error) {
-        log('error', 'Event handler error', { error: error instanceof Error ? error.message : String(error) })
-      }
-    },
+    event: handler,
   }
 }
 
