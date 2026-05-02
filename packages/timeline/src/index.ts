@@ -20,14 +20,14 @@ export type { OpenDatabaseOptions as DatabaseOptions } from './db.js'
 
 export { ingestSession } from './ingest.js'
 
-export type { IngestResult } from './ingest.js'
+export type { IngestResult } from './schema.js'
 
 // ------------------------------------------------------------------
 // Writer
 // ------------------------------------------------------------------
 
 export { createWriter } from './writer.js'
-export type { SqliteDatabase, SqliteStatement, Writer, IngestResult as WriterIngestResult } from './writer.js'
+export type { SqliteDatabase, SqliteStatement, Writer } from './writer.js'
 
 // ------------------------------------------------------------------
 // Backfill
@@ -66,6 +66,7 @@ export type {
   SessionSkillRow,
   MetaRow,
   SessionDetail,
+  ParsedSessionData,
   HeatmapParams,
   HeatmapPoint,
   EventsParams,

@@ -15,7 +15,11 @@ import {
   SCHEMA_SQL,
 } from './schema.js'
 
-/** Returns the default database path: `$CUI_HOME/timeline.db` (defaults to `~/.cui/timeline.db`). */
+/**
+ * Returns the default database path: `$CUI_HOME/timeline.db` (defaults to `~/.cui/timeline.db`).
+ *
+ * @returns Absolute path to the database file.
+ */
 export function getDefaultDbPath(): string {
   const home = process.env.CUI_HOME ?? path.join(os.homedir(), '.cui')
   return path.join(home, 'timeline.db')
@@ -31,6 +35,9 @@ export interface OpenDatabaseOptions {
  * Opens (or creates) the timeline SQLite database, enables WAL mode and foreign
  * keys, and runs any pending schema migrations. Returns the raw `better-sqlite3`
  * instance — callers are responsible for closing it via {@link closeDatabase}.
+ *
+ * @param options - Optional database path override.
+ * @returns The opened `better-sqlite3` database instance.
  */
 export function openDatabase(options?: OpenDatabaseOptions): Database.Database {
   const dbPath = options?.dbPath ?? getDefaultDbPath()
@@ -59,6 +66,9 @@ export interface MigrateOptions {
  * For a fresh database (no `meta` table) it runs the full schema creation SQL.
  * For existing databases it increments the schema version one step at a time
  * inside a transaction, recording each applied version in the `meta` table.
+ *
+ * @param db - Open `better-sqlite3` database instance.
+ * @param options - Target version and custom migration map overrides.
  */
 export function migrate(db: Database.Database, options?: MigrateOptions): void {
   const targetVersion = options?.currentSchemaVersion ?? CURRENT_SCHEMA_VERSION
@@ -111,7 +121,11 @@ export function migrate(db: Database.Database, options?: MigrateOptions): void {
   applyMigrations()
 }
 
-/** Closes the database connection. */
+/**
+ * Closes the database connection.
+ *
+ * @param db - The `better-sqlite3` instance to close.
+ */
 export function closeDatabase(db: Database.Database): void {
   db.close()
 }

@@ -11,7 +11,7 @@ import { closeDatabase, openDatabase } from '../src/db.js'
 import { createWriter } from '../src/writer.js'
 
 import type Database from 'better-sqlite3'
-import type { ParsedSessionData } from '../src/ingest.js'
+import type { ParsedSessionData } from '../src/schema.js'
 
 describe('createWriter', () => {
   let db: Database.Database

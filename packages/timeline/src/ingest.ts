@@ -11,66 +11,10 @@ import path from 'node:path'
 import { createWriter } from './writer.js'
 
 import type Database from 'better-sqlite3'
+import type { IngestResult, ParsedSessionData } from './schema.js'
 import type { SqliteDatabase } from './writer.js'
 
-// ---------------------------------------------------------------------------
-// Parsed result type — this object contains all data extracted from JSONL,
-// and can be serialized to JSON for piping between processes.
-// ---------------------------------------------------------------------------
-
-/**
- * Parsed result of a single Claude Code transcript file.
- * Contains all extracted session data — tokens, turns, tools, skills — and
- * can be serialized to JSON for piping between processes (e.g. jq → CLI).
- */
-export interface ParsedSessionData {
-  /** Session ID (extracted from filename) */
-  sessionId: string
-  /** Project path (decoded from transcript directory name) */
-  project: string
-  /** Start timestamp (first message timestamp) */
-  startedAt: number
-  /** End timestamp (last message timestamp) */
-  endedAt: number
-  /** Session duration in milliseconds */
-  durationMs: number
-  /** Number of user/assistant turn pairs */
-  turns: number
-  /** Input tokens */
-  tokensInput: number
-  /** Output tokens */
-  tokensOutput: number
-  /** Cached tokens (read + creation) */
-  tokensCached: number
-  /** Summary text */
-  summary: string
-  /** Source of the summary */
-  summarySource: 'auto' | 'first_message'
-  /** Absolute path to the transcript file */
-  transcriptPath: string
-  /** File size in bytes */
-  fileSize: number
-  /** Tool usage statistics */
-  tools: Array<{ toolName: string; callCount: number }>
-  /** Skills invoked during the session */
-  skills: string[]
-  /** Model used in the session (e.g., claude-opus-4-7) */
-  model: string | null
-  /** Agent that created the session (e.g., 'claude', 'opencode') */
-  agentName: string | null
-}
-
-// ---------------------------------------------------------------------------
-// Result type
-// ---------------------------------------------------------------------------
-
-/** Summary of an ingest operation — how many sessions were inserted vs updated. */
-export interface IngestResult {
-  sessionId: string
-  project: string
-  sessionsInserted: number
-  sessionsUpdated: number
-}
+export type { ParsedSessionData, IngestResult } from './schema.js'
 
 // ---------------------------------------------------------------------------
 // Parser — pure function, does not touch the database
@@ -81,6 +25,10 @@ export interface IngestResult {
  * structured session data without touching the database.
  * This is separated from the writer so it can be called independently
  * (e.g. from a shell pipeline via jq).
+ *
+ * @param sessionId - Unique session identifier (UUID).
+ * @param transcriptPath - Absolute path to the JSONL transcript file.
+ * @returns Structured session data ready to be written to the database.
  */
 export function parseTranscript(
   sessionId: string,
@@ -103,7 +51,7 @@ export function parseTranscript(
   const toolCounts = new Map<string, number>()
   const skills = new Set<string>()
   let summary: string | null = null
-  let summarySource: 'auto' | 'first_message' | null = null
+  let summarySource: 'auto' | 'first_message' = 'first_message'
   let model: string | null = null
 
   for (const line of lines) {
@@ -164,8 +112,10 @@ export function parseTranscript(
             }
             // Only record cache from the last assistant message (cumulative state)
             const lastIter = iterations.at(-1)
-            tokensCached = Number(lastIter.cache_read_input_tokens) || 0
-            tokensCached += Number(lastIter.cache_creation_input_tokens) || 0
+            if (lastIter) {
+              tokensCached = Number(lastIter.cache_read_input_tokens) || 0
+              tokensCached += Number(lastIter.cache_creation_input_tokens) || 0
+            }
           } else {
             tokensInput += Number(usage.input_tokens) || 0
             tokensOutput += Number(usage.output_tokens) || 0
@@ -203,15 +153,14 @@ export function parseTranscript(
   }
 
   if (summary === null && firstUserMessage !== null) {
+    // Truncate to keep summaries compact for list views
     summary = firstUserMessage.length > 140
       ? firstUserMessage.slice(0, 140)
       : firstUserMessage
-    summarySource = 'first_message'
   }
 
   if (summary === null) {
     summary = '(untitled session)'
-    summarySource = 'first_message'
   }
 
   const project = extractProjectFromPath(transcriptPath)
@@ -222,7 +171,7 @@ export function parseTranscript(
   return {
     sessionId,
     project,
-    agentName: 'claude',
+    agentName: 'claude', // Fixed for CLI-sourced transcripts; plugins override this
     startedAt,
     endedAt,
     durationMs,
@@ -248,6 +197,11 @@ export function parseTranscript(
  * Writes parsed session data into the database using INSERT OR REPLACE.
  * Deletes and re-inserts tool/skill rows for the session to stay in sync.
  * Returns a summary of whether the session was new or an update.
+ *
+ * @param db - Database handle conforming to {@link SqliteDatabase}.
+ * @param sessionId - Unique session identifier.
+ * @param data - Pre-parsed session data to write.
+ * @returns Summary of the write operation.
  */
 export function upsertSessionData(
   db: SqliteDatabase,
@@ -264,6 +218,11 @@ export function upsertSessionData(
 /**
  * Convenience entry point that combines {@link parseTranscript} and
  * {@link upsertSessionData}. Used by the backfill process and CLI.
+ *
+ * @param db - Open `better-sqlite3` database instance.
+ * @param sessionId - Unique session identifier (UUID).
+ * @param transcriptPath - Absolute path to the JSONL transcript file.
+ * @returns Summary of the write operation.
  */
 export function ingestSession(
   db: Database.Database,

@@ -55,6 +55,10 @@ function generateDateRange(from: string, to: string): string[] {
  * Returns daily aggregate values for a date range, suitable for a heatmap chart.
  * Gaps in the range are filled with `0` values. Supports sessions, turns, or
  * tokens as the aggregation metric, with optional project filtering.
+ *
+ * @param db - Open `better-sqlite3` database instance.
+ * @param params - Date range, metric, and optional project filter.
+ * @returns One {@link HeatmapPoint} per day in the range, zero-filled.
  */
 export function getHeatmap(
   db: Database.Database,
@@ -67,6 +71,7 @@ export function getHeatmap(
   }
 
   const startMs = dateToMs(from)
+  // End-of-day boundary: subtracting 1ms from the next midnight includes the entire last day
   const endMs = dateToMs(to) + 86_400_000 - 1
 
   let selectMetric: string
@@ -120,6 +125,10 @@ export function getHeatmap(
  * (newest first). Each page contains up to `limit` distinct days. The
  * `nextCursor` value is the last day string in the page — pass it as
  * `cursor` to fetch the next page.
+ *
+ * @param db - Open `better-sqlite3` database instance.
+ * @param params - Filter, pagination, and limit options.
+ * @returns Days with nested project groups and a cursor for the next page.
  */
 export function getEvents(
   db: Database.Database,
@@ -137,6 +146,7 @@ export function getEvents(
   }
   if (to !== undefined) {
     conditions.push('started_at <= ?')
+    // End-of-day boundary: subtracting 1ms from the next midnight includes the entire last day
     args.push(dateToMs(to) + 86_400_000 - 1)
   }
   if (project !== undefined) {
@@ -270,6 +280,10 @@ export function getEvents(
 /**
  * Returns a single session enriched with its tool usage and skill invocation
  * records. Returns `null` if the session ID is not found.
+ *
+ * @param db - Open `better-sqlite3` database instance.
+ * @param sessionId - The session UUID to look up.
+ * @returns The session with tools and skills, or `null`.
  */
 export function getSession(
   db: Database.Database,
@@ -298,7 +312,12 @@ export function getSession(
 // Projects list
 // ------------------------------------------------------------------
 
-/** Returns all distinct project names that have at least one session, sorted alphabetically. */
+/**
+ * Returns all distinct project names that have at least one session, sorted alphabetically.
+ *
+ * @param db - Open `better-sqlite3` database instance.
+ * @returns Sorted array of project names.
+ */
 export function getProjects(db: Database.Database): string[] {
   const rows = db
     .prepare('SELECT DISTINCT project FROM sessions ORDER BY project')
@@ -311,7 +330,12 @@ export function getProjects(db: Database.Database): string[] {
 // Years list
 // ------------------------------------------------------------------
 
-/** Returns all distinct years that contain sessions, sorted ascending. */
+/**
+ * Returns all distinct years that contain sessions, sorted ascending.
+ *
+ * @param db - Open `better-sqlite3` database instance.
+ * @returns Sorted array of years (e.g. `[2024, 2025]`).
+ */
 export function getYears(db: Database.Database): number[] {
   const rows = db
     .prepare("SELECT DISTINCT CAST(strftime('%Y', started_at / 1000, 'unixepoch') AS INTEGER) AS year FROM sessions ORDER BY year")
@@ -324,7 +348,12 @@ export function getYears(db: Database.Database): number[] {
 // Status
 // ------------------------------------------------------------------
 
-/** Returns database status: total session count and timestamp of the last sync (if any). */
+/**
+ * Returns database status: total session count and timestamp of the last sync (if any).
+ *
+ * @param db - Open `better-sqlite3` database instance.
+ * @returns Session count and optional last-sync timestamp (epoch ms).
+ */
 export function getStatus(db: Database.Database): { sessionCount: number; lastSyncAt?: number } {
   const countRow = db
     .prepare('SELECT COUNT(*) AS cnt FROM sessions')

@@ -30,7 +30,11 @@ export interface BackfillResult {
   errors: number
 }
 
-/** Returns the default Claude Code projects directory (`$AGENT_HOME/projects` or `~/.claude/projects`). */
+/**
+ * Returns the default Claude Code projects directory (`$AGENT_HOME/projects` or `~/.claude/projects`).
+ *
+ * @returns Absolute path to the projects directory.
+ */
 export function getDefaultProjectsDir(): string {
   const agentHome = process.env.AGENT_HOME
   if (agentHome) {
@@ -63,6 +67,10 @@ function findJsonlFiles(dir: string): string[] {
  * Recursively finds all `.jsonl` files under the Claude Code projects directory
  * and ingests each one, skipping sessions that already exist in the database.
  * Records the completion timestamp in the `meta` table.
+ *
+ * @param db - Open `better-sqlite3` database instance.
+ * @param options - Custom projects directory and progress callback.
+ * @returns Counts of indexed, skipped, and errored transcripts.
  */
 export function backfillAll(
   db: Database.Database,
@@ -105,6 +113,7 @@ export function backfillAll(
     options?.onProgress?.(indexed + skipped, total)
   }
 
+  // Record when this backfill completed so the UI can show last-sync status
   db.prepare("INSERT OR REPLACE INTO meta (key, value) VALUES ('last_full_backfill_at', ?)")
     .run(String(Date.now()))
 
