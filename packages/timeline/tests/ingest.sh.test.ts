@@ -164,6 +164,23 @@ describe('ingest.sh', () => {
     expect(result.stderr).toContain('Using jq fast path')
   })
 
+  it('jq path handles transcripts with tool_result arrays', () => {
+    const sessionId = 'test-session-003b'
+    const transcriptPath = path.join(fakeClaudeDir, `${sessionId}.jsonl`)
+    writeFileSync(
+      transcriptPath,
+      `${[
+        '{"type":"user","timestamp":"2026-04-30T10:00:00.000Z","message":{"role":"user","content":"Run commands"}}',
+        '{"type":"assistant","timestamp":"2026-04-30T10:00:05.000Z","message":{"role":"assistant","content":[{"type":"text","text":"OK"}],"usage":{"input_tokens":5,"output_tokens":3}}}', '{"type":"user","timestamp":"2026-04-30T10:00:10.000Z","message":{"role":"user","content":[{"tool_use_id":"toolu_01","type":"tool_result","content":"output","is_error":false}]}}', '{"type":"user","timestamp":"2026-04-30T10:00:15.000Z","message":{"role":"user","content":"What was the result?"}}',
+      ].join('\n')}\n`,
+    )
+
+    const result = runIngest([sessionId])
+    expect(result.status).toBe(0)
+    expect(result.stderr).toContain('Using jq fast path')
+    expect(result.stdout).toContain('FAKE_CLI:')
+  })
+
   // -------------------------------------------------------------------------
   // Fallback path (no jq)
   // -------------------------------------------------------------------------
