@@ -208,10 +208,12 @@ export const TimelinePlugin: Plugin = async (input) => {
     'message.updated': async (hookInput) => {
       try {
         const info = hookInput.info
+        log('debug', 'Message updated', { sessionID: info.sessionID, role: info.role, hasTokens: !!info.tokens, modelID: info.modelID })
         const acc = getAccumulator(info.sessionID, project)
 
         if (info.role === 'user') {
           acc.turns += 1
+          log('debug', 'Turn counted', { sessionID: info.sessionID, turns: acc.turns })
         }
 
         if (info.role === 'assistant' && info.tokens) {
@@ -220,6 +222,7 @@ export const TimelinePlugin: Plugin = async (input) => {
           if (info.tokens.cache) {
             acc.tokensCached += (info.tokens.cache.read || 0) + (info.tokens.cache.write || 0)
           }
+          log('debug', 'Tokens updated', { sessionID: info.sessionID, input: info.tokens.input, output: info.tokens.output })
         }
 
         if (info.modelID) {
