@@ -314,6 +314,18 @@ importers:
         specifier: ^2.1.9
         version: 2.1.9(@types/node@20.19.37)(jsdom@26.1.0)
 
+  plugins/timeline:
+    devDependencies:
+      '@claudeui/timeline':
+        specifier: workspace:*
+        version: link:../../packages/timeline
+      '@opencode-ai/plugin':
+        specifier: ^1.14.31
+        version: 1.14.31
+      vitest:
+        specifier: ^2.1.9
+        version: 2.1.9(@types/node@20.19.37)(jsdom@26.1.0)
+
 packages:
 
   '@adobe/css-tools@4.4.4':
