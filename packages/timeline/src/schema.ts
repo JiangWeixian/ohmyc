@@ -11,6 +11,7 @@
 export interface SessionRow {
   session_id: string
   project: string
+  agent_name: string | null
   started_at: number
   ended_at: number
   duration_ms: number
@@ -109,13 +110,14 @@ export interface ProjectGroup {
 // ------------------------------------------------------------------
 
 /** Current schema version. Increment this when adding migrations. */
-export const CURRENT_SCHEMA_VERSION = 2
+export const CURRENT_SCHEMA_VERSION = 3
 
 /** Complete SQL to create all tables and indexes. */
 export const SCHEMA_SQL = `
 CREATE TABLE sessions (
   session_id        TEXT PRIMARY KEY,
   project           TEXT NOT NULL,
+  agent_name        TEXT,
   started_at        INTEGER NOT NULL,
   ended_at          INTEGER NOT NULL,
   duration_ms       INTEGER NOT NULL,
@@ -157,4 +159,5 @@ CREATE TABLE meta (
 export const MIGRATIONS: Record<number, string> = {
   1: '',
   2: 'ALTER TABLE sessions ADD COLUMN model TEXT;',
+  3: 'ALTER TABLE sessions ADD COLUMN agent_name TEXT;',
 }
