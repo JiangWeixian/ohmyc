@@ -32,6 +32,12 @@ function ensureDb(): Database {
 function ensureSchema(db: Database): void {
   const hasSessions = db.query("SELECT name FROM sqlite_master WHERE type='table' AND name='sessions'").get()
   if (hasSessions) {
+    // Check if agent_name column exists (migration from v2 to v3)
+    const hasAgentName = db.query('PRAGMA table_info(sessions)').all()
+      .some((col: any) => col.name === 'agent_name')
+    if (!hasAgentName) {
+      db.exec('ALTER TABLE sessions ADD COLUMN agent_name TEXT;')
+    }
     return
   }
 
@@ -39,6 +45,7 @@ function ensureSchema(db: Database): void {
     CREATE TABLE sessions (
       session_id        TEXT PRIMARY KEY,
       project           TEXT NOT NULL,
+      agent_name        TEXT,
       started_at        INTEGER NOT NULL,
       ended_at          INTEGER NOT NULL,
       duration_ms       INTEGER NOT NULL,
@@ -159,100 +166,150 @@ function toParsedSessionData(acc: SessionAccumulator): ParsedSessionData {
 
 export const TimelinePlugin: Plugin = async (input) => {
   const project = getProjectName(input)
-  const db = ensureDb()
-  const writer = createWriter(db)
+  console.log(`[timeline-plugin] Initializing for project: ${project}, db: ${getDbPath()}`)
+
+  let db: Database | undefined
+  let writer: ReturnType<typeof createWriter> | undefined
+
+  try {
+    db = ensureDb()
+    writer = createWriter(db)
+    console.log('[timeline-plugin] Database ready')
+  } catch (error) {
+    console.error('[timeline-plugin] Database init failed:', error)
+    return {}
+  }
 
   return {
     'session.created': async (hookInput) => {
-      const acc = getAccumulator(hookInput.sessionID, project)
-      acc.startedAt = Date.now()
+      try {
+        const acc = getAccumulator(hookInput.sessionID, project)
+        acc.startedAt = Date.now()
+        console.log(`[timeline-plugin] Session created: ${hookInput.sessionID}`)
+      } catch (error) {
+        console.error('[timeline-plugin] Session created error:', error)
+      }
     },
 
     'session.idle': async (hookInput) => {
-      const acc = sessions.get(hookInput.sessionID)
-      if (!acc) {
-        return
+      try {
+        const acc = sessions.get(hookInput.sessionID)
+        if (!acc) {
+          console.warn(`[timeline-plugin] Session idle but not found: ${hookInput.sessionID}`)
+          return
+        }
+        acc.endedAt = Date.now()
+        const data = toParsedSessionData(acc)
+        console.log(`[timeline-plugin] Writing session: ${hookInput.sessionID}, turns: ${data.turns}`)
+        writer!.writeSession(data)
+        console.log(`[timeline-plugin] Session written: ${hookInput.sessionID}`)
+      } catch (error) {
+        console.error('[timeline-plugin] Session idle error:', error)
       }
-      acc.endedAt = Date.now()
-      writer.writeSession(toParsedSessionData(acc))
     },
 
     'session.deleted': async (hookInput) => {
-      const acc = sessions.get(hookInput.sessionID)
-      if (!acc) {
-        return
+      try {
+        const acc = sessions.get(hookInput.sessionID)
+        if (!acc) {
+          return
+        }
+        acc.endedAt = Date.now()
+        writer!.writeSession(toParsedSessionData(acc))
+        sessions.delete(hookInput.sessionID)
+        console.log(`[timeline-plugin] Session deleted: ${hookInput.sessionID}`)
+      } catch (error) {
+        console.error('[timeline-plugin] Session deleted error:', error)
       }
-      acc.endedAt = Date.now()
-      writer.writeSession(toParsedSessionData(acc))
-      sessions.delete(hookInput.sessionID)
     },
 
     'message.updated': async (hookInput) => {
-      const info = hookInput.info
-      const acc = getAccumulator(info.sessionID, project)
+      try {
+        const info = hookInput.info
+        const acc = getAccumulator(info.sessionID, project)
 
-      if (info.role === 'user') {
-        acc.turns += 1
-      }
-
-      if (info.role === 'assistant' && info.tokens) {
-        acc.tokensInput += info.tokens.input || 0
-        acc.tokensOutput += info.tokens.output || 0
-        if (info.tokens.cache) {
-          acc.tokensCached += (info.tokens.cache.read || 0) + (info.tokens.cache.write || 0)
+        if (info.role === 'user') {
+          acc.turns += 1
         }
-      }
 
-      if (info.modelID) {
-        acc.model = info.modelID
+        if (info.role === 'assistant' && info.tokens) {
+          acc.tokensInput += info.tokens.input || 0
+          acc.tokensOutput += info.tokens.output || 0
+          if (info.tokens.cache) {
+            acc.tokensCached += (info.tokens.cache.read || 0) + (info.tokens.cache.write || 0)
+          }
+        }
+
+        if (info.modelID) {
+          acc.model = info.modelID
+        }
+      } catch (error) {
+        console.error('[timeline-plugin] Message updated error:', error)
       }
     },
 
     'message.part.updated': async (hookInput) => {
-      const part = hookInput.part
-      if (part.type !== 'text' || part.synthetic || part.ignored) {
-        return
-      }
+      try {
+        const part = hookInput.part
+        if (part.type !== 'text' || part.synthetic || part.ignored) {
+          return
+        }
 
-      const acc = getAccumulator(part.sessionID, project)
-      if (!acc.firstUserMessage && part.text.trim()) {
-        acc.firstUserMessage = part.text.trim()
+        const acc = getAccumulator(part.sessionID, project)
+        if (!acc.firstUserMessage && part.text.trim()) {
+          acc.firstUserMessage = part.text.trim()
+        }
+      } catch (error) {
+        console.error('[timeline-plugin] Message part updated error:', error)
       }
     },
 
     'tool.execute.before': async (hookInput) => {
-      const acc = getAccumulator(hookInput.sessionID, project)
-      const toolName = hookInput.tool
-      acc.tools.set(toolName, (acc.tools.get(toolName) || 0) + 1)
+      try {
+        const acc = getAccumulator(hookInput.sessionID, project)
+        const toolName = hookInput.tool
+        acc.tools.set(toolName, (acc.tools.get(toolName) || 0) + 1)
+      } catch (error) {
+        console.error('[timeline-plugin] Tool execute before error:', error)
+      }
     },
 
     'tool.execute.after': async (hookInput) => {
-      const acc = sessions.get(hookInput.sessionID)
-      if (!acc) {
-        return
-      }
-
-      if (hookInput.tool === 'Skill' || hookInput.tool === 'skill') {
-        const args = hookInput.args
-        if (args && typeof args === 'object' && typeof args.skill === 'string') {
-          acc.skills.add(args.skill)
+      try {
+        const acc = sessions.get(hookInput.sessionID)
+        if (!acc) {
+          return
         }
+
+        if (hookInput.tool === 'Skill' || hookInput.tool === 'skill') {
+          const args = hookInput.args
+          if (args && typeof args === 'object' && typeof args.skill === 'string') {
+            acc.skills.add(args.skill)
+          }
+        }
+      } catch (error) {
+        console.error('[timeline-plugin] Tool execute after error:', error)
       }
     },
 
     event: async ({ event }) => {
       if (event.type === 'session.error') {
-        const sessionID
-          = (event.properties.sessionID as string)
-            || (event.properties.info && typeof event.properties.info === 'object'
-              ? (event.properties.info as Record<string, unknown>).id
-              : undefined)
-            || 'unknown'
+        try {
+          const sessionID
+            = (event.properties.sessionID as string)
+              || (event.properties.info && typeof event.properties.info === 'object'
+                ? (event.properties.info as Record<string, unknown>).id
+                : undefined)
+              || 'unknown'
 
-        const acc = sessions.get(sessionID)
-        if (acc) {
-          acc.endedAt = Date.now()
-          writer.writeSession(toParsedSessionData(acc))
+          const acc = sessions.get(sessionID)
+          if (acc) {
+            acc.endedAt = Date.now()
+            writer!.writeSession(toParsedSessionData(acc))
+            console.log(`[timeline-plugin] Session error written: ${sessionID}`)
+          }
+        } catch (error) {
+          console.error('[timeline-plugin] Session error handler failed:', error)
         }
       }
     },
