@@ -8,7 +8,10 @@ import { readFileSync, statSync } from 'node:fs'
 import os from 'node:os'
 import path from 'node:path'
 
+import { createWriter } from './writer.js'
+
 import type Database from 'better-sqlite3'
+import type { SqliteDatabase } from './writer.js'
 
 // ---------------------------------------------------------------------------
 // Parsed result type — this object contains all data extracted from JSONL,
@@ -53,6 +56,8 @@ export interface ParsedSessionData {
   skills: string[]
   /** Model used in the session (e.g., claude-opus-4-7) */
   model: string | null
+  /** Agent that created the session (e.g., 'claude', 'opencode') */
+  agentName: string | null
 }
 
 // ---------------------------------------------------------------------------
@@ -217,6 +222,7 @@ export function parseTranscript(
   return {
     sessionId,
     project,
+    agentName: 'claude',
     startedAt,
     endedAt,
     durationMs,
@@ -244,69 +250,11 @@ export function parseTranscript(
  * Returns a summary of whether the session was new or an update.
  */
 export function upsertSessionData(
-  db: Database.Database,
+  db: SqliteDatabase,
   sessionId: string,
   data: ParsedSessionData,
 ): IngestResult {
-  const existingRow = db
-    .prepare('SELECT 1 FROM sessions WHERE session_id = ?')
-    .get(sessionId) as { 1: number } | undefined
-
-  const sessionsInserted = existingRow ? 0 : 1
-  const sessionsUpdated = existingRow ? 1 : 0
-  const ingestedAt = Date.now()
-
-  const upsertSession = db.prepare(`
-    INSERT OR REPLACE INTO sessions (
-      session_id, project, started_at, ended_at, duration_ms,
-      turns, tokens_input, tokens_output, tokens_cached,
-      summary, summary_source, transcript_path, last_offset, ingested_at, model
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-  `)
-
-  const deleteTools = db.prepare('DELETE FROM session_tools WHERE session_id = ?')
-  const insertTool = db.prepare('INSERT OR REPLACE INTO session_tools (session_id, tool_name, call_count) VALUES (?, ?, ?)')
-  const deleteSkills = db.prepare('DELETE FROM session_skills WHERE session_id = ?')
-  const insertSkill = db.prepare('INSERT OR REPLACE INTO session_skills (session_id, skill_name) VALUES (?, ?)')
-
-  const transaction = db.transaction(() => {
-    upsertSession.run(
-      sessionId,
-      data.project,
-      data.startedAt,
-      data.endedAt,
-      data.durationMs,
-      data.turns,
-      data.tokensInput,
-      data.tokensOutput,
-      data.tokensCached,
-      data.summary,
-      data.summarySource,
-      data.transcriptPath,
-      data.fileSize,
-      ingestedAt,
-      data.model,
-    )
-
-    deleteTools.run(sessionId)
-    for (const tool of data.tools) {
-      insertTool.run(sessionId, tool.toolName, tool.callCount)
-    }
-
-    deleteSkills.run(sessionId)
-    for (const skillName of data.skills) {
-      insertSkill.run(sessionId, skillName)
-    }
-  })
-
-  transaction()
-
-  return {
-    sessionId,
-    project: data.project,
-    sessionsInserted,
-    sessionsUpdated,
-  }
+  return createWriter(db).writeSession(data)
 }
 
 // ---------------------------------------------------------------------------
