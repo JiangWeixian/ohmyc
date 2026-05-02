@@ -152,6 +152,18 @@ describe('ProfilesView profile editor routes', () => {
     expect(screen.getByTestId('mock-card')).toBeInTheDocument()
     expect(screen.getByTestId('mock-card')).toHaveTextContent('ProfileCard:daily')
   })
+
+  it('renders profile editor at /profiles/:name/edit', () => {
+    renderWithProviders(
+      <Routes>
+        <Route path="/profiles/*" element={<ProfilesView />} />
+      </Routes>,
+      { route: '/profiles/daily/edit' },
+    )
+
+    expect(screen.getByTestId('mock-editor')).toBeInTheDocument()
+    expect(screen.getByTestId('mock-editor')).toHaveTextContent('Edit daily')
+  })
 })
 
 describe('ProfilesView active state and activation feedback', () => {

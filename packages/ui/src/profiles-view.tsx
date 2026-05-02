@@ -127,27 +127,39 @@ function ProfileRow({
   )
 }
 
-function parseSelection(parameters: Record<string, string | undefined>): SidebarSelection | null {
+interface ParsedRoute {
+  selection: SidebarSelection | null
+  editing: boolean
+}
+
+function parseSelection(parameters: Record<string, string | undefined>): ParsedRoute {
   const { '*': rest } = parameters
   if (!rest) {
-    return null
+    return { selection: null, editing: false }
   }
   if (rest === 'new') {
-    return { type: 'new-profile' }
+    return { selection: { type: 'new-profile' }, editing: false }
   }
   if (rest === 'agents') {
-    return { type: 'components', category: 'agents' }
+    return { selection: { type: 'components', category: 'agents' }, editing: false }
   }
   if (rest === 'skills') {
-    return { type: 'components', category: 'skills' }
+    return { selection: { type: 'components', category: 'skills' }, editing: false }
   }
   if (rest === 'commands') {
-    return { type: 'components', category: 'commands' }
+    return { selection: { type: 'components', category: 'commands' }, editing: false }
   }
   if (rest === 'model-configs') {
-    return { type: 'components', category: 'model-configs' }
+    return { selection: { type: 'components', category: 'model-configs' }, editing: false }
   }
-  return { type: 'profile', name: rest }
+
+  // Handle edit route: /profiles/:name/edit
+  if (rest.endsWith('/edit')) {
+    const name = rest.slice(0, -5)
+    return { selection: { type: 'profile', name }, editing: true }
+  }
+
+  return { selection: { type: 'profile', name: rest }, editing: false }
 }
 
 interface ProfilesViewProperties {
@@ -157,8 +169,7 @@ interface ProfilesViewProperties {
 export function ProfilesView({ viewSwitcher }: ProfilesViewProperties) {
   const parameters = useParams()
   const navigate = useNavigate()
-  const selection = parseSelection(parameters)
-  const [editing, setEditing] = useState(false)
+  const { selection, editing } = parseSelection(parameters)
   const [compareTarget, setCompareTarget] = useState<Profile | null>(null)
   const [searchParams, setSearchParams] = useSearchParams()
 
@@ -189,7 +200,6 @@ export function ProfilesView({ viewSwitcher }: ProfilesViewProperties) {
   const deleteMut = useDeleteProfile()
 
   const handleSelect = (sel: SidebarSelection) => {
-    setEditing(false)
     switch (sel.type) {
       case 'new-profile': { navigate('/profiles/new')
         break
@@ -343,8 +353,8 @@ export function ProfilesView({ viewSwitcher }: ProfilesViewProperties) {
         return (
           <ProfileEditor
             profile={selectedProfile}
-            onSaved={() => setEditing(false)}
-            onCancel={() => setEditing(false)}
+            onSaved={() => navigate(`/profiles/${selectedProfile.name}`)}
+            onCancel={() => navigate(`/profiles/${selectedProfile.name}`)}
           />
         )
       }
@@ -356,7 +366,7 @@ export function ProfilesView({ viewSwitcher }: ProfilesViewProperties) {
           onActivate={() => handleActivate(selectedProfile.name)}
           onDeactivate={() => handleDeactivate(selectedProfile.name)}
           onDelete={() => handleDelete(selectedProfile.name)}
-          onEdit={() => setEditing(true)}
+          onEdit={() => navigate(`/profiles/${selectedProfile.name}/edit`)}
         />
       )
     }
