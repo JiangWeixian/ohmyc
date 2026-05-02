@@ -1,5 +1,5 @@
 // plugins/timeline/opencode.ts
-import { mkdirSync } from 'node:fs'
+import { appendFileSync, mkdirSync } from 'node:fs'
 import os from 'node:os'
 import path from 'node:path'
 
@@ -9,6 +9,22 @@ import { createWriter } from '../../packages/timeline/src/writer.js'
 
 import type { Plugin } from '@opencode-ai/plugin'
 import type { ParsedSessionData } from '../../packages/timeline/src/schema.js'
+
+// ---------------------------------------------------------------------------
+// Logging helper - writes to file since console.log may not be visible
+// ---------------------------------------------------------------------------
+
+const LOG_FILE = '/tmp/timeline-plugin.log'
+
+function log(level: string, message: string, extra?: Record<string, unknown>): void {
+  const entry = `[${new Date().toISOString()}] [${level}] ${message}${extra ? ` ${JSON.stringify(extra)}` : ''}\n`
+  try {
+    appendFileSync(LOG_FILE, entry)
+  } catch {
+    // If file logging fails, try console as fallback
+    console.log(entry)
+  }
+}
 
 // ---------------------------------------------------------------------------
 // Database setup
@@ -166,7 +182,7 @@ function toParsedSessionData(acc: SessionAccumulator): ParsedSessionData {
 
 export const TimelinePlugin: Plugin = async (input) => {
   const project = getProjectName(input)
-  console.log(`[timeline-plugin] Initializing for project: ${project}, db: ${getDbPath()}`)
+  log('info', 'Plugin initializing', { project, dbPath: getDbPath() })
 
   let db: Database | undefined
   let writer: ReturnType<typeof createWriter> | undefined
@@ -174,9 +190,9 @@ export const TimelinePlugin: Plugin = async (input) => {
   try {
     db = ensureDb()
     writer = createWriter(db)
-    console.log('[timeline-plugin] Database ready')
+    log('info', 'Database ready')
   } catch (error) {
-    console.error('[timeline-plugin] Database init failed:', error)
+    log('error', 'Database init failed', { error: error instanceof Error ? error.message : String(error) })
     return {}
   }
 
@@ -185,9 +201,9 @@ export const TimelinePlugin: Plugin = async (input) => {
       try {
         const acc = getAccumulator(hookInput.sessionID, project)
         acc.startedAt = Date.now()
-        console.log(`[timeline-plugin] Session created: ${hookInput.sessionID}`)
+        log('debug', 'Session created', { sessionID: hookInput.sessionID })
       } catch (error) {
-        console.error('[timeline-plugin] Session created error:', error)
+        log('error', 'Session created error', { error: error instanceof Error ? error.message : String(error) })
       }
     },
 
@@ -195,16 +211,16 @@ export const TimelinePlugin: Plugin = async (input) => {
       try {
         const acc = sessions.get(hookInput.sessionID)
         if (!acc) {
-          console.warn(`[timeline-plugin] Session idle but not found: ${hookInput.sessionID}`)
+          log('warn', 'Session idle but not found', { sessionID: hookInput.sessionID })
           return
         }
         acc.endedAt = Date.now()
         const data = toParsedSessionData(acc)
-        console.log(`[timeline-plugin] Writing session: ${hookInput.sessionID}, turns: ${data.turns}`)
+        log('debug', 'Writing session', { sessionID: hookInput.sessionID, turns: data.turns })
         writer!.writeSession(data)
-        console.log(`[timeline-plugin] Session written: ${hookInput.sessionID}`)
+        log('info', 'Session written', { sessionID: hookInput.sessionID })
       } catch (error) {
-        console.error('[timeline-plugin] Session idle error:', error)
+        log('error', 'Session idle error', { error: error instanceof Error ? error.message : String(error) })
       }
     },
 
@@ -217,9 +233,9 @@ export const TimelinePlugin: Plugin = async (input) => {
         acc.endedAt = Date.now()
         writer!.writeSession(toParsedSessionData(acc))
         sessions.delete(hookInput.sessionID)
-        console.log(`[timeline-plugin] Session deleted: ${hookInput.sessionID}`)
+        log('info', 'Session deleted', { sessionID: hookInput.sessionID })
       } catch (error) {
-        console.error('[timeline-plugin] Session deleted error:', error)
+        log('error', 'Session deleted error', { error: error instanceof Error ? error.message : String(error) })
       }
     },
 
@@ -244,7 +260,7 @@ export const TimelinePlugin: Plugin = async (input) => {
           acc.model = info.modelID
         }
       } catch (error) {
-        console.error('[timeline-plugin] Message updated error:', error)
+        log('error', 'Message updated error', { error: error instanceof Error ? error.message : String(error) })
       }
     },
 
@@ -260,7 +276,7 @@ export const TimelinePlugin: Plugin = async (input) => {
           acc.firstUserMessage = part.text.trim()
         }
       } catch (error) {
-        console.error('[timeline-plugin] Message part updated error:', error)
+        log('error', 'Message part updated error', { error: error instanceof Error ? error.message : String(error) })
       }
     },
 
@@ -270,7 +286,7 @@ export const TimelinePlugin: Plugin = async (input) => {
         const toolName = hookInput.tool
         acc.tools.set(toolName, (acc.tools.get(toolName) || 0) + 1)
       } catch (error) {
-        console.error('[timeline-plugin] Tool execute before error:', error)
+        log('error', 'Tool execute before error', { error: error instanceof Error ? error.message : String(error) })
       }
     },
 
@@ -288,7 +304,7 @@ export const TimelinePlugin: Plugin = async (input) => {
           }
         }
       } catch (error) {
-        console.error('[timeline-plugin] Tool execute after error:', error)
+        log('error', 'Tool execute after error', { error: error instanceof Error ? error.message : String(error) })
       }
     },
 
@@ -306,10 +322,10 @@ export const TimelinePlugin: Plugin = async (input) => {
           if (acc) {
             acc.endedAt = Date.now()
             writer!.writeSession(toParsedSessionData(acc))
-            console.log(`[timeline-plugin] Session error written: ${sessionID}`)
+            log('info', 'Session error written', { sessionID })
           }
         } catch (error) {
-          console.error('[timeline-plugin] Session error handler failed:', error)
+          log('error', 'Session error handler failed', { error: error instanceof Error ? error.message : String(error) })
         }
       }
     },
