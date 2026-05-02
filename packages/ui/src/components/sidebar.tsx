@@ -51,6 +51,20 @@ export function Sidebar({
       <SidebarHeader headerSlot={headerSlot} />
       <nav className="flex-1 overflow-y-auto px-3 py-3">
         <div className="mb-2 px-2 pt-1 text-[11px] font-[510] tracking-[0.04em] uppercase text-[var(--text-tertiary)]">
+          Activity
+        </div>
+        <button
+          type="button"
+          onClick={() => navigate('/timeline')}
+          className="flex w-full items-center gap-2.5 rounded-md px-3 py-2 text-left text-[13px] font-[510] text-[var(--text-secondary)] transition-colors duration-150 hover:bg-[rgba(255,255,255,0.03)] hover:text-[var(--text-primary)]"
+        >
+          <span className="shrink-0 text-[var(--text-tertiary)]">
+            <Activity size={16} />
+          </span>
+          <span>Timeline</span>
+        </button>
+
+        <div className="mb-2 mt-5 px-2 text-[11px] font-[510] tracking-[0.04em] uppercase text-[var(--text-tertiary)]">
           Explore
         </div>
         <Tabs
@@ -82,20 +96,6 @@ export function Sidebar({
             })}
           </TabsList>
         </Tabs>
-
-        <div className="mb-2 mt-5 px-2 text-[11px] font-[510] tracking-[0.04em] uppercase text-[var(--text-tertiary)]">
-          Activity
-        </div>
-        <button
-          type="button"
-          onClick={() => navigate('/timeline')}
-          className="flex w-full items-center gap-2.5 rounded-md px-3 py-2 text-left text-[13px] font-[510] text-[var(--text-secondary)] transition-colors duration-150 hover:bg-[rgba(255,255,255,0.03)] hover:text-[var(--text-primary)]"
-        >
-          <span className="shrink-0 text-[var(--text-tertiary)]">
-            <Activity size={16} />
-          </span>
-          <span>Timeline</span>
-        </button>
       </nav>
     </aside>
   )
