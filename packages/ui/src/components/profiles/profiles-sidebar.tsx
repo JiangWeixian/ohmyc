@@ -20,7 +20,7 @@ import { cn } from '@/lib/utils'
 import type { Profile } from '@claudeui/shared'
 
 export type SidebarSelection
-  = { type: 'components'; category: 'agents' | 'commands' | 'model-configs' | 'skills' } | { type: 'new-profile' } | { type: 'profile'; name: string }
+  = { type: 'components'; category: 'agents' | 'commands' | 'model-configs' | 'skills'; editName?: string } | { type: 'new-profile' } | { type: 'profile'; name: string }
 
 interface ProfilesSidebarProperties {
   profiles: Profile[]

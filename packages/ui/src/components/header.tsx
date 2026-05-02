@@ -20,12 +20,26 @@ function useBreadcrumb(): { root: string; current: string } {
   }
   for (const [key, label] of Object.entries(profileComponents)) {
     if (pathname.startsWith(`/profiles/${key}`)) {
+      // Check if it's an edit route like /profiles/agents/name/edit
+      const match = pathname.match(new RegExp(`^/profiles/${key}/(.+)/edit$`))
+      if (match) {
+        return { root: 'Profiles', current: `Edit ${match[1]}` }
+      }
+      // Check if it's a new route like /profiles/agents/edit
+      if (pathname === `/profiles/${key}/edit`) {
+        return { root: 'Profiles', current: `New ${label.slice(0, -1)}` }
+      }
       return { root: 'Profiles', current: label }
     }
   }
   if (pathname.startsWith('/profiles/')) {
-    const name = pathname.slice('/profiles/'.length)
-    return { root: 'Profiles', current: name || 'All profiles' }
+    const rest = pathname.slice('/profiles/'.length)
+    // Handle profile edit: /profiles/:name/edit
+    if (rest.endsWith('/edit')) {
+      const name = rest.slice(0, -5)
+      return { root: 'Profiles', current: `Edit ${name}` }
+    }
+    return { root: 'Profiles', current: rest || 'All profiles' }
   }
   if (pathname.startsWith('/profiles')) {
     return { root: 'Profiles', current: 'All profiles' }

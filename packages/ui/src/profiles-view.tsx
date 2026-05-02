@@ -153,7 +153,20 @@ function parseSelection(parameters: Record<string, string | undefined>): ParsedR
     return { selection: { type: 'components', category: 'model-configs' }, editing: false }
   }
 
-  // Handle edit route: /profiles/:name/edit
+  // Handle component edit routes: /profiles/agents/edit or /profiles/agents/:name/edit
+  const componentEditMatch = rest.match(/^(agents|skills|commands|model-configs)\/(.+)$/)
+  if (componentEditMatch) {
+    const [, category, tail] = componentEditMatch
+    if (tail === 'edit') {
+      return { selection: { type: 'components', category: category as any }, editing: true }
+    }
+    if (tail.endsWith('/edit')) {
+      const editName = tail.slice(0, -5)
+      return { selection: { type: 'components', category: category as any, editName }, editing: true }
+    }
+  }
+
+  // Handle profile edit route: /profiles/:name/edit
   if (rest.endsWith('/edit')) {
     const name = rest.slice(0, -5)
     return { selection: { type: 'profile', name }, editing: true }
@@ -178,19 +191,10 @@ export function ProfilesView({ viewSwitcher }: ProfilesViewProperties) {
   const active = data?.active ?? null
 
   const isCompareOpen = compareTarget !== null
-  const [componentEditTarget, setComponentEditTarget]
-    = useState<{ category: 'agents' | 'commands' | 'model-configs' | 'skills'; name?: string } | null>(null)
-  const componentCategory = selection?.type === 'components' ? selection.category : null
-  // Reset component-edit target when sidebar category or selection changes
-  useEffect(() => {
-    /* eslint-disable react-hooks/set-state-in-effect, react/set-state-in-effect, react-hooks-extra/set-state-in-effect, react-naming-convention/set-state-in-effect */
-    setComponentEditTarget(previous => (previous === null ? previous : null))
-    /* eslint-enable react-hooks/set-state-in-effect, react/set-state-in-effect, react-hooks-extra/set-state-in-effect, react-naming-convention/set-state-in-effect */
-  }, [componentCategory, selection?.type])
   const isEditorRoute
     = selection?.type === 'new-profile'
       || (selection?.type === 'profile' && editing)
-      || (selection?.type === 'components' && componentEditTarget !== null)
+      || (selection?.type === 'components' && editing)
 
   const selectedProfileName = selection?.type === 'profile' ? selection.name : null
   const { data: selectedProfile } = useProfile(selectedProfileName)
@@ -381,20 +385,26 @@ export function ProfilesView({ viewSwitcher }: ProfilesViewProperties) {
     }
 
     if (selection.type === 'components') {
-      if (componentEditTarget && componentEditTarget.category === selection.category) {
+      if (editing) {
         return (
           <StoreComponentEditor
-            category={componentEditTarget.category}
-            editName={componentEditTarget.name}
-            onSaved={() => setComponentEditTarget(null)}
-            onCancel={() => setComponentEditTarget(null)}
+            category={selection.category}
+            editName={selection.editName}
+            onSaved={() => navigate(`/profiles/${selection.category}`)}
+            onCancel={() => navigate(`/profiles/${selection.category}`)}
           />
         )
       }
       return (
         <StoreComponentList
           category={selection.category}
-          onEdit={(category, name) => setComponentEditTarget({ category, name })}
+          onEdit={(category, name) => {
+            if (name) {
+              navigate(`/profiles/${category}/${name}/edit`)
+            } else {
+              navigate(`/profiles/${category}/edit`)
+            }
+          }}
         />
       )
     }
