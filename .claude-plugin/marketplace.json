@@ -2,8 +2,8 @@
   "name": "claudeui",
   "description": "ClaudeUI official plugin marketplace",
   "owner": {
-    "name": "ClaudeUI Team",
-    "email": "hello@claudeui.dev"
+    "name": "JiangWeixian",
+    "email": "jiangweixian1994@gmail.com"
   },
   "plugins": [
     {
@@ -12,7 +12,7 @@
       "description": "Auto-collects Claude Code session data for Timeline dashboard",
       "version": "1.0.0",
       "author": {
-        "name": "ClaudeUI Team"
+        "name": "JiangWeixian"
       },
       "homepage": "https://github.com/anomalyco/claudeui/tree/main/plugins/timeline",
       "license": "MIT"
