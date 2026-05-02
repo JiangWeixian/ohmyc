@@ -61,6 +61,18 @@ describe('parseTranscript', () => {
     expect(data.skills).toEqual(['design-consultation'])
   })
 
+  it('excludes tool_result arrays from turns count', () => {
+    const transcriptPath = path.join(fixturesDir, 'session-with-tool-results.jsonl')
+    const data = parseTranscript('test-session-tool-results', transcriptPath)
+
+    // This fixture has 3 user messages:
+    // - "Run some commands" (string) -> should count as turn
+    // - tool_result array -> should NOT count as turn
+    // - "What was the result?" (string) -> should count as turn
+    expect(data.turns).toBe(2)
+    expect(data.summary).toBe('Helped user run commands')
+  })
+
   describe('project path decoding', () => {
     let tmpDir: string
 
