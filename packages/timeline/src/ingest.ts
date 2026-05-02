@@ -132,10 +132,13 @@ export function parseTranscript(
     if (type === 'user') {
       const message = parsed.message as Record<string, unknown> | undefined
       if (message?.role === 'user') {
-        turns++
         const content = message.content
-        if (firstUserMessage === null && typeof content === 'string') {
-          firstUserMessage = content
+        // Only count natural language input as a turn, exclude tool_result arrays
+        if (typeof content === 'string') {
+          turns++
+          if (firstUserMessage === null) {
+            firstUserMessage = content
+          }
         }
       }
     }
