@@ -21,7 +21,6 @@ function log(level: string, message: string, extra?: Record<string, unknown>): v
   try {
     appendFileSync(LOG_FILE, entry)
   } catch {
-    // If file logging fails, try console as fallback
     console.log(entry)
   }
 }
@@ -48,7 +47,6 @@ function ensureDb(): Database {
 function ensureSchema(db: Database): void {
   const hasSessions = db.query("SELECT name FROM sqlite_master WHERE type='table' AND name='sessions'").get()
   if (hasSessions) {
-    // Check if agent_name column exists (migration from v2 to v3)
     const hasAgentName = db.query('PRAGMA table_info(sessions)').all()
       .some((col: any) => col.name === 'agent_name')
     if (!hasAgentName) {
@@ -176,6 +174,16 @@ function toParsedSessionData(acc: SessionAccumulator): ParsedSessionData {
   }
 }
 
+function getEventSessionID(event: any): string | undefined {
+  if (event.properties?.sessionID) {
+    return event.properties.sessionID as string
+  }
+  if (event.properties?.info?.id) {
+    return event.properties.info.id as string
+  }
+  return undefined
+}
+
 // ---------------------------------------------------------------------------
 // Plugin
 // ---------------------------------------------------------------------------
@@ -197,48 +205,6 @@ export const TimelinePlugin: Plugin = async (input) => {
   }
 
   return {
-    'session.created': async (hookInput) => {
-      try {
-        const acc = getAccumulator(hookInput.sessionID, project)
-        acc.startedAt = Date.now()
-        log('debug', 'Session created', { sessionID: hookInput.sessionID })
-      } catch (error) {
-        log('error', 'Session created error', { error: error instanceof Error ? error.message : String(error) })
-      }
-    },
-
-    'session.idle': async (hookInput) => {
-      try {
-        const acc = sessions.get(hookInput.sessionID)
-        if (!acc) {
-          log('warn', 'Session idle but not found', { sessionID: hookInput.sessionID })
-          return
-        }
-        acc.endedAt = Date.now()
-        const data = toParsedSessionData(acc)
-        log('debug', 'Writing session', { sessionID: hookInput.sessionID, turns: data.turns })
-        writer!.writeSession(data)
-        log('info', 'Session written', { sessionID: hookInput.sessionID })
-      } catch (error) {
-        log('error', 'Session idle error', { error: error instanceof Error ? error.message : String(error) })
-      }
-    },
-
-    'session.deleted': async (hookInput) => {
-      try {
-        const acc = sessions.get(hookInput.sessionID)
-        if (!acc) {
-          return
-        }
-        acc.endedAt = Date.now()
-        writer!.writeSession(toParsedSessionData(acc))
-        sessions.delete(hookInput.sessionID)
-        log('info', 'Session deleted', { sessionID: hookInput.sessionID })
-      } catch (error) {
-        log('error', 'Session deleted error', { error: error instanceof Error ? error.message : String(error) })
-      }
-    },
-
     'message.updated': async (hookInput) => {
       try {
         const info = hookInput.info
@@ -309,24 +275,66 @@ export const TimelinePlugin: Plugin = async (input) => {
     },
 
     event: async ({ event }) => {
-      if (event.type === 'session.error') {
-        try {
-          const sessionID
-            = (event.properties.sessionID as string)
-              || (event.properties.info && typeof event.properties.info === 'object'
-                ? (event.properties.info as Record<string, unknown>).id
-                : undefined)
-              || 'unknown'
+      try {
+        log('debug', 'Event received', { eventType: event.type })
 
-          const acc = sessions.get(sessionID)
-          if (acc) {
-            acc.endedAt = Date.now()
-            writer!.writeSession(toParsedSessionData(acc))
-            log('info', 'Session error written', { sessionID })
+        switch (event.type) {
+          case 'session.created': {
+            const sessionID = getEventSessionID(event)
+            if (sessionID) {
+              const acc = getAccumulator(sessionID, project)
+              acc.startedAt = Date.now()
+              log('debug', 'Session created', { sessionID })
+            }
+            break
           }
-        } catch (error) {
-          log('error', 'Session error handler failed', { error: error instanceof Error ? error.message : String(error) })
+
+          case 'session.idle': {
+            const sessionID = getEventSessionID(event)
+            if (sessionID) {
+              const acc = sessions.get(sessionID)
+              if (!acc) {
+                log('warn', 'Session idle but not found', { sessionID })
+                return
+              }
+              acc.endedAt = Date.now()
+              const data = toParsedSessionData(acc)
+              log('debug', 'Writing session', { sessionID, turns: data.turns })
+              writer!.writeSession(data)
+              log('info', 'Session written', { sessionID })
+            }
+            break
+          }
+
+          case 'session.deleted': {
+            const sessionID = getEventSessionID(event)
+            if (sessionID) {
+              const acc = sessions.get(sessionID)
+              if (acc) {
+                acc.endedAt = Date.now()
+                writer!.writeSession(toParsedSessionData(acc))
+                sessions.delete(sessionID)
+                log('info', 'Session deleted', { sessionID })
+              }
+            }
+            break
+          }
+
+          case 'session.error': {
+            const sessionID = getEventSessionID(event)
+            if (sessionID) {
+              const acc = sessions.get(sessionID)
+              if (acc) {
+                acc.endedAt = Date.now()
+                writer!.writeSession(toParsedSessionData(acc))
+                log('info', 'Session error written', { sessionID })
+              }
+            }
+            break
+          }
         }
+      } catch (error) {
+        log('error', 'Event handler error', { error: error instanceof Error ? error.message : String(error) })
       }
     },
   }
