@@ -5,6 +5,7 @@
 // ============================================================
 
 import { readFileSync, statSync } from 'node:fs'
+import os from 'node:os'
 import path from 'node:path'
 
 import type Database from 'better-sqlite3'
@@ -339,13 +340,20 @@ function decodeProjectName(encodedName: string): string {
   return encodedName.replaceAll('-', '/')
 }
 
-/** Extracts the project path from a transcript file path by finding the `projects` directory segment. */
+/** Extracts the project path from a transcript file path by finding the `projects` directory segment.
+ *  Strips the home directory prefix for a display-friendly name.
+ */
 function extractProjectFromPath(transcriptPath: string): string {
   const parts = transcriptPath.split(path.sep)
   const projectsIndex = parts.indexOf('projects')
   if (projectsIndex !== -1 && projectsIndex + 1 < parts.length) {
     const encodedName = parts[projectsIndex + 1]
-    return decodeProjectName(encodedName)
+    const absolutePath = decodeProjectName(encodedName)
+    const homeDir = os.homedir()
+    if (absolutePath.startsWith(homeDir)) {
+      return `~${absolutePath.slice(homeDir.length)}`
+    }
+    return absolutePath
   }
   return 'unknown'
 }
