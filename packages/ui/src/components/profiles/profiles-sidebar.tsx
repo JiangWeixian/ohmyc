@@ -153,7 +153,7 @@ export function ProfilesSidebar({ profiles, active, selection, onSelect, onCompa
                       </span>
                     )}
                     {/* Hover actions */}
-                    <span className="hidden group-hover:flex items-center gap-1">
+                    <span className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity duration-150 pointer-events-none group-hover:pointer-events-auto">
                       {!isActive && onActivate && (
                         <span
                           onClick={(e) => {
