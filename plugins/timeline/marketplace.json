@@ -1,0 +1,86 @@
+{
+  "id": "claudeui-timeline",
+  "name": "ClaudeUI Timeline",
+  "version": "1.0.0",
+  "description": "Auto-collects Claude Code session data for ClaudeUI Timeline dashboard. Track your coding activity, tokens usage, tool calls, and session history over time.",
+  "author": {
+    "name": "ClaudeUI",
+    "email": "hello@claudeui.dev",
+    "url": "https://github.com/anomalyco/claudeui"
+  },
+  "publisher": "claudeui",
+  "license": "MIT",
+  "homepage": "https://github.com/anomalyco/claudeui/tree/main/plugins/timeline",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/anomalyco/claudeui.git",
+    "directory": "plugins/timeline"
+  },
+  "bugs": {
+    "url": "https://github.com/anomalyco/claudeui/issues"
+  },
+  "keywords": [
+    "timeline",
+    "activity",
+    "analytics",
+    "dashboard",
+    "productivity",
+    "session-history",
+    "token-usage",
+    "coding-stats"
+  ],
+  "categories": [
+    "Analytics",
+    "Productivity",
+    "Dashboard"
+  ],
+  "pricing": {
+    "type": "free",
+    "price": 0
+  },
+  "display": {
+    "icon": "📊",
+    "color": "#6366f1",
+    "screenshots": [
+      "./docs/screenshots/heatmap.png",
+      "./docs/screenshots/session-list.png",
+      "./docs/screenshots/profile-stats.png"
+    ]
+  },
+  "compatibility": {
+    "claudeCode": ">=2.1.0",
+    "platforms": ["macos", "linux", "windows"]
+  },
+  "dependencies": [],
+  "features": [
+    "Automatic session data collection via Stop hook",
+    "SQLite database for local storage",
+    "jq fast path for efficient JSONL parsing",
+    "Incremental backfill for historical data",
+    "Heatmap visualization of coding activity",
+    "Session event listing with pagination",
+    "Tool and skill usage statistics",
+    "Token usage tracking (input/output/cache)",
+    "Project-based organization",
+    "Timeline dashboard integration"
+  ],
+  "components": {
+    "hooks": true,
+    "mcpServers": false,
+    "skills": false,
+    "agents": false,
+    "lspServers": false,
+    "themes": false,
+    "commands": false
+  },
+  "install": {
+    "recommended": true,
+    "scope": "user",
+    "postInstall": "The plugin will automatically start collecting session data after installation. Run 'claudeui dashboard --sync' to backfill historical sessions."
+  },
+  "documentation": {
+    "readme": "./README.md",
+    "changelog": "./CHANGELOG.md",
+    "license": "./LICENSE"
+  }
+}
