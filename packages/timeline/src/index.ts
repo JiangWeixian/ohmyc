@@ -23,6 +23,13 @@ export { ingestSession } from './ingest.js'
 export type { IngestResult } from './ingest.js'
 
 // ------------------------------------------------------------------
+// Writer
+// ------------------------------------------------------------------
+
+export { createWriter } from './writer.js'
+export type { SqliteDatabase, SqliteStatement, Writer, IngestResult as WriterIngestResult } from './writer.js'
+
+// ------------------------------------------------------------------
 // Backfill
 // ------------------------------------------------------------------
 
