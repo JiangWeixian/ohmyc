@@ -108,7 +108,7 @@ export async function settingsRoutes(fastify: FastifyInstance, options: Settings
       const { SettingsJsonSchema } = await import('@claudeui/shared')
       const { zodToJsonSchema } = await import('zod-to-json-schema')
 
-      const jsonSchema = zodToJsonSchema(SettingsJsonSchema, 'settings')
+      const jsonSchema = zodToJsonSchema(SettingsJsonSchema as any, 'settings')
       return jsonSchema
     } catch (error) {
       reply.status(500)

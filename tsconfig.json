@@ -6,7 +6,8 @@
     "module": "ESNext",
     "moduleResolution": "bundler",
     "paths": {
-      "@claudeui/shared": ["packages/shared/src/index.ts"]
+      "@claudeui/shared": ["packages/shared/src/index.ts"],
+      "@claudeui/timeline": ["packages/timeline/src/index.ts"]
     },
     "strict": true,
     "declaration": true,

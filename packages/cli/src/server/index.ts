@@ -15,6 +15,7 @@ import { profilesRoutes } from './routes/profiles'
 import { settingsRoutes } from './routes/settings'
 import { skillsRoutes } from './routes/skills'
 import { storeRoutes } from './routes/store'
+import { timelineRoutes } from './routes/timeline'
 import { ConfigLocator } from './services/config-locator'
 
 // Handling import.meta.dirname in ESM context
@@ -108,6 +109,7 @@ export async function createServer(options: CreateServerOptions = {}): Promise<F
   await fastify.register(configsRoutes, { baseDir: config.baseDir, projectBaseDir: config.projectPath, pluginsDir: config.pluginsDir, settingsPath: config.settingsPath })
   await fastify.register(profilesRoutes, { baseDir: config.baseDir })
   await fastify.register(storeRoutes, { baseDir: config.baseDir })
+  await fastify.register(timelineRoutes)
 
   if (options.apiOnly) {
     fastify.setNotFoundHandler((request, reply) => {

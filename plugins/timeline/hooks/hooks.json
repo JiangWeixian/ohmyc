@@ -1,0 +1,10 @@
+{
+  "hooks": {
+    "Stop": [{
+      "matcher": "",
+      "hooks": [
+        { "type": "command", "command": "./hooks/ingest.sh $CLAUDE_SESSION_ID" }
+      ]
+    }]
+  }
+}
