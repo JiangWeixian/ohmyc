@@ -43,6 +43,8 @@ jobs:
       - name: Install
         run: |
           pnpm install --frozen-lockfile=false
+      - name: Rebuild better-sqlite3
+        run: pnpm rebuild better-sqlite3
       # - name: Build
       #   run: |
       #     pnpm build
