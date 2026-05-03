@@ -110,7 +110,16 @@ export function migrate(db: Database.Database, options?: MigrateOptions): void {
         throw new Error(`Missing migration for version ${nextVersion}`)
       }
       if (migrationSql) {
-        db.exec(migrationSql)
+        try {
+          db.exec(migrationSql)
+        } catch (error: any) {
+          // Skip migrations that were already applied outside this system
+          // (e.g. the OpenCode plugin's inline ensureSchema adds columns
+          // without bumping schema_version in meta).
+          if (!/duplicate column name/i.test(error?.message ?? '')) {
+            throw error
+          }
+        }
       }
       db.prepare("INSERT OR REPLACE INTO meta (key, value) VALUES ('schema_version', ?)")
         .run(String(nextVersion))

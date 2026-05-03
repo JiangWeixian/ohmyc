@@ -23,6 +23,7 @@ export interface SessionRow {
   last_offset: number
   ingested_at: number
   model: string | null
+  agent_name: string | null
 }
 
 export interface ProjectGroup {
@@ -33,6 +34,7 @@ export interface ProjectGroup {
   token_count: number
   tool_count: number
   skill_count: number
+  agents: string[]
 }
 
 export interface DayEvents {

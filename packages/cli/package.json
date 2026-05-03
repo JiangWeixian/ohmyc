@@ -10,8 +10,8 @@
   "scripts": {
     "build": "tsup",
     "build:full": "pnpm --filter @claudeui/ui build && tsup",
-    "dev": "tsup --watch --onSuccess 'node dist/index.mjs'",
-    "dev:server": "tsup --watch --onSuccess 'node dist/index.mjs start --api-only --port 3000 --cwd $INIT_CWD'",
+    "dev": "concurrently -n build,server -c yellow,blue \"tsup --watch\" \"node --watch-path=dist dist/index.mjs\"",
+    "dev:server": "concurrently -n build,server -c yellow,blue \"tsup --watch\" \"node --watch-path=dist dist/index.mjs start --api-only --port 3000 --cwd $INIT_CWD\"",
     "start": "node dist/index.mjs",
     "test": "vitest run",
     "test:watch": "vitest",

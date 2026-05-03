@@ -1,3 +1,5 @@
+import Claude from '@lobehub/icons/es/Claude'
+import OpenCode from '@lobehub/icons/es/OpenCode'
 import { ChevronRight } from 'lucide-react'
 import { useMemo, useState } from 'react'
 
@@ -6,6 +8,58 @@ import type {
   ProjectGroup,
   SessionRow,
 } from '@/hooks/use-timeline'
+
+// Map agent_name → lobehub Mono icon component.
+// `null`/unknown → no glyph (legacy rows without agent attribution).
+function AgentGlyph({
+  name,
+  size = 12,
+  className,
+}: {
+  name: string | null | undefined
+  size?: number
+  className?: string
+}) {
+  if (name === 'claude') {
+    return <Claude size={size} className={className} />
+  }
+  if (name === 'opencode') {
+    return <OpenCode size={size} className={className} />
+  }
+  return null
+}
+
+// Avatar-stack of distinct agents for a project rollup.
+// 16px circular chips with 1px ring + page-bg fill so the overlap reads as
+// layered (Linear/GitHub assignee convention). Single agent = single chip.
+function AgentStack({ agents }: { agents: string[] }) {
+  if (agents.length === 0) {
+    return null
+  }
+  return (
+    <span className="inline-flex items-center" style={{ marginRight: 8 }}>
+      {agents.map((agent, i) => (
+        <span
+          key={agent}
+          title={agent}
+          className="inline-flex items-center justify-center"
+          style={{
+            width: 18,
+            height: 18,
+            borderRadius: '50%',
+            background: 'var(--bg-marketing)',
+            border: '1px solid var(--border-subtle)',
+            color: 'var(--text-secondary)',
+            marginLeft: i === 0 ? 0 : -6,
+            flexShrink: 0,
+          }}
+        >
+          <AgentGlyph name={agent} size={11} />
+        </span>
+      ))}
+    </span>
+  )
+}
 
 const TODAY_ISO = (() => {
   const d = new Date()
@@ -255,6 +309,7 @@ function ProjectRollup({
           {group.skill_count}
           {' skills'}
         </span>
+        <AgentStack agents={group.agents} />
         <span
           className="text-[11px] text-[var(--text-quaternary)]"
           style={{ fontFamily: 'Berkeley Mono, ui-monospace, SF Mono, Menlo, monospace' }}
@@ -331,9 +386,18 @@ function SessionItem({ session, bucket }: { session: SessionRow; bucket: 0 | 1 |
         </span>
       </div>
       <div
-        className="mt-1 flex flex-wrap text-[11px] text-[var(--text-tertiary)]"
+        className="mt-1 flex flex-wrap items-center text-[11px] text-[var(--text-tertiary)]"
         style={{ marginLeft: 20, fontFamily: 'Berkeley Mono, ui-monospace, SF Mono, Menlo, monospace', gap: '0 8px' }}
       >
+        {session.agent_name && (
+          <span
+            title={session.agent_name}
+            className="inline-flex items-center text-[var(--text-secondary)]"
+            style={{ opacity: 0.85 }}
+          >
+            <AgentGlyph name={session.agent_name} size={12} />
+          </span>
+        )}
         <span>
           {session.turns}
           {' turns'}

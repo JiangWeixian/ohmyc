@@ -207,6 +207,7 @@ export function getEvents(
         token_count: 0,
         tool_count: 0,
         skill_count: 0,
+        agents: [],
       })
     }
     const group = projects.get(session.project)!
@@ -214,6 +215,9 @@ export function getEvents(
     group.session_count += 1
     group.turn_count += session.turns
     group.token_count += session.tokens_input + session.tokens_output + session.tokens_cached
+    if (session.agent_name && !group.agents.includes(session.agent_name)) {
+      group.agents.push(session.agent_name)
+    }
   }
 
   // 4. Add tool / skill counts per project group

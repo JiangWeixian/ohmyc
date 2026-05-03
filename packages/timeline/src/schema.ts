@@ -203,6 +203,8 @@ export interface ProjectGroup {
   tool_count: number
   /** Total skill invocations across sessions in this group. */
   skill_count: number
+  /** Distinct agents that produced sessions in this group, in stable display order. */
+  agents: string[]
 }
 
 // ------------------------------------------------------------------
