@@ -11,10 +11,6 @@ import { createWriter } from '../../packages/timeline/src/writer.js'
 import type { Plugin } from '@opencode-ai/plugin'
 import type { ParsedSessionData } from '../../packages/timeline/src/ingest.js'
 
-// ---------------------------------------------------------------------------
-// Logging helper - writes to file since console.log may not be visible
-// ---------------------------------------------------------------------------
-
 const LOG_FILE = path.join(os.tmpdir(), 'timeline-plugin.log')
 
 function log(level: string, message: string, extra?: Record<string, unknown>): void {
@@ -25,10 +21,6 @@ function log(level: string, message: string, extra?: Record<string, unknown>): v
     console.log(entry)
   }
 }
-
-// ---------------------------------------------------------------------------
-// Database setup
-// ---------------------------------------------------------------------------
 
 function getDbPath(): string {
   const home = process.env.CUI_HOME ?? path.join(os.homedir(), '.cui')
@@ -59,10 +51,6 @@ function ensureSchema(db: Database): void {
   db.exec(SCHEMA_SQL)
   db.query('INSERT OR REPLACE INTO meta (key, value) VALUES (?, ?)').run('schema_version', String(CURRENT_SCHEMA_VERSION))
 }
-
-// ---------------------------------------------------------------------------
-// Session accumulator
-// ---------------------------------------------------------------------------
 
 interface SessionAccumulator {
   sessionId: string
@@ -140,10 +128,6 @@ function getEventSessionID(event: any): string | undefined {
   return undefined
 }
 
-// ---------------------------------------------------------------------------
-// Event handler
-// ---------------------------------------------------------------------------
-
 export interface EventHandlerDeps {
   project: string
   writer: ReturnType<typeof createWriter>
@@ -167,15 +151,12 @@ export function createEventHandler(deps: EventHandlerDeps) {
 
     handler: async ({ event }: { event: any }) => {
       try {
-        deps.log('debug', 'Event received', { eventType: event.type })
-
         switch (event.type) {
           case 'session.created': {
             const sessionID = getEventSessionID(event)
             if (sessionID) {
               const acc = getAccumulator(sessionID)
               acc.startedAt = Date.now()
-              deps.log('debug', 'Session created', { sessionID })
             }
             break
           }
@@ -185,16 +166,13 @@ export function createEventHandler(deps: EventHandlerDeps) {
             if (sessionID) {
               const acc = sessions.get(sessionID)
               if (!acc) {
-                deps.log('warn', 'Session idle but not found', { sessionID })
                 return
               }
               acc.endedAt = Date.now()
               const data = toParsedSessionData(acc)
-              deps.log('debug', 'Writing session', { sessionID, turns: data.turns })
               try {
                 deps.writer.writeSession(data)
                 sessions.delete(sessionID)
-                deps.log('info', 'Session written', { sessionID })
               } catch (writeError) {
                 deps.log('error', 'Failed to write session on idle', {
                   sessionID,
@@ -213,7 +191,6 @@ export function createEventHandler(deps: EventHandlerDeps) {
                 acc.endedAt = Date.now()
                 deps.writer.writeSession(toParsedSessionData(acc))
                 sessions.delete(sessionID)
-                deps.log('info', 'Session deleted', { sessionID })
               }
             }
             break
@@ -226,7 +203,6 @@ export function createEventHandler(deps: EventHandlerDeps) {
               if (acc) {
                 acc.endedAt = Date.now()
                 deps.writer.writeSession(toParsedSessionData(acc))
-                deps.log('info', 'Session error written', { sessionID })
               }
             }
             break
@@ -236,13 +212,11 @@ export function createEventHandler(deps: EventHandlerDeps) {
             const info = event.properties?.info || event.properties?.message
             if (info) {
               const sessionID = info.sessionID || info.session_id
-              deps.log('debug', 'Message updated via event', { sessionID, role: info.role, hasTokens: !!info.tokens, modelID: info.modelID })
               if (sessionID) {
                 const acc = getAccumulator(sessionID)
 
                 if (info.role === 'user') {
                   acc.turns += 1
-                  deps.log('debug', 'Turn counted', { sessionID, turns: acc.turns })
                 }
 
                 if (info.role === 'assistant' && info.tokens) {
@@ -251,7 +225,6 @@ export function createEventHandler(deps: EventHandlerDeps) {
                   if (info.tokens.cache) {
                     acc.tokensCached += (info.tokens.cache.read || 0) + (info.tokens.cache.write || 0)
                   }
-                  deps.log('debug', 'Tokens updated', { sessionID, input: info.tokens.input, output: info.tokens.output })
                 }
 
                 if (info.modelID) {
@@ -270,7 +243,6 @@ export function createEventHandler(deps: EventHandlerDeps) {
                 const acc = getAccumulator(sessionID)
                 if (!acc.firstUserMessage) {
                   acc.firstUserMessage = part.text.trim()
-                  deps.log('debug', 'First user message captured', { sessionID })
                 }
               }
             }
@@ -286,37 +258,29 @@ export function createEventHandler(deps: EventHandlerDeps) {
       try {
         const acc = getAccumulator(hookInput.sessionID)
         acc.tools.set(hookInput.tool, (acc.tools.get(hookInput.tool) || 0) + 1)
-        deps.log('debug', 'Tool execute before', { sessionID: hookInput.sessionID, tool: hookInput.tool })
       } catch (error) {
-        deps.log('error', 'Tool execute before error', { error: error instanceof Error ? error.message : String(error) })
+        deps.log('error', 'Tool execute error', { error: error instanceof Error ? error.message : String(error) })
       }
     },
 
     toolExecuteAfter: async (hookInput: { sessionID: string; tool: string; args: any }) => {
       try {
-        deps.log('debug', 'Tool execute after', { sessionID: hookInput.sessionID, tool: hookInput.tool })
         if (hookInput.tool === 'Skill' || hookInput.tool === 'skill') {
           const acc = getAccumulator(hookInput.sessionID)
           const args = hookInput.args
           if (args && typeof args === 'object' && typeof args.name === 'string') {
             acc.skills.add(args.name)
-            deps.log('debug', 'Skill tracked', { sessionID: hookInput.sessionID, skill: args.name })
           }
         }
       } catch (error) {
-        deps.log('error', 'Tool execute after error', { error: error instanceof Error ? error.message : String(error) })
+        deps.log('error', 'Tool execute error', { error: error instanceof Error ? error.message : String(error) })
       }
     },
   }
 }
 
-// ---------------------------------------------------------------------------
-// Plugin
-// ---------------------------------------------------------------------------
-
 export const TimelinePlugin: Plugin = async (input) => {
   const project = getProjectName(input)
-  log('info', 'Plugin initializing', { project, dbPath: getDbPath() })
 
   let db: Database | undefined
   let writer: ReturnType<typeof createWriter> | undefined
@@ -324,7 +288,6 @@ export const TimelinePlugin: Plugin = async (input) => {
   try {
     db = ensureDb()
     writer = createWriter(db)
-    log('info', 'Database ready')
   } catch (error) {
     log('error', 'Database init failed', { error: error instanceof Error ? error.message : String(error) })
     return {}
