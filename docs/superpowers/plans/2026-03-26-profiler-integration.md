@@ -6,7 +6,7 @@
 
 **Architecture:** Three focused modifications to existing Plan 2 components. SourceBadge in Explorer.tsx gets `profile` badge rendering. ProfileEditor gets three new JSON textareas with validation wired into save. StoreComponentList fetches profiles and cross-references to show usage counts per item.
 
-**Tech Stack:** React 18, TypeScript, Tailwind CSS, React Query v5, existing `@claudeui/shared` types
+**Tech Stack:** React 18, TypeScript, Tailwind CSS, React Query v5, existing `@ohmyc/shared` types
 
 **Spec:** `docs/superpowers/specs/2026-03-25-profiler-design.md`
 

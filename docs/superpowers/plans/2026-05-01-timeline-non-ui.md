@@ -2,9 +2,9 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Build the non-UI backend for ClaudeUI Timeline: a new `@claudeui/timeline` package that ingests Claude Code session transcripts into a local SQLite database, a CLI `dashboard` subcommand for plugin management and data sync, Fastify API endpoints for heatmap and event data, and a built-in plugin for automatic ingest via Stop hooks.
+**Goal:** Build the non-UI backend for ClaudeUI Timeline: a new `@ohmyc/timeline` package that ingests Claude Code session transcripts into a local SQLite database, a CLI `dashboard` subcommand for plugin management and data sync, Fastify API endpoints for heatmap and event data, and a built-in plugin for automatic ingest via Stop hooks.
 
-**Architecture:** A new workspace package `packages/timeline` provides the core data layer: SQLite schema, migrations, JSONL parsing, incremental ingest, and query API. The `@claudeui/cli` package consumes it to provide the `dashboard` CLI command and `/api/timeline/*` Fastify routes. A built-in plugin at `plugins/timeline/` declares a Stop hook that triggers ingest after each Claude Code turn. The database lives at `~/.cui/timeline.db`.
+**Architecture:** A new workspace package `packages/timeline` provides the core data layer: SQLite schema, migrations, JSONL parsing, incremental ingest, and query API. The `@ohmyc/cli` package consumes it to provide the `dashboard` CLI command and `/api/timeline/*` Fastify routes. A built-in plugin at `plugins/timeline/` declares a Stop hook that triggers ingest after each Claude Code turn. The database lives at `~/.cui/timeline.db`.
 
 **Tech Stack:** TypeScript, better-sqlite3, Fastify (v4), cac (CLI), pnpm workspaces, vitest
 
@@ -31,8 +31,8 @@ packages/
 │           ├── session-with-tools.jsonl # fixture: with tool_use blocks
 │           └── session-with-skills.jsonl # fixture: with Skill tool call
 ├── cli/
-│   ├── package.json                # MODIFY: add @claudeui/timeline dep
-│   ├── tsup.config.ts              # MODIFY: add @claudeui/timeline to noExternal
+│   ├── package.json                # MODIFY: add @ohmyc/timeline dep
+│   ├── tsup.config.ts              # MODIFY: add @ohmyc/timeline to noExternal
 │   ├── vitest.config.ts            # KEEP
 │   └── src/
 │       ├── index.ts                # MODIFY: add dashboard command
@@ -57,7 +57,7 @@ plugins/                             # NEW directory
 
 ---
 
-## Chunk 1: Create the `@claudeui/timeline` Package
+## Chunk 1: Create the `@ohmyc/timeline` Package
 
 ### Task 1.1: Create package skeleton and dependencies
 
@@ -71,7 +71,7 @@ plugins/                             # NEW directory
 
 ```json
 {
-  "name": "@claudeui/timeline",
+  "name": "@ohmyc/timeline",
   "version": "0.1.0",
   "type": "module",
   "main": "dist/index.js",
@@ -140,7 +140,7 @@ mkdir -p packages/timeline/test/fixtures
 
 ```bash
 git add packages/timeline/
-git commit -m "feat(timeline): create @claudeui/timeline package skeleton"
+git commit -m "feat(timeline): create @ohmyc/timeline package skeleton"
 ```
 
 ---
@@ -1515,7 +1515,7 @@ git commit -m "feat(timeline): export public API from index.ts"
 
 ---
 
-## Chunk 2: Wire `@claudeui/timeline` into the CLI
+## Chunk 2: Wire `@ohmyc/timeline` into the CLI
 
 ### Task 2.1: Update CLI package dependencies
 
@@ -1523,14 +1523,14 @@ git commit -m "feat(timeline): export public API from index.ts"
 - Modify: `packages/cli/package.json`
 - Modify: `packages/cli/tsup.config.ts`
 
-- [ ] **Step 1: Add `@claudeui/timeline` to CLI dependencies**
+- [ ] **Step 1: Add `@ohmyc/timeline` to CLI dependencies**
 
 Modify `packages/cli/package.json`:
 
 ```json
 "dependencies": {
-  "@claudeui/shared": "workspace:*",
-  "@claudeui/timeline": "workspace:*",
+  "@ohmyc/shared": "workspace:*",
+  "@ohmyc/timeline": "workspace:*",
   "@fastify/static": "^7.0.3",
   "cac": "^6.7.14",
   "fastify": "^4.26.2",
@@ -1543,14 +1543,14 @@ Modify `packages/cli/package.json`:
 }
 ```
 
-- [ ] **Step 2: Add `@claudeui/timeline` to tsup noExternal**
+- [ ] **Step 2: Add `@ohmyc/timeline` to tsup noExternal**
 
 Modify `packages/cli/tsup.config.ts`:
 
 ```typescript
   noExternal: [
-    '@claudeui/shared',
-    '@claudeui/timeline',
+    '@ohmyc/shared',
+    '@ohmyc/timeline',
     '@fastify/static',
     'cac',
     'fastify',
@@ -1573,7 +1573,7 @@ pnpm install
 
 ```bash
 git add packages/cli/package.json packages/cli/tsup.config.ts pnpm-lock.yaml
-git commit -m "feat(timeline): add @claudeui/timeline dependency to CLI"
+git commit -m "feat(timeline): add @ohmyc/timeline dependency to CLI"
 ```
 
 ---
@@ -1602,7 +1602,7 @@ import {
   ingestSession,
   getDefaultDbPath,
   getStatus,
-} from '@claudeui/timeline'
+} from '@ohmyc/timeline'
 
 const PLUGIN_NAME = 'claudeui-timeline'
 
@@ -2024,7 +2024,7 @@ import {
   getProjects,
   getYears,
   getStatus,
-} from '@claudeui/timeline'
+} from '@ohmyc/timeline'
 import type { FastifyPluginAsync } from 'fastify'
 
 interface TimelineRoutesOptions {
@@ -2391,7 +2391,7 @@ else
 fi
 ```
 
-**NOTE:** The jq + Node.js fast path in the script above is a scaffold. The actual Node.js ingest code lives in `@claudeui/timeline` and is bundled with the CLI. The hook script could alternatively call a small Node.js script that imports `@claudeui/timeline`, but since `@claudeui/timeline` is bundled into the CLI, the simplest approach is for the hook to always call `claudeui dashboard --ingest --session <id> --file <path>`.
+**NOTE:** The jq + Node.js fast path in the script above is a scaffold. The actual Node.js ingest code lives in `@ohmyc/timeline` and is bundled with the CLI. The hook script could alternatively call a small Node.js script that imports `@ohmyc/timeline`, but since `@ohmyc/timeline` is bundled into the CLI, the simplest approach is for the hook to always call `claudeui dashboard --ingest --session <id> --file <path>`.
 
 For V1, simplify the script to always use the CLI fallback:
 

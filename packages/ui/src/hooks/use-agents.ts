@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query'
 
-import type { Agent } from '@claudeui/shared'
+import type { Agent } from '@ohmyc/shared'
 
 interface AgentsListResponse {
   agents: Agent[]

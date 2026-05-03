@@ -2,11 +2,11 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Publish `plugins/timeline/` as `@claudeui/timeline-plugin` npm package, bundled into a single file via `bun build`.
+**Goal:** Publish `plugins/timeline/` as `@ohmyc/timeline-plugin` npm package, bundled into a single file via `bun build`.
 
-**Architecture:** `bun build` bundles `opencode.ts` plus `@claudeui/timeline` code into a single `dist/index.js`. Runtime-provided modules (`bun:sqlite`, `@opencode-ai/plugin`) stay external. Claude Code hooks ship as static files.
+**Architecture:** `bun build` bundles `opencode.ts` plus `@ohmyc/timeline` code into a single `dist/index.js`. Runtime-provided modules (`bun:sqlite`, `@opencode-ai/plugin`) stay external. Claude Code hooks ship as static files.
 
-**Tech Stack:** Bun (bundler), TypeScript, `@claudeui/timeline`, `@opencode-ai/plugin`
+**Tech Stack:** Bun (bundler), TypeScript, `@ohmyc/timeline`, `@opencode-ai/plugin`
 
 ---
 
@@ -26,9 +26,9 @@ import { createWriter } from '../../packages/timeline/src/writer.js'
 import type { ParsedSessionData } from '../../packages/timeline/src/ingest.js'
 
 // With:
-import { CURRENT_SCHEMA_VERSION, SCHEMA_SQL } from '@claudeui/timeline/schema'
-import { createWriter } from '@claudeui/timeline/writer'
-import type { ParsedSessionData } from '@claudeui/timeline'
+import { CURRENT_SCHEMA_VERSION, SCHEMA_SQL } from '@ohmyc/timeline/schema'
+import { createWriter } from '@ohmyc/timeline/writer'
+import type { ParsedSessionData } from '@ohmyc/timeline'
 ```
 
 - [ ] **Step 2: Run tests to verify imports resolve**
@@ -56,7 +56,7 @@ This makes `plugins/timeline/` an independent npm package.
 
 ```json
 {
-  "name": "@claudeui/timeline-plugin",
+  "name": "@ohmyc/timeline-plugin",
   "version": "1.0.0",
   "type": "module",
   "main": "dist/index.js",
@@ -110,7 +110,7 @@ Read `pnpm-workspace.yaml` (or check root `package.json`). If `plugins/*` is not
 
 Run: `pnpm install`
 
-This links `@claudeui/timeline` and `@opencode-ai/plugin` into `plugins/timeline/node_modules/`.
+This links `@ohmyc/timeline` and `@opencode-ai/plugin` into `plugins/timeline/node_modules/`.
 
 - [ ] **Step 3: Verify tests still pass**
 
@@ -139,7 +139,7 @@ Expected: `dist/index.js` created, no errors
 - [ ] **Step 2: Verify bundle is a single file**
 
 Run: `wc -l plugins/timeline/dist/index.js`
-Expected: Single JS file with all `@claudeui/timeline` code inlined
+Expected: Single JS file with all `@ohmyc/timeline` code inlined
 
 - [ ] **Step 3: Verify externals are NOT bundled**
 

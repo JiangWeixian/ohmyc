@@ -9,9 +9,9 @@
   "license": "ISC",
   "author": "",
   "scripts": {
-    "build": "pnpm --filter @claudeui/timeline build && pnpm --filter @claudeui/ui build && pnpm --filter @claudeui/cli build",
+    "build": "pnpm --filter @ohmyc/timeline build && pnpm --filter @ohmyc/ui build && pnpm --filter @ohmyc/cli build",
     "test": "pnpm -r test",
-    "dev": "pnpm --filter @claudeui/timeline build && concurrently -n server,ui -c blue,green \"pnpm --filter @claudeui/cli dev:server\" \"pnpm --filter @claudeui/ui dev\"",
+    "dev": "pnpm --filter @ohmyc/timeline build && concurrently -n server,ui -c blue,green \"pnpm --filter @ohmyc/cli dev:server\" \"pnpm --filter @ohmyc/ui dev\"",
     "ci:version": "pnpm changeset version",
     "ci:publish": "pnpm run build && pnpm changeset publish",
     "ci:snapshot": "pnpm changeset version --snapshot snapshot",

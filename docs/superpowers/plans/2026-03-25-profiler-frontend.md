@@ -6,7 +6,7 @@
 
 **Architecture:** Add a top-level view switcher (Profiles / AGENT_HOME). Profiles view has a split sidebar (My Profiles + Store nav) with a main content area. Profile editor lets users configure component references, plugins, hooks, MCP, and settings overlay. Store views provide full CRUD for agents/skills/commands with reference-check delete. All data fetching via React Query hooks calling existing backend APIs from Plan 1.
 
-**Tech Stack:** React 18, TypeScript, Tailwind CSS, React Query v5, lucide-react icons, existing `@claudeui/shared` types
+**Tech Stack:** React 18, TypeScript, Tailwind CSS, React Query v5, lucide-react icons, existing `@ohmyc/shared` types
 
 **Spec:** `docs/superpowers/specs/2026-03-25-profiler-design.md`
 
@@ -55,7 +55,7 @@ import type {
   CreateProfileBody,
   Profile,
   UpdateProfileBody,
-} from '@claudeui/shared'
+} from '@ohmyc/shared'
 
 interface ProfilesListResponse {
   profiles: Profile[]
@@ -201,7 +201,7 @@ import type {
   UpdateAgentBody,
   UpdateCommandBody,
   UpdateSkillBody,
-} from '@claudeui/shared'
+} from '@ohmyc/shared'
 
 // --- Fetch helpers ---
 
@@ -497,7 +497,7 @@ git commit -m "feat: add view switcher between Profiles and AGENT_HOME"
 import { Users, Zap, Terminal, Plus, Star, FolderOpen } from 'lucide-react';
 import { clsx } from 'clsx';
 import { twMerge } from 'tailwind-merge';
-import type { Profile } from '@claudeui/shared';
+import type { Profile } from '@ohmyc/shared';
 
 function cn(...inputs: any[]) {
   return twMerge(clsx(inputs));
@@ -608,7 +608,7 @@ git commit -m "feat: add ProfilesSidebar component"
 ```typescript
 // packages/ui/src/components/profiles/ProfileCard.tsx
 import { Star, Users, Zap, Terminal, Blocks } from 'lucide-react';
-import type { Profile } from '@claudeui/shared';
+import type { Profile } from '@ohmyc/shared';
 
 interface ProfileCardProps {
   profile: Profile;
@@ -909,7 +909,7 @@ import { useCreateProfile, useUpdateProfile } from '../../hooks/useProfiles';
 import { useStoreAgents, useStoreSkills, useStoreCommands } from '../../hooks/useStore';
 import { ComponentPicker } from './ComponentPicker';
 import { PluginPicker } from './PluginPicker';
-import type { Profile } from '@claudeui/shared';
+import type { Profile } from '@ohmyc/shared';
 
 interface ProfileEditorProps {
   profile?: Profile;           // undefined = create mode

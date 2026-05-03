@@ -5,7 +5,7 @@ import * as React from 'react'
 
 import { cn } from '@/lib/utils'
 
-import type { Profile } from '@claudeui/shared'
+import type { Profile } from '@ohmyc/shared'
 
 interface ComparePanelProps {
   open: boolean

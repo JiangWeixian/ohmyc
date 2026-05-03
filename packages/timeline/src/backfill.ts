@@ -1,5 +1,5 @@
 // ============================================================
-// @claudeui/timeline — Batch Backfill
+// @ohmyc/timeline — Batch Backfill
 // Scans the Claude Code projects directory for all JSONL
 // transcripts and ingests any sessions not yet in the database.
 // ============================================================

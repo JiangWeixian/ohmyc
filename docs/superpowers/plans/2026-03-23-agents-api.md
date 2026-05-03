@@ -39,7 +39,7 @@
 - [ ] **Step 1: Install vitest and gray-matter**
 
 ```bash
-cd . && pnpm add -D vitest --filter @claudeui/cli && pnpm add gray-matter --filter @claudeui/cli
+cd . && pnpm add -D vitest --filter @ohmyc/cli && pnpm add gray-matter --filter @ohmyc/cli
 ```
 
 - [ ] **Step 2: Verify gray-matter imports in ESM context**
@@ -243,10 +243,10 @@ import {
 } from 'node:fs/promises'
 import path from 'node:path'
 
-import { SAFE_NAME_PATTERN } from '@claudeui/shared'
+import { SAFE_NAME_PATTERN } from '@ohmyc/shared'
 import matter from 'gray-matter'
 
-import type { Agent, AgentFrontmatter } from '@claudeui/shared'
+import type { Agent, AgentFrontmatter } from '@ohmyc/shared'
 
 export class AgentService {
   constructor(private agentsDir: string) {}
@@ -858,7 +858,7 @@ import {
   CreateAgentBodySchema,
   SAFE_NAME_PATTERN,
   UpdateAgentBodySchema,
-} from '@claudeui/shared'
+} from '@ohmyc/shared'
 import { FastifyPluginAsync } from 'fastify'
 
 import { AgentService } from '../services/agentService.js'

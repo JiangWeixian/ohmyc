@@ -1,5 +1,5 @@
 // ============================================================
-// @claudeui/timeline — Database Schema & TypeScript Types
+// @ohmyc/timeline — Database Schema & TypeScript Types
 // Source of truth for all DB structures
 // ============================================================
 

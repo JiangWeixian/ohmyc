@@ -5,7 +5,7 @@
 
 ## Goal
 
-Publish `plugins/timeline/` as an npm package (`@claudeui/timeline-plugin`) that works for both OpenCode (Bun) and Claude Code (hooks) users.
+Publish `plugins/timeline/` as an npm package (`@ohmyc/timeline-plugin`) that works for both OpenCode (Bun) and Claude Code (hooks) users.
 
 ## Decision: Single-file bundle via `bun build`
 
@@ -18,8 +18,8 @@ bun build opencode.ts --outdir dist --target bun --external bun:sqlite --externa
 ```
 
 **Bundled (inlined):**
-- `@claudeui/timeline/schema` — schema constants, SQL, types
-- `@claudeui/timeline/writer` — session writer logic
+- `@ohmyc/timeline/schema` — schema constants, SQL, types
+- `@ohmyc/timeline/writer` — session writer logic
 
 **External (runtime-provided):**
 - `bun:sqlite` — Bun built-in
@@ -47,7 +47,7 @@ plugins/timeline/
 
 ```json
 {
-  "name": "@claudeui/timeline-plugin",
+  "name": "@ohmyc/timeline-plugin",
   "version": "1.0.0",
   "type": "module",
   "main": "dist/index.js",
@@ -67,7 +67,7 @@ plugins/timeline/
 ```
 
 Key decisions:
-- `@claudeui/timeline` is NOT a dependency — its code is inlined by the bundler
+- `@ohmyc/timeline` is NOT a dependency — its code is inlined by the bundler
 - `@opencode-ai/plugin` is a peer dependency only (provided by OpenCode at runtime)
 - No runtime `dependencies` — everything needed is bundled or externalized
 - Tests run against source (`opencode.ts`), not the bundle
@@ -80,12 +80,12 @@ Before bundling, fix monorepo-relative imports in `opencode.ts`:
 - import { CURRENT_SCHEMA_VERSION, SCHEMA_SQL } from '../../packages/timeline/src/schema.js'
 - import { createWriter } from '../../packages/timeline/src/writer.js'
 - import type { ParsedSessionData } from '../../packages/timeline/src/ingest.js'
-+ import { CURRENT_SCHEMA_VERSION, SCHEMA_SQL } from '@claudeui/timeline/schema'
-+ import { createWriter } from '@claudeui/timeline/writer'
-+ import type { ParsedSessionData } from '@claudeui/timeline'
++ import { CURRENT_SCHEMA_VERSION, SCHEMA_SQL } from '@ohmyc/timeline/schema'
++ import { createWriter } from '@ohmyc/timeline/writer'
++ import type { ParsedSessionData } from '@ohmyc/timeline'
 ```
 
-This lets the bundler resolve `@claudeui/timeline` from `node_modules` and inline it.
+This lets the bundler resolve `@ohmyc/timeline` from `node_modules` and inline it.
 
 ## Claude Code Integration
 

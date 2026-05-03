@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>@claudeui/cli - Codebase Course</title>
+<title>@ohmyc/cli - Codebase Course</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet">
@@ -202,7 +202,7 @@
 <div id="root">
   <div class="map-area">
     <div class="top-bar">
-      <h1>@claudeui/cli</h1>
+      <h1>@ohmyc/cli</h1>
       <span class="badge">TypeScript / Fastify / Node.js</span>
     </div>
     <div id="flow-container">
@@ -380,7 +380,7 @@ const COURSE = {
         title: "Step 1: Plugin Installation",
         code: "export async function runInstall(): Promise<void> {\n  const pluginSourceDir = getPluginSourceDir()\n  if (!hasJq()) {\n    console.warn('Warning: jq is not installed. Some plugin operations may be limited.')\n  }\n  const registry = readInstalledPlugins()\n  const installRecord: PluginInstall = {\n    version: '1.0.0', installedAt: now, lastUpdated: now,\n    installPath: pluginSourceDir, isLocal: true, scope: 'user',\n  }\n  registry.plugins['claudeui-timeline'] = [installRecord]\n  writeInstalledPlugins(registry)\n\n  const db = openDatabase()\n  try {\n    const status = getStatus(db)\n    if (status.lastSyncAt === undefined) {\n      const result = backfillAll(db, { onProgress: (done, total) => { ... } })\n      console.log(`Backfill complete: ${result.indexed} indexed`)\n    }\n  } finally { closeDatabase(db) }\n}",
         highlightLines: [6, 11, 12, 14, 17, 18],
-        explanation: "runInstall registers the timeline plugin in installed_plugins.json, opens the SQLite database via @claudeui/timeline, and if the DB is empty, runs a full backfill of all Claude Code transcripts. Uses the @claudeui/timeline workspace package for all DB operations."
+        explanation: "runInstall registers the timeline plugin in installed_plugins.json, opens the SQLite database via @ohmyc/timeline, and if the DB is empty, runs a full backfill of all Claude Code transcripts. Uses the @ohmyc/timeline workspace package for all DB operations."
       },
       {
         title: "Step 2: Doctor Diagnostics",

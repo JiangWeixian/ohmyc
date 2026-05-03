@@ -10,7 +10,7 @@ import {
   NativeDialogTitle,
 } from '@/components/uitripled/native-dialog'
 
-import type { StoreImportResult } from '@claudeui/shared'
+import type { StoreImportResult } from '@ohmyc/shared'
 
 interface ImportComponentsDialogProperties {
   onClose: () => void

@@ -1,4 +1,4 @@
-import { CreateProfileBodySchema, UpdateProfileBodySchema } from '@claudeui/shared'
+import { CreateProfileBodySchema, UpdateProfileBodySchema } from '@ohmyc/shared'
 
 import { ActivationBlockedError, ProfileService } from '../services/profile-service'
 

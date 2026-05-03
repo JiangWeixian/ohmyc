@@ -1,5 +1,5 @@
 // ============================================================
-// @claudeui/timeline — Database Lifecycle & Schema Migration
+// @ohmyc/timeline — Database Lifecycle & Schema Migration
 // Opens/creates the SQLite database and applies pending migrations.
 // ============================================================
 

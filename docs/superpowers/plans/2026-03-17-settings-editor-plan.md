@@ -487,7 +487,7 @@ git commit -m "feat(ui): add BrowserRouter and App routing"
 
 ```typescript
 // packages/ui/src/hooks/useSettings.ts
-import { SettingsJson } from '@claudeui/shared'
+import { SettingsJson } from '@ohmyc/shared'
 import {
   useMutation,
   useQuery,
