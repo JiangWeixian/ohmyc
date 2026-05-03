@@ -7,7 +7,7 @@ export default defineConfig({
   entry: ['src/index.ts'],
   format: ['esm'],
   splitting: false,
-  clean: true,
+  clean: false,
   platform: 'node',
   target: 'node18',
   outExtension: () => ({ js: '.mjs' }),
