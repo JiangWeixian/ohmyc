@@ -1,4 +1,5 @@
 import {
+  Activity,
   Bot,
   LayoutGrid,
   Plus,
@@ -7,6 +8,7 @@ import {
   TerminalSquare,
   User,
 } from 'lucide-react'
+import { useNavigate } from 'react-router-dom'
 
 import {
   Tabs,
@@ -18,7 +20,7 @@ import { cn } from '@/lib/utils'
 import type { Profile } from '@claudeui/shared'
 
 export type SidebarSelection
-  = { type: 'components'; category: 'agents' | 'commands' | 'model-configs' | 'skills' } | { type: 'new-profile' } | { type: 'profile'; name: string }
+  = { type: 'components'; category: 'agents' | 'commands' | 'model-configs' | 'skills'; editName?: string } | { type: 'new-profile' } | { type: 'profile'; name: string }
 
 interface ProfilesSidebarProperties {
   profiles: Profile[]
@@ -28,6 +30,7 @@ interface ProfilesSidebarProperties {
   onCompare?: (profileName: string) => void
   onActivate?: (profileName: string) => void
   headerSlot?: React.ReactNode
+  timelineActive?: boolean
 }
 
 function SidebarHeader({ headerSlot }: { headerSlot?: React.ReactNode }) {
@@ -81,8 +84,9 @@ const COMPONENTS = [
   { category: 'model-configs' as const, label: 'Model Configs', icon: Settings },
 ] as const
 
-export function ProfilesSidebar({ profiles, active, selection, onSelect, onCompare, onActivate, headerSlot }: ProfilesSidebarProperties) {
+export function ProfilesSidebar({ profiles, active, selection, onSelect, onCompare, onActivate, headerSlot, timelineActive }: ProfilesSidebarProperties) {
   const currentValue = getTabValue(selection)
+  const navigate = useNavigate()
 
   const handleValueChange = (value: string) => {
     const parsed = parseTabValue(value)
@@ -96,6 +100,25 @@ export function ProfilesSidebar({ profiles, active, selection, onSelect, onCompa
       <SidebarHeader headerSlot={headerSlot} />
       <nav className="flex-1 overflow-y-auto px-3 py-3">
         <div className="mb-2 px-2 pt-1 text-[11px] font-[510] tracking-[0.04em] uppercase text-[var(--text-tertiary)]">
+          Activity
+        </div>
+        <button
+          type="button"
+          onClick={() => navigate('/timeline')}
+          className={cn(
+            'mb-2 flex w-full items-center gap-2.5 rounded-md px-3 py-2 text-left text-[13px] font-[510] transition-colors duration-150',
+            timelineActive
+              ? 'bg-[rgba(255,255,255,0.08)] text-[var(--text-primary)]'
+              : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[rgba(255,255,255,0.03)]',
+          )}
+        >
+          <span className={cn('shrink-0', timelineActive ? 'text-[var(--text-primary)]' : 'text-[var(--text-tertiary)]')}>
+            <Activity size={16} />
+          </span>
+          <span>Timeline</span>
+        </button>
+
+        <div className="mb-2 mt-5 px-2 text-[11px] font-[510] tracking-[0.04em] uppercase text-[var(--text-tertiary)]">
           My Profiles
         </div>
         <Tabs
@@ -130,7 +153,7 @@ export function ProfilesSidebar({ profiles, active, selection, onSelect, onCompa
                       </span>
                     )}
                     {/* Hover actions */}
-                    <span className="hidden group-hover:flex items-center gap-1">
+                    <span className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity duration-150 pointer-events-none group-hover:pointer-events-auto">
                       {!isActive && onActivate && (
                         <span
                           onClick={(e) => {

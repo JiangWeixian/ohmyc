@@ -1,0 +1,5 @@
+{
+  "name": "claudeui-timeline",
+  "version": "1.0.0",
+  "description": "Auto-collects Claude Code and OpenCode session data for ClaudeUI Timeline dashboard"
+}

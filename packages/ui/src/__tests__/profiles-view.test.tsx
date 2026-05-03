@@ -65,6 +65,14 @@ vi.mock('../components/profiles/profile-editor', () => ({
   ),
 }))
 
+vi.mock('../components/store/store-component-editor', () => ({
+  StoreComponentEditor: ({ category, editName }: { category: string; editName?: string }) => (
+    <div data-testid="mock-component-editor">
+      {editName ? `Edit ${category}:${editName}` : `New ${category}`}
+    </div>
+  ),
+}))
+
 vi.mock('../components/profiles/profile-card', () => ({
   ProfileCard: ({ profile, isActive }: { profile: { name: string }; isActive: boolean }) => (
     <div data-testid="mock-card">
@@ -122,6 +130,30 @@ describe('ProfilesView store routes', () => {
     expect(screen.getByText('store:commands')).toBeInTheDocument()
     expect(mockStoreComponentList).toHaveBeenCalledWith('commands')
   })
+
+  it('renders component editor for new at /profiles/agents/edit', () => {
+    renderWithProviders(
+      <Routes>
+        <Route path="/profiles/*" element={<ProfilesView />} />
+      </Routes>,
+      { route: '/profiles/agents/edit' },
+    )
+
+    expect(screen.getByTestId('mock-component-editor')).toBeInTheDocument()
+    expect(screen.getByTestId('mock-component-editor')).toHaveTextContent('New agents')
+  })
+
+  it('renders component editor for edit at /profiles/agents/:name/edit', () => {
+    renderWithProviders(
+      <Routes>
+        <Route path="/profiles/*" element={<ProfilesView />} />
+      </Routes>,
+      { route: '/profiles/agents/reviewer/edit' },
+    )
+
+    expect(screen.getByTestId('mock-component-editor')).toBeInTheDocument()
+    expect(screen.getByTestId('mock-component-editor')).toHaveTextContent('Edit agents:reviewer')
+  })
 })
 
 describe('ProfilesView profile editor routes', () => {
@@ -151,6 +183,18 @@ describe('ProfilesView profile editor routes', () => {
 
     expect(screen.getByTestId('mock-card')).toBeInTheDocument()
     expect(screen.getByTestId('mock-card')).toHaveTextContent('ProfileCard:daily')
+  })
+
+  it('renders profile editor at /profiles/:name/edit', () => {
+    renderWithProviders(
+      <Routes>
+        <Route path="/profiles/*" element={<ProfilesView />} />
+      </Routes>,
+      { route: '/profiles/daily/edit' },
+    )
+
+    expect(screen.getByTestId('mock-editor')).toBeInTheDocument()
+    expect(screen.getByTestId('mock-editor')).toHaveTextContent('Edit daily')
   })
 })
 

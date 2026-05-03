@@ -1,0 +1,572 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>@claudeui/cli - Codebase Course</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js"></script>
+<style>
+  :root {
+    --bg-void: #07080a;
+    --surface-100: #101111;
+    --surface-card: #1b1c1e;
+    --border: rgba(255, 255, 255, 0.06);
+    --border-visible: rgba(255, 255, 255, 0.1);
+    --text-primary: #f9f9f9;
+    --text-secondary: #cecece;
+    --text-tertiary: #9c9c9d;
+    --text-dim: #6a6b6c;
+    --text-dark: #434345;
+    --accent-red: #FF6363;
+    --accent-blue: hsl(202, 100%, 67%);
+    --accent-green: hsl(151, 59%, 59%);
+    --accent-yellow: hsl(43, 100%, 60%);
+    --glow-blue: hsla(202, 100%, 67%, 0.15);
+    --font-primary: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    --font-mono: 'Geist Mono', ui-monospace, SFMono-Regular, Menlo, Monaco, monospace;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body {
+    width: 100%; height: 100%;
+    font-family: var(--font-primary);
+    font-feature-settings: 'calt', 'kern', 'liga', 'ss03';
+    background: var(--bg-void);
+    -webkit-font-smoothing: antialiased;
+  }
+  #root { display: flex; height: 100vh; }
+
+  .map-area {
+    flex: 1; position: relative;
+    display: flex; align-items: center; justify-content: center;
+    overflow: hidden; background: var(--bg-void);
+  }
+  .map-area::before {
+    content: ''; position: absolute; inset: 0; pointer-events: none;
+    background-image:
+      linear-gradient(var(--surface-100) 1px, transparent 1px),
+      linear-gradient(90deg, var(--surface-100) 1px, transparent 1px);
+    background-size: 20px 20px;
+    opacity: 0.3;
+  }
+  #flow-container {
+    position: relative; z-index: 1;
+    transform-origin: center center;
+    transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+  #flow-container svg { max-width: none; }
+
+  .top-bar {
+    position: absolute; top: 0; left: 0; right: 0; z-index: 5;
+    padding: 12px 20px;
+    background: linear-gradient(to bottom, var(--bg-void) 40%, transparent);
+    display: flex; align-items: center; gap: 12px; pointer-events: none;
+  }
+  .top-bar h1 { font-size: 16px; font-weight: 500; letter-spacing: 0.3px; color: var(--text-primary); }
+  .top-bar .badge {
+    font-size: 12px; font-weight: 600;
+    color: var(--text-primary);
+    background: var(--surface-card);
+    padding: 2px 10px; border-radius: 6px;
+  }
+  .start-guide {
+    position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%);
+    z-index: 5;
+    background: var(--surface-100);
+    border: 1px solid var(--border-visible);
+    padding: 10px 20px; border-radius: 8px;
+    color: var(--text-dim); font-size: 14px; font-weight: 500;
+    letter-spacing: 0.2px; pointer-events: none; opacity: 0.9;
+    box-shadow: rgba(0,0,0,0.5) 0px 0px 0px 2px, rgba(255,255,255,0.19) 0px 0px 14px;
+    transition: opacity 0.3s;
+  }
+  .start-guide.hidden { opacity: 0; pointer-events: none; }
+
+  .zoom-controls {
+    position: absolute; bottom: 20px; right: 20px; z-index: 5;
+    display: flex; flex-direction: column; gap: 4px;
+  }
+  .zoom-btn {
+    width: 36px; height: 36px; border: none; border-radius: 6px;
+    background: var(--surface-100); color: var(--text-tertiary);
+    font-size: 18px; cursor: pointer;
+    border: 1px solid var(--border-visible);
+    display: flex; align-items: center; justify-content: center;
+    transition: opacity 0.2s;
+  }
+  .zoom-btn:hover { opacity: 0.6; }
+
+  .detail-panel {
+    width: 480px;
+    background: var(--surface-100);
+    color: var(--text-primary);
+    overflow-y: auto;
+    border-left: 1px solid var(--border);
+    display: flex; flex-direction: column;
+    font-size: 14px; letter-spacing: 0.2px; font-weight: 500;
+  }
+  .detail-panel.empty {
+    display: flex; align-items: center; justify-content: center;
+    color: var(--text-dim);
+  }
+  .detail-header { padding: 20px 24px; border-bottom: 1px solid var(--border); }
+  .detail-header h2 {
+    font-size: 22px; font-weight: 400; line-height: 1.15;
+    color: var(--text-primary); letter-spacing: 0; margin-bottom: 6px;
+  }
+  .detail-header p {
+    font-size: 14px; font-weight: 500; line-height: 1.6;
+    color: var(--text-secondary); letter-spacing: 0.2px;
+  }
+  .detail-files {
+    padding: 12px 24px; border-bottom: 1px solid var(--border);
+    display: flex; gap: 6px; flex-wrap: wrap;
+  }
+  .detail-files span {
+    font-size: 12px; font-weight: 600;
+    color: var(--text-primary);
+    background: var(--surface-card);
+    padding: 3px 8px; border-radius: 6px;
+  }
+  .step-section { flex: 1; padding: 20px 24px; }
+  .step-counter { font-size: 12px; font-weight: 600; color: var(--text-dim); margin-bottom: 8px; }
+  .step-title { font-size: 14px; font-weight: 600; color: var(--accent-blue); letter-spacing: 0.2px; margin-bottom: 12px; }
+  .code-block {
+    background: var(--bg-void); border-radius: 12px; padding: 16px;
+    font-family: var(--font-mono); font-size: 13px; font-weight: 400;
+    line-height: 1.7; letter-spacing: 0.2px; overflow-x: auto;
+    margin-bottom: 16px;
+    border: 1px solid var(--border);
+    box-shadow: rgb(27,28,30) 0px 0px 0px 1px, rgb(7,8,10) 0px 0px 0px 1px inset;
+  }
+  .code-block .line { display: block; padding: 0 8px; border-radius: 3px; }
+  .code-block .line.highlighted { background: var(--glow-blue); }
+  .code-block .line-num {
+    color: var(--text-dark); display: inline-block; width: 28px;
+    text-align: right; margin-right: 16px; user-select: none;
+  }
+  .explanation {
+    font-size: 13px; font-weight: 500; line-height: 1.6; letter-spacing: 0.2px;
+    color: var(--text-secondary); margin-bottom: 16px; padding: 12px;
+    background: var(--glow-blue); border-radius: 8px;
+    border-left: 3px solid var(--accent-blue);
+  }
+  .nav-buttons {
+    padding: 16px 24px; border-top: 1px solid var(--border);
+    display: flex; gap: 8px;
+  }
+  .nav-btn {
+    flex: 1; padding: 10px; border: none; border-radius: 6px;
+    cursor: pointer; font-family: var(--font-primary);
+    font-size: 14px; font-weight: 600; letter-spacing: 0.3px;
+    transition: opacity 0.2s;
+  }
+  .nav-btn:hover { opacity: 0.6; }
+  .nav-btn.primary {
+    background: hsla(0,0%,100%,0.06); color: var(--text-primary);
+    box-shadow: rgba(255,255,255,0.05) 0px 1px 0px 0px inset,
+                rgba(255,255,255,0.25) 0px 0px 0px 1px,
+                rgba(0,0,0,0.2) 0px -1px 0px 0px inset;
+  }
+  .nav-btn.secondary {
+    background: transparent; color: var(--text-dim);
+    box-shadow: rgba(255,255,255,0.05) 0px 1px 0px 0px inset;
+  }
+  .nav-btn.secondary:hover { color: var(--text-primary); }
+
+  .node-active { filter: drop-shadow(0 0 12px rgba(255,99,99,0.4)); }
+
+  @keyframes flowDash { to { stroke-dashoffset: -20; } }
+  .flow-active {
+    stroke: var(--accent-red) !important;
+    stroke-width: 2.5px !important;
+    stroke-dasharray: 8 4 !important;
+    animation: flowDash 0.5s linear infinite !important;
+    filter: drop-shadow(0 0 6px rgba(255,99,99,0.5));
+  }
+  .flow-idle {
+    stroke: #434345 !important;
+    stroke-dasharray: 6 4 !important;
+    animation: flowDash 1s linear infinite !important;
+  }
+  .flow-dim {
+    stroke: #252829 !important;
+    stroke-dasharray: 3 6 !important;
+    animation: none !important;
+  }
+</style>
+</head>
+<body>
+<div id="root">
+  <div class="map-area">
+    <div class="top-bar">
+      <h1>@claudeui/cli</h1>
+      <span class="badge">TypeScript / Fastify / Node.js</span>
+    </div>
+    <div id="flow-container">
+      <pre class="mermaid" id="mermaid-chart">
+graph TD
+  CLI["CLI Entry<br/>cac argument parser"]
+  LAUNCHER["Launcher<br/>start server + open browser"]
+  SERVER["Server<br/>Fastify HTTP server"]
+  CONFIG["ConfigLocator<br/>directory resolution"]
+  ROUTES["REST Routes<br/>11 API route modules"]
+  SERVICES["Services<br/>9 business logic services"]
+  DASHBOARD["Dashboard CLI<br/>timeline plugin management"]
+  PROFILES["Profile Engine<br/>activate / deactivate profiles"]
+  STORE["Store Service<br/>import components from disk"]
+
+  CLI -->|"start command"| LAUNCHER
+  CLI -->|"dashboard command"| DASHBOARD
+  LAUNCHER -->|"creates + starts"| SERVER
+  SERVER -->|"resolves paths via"| CONFIG
+  SERVER -->|"registers"| ROUTES
+  ROUTES -->|"delegates to"| SERVICES
+  SERVICES -->|"reads/writes"| CONFIG
+  PROFILES -->|"symlinks from"| STORE
+  PROFILES -->|"locks via"| SERVICES
+  DASHBOARD -->|"backfill via"| SERVICES
+
+  click CLI callback
+  click LAUNCHER callback
+  click SERVER callback
+  click CONFIG callback
+  click ROUTES callback
+  click SERVICES callback
+  click DASHBOARD callback
+  click PROFILES callback
+  click STORE callback
+      </pre>
+    </div>
+    <div class="start-guide" id="start-guide">Click any module to start exploring</div>
+    <div class="zoom-controls">
+      <button class="zoom-btn" onclick="zoomIn()" title="Zoom in">+</button>
+      <button class="zoom-btn" onclick="zoomOut()" title="Zoom out">&minus;</button>
+      <button class="zoom-btn" onclick="zoomReset()" title="Reset">&#8634;</button>
+    </div>
+  </div>
+  <div class="detail-panel empty" id="detail-panel">Click a module to explore</div>
+</div>
+
+<script>
+// ═══════════════════════════════════════════════════
+// SECTION 1: COURSE DATA
+// ═══════════════════════════════════════════════════
+const COURSE = {
+  flowOrder: ["CLI", "LAUNCHER", "SERVER", "CONFIG", "ROUTES", "SERVICES", "DASHBOARD", "PROFILES", "STORE"],
+
+  "CLI": {
+    label: "CLI Entry Point",
+    summary: "The top-level entry point using cac to parse CLI arguments and dispatch to subcommands. Registers 'start', 'dashboard', and a default command that launches the app.",
+    files: ["src/index.ts"],
+    steps: [
+      {
+        title: "Step 1: Command Registration",
+        code: "#!/usr/bin/env node\nimport { cac } from 'cac'\nimport { launchApp } from './launcher'\n\nconst cli = cac('cu')\n\ncli\n  .command('start', 'Start the ClaudeUI server and open the browser')\n  .option('--port <port>', 'Port to listen on', { default: 3000 })\n  .option('--api-only', 'Start API server only, skip static file serving')\n  .option('--cwd <cwd>', 'Working directory for project discovery')\n  .action(async (options) => {\n    const port = Number.parseInt(options.port, 10)\n    await launchApp({ defaultPort: port, apiOnly: options.apiOnly, cwd: options.cwd })\n  })",
+        highlightLines: [4, 6, 7, 14],
+        explanation: "cac('cu') creates the CLI parser. The 'start' command is the primary entry — it validates the port and delegates to launchApp. The --api-only flag skips static file serving and browser opening."
+      },
+      {
+        title: "Step 2: Default & Dashboard Commands",
+        code: "cli\n  .command('[...args]', 'Start ClaudeUI (default)')\n  .action(async (arguments_, options) => {\n    if (arguments_.length === 0) {\n      await launchApp({ defaultPort: 3000, cwd: options.cwd })\n    } else {\n      console.error(`Unknown arguments: ${arguments_.join(' ')}`)\n      process.exit(1)\n    }\n  })\n\ncli\n  .command('dashboard', 'Manage Timeline dashboard data and plugin')\n  .option('--install', 'Install the timeline plugin and run initial backfill')\n  .option('--sync', 'Scan all transcripts and import missing sessions')\n  .option('--doctor', 'Diagnose plugin, hooks, and database health')",
+        highlightLines: [1, 4, 11, 12, 14],
+        explanation: "Running just 'cu' with no args triggers the default command (launches on port 3000). The 'dashboard' command manages the timeline plugin lifecycle — install, sync, ingest, and doctor diagnostics."
+      }
+    ]
+  },
+
+  "LAUNCHER": {
+    label: "Launcher",
+    summary: "Orchestrates server startup: calls startServer, constructs the URL, and opens the browser. Acts as the bridge between CLI parsing and the Fastify server.",
+    files: ["src/launcher.ts"],
+    steps: [
+      {
+        title: "Step 1: Launch Flow",
+        code: "export interface LaunchOptions {\n  defaultPort?: number\n  apiOnly?: boolean\n  cwd?: string\n}\n\nexport async function launchApp(options: LaunchOptions = {}): Promise<void> {\n  const serverOptions: StartServerOptions = {\n    defaultPort: options.defaultPort ?? 3000,\n    apiOnly: options.apiOnly,\n    cwd: options.cwd,\n  }\n\n  console.log('Starting ClaudeUI server...')\n  const result = await startServer(serverOptions)\n  const url = `http://localhost:${result.port}`\n\n  if (result.fallback) {\n    console.log(`ClaudeUI is ready at ${url} (port ${serverOptions.defaultPort} was busy)`)\n  } else {\n    console.log(`ClaudeUI is ready at ${url}`)\n  }\n\n  if (!options.apiOnly) {\n    console.log('Opening browser...')\n    await open(url)\n  }\n}",
+        highlightLines: [7, 14, 15, 23, 24],
+        explanation: "launchApp wraps startServer and adds UX: it logs startup messages, handles port-fallback notifications (when the default port is busy), and opens the browser using the 'open' package — unless --api-only was specified."
+      }
+    ]
+  },
+
+  "SERVER": {
+    label: "Fastify Server",
+    summary: "Creates and starts the Fastify HTTP server. Registers static file serving for the SPA UI, wires up 11 REST API route modules, and handles SPA fallback routing.",
+    files: ["src/server/index.ts"],
+    steps: [
+      {
+        title: "Step 1: Server Factory",
+        code: "export async function createServer(options: CreateServerOptions = {}): Promise<FastifyInstance> {\n  const fastify = Fastify({ logger: true })\n  const serverCwd = options.cwd || process.cwd()\n  const config = new ConfigLocator({ cwd: serverCwd })\n\n  fastify.get('/health', async () => ({\n    status: 'ok',\n    debug: { cwd: serverCwd, agentsDir: config.agentsDir, projectPath: config.projectPath },\n  }))\n\n  if (!options.apiOnly) {\n    const uiDistributionPath = resolveStaticRoot(options.staticRoot)\n    if (uiDistributionPath) {\n      fastify.register(fastifyStatic, { root: uiDistributionPath, prefix: '/', wildcard: false })\n    }\n  }\n\n  await fastify.register(configRoutes)\n  await fastify.register(settingsRoutes, { cwd: serverCwd })\n  await fastify.register(agentsRoutes, { agentsDir: config.agentsDir, ... })",
+        highlightLines: [1, 3, 4, 6, 12, 17, 18, 19, 20],
+        explanation: "createServer is the factory: it creates a Fastify instance with logging, resolves ConfigLocator for path discovery, serves the UI as static files, and registers all API route plugins. The /health endpoint exposes debug info."
+      },
+      {
+        title: "Step 2: Port Binding & SPA Fallback",
+        code: "export async function startServer(options: StartServerOptions | number = {}): Promise<StartServerResult> {\n  const options_ = typeof options === 'number' ? { defaultPort: options } : options\n  const defaultPort = options_.defaultPort ?? 3000\n  const port = await getPort({ port: [defaultPort, defaultPort + 1, defaultPort + 2, 0] })\n  const fastify = await createServer({ ...options_ })\n\n  const address = await fastify.listen({ port, host: '0.0.0.0' })\n  return {\n    port, address,\n    staticRoot: resolveStaticRoot(options_.staticRoot),\n    fallback: defaultPort !== 0 && port !== defaultPort,\n    close: () => fastify.close(),\n  }\n}",
+        highlightLines: [3, 4, 7, 11],
+        explanation: "startServer uses get-port to find an available port (tries defaultPort, +1, +2, then random). The 'fallback' flag tells the launcher whether the original port was busy. Returns a close() handle for graceful shutdown."
+      }
+    ]
+  },
+
+  "CONFIG": {
+    label: "ConfigLocator",
+    summary: "Centralizes all directory path resolution. Separates write paths (~/.cui/) from Claude Code's read paths (~/.claude/) and discovers project-scoped directories.",
+    files: ["src/server/services/config-locator.ts"],
+    steps: [
+      {
+        title: "Step 1: Directory Layout",
+        code: "export const AGENT_DIR_NAME = '.claude'\nexport const WRITE_DIR_NAME = '.cui'\n\nexport class ConfigLocator {\n  private readonly writeBaseDir: string\n  private readonly claudeCodeDir: string\n  private readonly projectDir: string | null\n\n  constructor(options?: { cwd?: string }) {\n    const cuiHome = process.env.CUI_HOME\n    const writeDirName = cuiHome || WRITE_DIR_NAME\n    this.writeBaseDir = path.join(os.homedir(), writeDirName)\n\n    const claudeDirName = process.env.AGENT_HOME || AGENT_DIR_NAME\n    this.claudeCodeDir = path.join(os.homedir(), claudeDirName)\n\n    const cwd = options?.cwd ?? process.cwd()\n    const candidateProject = path.join(cwd, projectDirName)\n    this.projectDir = existsSync(candidateProject) ? candidateProject : null\n  }",
+        highlightLines: [1, 2, 11, 12, 14, 17, 18],
+        explanation: "ConfigLocator separates concerns: writeBaseDir (~/.cui/) is where ClaudeUI manages its own data (agents, skills, commands). claudeCodeDir (~/.claude/) is Claude Code's plugin directory. Project discovery checks if cwd/.claude/ exists."
+      },
+      {
+        title: "Step 2: Path Accessors",
+        code: "  get agentsDir(): string { return path.join(this.writeBaseDir, 'agents') }\n  get skillsDir(): string { return path.join(this.writeBaseDir, 'skills') }\n  get commandsDir(): string { return path.join(this.writeBaseDir, 'commands') }\n  get settingsPath(): string { return path.join(this.writeBaseDir, 'settings.json') }\n  get baseDir(): string { return this.writeBaseDir }\n  get pluginsDir(): string { return path.join(this.claudeCodeDir, 'plugins') }\n\n  get projectAgentsDir(): string | null {\n    return this.projectDir ? path.join(this.projectDir, 'agents') : null\n  }\n  get projectSkillsDir(): string | null {\n    return this.projectDir ? path.join(this.projectDir, 'skills') : null\n  }\n  get projectCommandsDir(): string | null {\n    return this.projectDir ? path.join(this.projectDir, 'commands') : null\n  }",
+        highlightLines: [1, 2, 3, 6, 8, 11, 14],
+        explanation: "All path resolution flows through these getters. Global managed paths (agents, skills, commands, settings) live under ~/.cui/. Plugin reads come from ~/.claude/plugins/. Project-scoped dirs are nullable — they only exist when a .claude/ directory is found in cwd."
+      }
+    ]
+  },
+
+  "ROUTES": {
+    label: "REST API Routes",
+    summary: "11 Fastify route modules that expose the REST API. Each route module injects its service dependencies and maps HTTP verbs to service methods with validation and error handling.",
+    files: ["src/server/routes/agents.ts", "src/server/routes/profiles.ts", "src/server/routes/skills.ts", "src/server/routes/commands.ts"],
+    steps: [
+      {
+        title: "Step 1: Multi-Source Agent Listing",
+        code: "export const agentsRoutes: FastifyPluginAsync<AgentsRoutesOptions> = async (fastify, options) => {\n  const service = new AgentService(options.agentsDir)\n  const resolver = new PluginResolver(options.pluginsDir, options.settingsPath)\n\n  fastify.get('/api/agents', async () => {\n    const agents = await service.list()\n    for (const agent of agents) {\n      (agent as any).source = await resolveInventorySource(filePath, options.baseDir)\n      (agent as any).scope = 'global'\n    }\n    const pluginPaths = await resolver.getEnabledPluginPaths()\n    for (const { id, installPath } of pluginPaths) {\n      const pluginService = new AgentService(path.join(installPath, 'agents'))\n      const pluginAgents = await pluginService.list()\n      for (const agent of pluginAgents) {\n        agents.push({ ...agent, source: 'plugin', pluginId: id })\n      }\n    }\n    if (options.projectAgentsDir) {\n      const projectService = new AgentService(options.projectAgentsDir)\n      // ... project agents with scope: 'project'\n    }\n    return { agents }\n  })\n}",
+        highlightLines: [2, 3, 5, 11, 12, 17, 19, 22],
+        explanation: "The /api/agents endpoint aggregates agents from three sources: global (~/.cui/agents/), plugin (enabled plugins' agents/ dirs), and project (cwd/.claude/agents/). Each source is tagged with scope and source metadata for the UI."
+      },
+      {
+        title: "Step 2: Profile CRUD + Activation",
+        code: "export const profilesRoutes: FastifyPluginAsync<ProfilesRoutesOptions> = async (fastify, options) => {\n  const service = new ProfileService(options.baseDir)\n\n  fastify.get('/api/profiles', async () => service.list())\n  fastify.post('/api/profiles', async (request, reply) => {\n    const parsed = CreateProfileBodySchema.safeParse(request.body)\n    if (!parsed.success) return reply.status(400).send({ error: parsed.error.message })\n    const profile = await service.create(parsed.data)\n    return reply.status(201).send({ profile })\n  })\n  fastify.post('/api/profiles/:name/activate', async (request, reply) => {\n    const result = await service.activate(request.params.name)\n    return { success: true, warnings: result.warnings }\n  })\n  fastify.get('/api/profiles/:name/preflight', async (request, reply) => {\n    const result = await service.preflight(request.params.name)\n    return result\n  })\n}",
+        highlightLines: [4, 5, 6, 11, 12, 14],
+        explanation: "Profile routes are the most complex: they support full CRUD plus preflight checks (verifies all referenced components exist) and activation (transactional symlink creation + settings merge). Zod schemas validate input."
+      }
+    ]
+  },
+
+  "SERVICES": {
+    label: "Service Layer",
+    summary: "9 service classes that implement business logic. Each follows a consistent pattern: file-based CRUD with gray-matter frontmatter parsing, SAFE_NAME_PATTERN validation, and error handling.",
+    files: ["src/server/services/agent-service.ts", "src/server/services/skill-service.ts", "src/server/services/command-service.ts", "src/server/services/plugin-service.ts"],
+    steps: [
+      {
+        title: "Step 1: CRUD Pattern (AgentService)",
+        code: "export class AgentService {\n  constructor(private agentsDir: string) {}\n\n  private parseAgentFile(filename: string, raw: string): Agent | null {\n    const parsed = matter(raw)\n    const frontmatter = parsed.data as AgentFrontmatter\n    if (!frontmatter.name || !frontmatter.description) return null\n    return {\n      id: filename.replace(/\\.md$/, ''),\n      frontmatter, content: parsed.content.trim(),\n      raw, filename, source: 'local',\n    }\n  }\n\n  async create(frontmatter: AgentFrontmatter, content: string): Promise<Agent> {\n    this.validateName(frontmatter.name)\n    await mkdir(this.agentsDir, { recursive: true })\n    const raw = matter.stringify(content, frontmatter)\n    await writeFile(filePath, raw, 'utf8')\n    return { id: frontmatter.name, frontmatter, content, raw, filename, source: 'local' }\n  }\n}",
+        highlightLines: [2, 5, 6, 7, 15, 16, 17],
+        explanation: "All services follow this pattern: constructor takes a directory path, parseXFile uses gray-matter to split YAML frontmatter from markdown content, create validates the name, stringifies frontmatter back, and writes to disk. Skills use directories with SKILL.md inside."
+      },
+      {
+        title: "Step 2: Plugin Discovery",
+        code: "export class PluginService {\n  constructor(private pluginsDir: string, private settingsPath: string) {}\n\n  async listPlugins(): Promise<InstalledPlugin[]> {\n    const filePath = path.join(this.pluginsDir, 'installed_plugins.json')\n    const data = await this.readJson<{ plugins: Record<string, PluginInstall[]> }>(filePath)\n    const enabledMap = await this.getEnabledPlugins()\n\n    for (const [id, installs] of Object.entries(data.plugins)) {\n      const manifest = await this.loadManifest(installs[0].installPath)\n      const components = await this.scanComponents(installs[0].installPath)\n      plugins.push({ id, name, enabled: enabledMap[id] === true, installs, manifest, components })\n    }\n    return plugins.toSorted((a, b) => a.name.localeCompare(b.name))\n  }\n}",
+        highlightLines: [5, 6, 7, 10, 11, 12],
+        explanation: "PluginService reads installed_plugins.json from ~/.claude/plugins/, cross-references with settings.json for enabled state, then scans each plugin's installPath for components (agents, skills, commands, hooks, MCP servers)."
+      }
+    ]
+  },
+
+  "DASHBOARD": {
+    label: "Dashboard CLI",
+    summary: "Manages the timeline plugin lifecycle: install (register + backfill), sync (re-scan all transcripts), ingest (single session), uninstall, and doctor (health diagnostics).",
+    files: ["src/commands/dashboard.ts"],
+    steps: [
+      {
+        title: "Step 1: Plugin Installation",
+        code: "export async function runInstall(): Promise<void> {\n  const pluginSourceDir = getPluginSourceDir()\n  if (!hasJq()) {\n    console.warn('Warning: jq is not installed. Some plugin operations may be limited.')\n  }\n  const registry = readInstalledPlugins()\n  const installRecord: PluginInstall = {\n    version: '1.0.0', installedAt: now, lastUpdated: now,\n    installPath: pluginSourceDir, isLocal: true, scope: 'user',\n  }\n  registry.plugins['claudeui-timeline'] = [installRecord]\n  writeInstalledPlugins(registry)\n\n  const db = openDatabase()\n  try {\n    const status = getStatus(db)\n    if (status.lastSyncAt === undefined) {\n      const result = backfillAll(db, { onProgress: (done, total) => { ... } })\n      console.log(`Backfill complete: ${result.indexed} indexed`)\n    }\n  } finally { closeDatabase(db) }\n}",
+        highlightLines: [6, 11, 12, 14, 17, 18],
+        explanation: "runInstall registers the timeline plugin in installed_plugins.json, opens the SQLite database via @claudeui/timeline, and if the DB is empty, runs a full backfill of all Claude Code transcripts. Uses the @claudeui/timeline workspace package for all DB operations."
+      },
+      {
+        title: "Step 2: Doctor Diagnostics",
+        code: "export async function runDoctor(): Promise<void> {\n  const issues: string[] = []\n\n  const registry = readInstalledPlugins()\n  if (!registry.plugins['claudeui-timeline']) {\n    issues.push('Plugin claudeui-timeline is not installed.')\n  }\n  if (!hasJq()) {\n    issues.push('jq is not available on PATH.')\n  }\n\n  let db: Database.Database | null = null\n  try {\n    db = openDatabase()\n    const integrityResult = db.pragma('integrity_check') as Array<{ integrity_check: string }>\n    const integrityOk = integrityResult[0]?.integrity_check === 'ok'\n    if (!integrityOk) {\n      issues.push(`Database integrity check failed`)\n    }\n    const status = getStatus(db)\n    console.log(`Sessions: ${status.sessionCount}`)\n  } finally { if (db) closeDatabase(db) }\n\n  if (issues.length > 0) throw new Error(`Issues found:\\n  - ${issues.join('\\n  - ')}`)\n}",
+        highlightLines: [4, 5, 14, 15, 17, 24],
+        explanation: "Doctor runs three checks: plugin registration in installed_plugins.json, jq binary availability (used by hooks), and SQLite database integrity via PRAGMA. Throws with all issues combined if any check fails."
+      }
+    ]
+  },
+
+  "PROFILES": {
+    label: "Profile Engine",
+    summary: "The most complex service. Manages profile activation as a transactional operation: acquires a file lock, validates components, creates symlinks, generates plugin/hook/MCP config, merges settings, and rolls back on failure.",
+    files: ["src/server/services/profile-service.ts"],
+    steps: [
+      {
+        title: "Step 1: Preflight Validation",
+        code: "async preflight(name: string): Promise<PreflightResult> {\n  const profile = await this.get(name)\n  if (!profile) throw new Error(`Profile \"${name}\" not found`)\n\n  const missing: string[] = []\n  for (const agent of profile.agents) {\n    if (!(await this.storeComponentExists('agents', agent))) {\n      missing.push(`agent:${agent}`)\n    }\n  }\n  for (const skill of profile.skills) {\n    if (!(await this.storeComponentExists('skills', skill))) {\n      missing.push(`skill:${skill}`)\n    }\n  }\n\n  const currentSettings = await this.readSettings()\n  const settingsWarnings = this.computeSettingsWarnings(currentSettings, profile.settings)\n  const currentActive = await this.getActiveProfileName()\n\n  return { canActivate: missing.length === 0, missing, settingsWarnings, currentActive }\n}",
+        highlightLines: [1, 5, 6, 7, 11, 12, 16, 19],
+        explanation: "Before activation, preflight checks that every agent, skill, and command referenced by the profile actually exists in the store. It also warns about settings keys that would be overwritten and computes model config env variable changes."
+      },
+      {
+        title: "Step 2: Transactional Activation",
+        code: "async activate(name: string): Promise<{ warnings: string[] }> {\n  const undoStack: UndoAction[] = []\n  try {\n    await this.lockService.acquire()\n    const preflightResult = await this.preflight(name)\n    if (!preflightResult.canActivate) {\n      throw new ActivationBlockedError('missing store components', preflightResult.missing)\n    }\n\n    if (previousActive) await this.deactivateInternal(previousActiveName!)\n    await writeFile(backupPath, JSON.stringify(currentSettings, null, 2), 'utf8')\n    await writeFile(this.activePath(), path.resolve(dir), 'utf8')\n\n    for (const agent of profile.agents) {\n      await symlink(source, destination)\n      undoStack.push({ label: `symlink-agent-${agent}`, undo: async () => { await rm(destination) } })\n    }\n    // ... same for skills, commands, hooks, MCP, LSP ...\n\n    let merged = { ...currentSettings }\n    if (profile.settings) merged = this.deepMerge(merged, profile.settings)\n    await writeFile(settingsPath, JSON.stringify(merged, null, 2), 'utf8')\n    return { warnings: settingsWarnings }\n  } catch (error) {\n    for (let index = undoStack.length - 1; index >= 0; index--) {\n      await undoStack[index].undo()\n    }\n    throw error\n  } finally { await this.lockService.release() }\n}",
+        highlightLines: [2, 3, 5, 9, 10, 11, 13, 14, 20, 21, 23, 24, 25],
+        explanation: "Activation is fully transactional: an undo stack tracks every mutation (symlinks, file writes). On failure, all operations are rolled back in reverse order. A file lock prevents concurrent activations. Settings are deep-merged so profile values override existing ones."
+      }
+    ]
+  },
+
+  "STORE": {
+    label: "Store Service",
+    summary: "Manages the component store at ~/.cui/store/. Imports agents, skills, and commands from external directories, tracks provenance (where each component came from), and detects conflicts.",
+    files: ["src/server/services/store-service.ts"],
+    steps: [
+      {
+        title: "Step 1: Import Scanning",
+        code: "async scanImport(sourceDir: string): Promise<StoreImportResult> {\n  const candidates = await this.getImportCandidates(sourceDir)\n  return {\n    ...EMPTY_RESULT(),\n    conflicts: candidates\n      .filter(c => c.isConflict)\n      .map(c => this.toConflict(c)),\n  }\n}\n\nprivate async getImportCandidates(sourceDir: string): Promise<ImportCandidate[]> {\n  const [agents, skills, commands] = await Promise.all([\n    this.scanAgents(sourceDir),\n    this.scanSkills(sourceDir),\n    this.scanCommands(sourceDir),\n  ])\n  return [...agents, ...skills, ...commands]\n}",
+        highlightLines: [1, 6, 10, 11, 12, 13, 14, 16],
+        explanation: "scanImport is a dry-run: it scans the source directory for agents (.md files), skills (directories with SKILL.md), and commands (.md files), then reports which would conflict with existing store entries. The actual import uses applyImport with an optional overwrite flag."
+      },
+      {
+        title: "Step 2: Provenance Tracking",
+        code: "async applyImport(sourceDir: string, overwrite = false): Promise<StoreImportResult> {\n  const provenanceIndex = await this.readProvenanceIndex()\n  const importedAt = new Date().toISOString()\n\n  for (const candidate of candidates) {\n    if (candidate.isConflict && !overwrite) { result.skipped += 1; continue }\n    if (candidate.isConflict) { await rm(candidate.destinationPath, { recursive: true }); result.overwritten += 1 }\n    else { result.imported += 1 }\n\n    await this.copyRecursive(candidate.sourcePath, candidate.destinationPath)\n    provenanceIndex[candidate.type][candidate.id] = {\n      importPath: candidate.sourcePath,\n      importedAt,\n    }\n  }\n  await this.writeProvenanceIndex(provenanceIndex)\n  return result\n}",
+        highlightLines: [2, 6, 7, 10, 11, 12, 15],
+        explanation: "Each imported component is tracked in a provenance index (~/.cui/store/.metadata/imports.json) recording where it came from and when. This enables the UI to show import history and supports conflict resolution with the overwrite flag."
+      }
+    ]
+  }
+};
+
+// ═══════════════════════════════════════════════════
+// SECTION 2: Runtime — do not modify below
+// ═══════════════════════════════════════════════════
+let currentId = null;
+let currentStep = 0;
+let zoomLevel = 1;
+
+function escapeHtml(s) {
+  return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+function renderPanel() {
+  const panel = document.getElementById('detail-panel');
+  if (!currentId) {
+    panel.className = 'detail-panel empty';
+    panel.innerHTML = 'Click a module to explore';
+    return;
+  }
+  const d = COURSE[currentId];
+  const step = d.steps[currentStep] || d.steps[0];
+  const lines = step.code.split('\n');
+  const hasPrev = d.steps.length > 1 && currentStep > 0;
+  const hasNext = d.steps.length > 1 && currentStep < d.steps.length - 1;
+
+  panel.className = 'detail-panel';
+  panel.innerHTML = `
+    <div class="detail-header">
+      <h2>${d.label}</h2>
+      <p>${d.summary}</p>
+    </div>
+    <div class="detail-files">
+      ${d.files.map(f => `<span>${f}</span>`).join('')}
+    </div>
+    <div class="step-section">
+      <div class="step-counter">Step ${currentStep + 1} / ${d.steps.length}</div>
+      <div class="step-title">${step.title}</div>
+      <div class="code-block">
+        ${lines.map((line, i) => {
+          const n = i + 1;
+          const hl = step.highlightLines.includes(n);
+          return `<span class="line${hl ? ' highlighted' : ''}"><span class="line-num">${n}</span>${escapeHtml(line)}</span>`;
+        }).join('')}
+      </div>
+      <div class="explanation">${step.explanation}</div>
+    </div>
+    <div class="nav-buttons">
+      ${hasPrev ? '<button class="nav-btn secondary" onclick="prevStep()">\u2190 Prev step</button>' : ''}
+      ${hasNext ? '<button class="nav-btn primary" onclick="nextStep()">Next step \u2192</button>' : ''}
+      <button class="nav-btn primary" onclick="nextModule()">Next module \u2192</button>
+    </div>
+  `;
+}
+
+function selectNode(id) {
+  currentId = id;
+  currentStep = 0;
+  document.getElementById('start-guide').classList.add('hidden');
+  highlightNode(id);
+  renderPanel();
+}
+
+function findEdges() {
+  const svg = document.querySelector('#flow-container svg');
+  if (!svg) return [];
+  return Array.from(svg.querySelectorAll('path')).filter(p => {
+    const d = p.getAttribute('d') || '';
+    return d.length > 50;
+  });
+}
+
+function initEdges() {
+  findEdges().forEach(p => {
+    p.classList.remove('flow-active', 'flow-dim');
+    p.classList.add('flow-idle');
+  });
+}
+
+function highlightNode(id) {
+  document.querySelectorAll('#flow-container .node').forEach(n => n.classList.remove('node-active'));
+  const svg = document.querySelector('#flow-container svg');
+  if (!svg) return;
+  const nodeEl = svg.querySelector(`[id*="flowchart-${id}-"]`);
+  if (nodeEl) nodeEl.classList.add('node-active');
+  const edges = findEdges();
+  if (edges.length === 0) return;
+  edges.forEach(p => {
+    p.classList.remove('flow-active', 'flow-dim');
+    const parentId = p.parentElement?.id || '';
+    if (parentId.includes(id)) {
+      p.classList.add('flow-active');
+    } else {
+      p.classList.add('flow-dim');
+    }
+  });
+}
+
+function nextStep() {
+  if (!currentId) return;
+  const d = COURSE[currentId];
+  if (currentStep < d.steps.length - 1) { currentStep++; renderPanel(); }
+}
+function prevStep() { if (currentStep > 0) { currentStep--; renderPanel(); } }
+function nextModule() {
+  if (!currentId) return;
+  const idx = COURSE.flowOrder.indexOf(currentId);
+  if (idx < COURSE.flowOrder.length - 1) selectNode(COURSE.flowOrder[idx + 1]);
+}
+function zoomIn() { zoomLevel = Math.min(2.5, zoomLevel + 0.2); applyZoom(); }
+function zoomOut() { zoomLevel = Math.max(0.4, zoomLevel - 0.2); applyZoom(); }
+function zoomReset() { zoomLevel = 1; applyZoom(); }
+function applyZoom() {
+  document.getElementById('flow-container').style.transform = `scale(${zoomLevel})`;
+}
+
+mermaid.initialize({
+  startOnLoad: true,
+  securityLevel: 'loose',
+  theme: 'dark',
+  themeVariables: {
+    primaryColor: '#1b1c1e',
+    primaryBorderColor: '#434345',
+    primaryTextColor: '#f9f9f9',
+    lineColor: '#434345',
+    secondaryColor: '#101111',
+    tertiaryColor: '#07080a',
+    fontFamily: 'Inter, -apple-system, sans-serif',
+    fontSize: '14px',
+    nodeBorder: '#434345',
+    edgeLabelBackground: '#101111',
+  },
+  flowchart: { curve: 'basis', padding: 20, nodeSpacing: 60, rankSpacing: 80 }
+});
+
+window.callback = function(nodeId) { selectNode(nodeId); };
+window.addEventListener('load', function() { setTimeout(initEdges, 500); });
+</script>
+</body>
+</html>
