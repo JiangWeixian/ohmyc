@@ -48,7 +48,7 @@ export function TimelineView() {
   useEffect(() => {
     if (years && years.length > 0 && !years.includes(year)) {
       // eslint-disable-next-line react-hooks/set-state-in-effect, react-hooks-extra/set-state-in-effect
-      setYear(years.at(-1))
+      setYear(years.at(-1)!)
     }
   }, [years, year])
 

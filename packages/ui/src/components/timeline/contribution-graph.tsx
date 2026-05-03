@@ -110,14 +110,14 @@ export function ContributionGraph({ year, metric, data, onSelectDay }: Contribut
       const m = d.getUTCMonth()
       if (d.getUTCFullYear() !== year) {
         if (spans.length > 0) {
-          spans.at(-1).weeks += 1
+          spans.at(-1)!.weeks += 1
         } else {
           spans.push({ label: '', weeks: 1 })
         }
         continue
       }
       if (m === lastMonth) {
-        spans.at(-1).weeks += 1
+        spans.at(-1)!.weeks += 1
       } else {
         spans.push({ label: MONTH_NAMES[m], weeks: 1 })
         lastMonth = m
