@@ -1,4 +1,6 @@
-// plugins/timeline/opencode.ts
+// OpenCode plugin for ClaudeUI Timeline — captures session lifecycle
+// events (turns, tokens, tools, skills) and writes them to a shared
+// SQLite database at ~/.cui/timeline.db.
 import { appendFileSync, mkdirSync } from 'node:fs'
 import os from 'node:os'
 import path from 'node:path'
@@ -13,6 +15,8 @@ import type { ParsedSessionData } from '../../packages/timeline/src/ingest.js'
 
 const LOG_FILE = path.join(os.tmpdir(), 'timeline-plugin.log')
 
+// Appends a timestamped log entry to a temp file. Falls back to
+// console.log when the file is unavailable (e.g. permissions).
 function log(level: string, message: string, extra?: Record<string, unknown>): void {
   const entry = `[${new Date().toISOString()}] [${level}] ${message}${extra ? ` ${JSON.stringify(extra)}` : ''}\n`
   try {
@@ -38,6 +42,9 @@ function ensureDb(): Database {
 }
 
 function ensureSchema(db: Database): void {
+  // Inline migration: if the sessions table already exists, check
+  // whether it has the agent_name column (added in schema v3) and
+  // add it if missing. This avoids a separate migration framework.
   const hasSessions = db.query("SELECT name FROM sqlite_master WHERE type='table' AND name='sessions'").get()
   if (hasSessions) {
     const hasAgentName = db.query('PRAGMA table_info(sessions)').all()
@@ -52,6 +59,8 @@ function ensureSchema(db: Database): void {
   db.query('INSERT OR REPLACE INTO meta (key, value) VALUES (?, ?)').run('schema_version', String(CURRENT_SCHEMA_VERSION))
 }
 
+// Mutable state accumulated across events for a single session.
+// Converted to ParsedSessionData and flushed to SQLite on session.idle.
 interface SessionAccumulator {
   sessionId: string
   project: string
@@ -61,13 +70,14 @@ interface SessionAccumulator {
   tokensInput: number
   tokensOutput: number
   tokensCached: number
-  tools: Map<string, number>
+  tools: Map<string, number> // tool name -> invocation count
   skills: Set<string>
   firstUserMessage: string | null
   summary: string | null
   model: string | null
 }
 
+// Creates a fresh accumulator for a session. Exported for testing.
 export function createAccumulator(sessionId: string, project?: string): SessionAccumulator {
   return {
     sessionId,
@@ -108,8 +118,12 @@ function toParsedSessionData(acc: SessionAccumulator): ParsedSessionData {
     tokensInput: acc.tokensInput,
     tokensOutput: acc.tokensOutput,
     tokensCached: acc.tokensCached,
+    // Prefer explicit summary (e.g. from away_summary), then the
+    // first user message, then a placeholder for empty sessions.
     summary: acc.summary ?? acc.firstUserMessage ?? '(untitled session)',
     summarySource: acc.firstUserMessage ? 'first_message' : 'auto',
+    // OpenCode emits sessionID in two different shapes depending on
+    // the event type — check both locations.
     transcriptPath: `opencode://${acc.sessionId}`,
     fileSize: 0,
     tools: [...acc.tools.entries()].map(([toolName, callCount]) => ({ toolName, callCount })),
@@ -119,6 +133,8 @@ function toParsedSessionData(acc: SessionAccumulator): ParsedSessionData {
 }
 
 function getEventSessionID(event: any): string | undefined {
+  // session.created puts the id at properties.info.id; all other
+  // events use properties.sessionID.
   if (event.properties?.sessionID) {
     return event.properties.sessionID as string
   }
@@ -128,12 +144,16 @@ function getEventSessionID(event: any): string | undefined {
   return undefined
 }
 
+// Dependencies injected into createEventHandler. Exported for testing.
 export interface EventHandlerDeps {
-  project: string
-  writer: ReturnType<typeof createWriter>
-  log: typeof log
+  project: string // directory basename of the active project
+  writer: ReturnType<typeof createWriter> // SQLite session writer
+  log: typeof log // logging function
 }
 
+// Creates the event handler and tool hooks for a single project.
+// Maintains an in-memory map of active sessions, flushing each to
+// SQLite when the session goes idle or is deleted. Exported for testing.
 export function createEventHandler(deps: EventHandlerDeps) {
   const sessions = new Map<string, SessionAccumulator>()
 
@@ -209,8 +229,11 @@ export function createEventHandler(deps: EventHandlerDeps) {
           }
 
           case 'message.updated': {
+            // OpenCode sends message metadata under either .info or
+            // .message depending on the event variant — accept both.
             const info = event.properties?.info || event.properties?.message
             if (info) {
+              // sessionID vs session_id: OpenCode versions differ on casing.
               const sessionID = info.sessionID || info.session_id
               if (sessionID) {
                 const acc = getAccumulator(sessionID)
@@ -236,6 +259,8 @@ export function createEventHandler(deps: EventHandlerDeps) {
           }
 
           case 'message.part.updated': {
+            // Only capture non-synthetic, non-ignored text parts as the
+            // user's first message (used as a fallback session summary).
             const part = event.properties?.part
             if (part && part.type === 'text' && !part.synthetic && !part.ignored) {
               const sessionID = part.sessionID || part.session_id
@@ -265,6 +290,8 @@ export function createEventHandler(deps: EventHandlerDeps) {
 
     toolExecuteAfter: async (hookInput: { sessionID: string; tool: string; args: any }) => {
       try {
+        // Both "Skill" and "skill" are valid depending on the agent
+        // version — check both to avoid missing skill invocations.
         if (hookInput.tool === 'Skill' || hookInput.tool === 'skill') {
           const acc = getAccumulator(hookInput.sessionID)
           const args = hookInput.args
@@ -279,6 +306,8 @@ export function createEventHandler(deps: EventHandlerDeps) {
   }
 }
 
+// OpenCode plugin entry point. Initializes the SQLite database and
+// returns event + tool hooks that the OpenCode runtime calls.
 export const TimelinePlugin: Plugin = async (input) => {
   const project = getProjectName(input)
 
@@ -289,6 +318,8 @@ export const TimelinePlugin: Plugin = async (input) => {
     db = ensureDb()
     writer = createWriter(db)
   } catch (error) {
+    // Return empty hooks on DB failure — the plugin is non-essential and
+    // should not crash the OpenCode host process.
     log('error', 'Database init failed', { error: error instanceof Error ? error.message : String(error) })
     return {}
   }
