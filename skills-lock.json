@@ -6,6 +6,12 @@
       "sourceType": "github",
       "computedHash": "9d1e82c5c409d2b0247245a005bc0f7e4447c0999b78dcea60f568c1ba4a6694"
     },
+    "dev-setup": {
+      "source": "git@github.com:neo-hack/neo-skills.git",
+      "sourceType": "git",
+      "skillPath": "skills/dev-setup/SKILL.md",
+      "computedHash": "6e872b9eda4d8431fd5a1ad08e44c26280dfbf99cf473b01db46af4eebd7fd37"
+    },
     "full-output-enforcement": {
       "source": "Leonxlnx/taste-skill",
       "sourceType": "github",

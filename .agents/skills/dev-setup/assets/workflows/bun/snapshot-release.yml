@@ -34,31 +34,20 @@ jobs:
 
       - uses: oven-sh/setup-bun@v1
         name: Install bun
+        id: bun-install
         with:
-          bun-version: 1.3.12
-
-      - uses: pnpm/action-setup@v2
-        name: Install pnpm
-        id: pnpm-install
-        with:
-          run_install: false
-
-      - name: get pnpm store directory
-        id: pnpm-cache
-        shell: bash
-        run: |
-          echo "STORE_PATH=$(pnpm store path)" >> $GITHUB_OUTPUT
+          bun-version: latest
 
       - uses: actions/cache@v3
-        name: setup pnpm cache
+        name: setup bun cache
         with:
-          path: ${{ steps.pnpm-cache.outputs.STORE_PATH }}
-          key: ${{ runner.os }}-pnpm-store-${{ hashFiles('**/pnpm-lock.yaml') }}
+          path: ~/.bun/install/cache
+          key: ${{ runner.os }}-bun-store-${{ hashFiles('**/bun.lockb') }}
           restore-keys: |
-            ${{ runner.os }}-pnpm-store-
+            ${{ runner.os }}-bun-store-
 
       - name: install dependencies
-        run: pnpm install --frozen-lockfile=false
+        run: bun install
 
       - name: Creating .npmrc
         run: |
@@ -70,9 +59,9 @@ jobs:
 
       - name: create and publish versions
         run: |
-          pnpm ci:snapshot
-          pnpm changeset pre enter snapshot
-          pnpm ci:prerelease
+          bun ci:snapshot
+          bun changeset pre enter snapshot
+          bun ci:prerelease
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
