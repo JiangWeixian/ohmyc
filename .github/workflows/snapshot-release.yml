@@ -4,9 +4,9 @@ on:
   workflow_dispatch:
     inputs:
       branch:
-        description: 'Enter the branch name for snapshot release'
+        description: Enter the branch name for snapshot release
         required: true
-        default: 'main'
+        default: main
         type: string
 
 env:
@@ -71,7 +71,6 @@ jobs:
       - name: create and publish versions
         run: |
           pnpm ci:snapshot
-          pnpm changeset pre enter snapshot
           pnpm ci:prerelease
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
