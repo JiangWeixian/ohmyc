@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query'
 
-import type { Command } from '@claudeui/shared'
+import type { Command } from '@ohmyc/shared'
 import type { ItemLocator } from './use-agents'
 
 async function fetchCommands(): Promise<Command[]> {

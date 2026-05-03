@@ -8,10 +8,10 @@ import {
 } from 'node:fs/promises'
 import path from 'node:path'
 
-import { SAFE_NAME_PATTERN } from '@claudeui/shared'
+import { SAFE_NAME_PATTERN } from '@ohmyc/shared'
 import matter from 'gray-matter'
 
-import type { Agent, AgentFrontmatter } from '@claudeui/shared'
+import type { Agent, AgentFrontmatter } from '@ohmyc/shared'
 
 export class AgentService {
   constructor(private agentsDir: string) {}

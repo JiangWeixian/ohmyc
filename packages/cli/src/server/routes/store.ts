@@ -11,7 +11,7 @@ import {
   UpdateCommandBodySchema,
   UpdateModelConfigBodySchema,
   UpdateSkillBodySchema,
-} from '@claudeui/shared'
+} from '@ohmyc/shared'
 
 import { AgentService } from '../services/agent-service'
 import { CommandService } from '../services/command-service'

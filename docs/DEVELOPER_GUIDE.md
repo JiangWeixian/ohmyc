@@ -31,14 +31,14 @@ ClaudeUI 是一个 CLI 工具，带有 Web UI，用于**可视化展示和管理
 │   (Vite + SPA)   │      JSON API        │  (Node.js CLI)   │
 └──────────────────┘                       └──────────────────┘
          │                                         │
-         │  @claudeui/shared                       │  文件系统
+         │  @ohmyc/shared                       │  文件系统
          ▼                                         ▼
   类型定义 & Schema                        ~/.cui/ 或 ~/.claude/
 ```
 
-- **后端**：CLI 包（`@claudeui/cli`）作为本地 HTTP 服务器运行，通过 Fastify 提供 REST API，直接读写文件系统上的配置文件。
-- **前端**：UI 包（`@claudeui/ui`）是一个 React SPA，通过 Vite 构建，产物嵌入 CLI 的 dist 目录中。
-- **共享层**：`@claudeui/shared` 定义所有 Zod schema 和 TypeScript 类型，前后端共用。
+- **后端**：CLI 包（`@ohmyc/cli`）作为本地 HTTP 服务器运行，通过 Fastify 提供 REST API，直接读写文件系统上的配置文件。
+- **前端**：UI 包（`@ohmyc/ui`）是一个 React SPA，通过 Vite 构建，产物嵌入 CLI 的 dist 目录中。
+- **共享层**：`@ohmyc/shared` 定义所有 Zod schema 和 TypeScript 类型，前后端共用。
 
 ### 技术选型理由
 
@@ -68,7 +68,7 @@ claudeui/
 ├── pnpm-workspace.yaml       # workspace 声明
 ├── tsconfig.json             # 项目引用基础配置
 ├── packages/
-│   ├── cli/                  # @claudeui/cli — CLI 工具 & HTTP 服务器
+│   ├── cli/                  # @ohmyc/cli — CLI 工具 & HTTP 服务器
 │   │   ├── src/
 │   │   │   ├── index.ts           # CLI 入口，命令注册
 │   │   │   ├── launcher.ts        # 启动逻辑（启动服务器 + 打开浏览器）
@@ -80,7 +80,7 @@ claudeui/
 │   │   ├── vitest.config.ts       # 测试配置
 │   │   └── scripts/
 │   │       └── prepublish.mjs     # npm 发布前处理脚本
-│   ├── ui/                   # @claudeui/ui — React 前端（private）
+│   ├── ui/                   # @ohmyc/ui — React 前端（private）
 │   │   ├── src/
 │   │   │   ├── main.tsx           # React 入口
 │   │   │   ├── App.tsx            # 路由配置
@@ -91,7 +91,7 @@ claudeui/
 │   │   │   └── utils/             # 工具函数
 │   │   ├── vite.config.ts         # Vite 开发/构建配置
 │   │   └── vitest.config.ts       # 测试配置
-│   └── shared/               # @claudeui/shared — 共享类型 & Schema
+│   └── shared/               # @ohmyc/shared — 共享类型 & Schema
 │       └── src/
 │           ├── index.ts           # 统一导出
 │           ├── schemas.ts         # 基础 Schema（Settings, ClaudeMd）
@@ -108,8 +108,8 @@ claudeui/
 ### 包依赖关系
 
 ```
-@claudeui/ui ──────► @claudeui/shared
-@claudeui/cli ─────► @claudeui/shared
+@ohmyc/ui ──────► @ohmyc/shared
+@ohmyc/cli ─────► @ohmyc/shared
 ```
 
 - CLI 和 UI 都依赖 shared 包，但彼此不直接依赖。
@@ -146,8 +146,8 @@ pnpm dev
 ```
 
 此命令会并行运行：
-- **server**：`pnpm --filter @claudeui/cli dev:server` — 以 `--api-only` 模式启动 Fastify，tsup 监听变化自动重编译并重启
-- **ui**：`pnpm --filter @claudeui/ui dev` — 启动 Vite 开发服务器（带 HMR），API 请求通过 `vite.config.ts` 中的 proxy 转发到后端
+- **server**：`pnpm --filter @ohmyc/cli dev:server` — 以 `--api-only` 模式启动 Fastify，tsup 监听变化自动重编译并重启
+- **ui**：`pnpm --filter @ohmyc/ui dev` — 启动 Vite 开发服务器（带 HMR），API 请求通过 `vite.config.ts` 中的 proxy 转发到后端
 
 ```typescript
 // packages/ui/vite.config.ts
@@ -166,8 +166,8 @@ pnpm build
 ```
 
 构建顺序至关重要：
-1. **`pnpm --filter @claudeui/ui build`** — 执行 `tsc && vite build`，产物输出到 `packages/ui/dist/`
-2. **`pnpm --filter @claudeui/cli build`** — 执行 `tsup`，将 TypeScript 编译为 CJS，并通过 `onSuccess` 钩子将 UI 产物复制到 `packages/cli/dist/ui/`
+1. **`pnpm --filter @ohmyc/ui build`** — 执行 `tsc && vite build`，产物输出到 `packages/ui/dist/`
+2. **`pnpm --filter @ohmyc/cli build`** — 执行 `tsup`，将 TypeScript 编译为 CJS，并通过 `onSuccess` 钩子将 UI 产物复制到 `packages/cli/dist/ui/`
 
 ---
 
@@ -667,7 +667,7 @@ import { basicSetup } from 'codemirror'
 
 ### 概览
 
-`@claudeui/shared` 是前后端共享的类型契约层，使用 Zod 定义 schema 并同时导出类型推断。
+`@ohmyc/shared` 是前后端共享的类型契约层，使用 Zod 定义 schema 并同时导出类型推断。
 
 **入口文件**：`packages/shared/src/index.ts` — 统一导出所有 schema 和类型。
 
@@ -785,7 +785,7 @@ shared 包是前后端的**唯一类型契约**。后端使用 Zod schema 验证
 ```typescript
 // 后端验证示例（routes/profiles.ts）
 // 前端类型使用（hooks/useProfiles.ts）
-import type { CreateProfileBody, Profile } from '@claudeui/shared'
+import type { CreateProfileBody, Profile } from '@ohmyc/shared'
 
 const parsed = CreateProfileBodySchema.safeParse(request.body)
 if (!parsed.success) {
@@ -885,7 +885,7 @@ Vite 的 `server.proxy` 将所有 `/api` 请求转发到 Fastify 后端。
 #### 1. UI 构建
 
 ```bash
-pnpm --filter @claudeui/ui build
+pnpm --filter @ohmyc/ui build
 ```
 
 执行 `tsc && vite build`：
@@ -895,7 +895,7 @@ pnpm --filter @claudeui/ui build
 #### 2. CLI 构建
 
 ```bash
-pnpm --filter @claudeui/cli build
+pnpm --filter @ohmyc/cli build
 ```
 
 执行 `tsup`（配置在 `packages/cli/tsup.config.ts`）：
@@ -909,7 +909,7 @@ pnpm --filter @claudeui/cli build
 #### 3. 完整构建
 
 ```bash
-pnpm build   # 等价于 pnpm --filter @claudeui/ui build && pnpm --filter @claudeui/cli build
+pnpm build   # 等价于 pnpm --filter @ohmyc/ui build && pnpm --filter @ohmyc/cli build
 ```
 
 ### npm 发布流程
@@ -923,7 +923,7 @@ CLI 包配置了 `prepublishOnly` 脚本：
 `scripts/prepublish.mjs` 在发布前：
 1. 检查 `dist/index.cjs` 和 `dist/ui/index.html` 是否存在
 2. 临时修改 `package.json`：
-   - `name` 从 `@claudeui/cli` 改为 `@aiou/cu`
+   - `name` 从 `@ohmyc/cli` 改为 `@aiou/cu`
    - `dependencies` 清空为 `{}`（所有依赖已打包进 bundle）
 3. npm 读取修改后的 `package.json` 进行发布
 4. 发布完成后自动恢复原始 `package.json`
@@ -975,11 +975,11 @@ export default defineConfig({
 pnpm test
 
 # 运行特定包的测试
-pnpm --filter @claudeui/cli test
-pnpm --filter @claudeui/ui test
+pnpm --filter @ohmyc/cli test
+pnpm --filter @ohmyc/ui test
 
 # 监听模式
-pnpm --filter @claudeui/cli test:watch
+pnpm --filter @ohmyc/cli test:watch
 ```
 
 ### 现有测试覆盖

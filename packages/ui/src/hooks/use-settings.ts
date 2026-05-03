@@ -1,6 +1,6 @@
 import { useMutation, useQuery } from '@tanstack/react-query'
 
-import type { SettingsJson } from '@claudeui/shared'
+import type { SettingsJson } from '@ohmyc/shared'
 
 export interface SettingsResponse {
   path: string

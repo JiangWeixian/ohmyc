@@ -1,5 +1,5 @@
 {
-  "name": "@claudeui/ui",
+  "name": "@ohmyc/ui",
   "version": "0.1.0",
   "type": "module",
   "private": true,
@@ -11,7 +11,7 @@
     "test": "vitest run"
   },
   "dependencies": {
-    "@claudeui/shared": "workspace:*",
+    "@ohmyc/shared": "workspace:*",
     "@codemirror/commands": "^6.10.3",
     "@codemirror/lang-json": "^6.0.2",
     "@codemirror/lang-markdown": "^6.3.4",

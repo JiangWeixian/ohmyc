@@ -17,9 +17,9 @@ import {
   getStatus,
   ingestSession,
   openDatabase,
-} from '@claudeui/timeline'
+} from '@ohmyc/timeline'
 
-import type { PluginInstall } from '@claudeui/shared'
+import type { PluginInstall } from '@ohmyc/shared'
 import type Database from 'better-sqlite3'
 
 // ------------------------------------------------------------------

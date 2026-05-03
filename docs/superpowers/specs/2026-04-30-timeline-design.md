@@ -44,9 +44,9 @@ packages/timeline/
 ```
 
 Consumed by:
-- `@claudeui/cli` — `claudeui dashboard` subcommand with `--install`, `--uninstall`, `--sync`, `--ingest`, `--doctor` flags. Invoked by the plugin's Stop hook and for one-time backfill.
-- `@claudeui/cli` server — exposes HTTP endpoints (`GET /api/timeline/heatmap`, `GET /api/timeline/events`) that delegate to `query.ts`.
-- `@claudeui/ui` — Timeline route, no direct DB access; goes through the server endpoints.
+- `@ohmyc/cli` — `claudeui dashboard` subcommand with `--install`, `--uninstall`, `--sync`, `--ingest`, `--doctor` flags. Invoked by the plugin's Stop hook and for one-time backfill.
+- `@ohmyc/cli` server — exposes HTTP endpoints (`GET /api/timeline/heatmap`, `GET /api/timeline/events`) that delegate to `query.ts`.
+- `@ohmyc/ui` — Timeline route, no direct DB access; goes through the server endpoints.
 
 Built-in plugin at `plugins/timeline/`:
 ```

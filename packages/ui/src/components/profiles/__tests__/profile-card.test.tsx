@@ -10,7 +10,7 @@ import {
 import { renderWithProviders } from '../../../test/render-with-providers'
 import { ProfileCard } from '../profile-card'
 
-import type { Profile } from '@claudeui/shared'
+import type { Profile } from '@ohmyc/shared'
 
 vi.mock('../../../hooks/use-profiles', () => ({
   usePreflight: () => ({

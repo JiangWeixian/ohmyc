@@ -8,7 +8,7 @@ import type {
   CreateProfileBody,
   Profile,
   UpdateProfileBody,
-} from '@claudeui/shared'
+} from '@ohmyc/shared'
 
 interface ProfilesListResponse {
   profiles: Profile[]

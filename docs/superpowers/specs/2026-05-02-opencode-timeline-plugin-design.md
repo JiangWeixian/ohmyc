@@ -6,7 +6,7 @@
 
 ## Problem Statement
 
-The `@claudeui/timeline` package currently only supports Claude Code via transcript file parsing. We need to add OpenCode support so that timeline data can be captured from both agents into the same SQLite database (`~/.cui/timeline.db`).
+The `@ohmyc/timeline` package currently only supports Claude Code via transcript file parsing. We need to add OpenCode support so that timeline data can be captured from both agents into the same SQLite database (`~/.cui/timeline.db`).
 
 ## Key Constraint
 
@@ -14,7 +14,7 @@ OpenCode runs on **Bun**, which does not support `better-sqlite3` (native C++ bi
 
 ## Architecture
 
-### 1. `@claudeui/timeline` Sub-exports
+### 1. `@ohmyc/timeline` Sub-exports
 
 Add two new sub-exports to `packages/timeline/package.json`:
 
@@ -28,13 +28,13 @@ Add two new sub-exports to `packages/timeline/package.json`:
 }
 ```
 
-**`@claudeui/timeline/writer`**
+**`@ohmyc/timeline/writer`**
 - Export: `createWriter(db: SQLiteDatabase)`
 - Returns: `{ writeSession(data: ParsedSessionData): void }`
 - The `db` parameter accepts any SQLite-like object with `.run()` and `.prepare()` methods (works with both `better-sqlite3` and `bun:sqlite`)
 - Contains all INSERT/REPLACE logic for `sessions`, `session_tools`, and `session_skills` tables
 
-**`@claudeui/timeline/schema`**
+**`@ohmyc/timeline/schema`**
 - Export: `SCHEMA_SQL`, `CURRENT_SCHEMA_VERSION`, `MIGRATIONS`
 - Export types: `ParsedSessionData`, `SessionRow`, etc.
 
@@ -43,7 +43,7 @@ Add two new sub-exports to `packages/timeline/package.json`:
 Located at `plugins/timeline/opencode.ts` (not in `.opencode/plugins/` directly, to keep plugin source with the timeline package).
 
 **Responsibilities:**
-- Import `createWriter` from `@claudeui/timeline/writer`
+- Import `createWriter` from `@ohmyc/timeline/writer`
 - Open `bun:sqlite` connection to `~/.cui/timeline.db`
 - Initialize database schema if not exists
 - Hook into OpenCode events to accumulate session data in memory
@@ -85,7 +85,7 @@ Plugin accumulates data in Map<sessionId, accumulator>
     ↓
 Session ends (idle/deleted)
     ↓
-writer.writeSession(data)  ← from @claudeui/timeline/writer
+writer.writeSession(data)  ← from @ohmyc/timeline/writer
     ↓
 ~/.cui/timeline.db  (bun:sqlite)
 ```

@@ -11,7 +11,7 @@ import {
 import { renderWithProviders } from '../../../test/render-with-providers'
 import { ProfileEditor } from '../profile-editor'
 
-import type { Profile } from '@claudeui/shared'
+import type { Profile } from '@ohmyc/shared'
 
 const mockCreateMutate = vi.fn()
 const mockUpdateMutate = vi.fn()

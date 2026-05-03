@@ -13,7 +13,7 @@ import { ConfirmSwitchDialog } from './confirm-switch-dialog'
 import { Card, CardContent } from '@/components/ui/card'
 import { cn } from '@/lib/utils'
 
-import type { Profile } from '@claudeui/shared'
+import type { Profile } from '@ohmyc/shared'
 import type { PreflightResult } from '../../hooks/use-profiles'
 
 interface ProfileCardProperties {

@@ -80,7 +80,7 @@ fi
 # Fast path: jq preprocessing + Node.js direct write
 #
 # Extracts all ParsedSessionData fields in one jq pass, matching the
-# field order and logic from @claudeui/timeline's parseTranscript().
+# field order and logic from @ohmyc/timeline's parseTranscript().
 # Pipes the result to the CLI's --ingest-raw mode which writes directly
 # to the database without re-parsing the transcript.
 # ---------------------------------------------------------------------------

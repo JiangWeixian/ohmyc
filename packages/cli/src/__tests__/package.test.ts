@@ -33,7 +33,7 @@ const NODE_BUILTINS = new Set([
 ])
 
 const RUNTIME_DEPS = [
-  '@claudeui/shared',
+  '@ohmyc/shared',
   '@fastify/static',
   'cac',
   'fastify',
@@ -68,8 +68,8 @@ describe('Package configuration', () => {
     expect(package_.publishConfig.registry).toBe('https://registry.npmjs.org/')
   })
 
-  it('workspace name is preserved as @claudeui/cli', () => {
-    expect(package_.name).toBe('@claudeui/cli')
+  it('workspace name is preserved as @ohmyc/cli', () => {
+    expect(package_.name).toBe('@ohmyc/cli')
   })
 
   it('noExternal list in tsup config covers all runtime dependencies', () => {

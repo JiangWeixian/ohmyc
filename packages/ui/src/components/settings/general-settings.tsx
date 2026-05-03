@@ -20,7 +20,7 @@ import {
 import { Switch } from '@/components/ui/switch'
 import { NativeButton } from '@/components/uitripled/native-button'
 
-import type { GeneralSettings } from '@claudeui/shared'
+import type { GeneralSettings } from '@ohmyc/shared'
 
 const DEFAULT_GENERAL_SETTINGS: GeneralSettings = {
   model: undefined,

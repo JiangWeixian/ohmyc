@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query'
 
-import type { Skill } from '@claudeui/shared'
+import type { Skill } from '@ohmyc/shared'
 import type { ItemLocator } from './use-agents'
 
 interface SkillsListResponse {

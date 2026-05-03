@@ -16,8 +16,8 @@ export default defineConfig({
   },
   external: ['better-sqlite3'],
   noExternal: [
-    '@claudeui/shared',
-    '@claudeui/timeline',
+    '@ohmyc/shared',
+    '@ohmyc/timeline',
     '@fastify/static',
     'cac',
     'fastify',
@@ -38,7 +38,7 @@ export default defineConfig({
       cpSync(uiDistribution, cliUiDistribution, { recursive: true })
       console.log(`Copied UI assets from ${uiDistribution} to ${cliUiDistribution}`)
     } else {
-      console.warn(`Warning: UI dist not found at ${uiDistribution}. Run 'pnpm --filter @claudeui/ui build' first.`)
+      console.warn(`Warning: UI dist not found at ${uiDistribution}. Run 'pnpm --filter @ohmyc/ui build' first.`)
     }
 
     if (existsSync(pluginSource)) {

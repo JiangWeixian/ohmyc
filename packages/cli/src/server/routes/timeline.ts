@@ -7,7 +7,7 @@ import {
   getStatus,
   getYears,
   openDatabase,
-} from '@claudeui/timeline'
+} from '@ohmyc/timeline'
 
 import type { FastifyPluginAsync } from 'fastify'
 

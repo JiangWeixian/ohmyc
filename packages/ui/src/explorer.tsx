@@ -43,7 +43,7 @@ import type {
   Agent,
   Command,
   Skill,
-} from '@claudeui/shared'
+} from '@ohmyc/shared'
 
 const SECTIONS: SidebarSection[] = [
   { id: 'agents', label: 'Agents', icon: Bot },
