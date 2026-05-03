@@ -310,6 +310,7 @@ export function createEventHandler(deps: EventHandlerDeps) {
 // returns event + tool hooks that the OpenCode runtime calls.
 export const TimelinePlugin: Plugin = async (input) => {
   const project = getProjectName(input)
+  log('info', 'TimelinePlugin loaded', { project })
 
   let db: Database | undefined
   let writer: ReturnType<typeof createWriter> | undefined
