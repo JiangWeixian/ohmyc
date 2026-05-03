@@ -105,7 +105,7 @@ export async function settingsRoutes(fastify: FastifyInstance, options: Settings
   // GET /api/settings/schema - returns JSON Schema from Zod (lazy import)
   fastify.get('/api/settings/schema', async (request, reply) => {
     try {
-      const { SettingsJsonSchema } = await import('@claudeui/shared')
+      const { SettingsJsonSchema } = await import('@ohmyc/shared')
       const { zodToJsonSchema } = await import('zod-to-json-schema')
 
       const jsonSchema = zodToJsonSchema(SettingsJsonSchema as any, 'settings')

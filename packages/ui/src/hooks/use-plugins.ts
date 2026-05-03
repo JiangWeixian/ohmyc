@@ -5,7 +5,7 @@ import type {
   Marketplace,
   PluginInstall,
   PluginManifest,
-} from '@claudeui/shared'
+} from '@ohmyc/shared'
 
 export interface PluginInventoryItem {
   id: string

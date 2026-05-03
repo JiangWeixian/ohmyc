@@ -19,7 +19,7 @@ import type {
   UpdateCommandBody,
   UpdateModelConfigBody,
   UpdateSkillBody,
-} from '@claudeui/shared'
+} from '@ohmyc/shared'
 
 // --- Fetch helpers ---
 

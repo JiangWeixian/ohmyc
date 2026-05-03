@@ -9,10 +9,10 @@ import {
 } from 'node:fs/promises'
 import path from 'node:path'
 
-import { SAFE_NAME_PATTERN } from '@claudeui/shared'
+import { SAFE_NAME_PATTERN } from '@ohmyc/shared'
 import matter from 'gray-matter'
 
-import type { Skill, SkillFrontmatter } from '@claudeui/shared'
+import type { Skill, SkillFrontmatter } from '@ohmyc/shared'
 
 const SKILL_FILE = 'SKILL.md'
 

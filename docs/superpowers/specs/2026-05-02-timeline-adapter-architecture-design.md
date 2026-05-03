@@ -7,7 +7,7 @@
 
 ## Context
 
-`@claudeui/timeline` currently ingests session data from two sources:
+`@ohmyc/timeline` currently ingests session data from two sources:
 
 - **Claude Code** — JSONL transcripts under `~/.claude/projects/`, batch-read by `packages/timeline/src/ingest.ts` and `backfill.ts`.
 - **opencode (live)** — event/hook stream from `plugins/timeline/opencode.ts`, a Bun-runtime opencode plugin.
@@ -106,7 +106,7 @@ Path: cheap re-runs, safe to schedule periodically.
 | Agent identification | `agent_name` column (already added) — `'claude'` \| `'opencode'` \| null for legacy rows | Already in schema. No further migration needed. |
 | Transcript path for opencode | `opencode://${sessionID}` URI scheme | Already used in live plugin. Keep consistent across live + backfill. |
 | Incremental strategy | Watermark in `meta` table, keyed by source | Simple, source-agnostic, survives restarts. |
-| Plugin vs package boundary | Plugin = thin event-shape adapter. All logic in `@claudeui/timeline`. | Plugin file becomes ~150 lines (from 427). Unbreakable by future opencode API changes that don't affect the live event shape. |
+| Plugin vs package boundary | Plugin = thin event-shape adapter. All logic in `@ohmyc/timeline`. | Plugin file becomes ~150 lines (from 427). Unbreakable by future opencode API changes that don't affect the live event shape. |
 
 ## Implementation order
 

@@ -1,5 +1,5 @@
 // ============================================================
-// @claudeui/timeline — Session Writer
+// @ohmyc/timeline — Session Writer
 // Prepares parameterized SQL statements upfront and provides a
 // transactional write method for upserting session data.
 // ============================================================

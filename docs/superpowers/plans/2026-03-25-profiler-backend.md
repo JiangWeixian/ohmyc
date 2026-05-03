@@ -251,9 +251,9 @@ import {
   ProfileSchema,
   RESERVED_PROFILE_NAMES,
   SAFE_NAME_PATTERN,
-} from '@claudeui/shared'
+} from '@ohmyc/shared'
 
-import type { Profile } from '@claudeui/shared'
+import type { Profile } from '@ohmyc/shared'
 
 export class ProfileService {
   private profilesDir: string
@@ -731,7 +731,7 @@ import {
   CreateProfileBodySchema,
   SAFE_NAME_PATTERN,
   UpdateProfileBodySchema,
-} from '@claudeui/shared'
+} from '@ohmyc/shared'
 import { FastifyPluginAsync } from 'fastify'
 
 import { ProfileService } from '../services/profileService'
@@ -966,9 +966,9 @@ import {
 } from 'node:fs/promises'
 import path from 'node:path'
 
-import { ProfileSchema } from '@claudeui/shared'
+import { ProfileSchema } from '@ohmyc/shared'
 
-import type { Profile } from '@claudeui/shared'
+import type { Profile } from '@ohmyc/shared'
 
 export class StoreService {
   constructor(
@@ -1200,7 +1200,7 @@ import {
   UpdateAgentBodySchema,
   UpdateCommandBodySchema,
   UpdateSkillBodySchema,
-} from '@claudeui/shared'
+} from '@ohmyc/shared'
 import { FastifyPluginAsync } from 'fastify'
 
 import { AgentService } from '../services/agentService'

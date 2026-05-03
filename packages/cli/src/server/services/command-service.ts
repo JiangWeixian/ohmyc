@@ -8,10 +8,10 @@ import {
 } from 'node:fs/promises'
 import path from 'node:path'
 
-import { SAFE_NAME_PATTERN } from '@claudeui/shared'
+import { SAFE_NAME_PATTERN } from '@ohmyc/shared'
 import matter from 'gray-matter'
 
-import type { Command, CommandFrontmatter } from '@claudeui/shared'
+import type { Command, CommandFrontmatter } from '@ohmyc/shared'
 
 export class CommandService {
   constructor(private commandsDir: string) {}

@@ -26,7 +26,7 @@ import {
 } from './hooks/use-profiles'
 import { cn } from '@/lib/utils'
 
-import type { Profile } from '@claudeui/shared'
+import type { Profile } from '@ohmyc/shared'
 
 function getInitials(name: string): string {
   return name

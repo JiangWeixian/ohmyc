@@ -15,12 +15,12 @@ import {
   ProfileSchema,
   RESERVED_PROFILE_NAMES,
   SAFE_NAME_PATTERN,
-} from '@claudeui/shared'
+} from '@ohmyc/shared'
 
 import { LockService } from './lock-service'
 import { ModelConfigService } from './model-config-service'
 
-import type { Profile } from '@claudeui/shared'
+import type { Profile } from '@ohmyc/shared'
 
 interface UndoAction {
   label: string

@@ -2,9 +2,9 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Add OpenCode plugin support to `@claudeui/timeline` by extracting a runtime-agnostic writer and creating a real-time session capture plugin.
+**Goal:** Add OpenCode plugin support to `@ohmyc/timeline` by extracting a runtime-agnostic writer and creating a real-time session capture plugin.
 
-**Architecture:** Extract upsert logic from `ingest.ts` into a new `writer.ts` module that works with both `better-sqlite3` and `bun:sqlite`. Add sub-exports to `@claudeui/timeline`. Create a thin OpenCode plugin that accumulates session data from hooks and writes via the shared writer.
+**Architecture:** Extract upsert logic from `ingest.ts` into a new `writer.ts` module that works with both `better-sqlite3` and `bun:sqlite`. Add sub-exports to `@ohmyc/timeline`. Create a thin OpenCode plugin that accumulates session data from hooks and writes via the shared writer.
 
 **Tech Stack:** TypeScript, Bun (for OpenCode plugin), better-sqlite3 (for existing CLI), vitest
 
@@ -234,7 +234,7 @@ git commit -m "feat(timeline): extract runtime-agnostic writer from ingest"
 
 ```json
 {
-  "name": "@claudeui/timeline",
+  "name": "@ohmyc/timeline",
   "version": "0.1.0",
   "type": "module",
   "files": ["dist"],
@@ -490,8 +490,8 @@ import { mkdirSync } from 'node:fs'
 import os from 'node:os'
 import path from 'node:path'
 
-import { createWriter } from '@claudeui/timeline/writer'
-import type { ParsedSessionData } from '@claudeui/timeline/schema'
+import { createWriter } from '@ohmyc/timeline/writer'
+import type { ParsedSessionData } from '@ohmyc/timeline/schema'
 
 // ---------------------------------------------------------------------------
 // Database setup
@@ -858,14 +858,14 @@ The OpenCode plugin lives at `plugins/timeline/opencode.ts` and is symlinked fro
 - `message.part.updated` — user message text for summaries
 - `tool.execute.before` / `tool.execute.after` — tool and skill tracking
 
-Data is written directly to `~/.cui/timeline.db` using `bun:sqlite` via the shared `@claudeui/timeline/writer` module.
+Data is written directly to `~/.cui/timeline.db` using `bun:sqlite` via the shared `@ohmyc/timeline/writer` module.
 
 ## Shared Code
 
-Both agents write to the same SQLite database (`~/.cui/timeline.db`) using the schema and writer from `@claudeui/timeline`:
+Both agents write to the same SQLite database (`~/.cui/timeline.db`) using the schema and writer from `@ohmyc/timeline`:
 
-- `@claudeui/timeline/writer` — Runtime-agnostic writer (works with `better-sqlite3` and `bun:sqlite`)
-- `@claudeui/timeline/schema` — Database schema and TypeScript types
+- `@ohmyc/timeline/writer` — Runtime-agnostic writer (works with `better-sqlite3` and `bun:sqlite`)
+- `@ohmyc/timeline/schema` — Database schema and TypeScript types
 
 ## Future: OpenCode Backfill
 

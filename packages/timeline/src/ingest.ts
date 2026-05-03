@@ -1,5 +1,5 @@
 // ============================================================
-// @claudeui/timeline — Transcript Ingest
+// @ohmyc/timeline — Transcript Ingest
 // Parses Claude Code JSONL transcript files and upserts
 // session data (turns, tokens, tools, skills) into SQLite.
 // ============================================================

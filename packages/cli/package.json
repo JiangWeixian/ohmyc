@@ -1,5 +1,5 @@
 {
-  "name": "@claudeui/cli",
+  "name": "@ohmyc/cli",
   "version": "0.1.0",
   "type": "module",
   "files": ["dist", "README.md"],
@@ -9,7 +9,7 @@
   },
   "scripts": {
     "build": "tsup",
-    "build:full": "pnpm --filter @claudeui/ui build && tsup",
+    "build:full": "pnpm --filter @ohmyc/ui build && tsup",
     "dev": "concurrently -n build,server -c yellow,blue \"tsup --watch\" \"node --watch-path=dist dist/index.mjs\"",
     "dev:server": "concurrently -n build,server -c yellow,blue \"tsup --watch\" \"node --watch-path=dist dist/index.mjs start --api-only --port 3000 --cwd $INIT_CWD\"",
     "start": "node dist/index.mjs",
@@ -22,8 +22,8 @@
     "registry": "https://registry.npmjs.org/"
   },
   "dependencies": {
-    "@claudeui/shared": "workspace:*",
-    "@claudeui/timeline": "workspace:*",
+    "@ohmyc/shared": "workspace:*",
+    "@ohmyc/timeline": "workspace:*",
     "@fastify/static": "^7.0.3",
     "better-sqlite3": "^11.5.0",
     "cac": "^6.7.14",

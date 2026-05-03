@@ -17,7 +17,7 @@ import {
   type StoreImportConflict,
   type StoreImportRequest,
   type StoreImportResult,
-} from '@claudeui/shared'
+} from '@ohmyc/shared'
 import untildify from 'untildify'
 
 type ProvenanceIndex = Record<StoreComponentType, Record<string, StoreComponentProvenance>>

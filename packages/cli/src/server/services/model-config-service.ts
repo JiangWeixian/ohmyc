@@ -12,7 +12,7 @@ import type {
   CreateModelConfigBody,
   ModelConfig,
   UpdateModelConfigBody,
-} from '@claudeui/shared'
+} from '@ohmyc/shared'
 
 // Allows dots and forward slashes for names like "anthropic/claude-3.5-sonnet"
 const MODEL_CONFIG_NAME_RE = /^[\w./-]+$/

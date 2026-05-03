@@ -1,5 +1,5 @@
 // ============================================================
-// @claudeui/timeline — Read-only Query Functions
+// @ohmyc/timeline — Read-only Query Functions
 // Provides heatmap, paginated events, session detail, project
 // list, year list, and sync-status queries against the SQLite DB.
 // ============================================================

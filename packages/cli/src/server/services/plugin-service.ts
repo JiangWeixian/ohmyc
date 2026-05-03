@@ -10,7 +10,7 @@ import type {
   Marketplace,
   PluginInstall,
   PluginManifest,
-} from '@claudeui/shared'
+} from '@ohmyc/shared'
 
 interface PluginComponents {
   agents: string[]
