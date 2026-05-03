@@ -1,4 +1,4 @@
 {
   "$schema": "https://opencode.ai/config.json",
-  "plugin": ["@ohmyc/timeline-plugin@0.0.0-snapshot-20260503080336"]
+  "plugin": ["@ohmyc/timeline-plugin@0.0.0-snapshot-20260503083547"]
 }
