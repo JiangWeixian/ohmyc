@@ -66,7 +66,7 @@ describe('ingest.sh', () => {
     fakeClaudeDir = path.join(tmpDir, '.claude', 'projects', '-tmp-my-project')
     mkdirSync(fakeClaudeDir, { recursive: true })
 
-    fakeCli = path.join(tmpDir, 'claudeui')
+    fakeCli = path.join(tmpDir, 'ohmyc')
     writeFileSync(
       fakeCli,
       '#!/bin/bash\nif [ "$1" = "dashboard" ] && [ "$2" = "--ingest-raw" ]; then\n  cat > /dev/null\n  echo "INGEST_RAW_OK"\nelse\n  echo "FAKE_CLI: $*"\nfi\n',
@@ -105,7 +105,7 @@ describe('ingest.sh', () => {
 
   function createCapturingCli(): string {
     const capturePath = path.join(tmpDir, 'captured.json')
-    const cli = path.join(tmpDir, 'claudeui')
+    const cli = path.join(tmpDir, 'ohmyc')
     writeFileSync(
       cli,
       `#!/bin/bash\nif [ "$1" = "dashboard" ] && [ "$2" = "--ingest-raw" ]; then\n  cat > "${capturePath}"\n  echo "INGEST_RAW_OK"\nfi\n`,
@@ -347,6 +347,6 @@ describe('ingest.sh', () => {
 
     const result = runIngest(['test-nocli'], { env: { PATH: `${tmpDir}:/usr/bin:/bin`, CLI_CMD: '' } })
     expect(result.status).toBeGreaterThanOrEqual(1)
-    expect(result.stderr).toContain('claudeui CLI not found')
+    expect(result.stderr).toContain('cui CLI not found')
   })
 })

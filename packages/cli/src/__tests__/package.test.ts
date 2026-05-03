@@ -46,8 +46,8 @@ const RUNTIME_DEPS = [
 ]
 
 describe('Package configuration', () => {
-  it('bin.cu points to dist/index.mjs', () => {
-    expect(package_.bin.cu).toBe('dist/index.mjs')
+  it('bin.cui points to dist/index.mjs', () => {
+    expect(package_.bin.cui).toBe('dist/index.mjs')
   })
 
   it('files field is an allowlist with dist and README.md', () => {
