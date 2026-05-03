@@ -14,6 +14,9 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PLUGIN_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
 
+CUI_HOME="${CUI_HOME:-$HOME/.cui}"
+DB_PATH="$CUI_HOME/timeline.db"
+
 # ---------------------------------------------------------------------------
 # Helper functions
 # ---------------------------------------------------------------------------
@@ -30,10 +33,7 @@ log_info() {
 # Determine transcript path
 # ---------------------------------------------------------------------------
 
-# If a command-line argument is provided, use manual invocation mode.
-# Otherwise, read hook input from stdin (Claude Code Stop hook API).
 if [ -n "${1:-}" ]; then
-  # Manual invocation
   SESSION_ID="$1"
 
   CLAUDE_HOME="${AGENT_HOME:-$HOME/.claude}"
@@ -44,7 +44,6 @@ if [ -n "${1:-}" ]; then
     exit 0
   fi
 else
-  # Hook invocation — read from stdin
   HOOK_INPUT=$(cat)
   TRANSCRIPT_PATH=$(echo "$HOOK_INPUT" | jq -r '.transcript_path // empty' 2>/dev/null || true)
 
@@ -56,24 +55,18 @@ else
   SESSION_ID=$(basename "$TRANSCRIPT_PATH" .jsonl)
 fi
 
+FILE_SIZE=$(stat -f%z "$TRANSCRIPT_PATH" 2>/dev/null || stat -c%s "$TRANSCRIPT_PATH" 2>/dev/null || echo 0)
+
 # ---------------------------------------------------------------------------
-# Find claudeui CLI
+# Find claudeui CLI (for fallback and --ingest-raw)
 # ---------------------------------------------------------------------------
 
-# Allow overriding CLI discovery via environment
 if [ "${CLI_CMD+isset}" = "isset" ]; then
-  # CLI_CMD is explicitly set (even to empty) — respect it
   :
-# 1. Check if 'claudeui' is in PATH
 elif command -v claudeui >/dev/null 2>&1; then
   CLI_CMD="claudeui"
-# 2. Check if 'cu' is our CLI (not the Unix utility)
 elif command -v cu >/dev/null 2>&1 && cu --help 2>&1 | grep -q "dashboard"; then
   CLI_CMD="cu"
-# 3. Look for bundled CLI relative to plugin directory
-#    Plugin is at: plugins/timeline/
-#    CLI is at:    packages/cli/dist/index.mjs (from repo root)
-#    Or:          dist/index.mjs (bundled package)
 else
   REPO_ROOT="$(cd "$PLUGIN_DIR/../.." && pwd)"
   if [ -f "$REPO_ROOT/packages/cli/dist/index.mjs" ]; then
@@ -83,50 +76,77 @@ else
   fi
 fi
 
-if [ -z "$CLI_CMD" ]; then
-  log_error "claudeui CLI not found. Cannot ingest session $SESSION_ID."
-  exit 1
-fi
-
 # ---------------------------------------------------------------------------
-# Fast path: jq preprocessing + Node.js ingest
+# Fast path: jq preprocessing + Node.js direct write
+#
+# Extracts all ParsedSessionData fields in one jq pass, matching the
+# field order and logic from @claudeui/timeline's parseTranscript().
+# Pipes the result to the CLI's --ingest-raw mode which writes directly
+# to the database without re-parsing the transcript.
 # ---------------------------------------------------------------------------
 
 if command -v jq >/dev/null 2>&1; then
   log_info "Using jq fast path for session $SESSION_ID"
 
-  # Extract all session metadata in one pass with jq
-  # Disable set -e temporarily so jq failure doesn't abort the script
+  # The jq expression mirrors parseTranscript() in ingest.ts exactly:
+  #   - Timestamps converted from ISO 8601 to epoch ms
+  #   - Turns = user messages with string content (not tool_result arrays)
+  #   - Tokens from assistant .message.usage (handles iterations array)
+  #   - Cache tokens = cache_read + cache_creation (from last iteration only)
+  #   - Model from last assistant message's .message.model
+  #   - Summary prefers away_summary, then first user message (truncated 140)
+  #   - agentName is always "claude" for hook-sourced sessions
   set +e
   EXTRACTED=$(jq -s '
+    # Pre-compute values shared across fields
+    ($transcriptPath | split("/") | .[] | select(. == "projects") as $marker |
+      ($transcriptPath | split("/") | index($marker)) as $idx |
+      ($transcriptPath | split("/")[($idx + 1):][0]) as $encoded |
+      if ($encoded | startswith("-"))
+        then ("/" + ($encoded[1:] | gsub("-"; "/")))
+        else ($encoded | gsub("-"; "/"))
+      end) as $rawProject |
+    (($rawProject | startswith($HOME)) as $isHome |
+      if $isHome then ("~" + ($rawProject | ltrimstr($HOME))) else $rawProject end) as $project |
+
+    (map(select(.timestamp) | .timestamp | sub("\\.[0-9]+Z$"; "Z") | fromdateiso8601 * 1000) | min // (now * 1000)) as $startedAt |
+    (map(select(.timestamp) | .timestamp | sub("\\.[0-9]+Z$"; "Z") | fromdateiso8601 * 1000) | max // (now * 1000)) as $endedAt |
+    (map(select(.type == "user" and .message.role == "user" and (.message.content | type) == "string") | .message.content) | first) as $firstUserMessage |
+    ([.[] | select(.type == "system" and .subtype == "away_summary") | .content] | last) as $awaySummary |
+
     {
       sessionId: $sessionId,
-      transcriptPath: $transcriptPath,
-      startedAt: (map(select(.timestamp) | .timestamp | sub("\\.[0-9]+Z$"; "Z") | fromdateiso8601) | min // now),
-      endedAt: (map(select(.timestamp) | .timestamp | sub("\\.[0-9]+Z$"; "Z") | fromdateiso8601) | max // now),
+      project: $project,
+      agentName: "claude",
+      startedAt: $startedAt,
+      endedAt: $endedAt,
+      durationMs: ($endedAt - $startedAt),
       turns: ([.[] | select(.type == "user" and .message.role == "user" and (.message.content | type) == "string")] | length),
       tokensInput: ([.[] | select(.type == "assistant" and .message.usage) | .message.usage | if .iterations then (.iterations | map(.input_tokens // 0) | add) else (.input_tokens // 0) end] | add // 0),
       tokensOutput: ([.[] | select(.type == "assistant" and .message.usage) | .message.usage | if .iterations then (.iterations | map(.output_tokens // 0) | add) else (.output_tokens // 0) end] | add // 0),
       tokensCached: ([.[] | select(.type == "assistant" and .message.usage) | .message.usage | if .iterations then (.iterations | map((.cache_read_input_tokens // 0) + (.cache_creation_input_tokens // 0)) | add) else ((.cache_read_input_tokens // 0) + (.cache_creation_input_tokens // 0)) end] | add // 0),
+      summary: (if $awaySummary then $awaySummary elif $firstUserMessage then (if ($firstUserMessage | length) > 140 then ($firstUserMessage[:140]) else $firstUserMessage end) else "(untitled session)" end),
+      summarySource: (if $awaySummary then "auto" elif $firstUserMessage then "first_message" else "auto" end),
+      transcriptPath: $transcriptPath,
+      fileSize: ($fileSize | tonumber),
       tools: ([.[] | select(.type == "assistant" and .message.content) | .message.content | arrays[] | select(.type == "tool_use") | .name] | group_by(.) | map({toolName: .[0], callCount: length})),
       skills: ([.[] | select(.type == "assistant" and .message.content) | .message.content | arrays[] | select(.type == "tool_use" and .name == "Skill" and .input.skill) | .input.skill] | unique),
-      summary: ([.[] | select(.type == "system" and .subtype == "away_summary") | .content] | last // null),
-      firstUserMessage: ([.[] | select(.type == "user" and .message.role == "user" and (.message.content | type) == "string") | .message.content] | first // null)
+      model: ([.[] | select(.type == "assistant" and .message.model) | .message.model] | last // null)
     }
-  ' --arg sessionId "$SESSION_ID" --arg transcriptPath "$TRANSCRIPT_PATH" "$TRANSCRIPT_PATH" 2>/dev/null)
+  ' --arg sessionId "$SESSION_ID" --arg transcriptPath "$TRANSCRIPT_PATH" --arg HOME "$HOME" --arg fileSize "$FILE_SIZE" "$TRANSCRIPT_PATH" 2>/dev/null)
   JQ_STATUS=$?
   set -e
 
-  # Validate jq output
   if [ $JQ_STATUS -ne 0 ] || [ -z "$EXTRACTED" ] || [ "$EXTRACTED" = "null" ]; then
     log_error "jq extraction failed for $SESSION_ID, falling back to CLI"
-    # Fall through to CLI path below
   else
-    # Pipe extracted JSON to Node.js for database write
-    # Use a small inline Node.js script that imports @claudeui/timeline
-    # Since @claudeui/timeline is bundled with the CLI, we invoke via CLI
-    # For now, use the CLI ingest command which does full parsing
-    # TODO: Add --ingest-raw flag to CLI to accept JSON from stdin
+    # Write pre-parsed JSON directly to the database via the CLI.
+    # Falls back to full re-parse if CLI lacks --ingest-raw.
+    if [ -n "$CLI_CMD" ]; then
+      echo "$EXTRACTED" | $CLI_CMD dashboard --ingest-raw 2>/dev/null && exit 0
+    fi
+
+    # Fallback: re-ingest via CLI full parse
     $CLI_CMD dashboard --ingest --session "$SESSION_ID" --file "$TRANSCRIPT_PATH"
     exit 0
   fi
@@ -136,5 +156,10 @@ fi
 # Fallback: CLI does full JSONL parsing in Node.js
 # ---------------------------------------------------------------------------
 
-log_info "jq not available, using Node.js fallback for session $SESSION_ID"
-$CLI_CMD dashboard --ingest --session "$SESSION_ID" --file "$TRANSCRIPT_PATH"
+if [ -n "$CLI_CMD" ]; then
+  log_info "Using CLI fallback for session $SESSION_ID"
+  $CLI_CMD dashboard --ingest --session "$SESSION_ID" --file "$TRANSCRIPT_PATH"
+else
+  log_error "claudeui CLI not found. Cannot ingest session $SESSION_ID."
+  exit 1
+fi
