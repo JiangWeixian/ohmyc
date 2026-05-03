@@ -8,7 +8,8 @@
     "claudeui": "dist/index.mjs"
   },
   "scripts": {
-    "build": "tsup",
+    "build": "rimraf dist && tsup",
+    "build:full": "pnpm --filter @ohmyc/ui build && tsup",
     "dev": "concurrently -n build,server -c yellow,blue \"tsup --watch\" \"node --watch-path=dist dist/index.mjs\"",
     "dev:server": "concurrently -n build,server -c yellow,blue \"tsup --watch\" \"node --watch-path=dist dist/index.mjs start --api-only --port 3000 --cwd $INIT_CWD\"",
     "start": "node dist/index.mjs",
@@ -38,6 +39,7 @@
     "@types/better-sqlite3": "^7.6.12",
     "@types/node": "^20.12.7",
     "@types/proper-lockfile": "^4.1.4",
+    "rimraf": "^6.0.1",
     "tsup": "^8.0.2",
     "tsx": "^4.21.0",
     "typescript": "^5.4.5",

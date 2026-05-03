@@ -42,7 +42,12 @@ export default defineConfig({
     }
 
     if (existsSync(pluginSource)) {
-      cpSync(pluginSource, pluginDist, { recursive: true })
+      for (const entry of ['dist', 'hooks', '.claude-plugin', 'package.json', 'README.md']) {
+        const from = path.join(pluginSource, entry)
+        if (existsSync(from)) {
+          cpSync(from, path.join(pluginDist, entry), { recursive: true })
+        }
+      }
       console.log(`Copied plugin assets from ${pluginSource} to ${pluginDist}`)
     }
   },
