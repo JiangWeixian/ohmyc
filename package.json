@@ -9,7 +9,7 @@
   "license": "ISC",
   "author": "",
   "scripts": {
-    "build": "pnpm --filter @ohmyc/timeline build && pnpm --filter @ohmyc/ui build && pnpm --filter @ohmyc/cli build",
+    "build": "pnpm -r build",
     "test": "pnpm -r test",
     "dev": "pnpm --filter @ohmyc/timeline build && concurrently -n server,ui -c blue,green \"pnpm --filter @ohmyc/cli dev:server\" \"pnpm --filter @ohmyc/ui dev\"",
     "ci:version": "pnpm changeset version",
