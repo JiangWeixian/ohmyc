@@ -10,13 +10,13 @@ interface CommandsRoutesOptions {
   commandsDir: string
   projectCommandsDir: string | null | undefined
   pluginsDir: string
-  settingsPath: string
+  claudeSettingsPaths: readonly string[]
   baseDir?: string
 }
 
 export const commandsRoutes: FastifyPluginAsync<CommandsRoutesOptions> = async (fastify, options) => {
   const service = new CommandService(options.commandsDir)
-  const resolver = new PluginResolver(options.pluginsDir, options.settingsPath)
+  const resolver = new PluginResolver(options.pluginsDir, options.claudeSettingsPaths)
 
   fastify.get('/api/commands', async () => {
     const commands = await service.list()

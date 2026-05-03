@@ -10,6 +10,7 @@ interface ConfigRoutesOptions {
   projectBaseDir: string | null | undefined
   pluginsDir: string
   settingsPath: string
+  claudeSettingsPaths: readonly string[]
 }
 
 interface McpEntry {
@@ -75,8 +76,8 @@ function flattenHooks(hooksObject: Record<string, any>): Array<{ event: string; 
 }
 
 export const configsRoutes: FastifyPluginAsync<ConfigRoutesOptions> = async (fastify, options) => {
-  const { baseDir, projectBaseDir, pluginsDir, settingsPath } = options
-  const resolver = new PluginResolver(pluginsDir, settingsPath)
+  const { baseDir, projectBaseDir, pluginsDir, settingsPath, claudeSettingsPaths } = options
+  const resolver = new PluginResolver(pluginsDir, claudeSettingsPaths)
 
   // GET /api/mcp — read .mcp.json and merge with plugin + project contributions
   fastify.get('/api/mcp', async () => {

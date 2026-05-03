@@ -35,7 +35,7 @@ describe('configs routes', () => {
     writeFileSync(settingsPath, JSON.stringify({}))
     projectDir = undefined
     app = Fastify()
-    await app.register(configsRoutes, { baseDir: tmpDir, projectBaseDir: projectDir, pluginsDir, settingsPath })
+    await app.register(configsRoutes, { baseDir: tmpDir, projectBaseDir: projectDir, pluginsDir, settingsPath, claudeSettingsPaths: [settingsPath] })
     await app.ready()
   })
 
@@ -297,7 +297,7 @@ describe('configs routes', () => {
       mkdirSync(projectDir, { recursive: true })
       writeFileSync(path.join(projectDir, 'settings.json'), JSON.stringify({}))
       app = Fastify()
-      await app.register(configsRoutes, { baseDir: tmpDir, projectBaseDir: projectDir, pluginsDir, settingsPath })
+      await app.register(configsRoutes, { baseDir: tmpDir, projectBaseDir: projectDir, pluginsDir, settingsPath, claudeSettingsPaths: [settingsPath] })
       await app.ready()
     }
 

@@ -31,7 +31,7 @@ describe('plugins routes', () => {
     mkdirSync(pluginsDir, { recursive: true })
 
     app = Fastify()
-    await app.register(pluginsRoutes, { pluginsDir, settingsPath })
+    await app.register(pluginsRoutes, { pluginsDir, claudeSettingsPaths: [settingsPath] })
     await app.ready()
   })
 

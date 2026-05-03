@@ -38,7 +38,7 @@ describe('skills routes', () => {
     await app.register(skillsRoutes, {
       skillsDir: tmpDir,
       pluginsDir: path.join(temporaryRoot, '_plugins'),
-      settingsPath: path.join(temporaryRoot, '_settings.json'),
+      claudeSettingsPaths: [path.join(temporaryRoot, '_settings.json')],
       baseDir: temporaryRoot,
     })
     await app.ready()
@@ -131,7 +131,7 @@ describe('skills routes', () => {
         skillsDir: tmpDir,
         projectSkillsDir: projectDir,
         pluginsDir: path.join(temporaryRoot, '_plugins'),
-        settingsPath: path.join(temporaryRoot, '_settings.json'),
+        claudeSettingsPaths: [path.join(temporaryRoot, '_settings.json')],
         baseDir: temporaryRoot,
       })
       await app.ready()
@@ -174,7 +174,7 @@ describe('skills routes', () => {
         skillsDir: tmpDir,
         projectSkillsDir: null,
         pluginsDir: path.join(temporaryRoot, '_plugins'),
-        settingsPath: path.join(temporaryRoot, '_settings.json'),
+        claudeSettingsPaths: [path.join(temporaryRoot, '_settings.json')],
         baseDir: temporaryRoot,
       })
       await app.ready()

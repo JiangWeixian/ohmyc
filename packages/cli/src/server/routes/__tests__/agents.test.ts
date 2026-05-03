@@ -32,7 +32,7 @@ describe('agents routes', () => {
     await app.register(agentsRoutes, {
       agentsDir: tmpDir,
       pluginsDir: path.join(temporaryRoot, '_plugins'),
-      settingsPath: path.join(temporaryRoot, '_settings.json'),
+      claudeSettingsPaths: [path.join(temporaryRoot, '_settings.json')],
       baseDir: temporaryRoot,
     })
     await app.ready()
@@ -125,7 +125,7 @@ describe('agents routes', () => {
         agentsDir: tmpDir,
         projectAgentsDir: projectDir,
         pluginsDir: path.join(temporaryRoot, '_plugins'),
-        settingsPath: path.join(temporaryRoot, '_settings.json'),
+        claudeSettingsPaths: [path.join(temporaryRoot, '_settings.json')],
         baseDir: temporaryRoot,
       })
       await app.ready()
@@ -166,7 +166,7 @@ describe('agents routes', () => {
         agentsDir: tmpDir,
         projectAgentsDir: null,
         pluginsDir: path.join(temporaryRoot, '_plugins'),
-        settingsPath: path.join(temporaryRoot, '_settings.json'),
+        claudeSettingsPaths: [path.join(temporaryRoot, '_settings.json')],
         baseDir: temporaryRoot,
       })
       await app.ready()

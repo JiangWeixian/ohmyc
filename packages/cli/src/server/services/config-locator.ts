@@ -59,6 +59,27 @@ export class ConfigLocator {
     return path.join(this.claudeCodeDir, 'plugins')
   }
 
+  // User-level Claude Code settings (~/.claude/settings.json)
+  get claudeSettingsPath(): string {
+    return path.join(this.claudeCodeDir, 'settings.json')
+  }
+
+  // Project-scoped Claude Code settings (<cwd>/.claude/settings.json)
+  get projectClaudeSettingsPath(): string | null {
+    return this.projectDir ? path.join(this.projectDir, 'settings.json') : null
+  }
+
+  // Project-scoped local override (<cwd>/.claude/settings.local.json)
+  get projectClaudeSettingsLocalPath(): string | null {
+    return this.projectDir ? path.join(this.projectDir, 'settings.local.json') : null
+  }
+
+  // Ordered list of Claude settings paths (low → high precedence) for enabledPlugins lookup.
+  get claudeSettingsPaths(): string[] {
+    const paths = [this.claudeSettingsPath, this.projectClaudeSettingsPath, this.projectClaudeSettingsLocalPath]
+    return paths.filter((p): p is string => p !== null)
+  }
+
   // D-04: readBaseDir initially equals writeBaseDir (both ~/.cui/)
   get readBaseDir(): string {
     return this.writeBaseDir

@@ -139,16 +139,13 @@ describe('CLI launcher', () => {
   })
 
   describe('package metadata', () => {
-    it('exposes a "cu" bin entry that resolves to the launcher entrypoint', () => {
+    it('exposes a "cui" bin entry that resolves to the launcher entrypoint', () => {
       const packagePath = path.resolve(import.meta.dirname, '../../package.json')
       const package_ = JSON.parse(readFileSync(packagePath, 'utf8'))
 
-      // Must have a "cu" bin entry
       expect(package_.bin).toBeDefined()
-      expect(package_.bin.cu).toBeDefined()
-
-      // The bin entry should point to a dist file (built entrypoint)
-      expect(package_.bin.cu).toMatch(/^dist\//)
+      expect(package_.bin.cui).toBeDefined()
+      expect(package_.bin.cui).toMatch(/^dist\//)
     })
   })
 })

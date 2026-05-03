@@ -32,7 +32,7 @@ describe('commands routes', () => {
     await app.register(commandsRoutes, {
       commandsDir: tmpDir,
       pluginsDir: path.join(temporaryRoot, '_plugins'),
-      settingsPath: path.join(temporaryRoot, '_settings.json'),
+      claudeSettingsPaths: [path.join(temporaryRoot, '_settings.json')],
       baseDir: temporaryRoot,
     })
     await app.ready()
@@ -121,7 +121,7 @@ describe('commands routes', () => {
         commandsDir: tmpDir,
         projectCommandsDir: projectDir,
         pluginsDir: path.join(temporaryRoot, '_plugins'),
-        settingsPath: path.join(temporaryRoot, '_settings.json'),
+        claudeSettingsPaths: [path.join(temporaryRoot, '_settings.json')],
         baseDir: temporaryRoot,
       })
       await app.ready()
@@ -162,7 +162,7 @@ describe('commands routes', () => {
         commandsDir: tmpDir,
         projectCommandsDir: null,
         pluginsDir: path.join(temporaryRoot, '_plugins'),
-        settingsPath: path.join(temporaryRoot, '_settings.json'),
+        claudeSettingsPaths: [path.join(temporaryRoot, '_settings.json')],
         baseDir: temporaryRoot,
       })
       await app.ready()

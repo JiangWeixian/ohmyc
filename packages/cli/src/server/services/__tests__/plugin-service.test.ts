@@ -28,7 +28,7 @@ describe('PluginService', () => {
     pluginsDir = path.join(tmpDir, 'plugins')
     settingsPath = path.join(tmpDir, 'settings.json')
     mkdirSync(pluginsDir, { recursive: true })
-    service = new PluginService(pluginsDir, settingsPath)
+    service = new PluginService(pluginsDir, [settingsPath])
   })
 
   afterEach(() => {
@@ -98,6 +98,30 @@ describe('PluginService', () => {
       const other = plugins.find(p => p.name === 'other')!
       expect(gitlab.enabled).toBe(true)
       expect(other.enabled).toBe(false)
+    })
+
+    it('merges enabledPlugins across settings paths with later sources overriding earlier', async () => {
+      const userSettings = path.join(tmpDir, 'user-settings.json')
+      const projectSettings = path.join(tmpDir, 'project-settings.json')
+      const localSettings = path.join(tmpDir, 'local-settings.json')
+
+      writeFileSync(userSettings, JSON.stringify({ enabledPlugins: { 'a@m': true, 'b@m': true } }))
+      writeFileSync(projectSettings, JSON.stringify({ enabledPlugins: { 'b@m': false, 'c@m': true } }))
+      writeFileSync(localSettings, JSON.stringify({ enabledPlugins: { 'c@m': false } }))
+
+      writeFileSync(path.join(pluginsDir, 'installed_plugins.json'), JSON.stringify({
+        version: 2,
+        plugins: {
+          'a@m': [{ version: '1', installedAt: '', lastUpdated: '', installPath: '', scope: 'user' }],
+          'b@m': [{ version: '1', installedAt: '', lastUpdated: '', installPath: '', scope: 'user' }],
+          'c@m': [{ version: '1', installedAt: '', lastUpdated: '', installPath: '', scope: 'user' }],
+        },
+      }))
+
+      const merged = new PluginService(pluginsDir, [userSettings, projectSettings, localSettings])
+      const plugins = await merged.listPlugins()
+      const byName = Object.fromEntries(plugins.map(p => [p.name, p.enabled]))
+      expect(byName).toEqual({ a: true, b: false, c: false })
     })
 
     it('loads plugin.json manifest when available', async () => {
