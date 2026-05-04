@@ -4,8 +4,8 @@
   "type": "module",
   "files": ["dist", "README.md"],
   "bin": {
-    "cu": "dist/index.mjs",
-    "claudeui": "dist/index.mjs"
+    "cui": "dist/index.mjs",
+    "ohmyc": "dist/index.mjs"
   },
   "scripts": {
     "build": "tsup",
@@ -15,16 +15,16 @@
     "start": "node dist/index.mjs",
     "test": "vitest run",
     "test:watch": "vitest",
-    "prepublishOnly": "pnpm build:full && node scripts/prepublish.mjs"
+    "prepublishOnly": "pnpm build:full"
   },
   "publishConfig": {
     "access": "public",
     "registry": "https://registry.npmjs.org/"
   },
   "dependencies": {
+    "@fastify/static": "^7.0.3",
     "@ohmyc/shared": "workspace:*",
     "@ohmyc/timeline": "workspace:*",
-    "@fastify/static": "^7.0.3",
     "better-sqlite3": "^11.5.0",
     "cac": "^6.7.14",
     "fastify": "^4.26.2",
@@ -36,6 +36,7 @@
     "zod-to-json-schema": "^3.23.5"
   },
   "devDependencies": {
+    "@ohmyc/ui": "workspace:*",
     "@types/better-sqlite3": "^7.6.12",
     "@types/node": "^20.12.7",
     "@types/proper-lockfile": "^4.1.4",

@@ -65,11 +65,120 @@ export class ProfileService {
   private storeDir: string
   private modelConfigService: ModelConfigService
 
-  constructor(private baseDir: string) {
+  constructor(
+    private baseDir: string,
+    private claudeSettingsPath: string,
+    private pluginsDir: string,
+  ) {
     this.profilesDir = path.join(baseDir, 'profiles')
     this.storeDir = path.join(baseDir, 'store')
     this.lockService = new LockService(this.profilesDir)
     this.modelConfigService = new ModelConfigService(path.join(this.storeDir, 'model-configs'))
+  }
+
+  private static readonly MARKETPLACE_ID = 'ohmyc-profiles'
+
+  private pluginId(profileName: string): string {
+    return `profile-${profileName}@${ProfileService.MARKETPLACE_ID}`
+  }
+
+  private async writeMarketplace(): Promise<void> {
+    const marketplaceDir = path.join(this.baseDir, '.claude-plugin')
+    await mkdir(marketplaceDir, { recursive: true })
+
+    let entries: string[] = []
+    try {
+      entries = await readdir(this.profilesDir)
+    } catch {}
+
+    const plugins: Array<{ name: string; source: string; description: string; version: string }> = []
+    for (const entry of entries) {
+      if (entry.startsWith('.')) {
+        continue
+      }
+      const profile = await this.get(entry)
+      if (!profile) {
+        continue
+      }
+      plugins.push({
+        name: `profile-${profile.name}`,
+        source: `./profiles/${profile.name}`,
+        description: `OhMyC profile: ${profile.description || profile.name}`,
+        version: '1.0.0',
+      })
+    }
+
+    const marketplace = {
+      name: ProfileService.MARKETPLACE_ID,
+      description: 'OhMyC profile-as-plugin marketplace',
+      owner: { name: 'ohmyc' },
+      plugins,
+    }
+    await writeFile(path.join(marketplaceDir, 'marketplace.json'), JSON.stringify(marketplace, null, 2), 'utf8')
+  }
+
+  private async readInstalledPlugins(): Promise<{ version: number; plugins: Record<string, any[]> }> {
+    const filePath = path.join(this.pluginsDir, 'installed_plugins.json')
+    try {
+      const parsed = JSON.parse(await readFile(filePath, 'utf8'))
+      return { version: parsed.version ?? 2, plugins: parsed.plugins ?? {} }
+    } catch {
+      return { version: 2, plugins: {} }
+    }
+  }
+
+  private async writeInstalledPlugins(data: { version: number; plugins: Record<string, any[]> }): Promise<void> {
+    await mkdir(this.pluginsDir, { recursive: true })
+    await writeFile(path.join(this.pluginsDir, 'installed_plugins.json'), JSON.stringify(data, null, 2), 'utf8')
+  }
+
+  private async registerProfilePlugin(profileName: string): Promise<void> {
+    const installed = await this.readInstalledPlugins()
+    const id = this.pluginId(profileName)
+    const now = new Date().toISOString()
+    installed.plugins[id] = [{
+      scope: 'user',
+      installPath: path.join(this.profilesDir, profileName),
+      version: '1.0.0',
+      installedAt: now,
+      lastUpdated: now,
+    }]
+    await this.writeInstalledPlugins(installed)
+  }
+
+  private async readKnownMarketplaces(): Promise<Record<string, any>> {
+    const filePath = path.join(this.pluginsDir, 'known_marketplaces.json')
+    try {
+      return JSON.parse(await readFile(filePath, 'utf8'))
+    } catch {
+      return {}
+    }
+  }
+
+  private async writeKnownMarketplaces(data: Record<string, any>): Promise<void> {
+    await mkdir(this.pluginsDir, { recursive: true })
+    await writeFile(path.join(this.pluginsDir, 'known_marketplaces.json'), JSON.stringify(data, null, 2), 'utf8')
+  }
+
+  private async registerKnownMarketplace(): Promise<{ snapshot: Record<string, any> }> {
+    const known = await this.readKnownMarketplaces()
+    const snapshot = structuredClone(known)
+    known[ProfileService.MARKETPLACE_ID] = {
+      source: { source: 'directory', path: this.baseDir },
+      installLocation: this.baseDir,
+      lastUpdated: new Date().toISOString(),
+    }
+    await this.writeKnownMarketplaces(known)
+    return { snapshot }
+  }
+
+  private async unregisterProfilePlugin(profileName: string): Promise<void> {
+    const installed = await this.readInstalledPlugins()
+    const id = this.pluginId(profileName)
+    if (id in installed.plugins) {
+      delete installed.plugins[id]
+      await this.writeInstalledPlugins(installed)
+    }
   }
 
   private validateName(name: string): void {
@@ -211,9 +320,8 @@ export class ProfileService {
   }
 
   private async readSettings(): Promise<any> {
-    const settingsPath = path.join(this.baseDir, 'settings.json')
     try {
-      return JSON.parse(await readFile(settingsPath, 'utf8'))
+      return JSON.parse(await readFile(this.claudeSettingsPath, 'utf8'))
     } catch {
       return {}
     }
@@ -588,11 +696,43 @@ export class ProfileService {
       for (const pluginId of profile.plugins) {
         enabledPlugins[pluginId] = true
       }
-      // Add profile itself as plugin
-      enabledPlugins[`profile-${name}`] = true
+      enabledPlugins[this.pluginId(name)] = true
       merged.enabledPlugins = enabledPlugins
 
-      await writeFile(path.join(this.baseDir, 'settings.json'), JSON.stringify(merged, null, 2), 'utf8')
+      await mkdir(path.dirname(this.claudeSettingsPath), { recursive: true })
+      await writeFile(this.claudeSettingsPath, JSON.stringify(merged, null, 2), 'utf8')
+
+      // Step 11: Generate ohmyc-profiles marketplace and register install
+      await this.writeMarketplace()
+      undoStack.push({
+        label: 'marketplace',
+        undo: async () => {
+          try {
+            await rm(path.join(this.baseDir, '.claude-plugin'), { recursive: true, force: true })
+          } catch {}
+        },
+      })
+
+      const { snapshot: knownSnapshot } = await this.registerKnownMarketplace()
+      undoStack.push({
+        label: 'known-marketplaces',
+        undo: async () => {
+          try {
+            await this.writeKnownMarketplaces(knownSnapshot)
+          } catch {}
+        },
+      })
+
+      const installedSnapshot = await this.readInstalledPlugins()
+      await this.registerProfilePlugin(name)
+      undoStack.push({
+        label: 'installed-plugins',
+        undo: async () => {
+          try {
+            await this.writeInstalledPlugins(installedSnapshot)
+          } catch {}
+        },
+      })
       // Settings backup already recorded in undo stack
 
       return { warnings: settingsWarnings }
@@ -625,7 +765,7 @@ export class ProfileService {
    * Internal deactivation without lock -- called from within activate's transaction.
    */
   private async deactivateInternal(activeName: string): Promise<void> {
-    const settingsPath = path.join(this.baseDir, 'settings.json')
+    const settingsPath = this.claudeSettingsPath
     const profileDir = path.join(this.profilesDir, activeName)
 
     // Restore per-profile settings backup
@@ -664,6 +804,9 @@ export class ProfileService {
     for (const file of ['.claude-plugin', 'hooks', '.mcp.json', '.lsp.json']) {
       await rm(path.join(profileDir, file), { recursive: true, force: true })
     }
+
+    // Unregister synthetic profile-as-plugin
+    await this.unregisterProfilePlugin(activeName)
 
     // Remove .active marker
     try {

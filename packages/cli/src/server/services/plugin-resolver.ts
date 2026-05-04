@@ -9,12 +9,13 @@ interface PluginInstallRecord {
 
 /**
  * Resolves install paths of all enabled plugins.
- * Reads installed_plugins.json and settings.json to find enabled plugins.
+ * Reads installed_plugins.json and Claude Code settings (user + project + local override)
+ * to find enabled plugins.
  */
 export class PluginResolver {
   constructor(
     private pluginsDir: string,
-    private settingsPath: string,
+    private claudeSettingsPaths: readonly string[],
   ) {}
 
   private async readJson<Value>(filePath: string): Promise<Value | null> {
@@ -27,8 +28,14 @@ export class PluginResolver {
   }
 
   async getEnabledPluginPaths(): Promise<{ id: string; installPath: string }[]> {
-    const settings = await this.readJson<{ enabledPlugins?: Record<string, boolean> }>(this.settingsPath)
-    const enabledMap = settings?.enabledPlugins ?? {}
+    // Merge enabledPlugins across paths in low→high precedence (user → project → local).
+    const enabledMap: Record<string, boolean> = {}
+    for (const filePath of this.claudeSettingsPaths) {
+      const settings = await this.readJson<{ enabledPlugins?: Record<string, boolean> }>(filePath)
+      if (settings?.enabledPlugins) {
+        Object.assign(enabledMap, settings.enabledPlugins)
+      }
+    }
 
     const data = await this.readJson<{ plugins: Record<string, PluginInstallRecord[]> }>(
       path.join(this.pluginsDir, 'installed_plugins.json'),

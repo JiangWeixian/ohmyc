@@ -10,13 +10,13 @@ interface AgentsRoutesOptions {
   agentsDir: string
   projectAgentsDir: string | null | undefined
   pluginsDir: string
-  settingsPath: string
+  claudeSettingsPaths: readonly string[]
   baseDir?: string
 }
 
 export const agentsRoutes: FastifyPluginAsync<AgentsRoutesOptions> = async (fastify, options) => {
   const service = new AgentService(options.agentsDir)
-  const resolver = new PluginResolver(options.pluginsDir, options.settingsPath)
+  const resolver = new PluginResolver(options.pluginsDir, options.claudeSettingsPaths)
 
   fastify.get('/api/agents', async () => {
     const agents = await service.list()

@@ -42,9 +42,6 @@ importers:
       lint-staged:
         specifier: ^13.1.0
         version: 13.3.0(enquirer@2.4.1)
-      pnpm:
-        specifier: ^8.0.0
-        version: 8.15.9
       typescript:
         specifier: ^5.9.3
         version: 5.9.3
@@ -91,6 +88,9 @@ importers:
         specifier: ^3.23.5
         version: 3.25.2(zod@4.4.2)
     devDependencies:
+      '@ohmyc/ui':
+        specifier: workspace:*
+        version: link:../ui
       '@types/better-sqlite3':
         specifier: ^7.6.12
         version: 7.6.13
@@ -5341,11 +5341,6 @@ packages:
   pluralize@8.0.0:
     resolution: {integrity: sha512-Nc3IT5yHzflTfbjgqWcCPpo7DaKy4FnpB0l/zCAW0Tc7jxAiuqSxHasntB3D7887LSrA93kDJ9IXovxJYxyLCA==}
     engines: {node: '>=4'}
-
-  pnpm@8.15.9:
-    resolution: {integrity: sha512-SZQ0ydj90aJ5Tr9FUrOyXApjOrzuW7Fee13pDzL0e1E6ypjNXP0AHDHw20VLw4BO3M1XhQHkyik6aBYWa72fgQ==}
-    engines: {node: '>=16.14'}
-    hasBin: true
 
   points-on-curve@0.2.0:
     resolution: {integrity: sha512-0mYKnYYe9ZcqMCWhUjItv/oHjvgEsfKvnUTg8sAtnHr3GVy7rGkXCb6d5cSyqrWqL4k81b9CPg3urd+T7aop3A==}
@@ -12866,8 +12861,6 @@ snapshots:
       pathe: 2.0.3
 
   pluralize@8.0.0: {}
-
-  pnpm@8.15.9: {}
 
   points-on-curve@0.2.0: {}
 

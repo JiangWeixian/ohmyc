@@ -4,11 +4,11 @@ import type { FastifyPluginAsync } from 'fastify'
 
 interface PluginsRoutesOptions {
   pluginsDir: string
-  settingsPath: string
+  claudeSettingsPaths: readonly string[]
 }
 
 export const pluginsRoutes: FastifyPluginAsync<PluginsRoutesOptions> = async (fastify, options) => {
-  const service = new PluginService(options.pluginsDir, options.settingsPath)
+  const service = new PluginService(options.pluginsDir, options.claudeSettingsPaths)
 
   // GET /api/plugins — list installed plugins
   fastify.get('/api/plugins', async () => {
