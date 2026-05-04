@@ -2,7 +2,7 @@
 
 ## Context
 
-The project (ClaudeUI) uses a **monochrome dark** design system (see `DESIGN.md`). Two CodeMirror 6 editors are in use:
+The project (OhMyC) uses a **monochrome dark** design system (see `DESIGN.md`). Two CodeMirror 6 editors are in use:
 
 - `MarkdownEditor` (`packages/ui/src/components/markdown-editor.tsx`) — large editing surface for profile descriptions/settings
 - `JsonEditor` (`packages/ui/src/components/json-editor.tsx`) — compact JSON input for runtime config, hooks, MCP/LSP servers
@@ -32,7 +32,7 @@ Create a shared, reusable CodeMirror theme extension that overrides all editor U
 └─────────────────────────────────────┘
 ```
 
-### Shared Extension: `claudeUIContainerTheme`
+### Shared Extension: `ohmycContainerTheme`
 
 A single `EditorView.theme({...})` extension exported from `codemirror-container-theme.ts`.
 
@@ -97,7 +97,7 @@ In each editor's `EditorState.create({ extensions: [...] })`:
   
   // Theme layers (later layers override earlier)
   oneDark,              // base: colorful syntax tokens
-  claudeUIContainerTheme, // override: monochrome chrome
+  ohmycContainerTheme, // override: monochrome chrome
   editorSpecificOverlay,  // override: container sizing/border
   
   // Functional extensions
@@ -106,25 +106,25 @@ In each editor's `EditorState.create({ extensions: [...] })`:
 ]
 ```
 
-Because CodeMirror themes are cumulative and later extensions override earlier ones, placing `claudeUIContainerTheme` **after** `oneDark` ensures our monochrome chrome wins while keeping `oneDark`'s syntax colors.
+Because CodeMirror themes are cumulative and later extensions override earlier ones, placing `ohmycContainerTheme` **after** `oneDark` ensures our monochrome chrome wins while keeping `oneDark`'s syntax colors.
 
 ## Refactoring Plan
 
 ### Step 1: Create shared theme
 
-Create `packages/ui/src/components/codemirror-container-theme.ts` with the `claudeUIContainerTheme` extension.
+Create `packages/ui/src/components/codemirror-container-theme.ts` with the `ohmycContainerTheme` extension.
 
 ### Step 2: Refactor MarkdownEditor
 
 - Remove inline theme object (lines 22–57)
-- Import `claudeUIContainerTheme`
+- Import `ohmycContainerTheme`
 - Replace inline theme with shared extension + thin overlay for MarkdownEditor-specific styles
 - Keep `oneDark` in the extensions array
 
 ### Step 3: Refactor JsonEditor
 
 - Remove inline theme object (lines 20–64)
-- Import `claudeUIContainerTheme`
+- Import `ohmycContainerTheme`
 - Replace inline theme with shared extension + thin overlay for JsonEditor-specific styles
 - Keep `oneDark` and `basicSetup`
 - **Remove blue focus shadow** (line 29: `boxShadow: '0 0 0 2px rgba(94, 106, 210, 0.18)'`)
@@ -162,7 +162,7 @@ Because the user chose to **keep colorful syntax highlighting**, these grayscale
 
 | Risk | Mitigation |
 |------|------------|
-| `basicSetup` in JsonEditor bundles its own theme layers that may conflict | Test thoroughly; `claudeUIContainerTheme` placed after `basicSetup` and `oneDark` should override |
+| `basicSetup` in JsonEditor bundles its own theme layers that may conflict | Test thoroughly; `ohmycContainerTheme` placed after `basicSetup` and `oneDark` should override |
 | Removing JsonEditor's token color overrides may surprise user | User explicitly chose to keep colorful highlighting; these overrides were already grayscale anyway |
 | Scrollbar pseudo-element styles may not apply inside shadow DOM / CM scroller | Test in browser; fallback to standard scrollbar if needed |
 

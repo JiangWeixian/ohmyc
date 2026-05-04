@@ -13,7 +13,7 @@ import { launchApp } from './launcher'
 const cli = cac('cu')
 
 cli
-  .command('start', 'Start the ClaudeUI server and open the browser')
+  .command('start', 'Start the OhMyC server and open the browser')
   .option('--port <port>', 'Port to listen on', { default: 3000 })
   .option('--api-only', 'Start API server only, skip static file serving')
   .option('--cwd <cwd>', 'Working directory for project discovery (default: current directory)')
@@ -33,7 +33,7 @@ cli
 
 // Default command: just running `cu` starts the app
 cli
-  .command('[...args]', 'Start ClaudeUI (default)')
+  .command('[...args]', 'Start OhMyC (default)')
   .option('--cwd <cwd>', 'Working directory for project discovery (default: current directory)')
   .action(async (arguments_, options) => {
     if (arguments_.length === 0) {

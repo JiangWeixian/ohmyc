@@ -2,7 +2,7 @@
 
 ## Overview
 
-将 ClaudeUI 从配置浏览器转变为 profiler 管理工具。Profile 是 agents/skills/commands/plugins/hooks/mcp/lsp/settings 的预设组合，以 Claude Code plugin 格式存储，可快速切换激活。
+将 OhMyC 从配置浏览器转变为 profiler 管理工具。Profile 是 agents/skills/commands/plugins/hooks/mcp/lsp/settings 的预设组合，以 Claude Code plugin 格式存储，可快速切换激活。
 
 **平台限制**：仅支持 macOS/Linux（软链依赖）。
 
@@ -99,7 +99,7 @@ export const ProfileSchema = z.object({
 {
   "name": "profile-frontend-dev",
   "version": "1.0.0",
-  "description": "ClaudeUI profile: Frontend development profile"
+  "description": "OhMyC profile: Frontend development profile"
 }
 ```
 

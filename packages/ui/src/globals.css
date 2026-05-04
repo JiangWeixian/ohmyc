@@ -227,7 +227,7 @@
     text-wrap: balance;
   }
 
-  .prose-claudeui {
+  .prose-ohmyc {
     --tw-prose-body: var(--text-secondary);
     --tw-prose-headings: var(--text-primary);
     --tw-prose-lead: var(--text-secondary);
@@ -248,7 +248,7 @@
     line-height: 1.7;
     max-width: 72ch;
   }
-  .prose-claudeui :where(code):not(:where([class~="not-prose"] *)) {
+  .prose-ohmyc :where(code):not(:where([class~="not-prose"] *)) {
     font-family: 'Berkeley Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
     font-size: 0.9em;
     background: rgba(255, 255, 255, 0.06);
@@ -256,11 +256,11 @@
     border-radius: 4px;
     font-weight: 500;
   }
-  .prose-claudeui :where(code):not(:where([class~="not-prose"] *))::before,
-  .prose-claudeui :where(code):not(:where([class~="not-prose"] *))::after {
+  .prose-ohmyc :where(code):not(:where([class~="not-prose"] *))::before,
+  .prose-ohmyc :where(code):not(:where([class~="not-prose"] *))::after {
     content: none;
   }
-  .prose-claudeui :where(pre):not(:where([class~="not-prose"] *)) {
+  .prose-ohmyc :where(pre):not(:where([class~="not-prose"] *)) {
     font-family: 'Berkeley Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
     font-size: 13px;
     line-height: 1.6;
@@ -268,43 +268,43 @@
     border-radius: var(--radius-md);
     border: 1px solid var(--border-default);
   }
-  .prose-claudeui :where(pre code):not(:where([class~="not-prose"] *)) {
+  .prose-ohmyc :where(pre code):not(:where([class~="not-prose"] *)) {
     background: transparent;
     padding: 0;
     border-radius: 0;
     font-weight: 400;
   }
-  .prose-claudeui :where(h2):not(:where([class~="not-prose"] *)) {
+  .prose-ohmyc :where(h2):not(:where([class~="not-prose"] *)) {
     font-size: 22px;
     font-weight: 600;
     letter-spacing: -0.2px;
     margin-top: 2em;
     margin-bottom: 0.6em;
   }
-  .prose-claudeui :where(h3):not(:where([class~="not-prose"] *)) {
+  .prose-ohmyc :where(h3):not(:where([class~="not-prose"] *)) {
     font-size: 18px;
     font-weight: 600;
     letter-spacing: -0.15px;
     margin-top: 1.6em;
     margin-bottom: 0.5em;
   }
-  .prose-claudeui :where(a):not(:where([class~="not-prose"] *)) {
+  .prose-ohmyc :where(a):not(:where([class~="not-prose"] *)) {
     text-decoration: underline;
     text-underline-offset: 3px;
     text-decoration-color: color-mix(in oklab, var(--text-primary) 40%, transparent);
     font-weight: 500;
   }
-  .prose-claudeui :where(blockquote):not(:where([class~="not-prose"] *)) {
+  .prose-ohmyc :where(blockquote):not(:where([class~="not-prose"] *)) {
     border-left: 2px solid var(--border-default);
     font-style: normal;
     font-weight: 400;
     quotes: none;
   }
-  .prose-claudeui :where(blockquote p):not(:where([class~="not-prose"] *))::before,
-  .prose-claudeui :where(blockquote p):not(:where([class~="not-prose"] *))::after {
+  .prose-ohmyc :where(blockquote p):not(:where([class~="not-prose"] *))::before,
+  .prose-ohmyc :where(blockquote p):not(:where([class~="not-prose"] *))::after {
     content: none;
   }
-  .prose-claudeui :where(table):not(:where([class~="not-prose"] *)) {
+  .prose-ohmyc :where(table):not(:where([class~="not-prose"] *)) {
     font-size: 14px;
   }
 

@@ -1,4 +1,4 @@
-# ClaudeUI 用户指南
+# OhMyC 用户指南
 
 ## 目录
 
@@ -22,11 +22,11 @@
 
 ## 项目简介
 
-ClaudeUI 是一个带有 Web 界面的 CLI 工具，用于**可视化展示和管理 Claude Code 的配置文件**。
+OhMyC 是一个带有 Web 界面的 CLI 工具，用于**可视化展示和管理 Claude Code 的配置文件**。
 
 Claude Code 的配置分布在 `~/.claude/`（或项目级 `.claude/`）目录下，涉及 `settings.json`、agents、skills、commands、hooks、MCP servers、plugins 等多种文件和目录。手动管理这些配置既繁琐又容易出错。
 
-ClaudeUI 解决了以下问题：
+OhMyC 解决了以下问题：
 
 - **统一可视化管理**：在浏览器中查看和编辑所有 `.claude` 配置
 - **多来源聚合**：自动合并全局（`~/.cui/`）、项目级（`./.claude/`）和插件提供的配置项
@@ -40,17 +40,17 @@ ClaudeUI 解决了以下问题：
 ### 通过 npm 全局安装
 
 ```bash
-npm install -g claudeui
+npm install -g ohmyc
 ```
 
-安装后会注册两个命令：`cu` 和 `claudeui`，两者功能完全一致。
+安装后会注册两个命令：`cu` 和 `ohmyc`，两者功能完全一致。
 
 ### 从源码安装
 
 ```bash
 # 克隆仓库
-git clone <repo-url> claudeui
-cd claudeui
+git clone <repo-url> ohmyc
+cd ohmyc
 
 # 安装依赖（需要 pnpm）
 pnpm install
@@ -93,7 +93,7 @@ pnpm dev
 
 ## CLI 命令参考
 
-ClaudeUI 的 CLI 入口命令为 `cu`（或 `claudeui`），基于 [cac](https://github.com/cacjs/cac) 解析命令行参数。
+OhMyC 的 CLI 入口命令为 `cu`（或 `ohmyc`），基于 [cac](https://github.com/cacjs/cac) 解析命令行参数。
 
 ### `cu`（默认命令）
 
@@ -105,7 +105,7 @@ cu
 
 ### `cu start`
 
-启动 ClaudeUI 服务器并打开浏览器。
+启动 OhMyC 服务器并打开浏览器。
 
 ```bash
 cu start [选项]
@@ -142,7 +142,7 @@ cu --version    # 显示版本号（当前为 0.1.0）
 
 ## WebUI 功能介绍
 
-ClaudeUI 的 Web 界面包含两个主视图，通过顶部的 **Agent Home** / **Profiles** 切换器进行切换。
+OhMyC 的 Web 界面包含两个主视图，通过顶部的 **Agent Home** / **Profiles** 切换器进行切换。
 
 ### Agent Home（代理主页）
 
@@ -217,7 +217,7 @@ Agent Home 是配置浏览视图，左侧边栏包含以下分区：
 
 路径：`/profiles`
 
-Profiles 是 ClaudeUI 的核心功能，允许你创建可复用的配置组合，并在不同工作环境之间快速切换。
+Profiles 是 OhMyC 的核心功能，允许你创建可复用的配置组合，并在不同工作环境之间快速切换。
 
 #### 侧边栏结构
 
@@ -296,7 +296,7 @@ Profiles 是 ClaudeUI 的核心功能，允许你创建可复用的配置组合�
 
 ### Store（组件仓库）
 
-Store 是 ClaudeUI 管理可复用组件的集中仓库，位于 `~/.cui/store/`。
+Store 是 OhMyC 管理可复用组件的集中仓库，位于 `~/.cui/store/`。
 
 #### 组件列表页
 
@@ -407,10 +407,10 @@ Model Config 是特殊的 Store 组件，用于定义 API 连接预设：
 
 ### 目录结构
 
-ClaudeUI 管理两个主要目录：
+OhMyC 管理两个主要目录：
 
 ```
-~/.cui/                          # ClaudeUI 托管数据目录（WRITE_DIR）
+~/.cui/                          # OhMyC 托管数据目录（WRITE_DIR）
 ├── settings.json                # 设置文件
 ├── agents/                      # 全局 agents
 │   └── my-agent.md
@@ -486,7 +486,7 @@ ClaudeUI 管理两个主要目录：
 | 变量 | 默认值 | 说明 |
 |------|--------|------|
 | `AGENT_HOME` | `.claude` | 覆盖 Claude Code 配置目录名（同时影响全局和项目级） |
-| `CUI_HOME` | `.cui` | 覆盖 ClaudeUI 写入目录名 |
+| `CUI_HOME` | `.cui` | 覆盖 OhMyC 写入目录名 |
 
 **示例**：如果想使用 `.agent` 代替 `.claude`：
 
@@ -498,13 +498,13 @@ AGENT_HOME=.agent cu
 
 ## 常见问题（FAQ）
 
-### Q: `cu` 和 `claudeui` 命令有什么区别？
+### Q: `cu` 和 `ohmyc` 命令有什么区别？
 
 没有区别，两者是同一个 CLI 工具的不同入口名称。
 
-### Q: ClaudeUI 会修改我的 `~/.claude/` 目录吗？
+### Q: OhMyC 会修改我的 `~/.claude/` 目录吗？
 
-不会。ClaudeUI 从 `~/.claude/plugins/` **读取**插件信息，但所有写入操作都在 `~/.cui/` 目录下进行。Profile 激活时修改的是 `~/.cui/settings.json`，而非 `~/.claude/settings.json`。
+不会。OhMyC 从 `~/.claude/plugins/` **读取**插件信息，但所有写入操作都在 `~/.cui/` 目录下进行。Profile 激活时修改的是 `~/.cui/settings.json`，而非 `~/.claude/settings.json`。
 
 ### Q: 什么是 Profile？
 
@@ -533,7 +533,7 @@ Agents、Skills、Commands 的名称必须匹配 `[a-zA-Z0-9_-]+`。Model Config
 
 ### Q: 端口被占用怎么办？
 
-ClaudeUI 会自动尝试 `port`、`port+1`、`port+2`、然后随机端口。控制台会显示实际使用的端口。
+OhMyC 会自动尝试 `port`、`port+1`、`port+2`、然后随机端口。控制台会显示实际使用的端口。
 
 ### Q: 如何只启动 API 服务（不打开浏览器）？
 
@@ -549,7 +549,7 @@ cu start --api-only
 
 ### 服务启动失败
 
-**症状**：运行 `cu` 后报错 "Failed to start ClaudeUI"
+**症状**：运行 `cu` 后报错 "Failed to start OhMyC"
 
 **排查步骤**：
 1. 检查端口是否被占用：`lsof -i :3000`
@@ -610,7 +610,7 @@ cu start --api-only
 
 ### API 端点参考
 
-ClaudeUI 后端提供以下 REST API 端点：
+OhMyC 后端提供以下 REST API 端点：
 
 | 方法 | 路径 | 说明 |
 |------|------|------|

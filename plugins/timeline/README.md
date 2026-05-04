@@ -1,6 +1,6 @@
-# ClaudeUI Timeline Plugin
+# OhMyC Timeline Plugin
 
-Collects session data (turns, tokens, tools, skills) from both **Claude Code** and **OpenCode** agents and ingests it into the ClaudeUI Timeline dashboard.
+Collects session data (turns, tokens, tools, skills) from both **Claude Code** and **OpenCode** agents and ingests it into the OhMyC Timeline dashboard.
 
 ## Supported Agents
 
