@@ -156,18 +156,32 @@ export interface EventHandlerDeps {
 // SQLite when the session goes idle or is deleted. Exported for testing.
 export function createEventHandler(deps: EventHandlerDeps) {
   const sessions = new Map<string, SessionAccumulator>()
+  // Maps subagent sessionID → parent sessionID. Populated from
+  // session.created events where info.parentID is present.
+  const childToParent = new Map<string, string>()
 
+  // Resolves a sessionID to its root parent accumulator. Subagent
+  // sessions are transparently redirected so their tools, tokens and
+  // turns merge into the parent session instead of creating a row.
   function getAccumulator(sessionId: string): SessionAccumulator {
-    let acc = sessions.get(sessionId)
+    const parentId = childToParent.get(sessionId)
+    const targetId = parentId ?? sessionId
+    let acc = sessions.get(targetId)
     if (!acc) {
-      acc = createAccumulator(sessionId, deps.project)
-      sessions.set(sessionId, acc)
+      acc = createAccumulator(targetId, deps.project)
+      sessions.set(targetId, acc)
     }
     return acc
   }
 
+  // Checks whether a sessionID belongs to a subagent (has a parent).
+  function isChild(sessionId: string): boolean {
+    return childToParent.has(sessionId)
+  }
+
   return {
     sessions,
+    childToParent,
 
     handler: async ({ event }: { event: any }) => {
       try {
@@ -175,8 +189,13 @@ export function createEventHandler(deps: EventHandlerDeps) {
           case 'session.created': {
             const sessionID = getEventSessionID(event)
             if (sessionID) {
+              const parentID = event.properties?.info?.parentID as string | undefined
+              if (parentID) {
+                childToParent.set(sessionID, parentID)
+                deps.log('debug', 'Subagent session detected', { sessionID, parentID })
+              }
               const acc = getAccumulator(sessionID)
-              acc.startedAt = Date.now()
+              acc.startedAt = Math.min(acc.startedAt, Date.now())
             }
             break
           }
@@ -184,6 +203,12 @@ export function createEventHandler(deps: EventHandlerDeps) {
           case 'session.idle': {
             const sessionID = getEventSessionID(event)
             if (sessionID) {
+              // Subagent idle: merge is already done (getAccumulator
+              // redirected to parent). Just clean up the mapping.
+              if (isChild(sessionID)) {
+                childToParent.delete(sessionID)
+                return
+              }
               const acc = sessions.get(sessionID)
               if (!acc) {
                 return
@@ -206,6 +231,10 @@ export function createEventHandler(deps: EventHandlerDeps) {
           case 'session.deleted': {
             const sessionID = getEventSessionID(event)
             if (sessionID) {
+              if (isChild(sessionID)) {
+                childToParent.delete(sessionID)
+                return
+              }
               const acc = sessions.get(sessionID)
               if (acc) {
                 acc.endedAt = Date.now()
@@ -219,6 +248,10 @@ export function createEventHandler(deps: EventHandlerDeps) {
           case 'session.error': {
             const sessionID = getEventSessionID(event)
             if (sessionID) {
+              if (isChild(sessionID)) {
+                childToParent.delete(sessionID)
+                return
+              }
               const acc = sessions.get(sessionID)
               if (acc) {
                 acc.endedAt = Date.now()

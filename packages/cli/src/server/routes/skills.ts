@@ -10,13 +10,13 @@ interface SkillsRoutesOptions {
   skillsDir: string
   projectSkillsDir: string | null | undefined
   pluginsDir: string
-  settingsPath: string
+  claudeSettingsPaths: readonly string[]
   baseDir?: string
 }
 
 export const skillsRoutes: FastifyPluginAsync<SkillsRoutesOptions> = async (fastify, options) => {
   const service = new SkillService(options.skillsDir)
-  const resolver = new PluginResolver(options.pluginsDir, options.settingsPath)
+  const resolver = new PluginResolver(options.pluginsDir, options.claudeSettingsPaths)
 
   fastify.get('/api/skills', async () => {
     const skills = await service.list()

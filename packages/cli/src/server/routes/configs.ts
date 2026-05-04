@@ -9,7 +9,7 @@ interface ConfigRoutesOptions {
   baseDir: string
   projectBaseDir: string | null | undefined
   pluginsDir: string
-  settingsPath: string
+  claudeSettingsPaths: readonly string[]
 }
 
 interface McpEntry {
@@ -75,8 +75,8 @@ function flattenHooks(hooksObject: Record<string, any>): Array<{ event: string; 
 }
 
 export const configsRoutes: FastifyPluginAsync<ConfigRoutesOptions> = async (fastify, options) => {
-  const { baseDir, projectBaseDir, pluginsDir, settingsPath } = options
-  const resolver = new PluginResolver(pluginsDir, settingsPath)
+  const { baseDir, projectBaseDir, pluginsDir, claudeSettingsPaths } = options
+  const resolver = new PluginResolver(pluginsDir, claudeSettingsPaths)
 
   // GET /api/mcp — read .mcp.json and merge with plugin + project contributions
   fastify.get('/api/mcp', async () => {
@@ -112,11 +112,13 @@ export const configsRoutes: FastifyPluginAsync<ConfigRoutesOptions> = async (fas
   fastify.get('/api/hooks', async () => {
     const entries: HookEntry[] = []
 
-    const settings = await readJson(settingsPath)
-    const localHooks = settings?.hooks ?? {}
-    const flatLocal = flattenHooks(localHooks)
-    for (const entry of flatLocal) {
-      entries.push({ ...entry, source: 'local', scope: 'global' })
+    for (const settingsFilePath of claudeSettingsPaths) {
+      const settings = await readJson(settingsFilePath)
+      const localHooks = settings?.hooks ?? {}
+      const flatLocal = flattenHooks(localHooks)
+      for (const entry of flatLocal) {
+        entries.push({ ...entry, source: 'local', scope: 'global' })
+      }
     }
 
     const pluginPaths = await resolver.getEnabledPluginPaths()

@@ -102,12 +102,14 @@ export async function createServer(options: CreateServerOptions = {}): Promise<F
   await fastify.register(configRoutes)
   await fastify.register(settingsRoutes, { cwd: serverCwd })
 
-  await fastify.register(agentsRoutes, { agentsDir: config.agentsDir, projectAgentsDir: config.projectAgentsDir, pluginsDir: config.pluginsDir, settingsPath: config.settingsPath, baseDir: config.baseDir })
-  await fastify.register(skillsRoutes, { skillsDir: config.skillsDir, projectSkillsDir: config.projectSkillsDir, pluginsDir: config.pluginsDir, settingsPath: config.settingsPath, baseDir: config.baseDir })
-  await fastify.register(commandsRoutes, { commandsDir: config.commandsDir, projectCommandsDir: config.projectCommandsDir, pluginsDir: config.pluginsDir, settingsPath: config.settingsPath, baseDir: config.baseDir })
-  await fastify.register(pluginsRoutes, { pluginsDir: config.pluginsDir, settingsPath: config.settingsPath })
-  await fastify.register(configsRoutes, { baseDir: config.baseDir, projectBaseDir: config.projectPath, pluginsDir: config.pluginsDir, settingsPath: config.settingsPath })
-  await fastify.register(profilesRoutes, { baseDir: config.baseDir })
+  const claudeSettingsPaths = config.claudeSettingsPaths
+
+  await fastify.register(agentsRoutes, { agentsDir: config.agentsDir, projectAgentsDir: config.projectAgentsDir, pluginsDir: config.pluginsDir, claudeSettingsPaths, baseDir: config.baseDir })
+  await fastify.register(skillsRoutes, { skillsDir: config.skillsDir, projectSkillsDir: config.projectSkillsDir, pluginsDir: config.pluginsDir, claudeSettingsPaths, baseDir: config.baseDir })
+  await fastify.register(commandsRoutes, { commandsDir: config.commandsDir, projectCommandsDir: config.projectCommandsDir, pluginsDir: config.pluginsDir, claudeSettingsPaths, baseDir: config.baseDir })
+  await fastify.register(pluginsRoutes, { pluginsDir: config.pluginsDir, claudeSettingsPaths })
+  await fastify.register(configsRoutes, { baseDir: config.baseDir, projectBaseDir: config.projectPath, pluginsDir: config.pluginsDir, claudeSettingsPaths })
+  await fastify.register(profilesRoutes, { baseDir: config.baseDir, claudeSettingsPath: config.claudeSettingsPath, pluginsDir: config.pluginsDir })
   await fastify.register(storeRoutes, { baseDir: config.baseDir })
   await fastify.register(timelineRoutes)
 

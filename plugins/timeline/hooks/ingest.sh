@@ -58,15 +58,15 @@ fi
 FILE_SIZE=$(stat -f%z "$TRANSCRIPT_PATH" 2>/dev/null || stat -c%s "$TRANSCRIPT_PATH" 2>/dev/null || echo 0)
 
 # ---------------------------------------------------------------------------
-# Find claudeui CLI (for fallback and --ingest-raw)
+# Find cui CLI (for fallback and --ingest-raw)
 # ---------------------------------------------------------------------------
 
 if [ "${CLI_CMD+isset}" = "isset" ]; then
   :
-elif command -v claudeui >/dev/null 2>&1; then
-  CLI_CMD="claudeui"
-elif command -v cu >/dev/null 2>&1 && cu --help 2>&1 | grep -q "dashboard"; then
-  CLI_CMD="cu"
+elif command -v ohmyc >/dev/null 2>&1; then
+  CLI_CMD="ohmyc"
+elif command -v cui >/dev/null 2>&1 && cui --help 2>&1 | grep -q "dashboard"; then
+  CLI_CMD="cui"
 else
   REPO_ROOT="$(cd "$PLUGIN_DIR/../.." && pwd)"
   if [ -f "$REPO_ROOT/packages/cli/dist/index.mjs" ]; then
@@ -160,6 +160,6 @@ if [ -n "$CLI_CMD" ]; then
   log_info "Using CLI fallback for session $SESSION_ID"
   $CLI_CMD dashboard --ingest --session "$SESSION_ID" --file "$TRANSCRIPT_PATH"
 else
-  log_error "claudeui CLI not found. Cannot ingest session $SESSION_ID."
+  log_error "cui CLI not found. Cannot ingest session $SESSION_ID."
   exit 1
 fi

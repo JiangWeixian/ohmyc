@@ -24,7 +24,7 @@ interface PluginComponents {
 export class PluginService {
   constructor(
     private pluginsDir: string,
-    private settingsPath: string,
+    private claudeSettingsPaths: readonly string[],
   ) {}
 
   private async readJson<Value>(filePath: string): Promise<Value | null> {
@@ -98,8 +98,15 @@ export class PluginService {
   }
 
   private async getEnabledPlugins(): Promise<Record<string, boolean>> {
-    const settings = await this.readJson<{ enabledPlugins?: Record<string, boolean> }>(this.settingsPath)
-    return settings?.enabledPlugins ?? {}
+    // Merge enabledPlugins across paths in low→high precedence (user → project → local).
+    const merged: Record<string, boolean> = {}
+    for (const filePath of this.claudeSettingsPaths) {
+      const settings = await this.readJson<{ enabledPlugins?: Record<string, boolean> }>(filePath)
+      if (settings?.enabledPlugins) {
+        Object.assign(merged, settings.enabledPlugins)
+      }
+    }
+    return merged
   }
 
   async listPlugins(): Promise<InstalledPlugin[]> {
