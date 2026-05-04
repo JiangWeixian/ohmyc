@@ -17,7 +17,7 @@ import {
   it,
 } from 'vitest'
 
-import { configsRoutes } from '../configs'
+import { configsRoutes } from '@/server/routes/configs'
 
 describe('configs routes', () => {
   let tmpDir: string

@@ -17,7 +17,7 @@ import {
   it,
 } from 'vitest'
 
-import { skillsRoutes } from '../skills'
+import { skillsRoutes } from '@/server/routes/skills'
 
 describe('skills routes', () => {
   let temporaryRoot: string

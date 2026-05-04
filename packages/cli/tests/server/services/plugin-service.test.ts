@@ -15,7 +15,7 @@ import {
   it,
 } from 'vitest'
 
-import { PluginService } from '../plugin-service'
+import { PluginService } from '@/server/services/plugin-service'
 
 describe('PluginService', () => {
   let tmpDir: string

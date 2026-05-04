@@ -15,7 +15,7 @@ import {
   it,
 } from 'vitest'
 
-import { CommandService } from '../command-service'
+import { CommandService } from '@/server/services/command-service'
 
 describe('CommandService', () => {
   let tmpDir: string

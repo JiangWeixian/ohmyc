@@ -15,7 +15,7 @@ import {
   it,
 } from 'vitest'
 
-import { ModelConfigService } from '../model-config-service'
+import { ModelConfigService } from '@/server/services/model-config-service'
 
 describe('ModelConfigService', () => {
   let tmpDir: string

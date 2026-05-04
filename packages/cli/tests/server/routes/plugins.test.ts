@@ -16,7 +16,7 @@ import {
   it,
 } from 'vitest'
 
-import { pluginsRoutes } from '../plugins'
+import { pluginsRoutes } from '@/server/routes/plugins'
 
 describe('plugins routes', () => {
   let tmpDir: string

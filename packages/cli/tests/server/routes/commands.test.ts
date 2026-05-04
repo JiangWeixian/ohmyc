@@ -17,7 +17,7 @@ import {
   it,
 } from 'vitest'
 
-import { commandsRoutes } from '../commands'
+import { commandsRoutes } from '@/server/routes/commands'
 
 describe('commands routes', () => {
   let temporaryRoot: string

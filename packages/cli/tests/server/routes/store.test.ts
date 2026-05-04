@@ -18,7 +18,7 @@ import {
   it,
 } from 'vitest'
 
-import { storeRoutes } from '../store'
+import { storeRoutes } from '@/server/routes/store'
 
 describe('store routes', () => {
   let tmpDir: string

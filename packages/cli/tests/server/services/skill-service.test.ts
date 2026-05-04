@@ -16,7 +16,7 @@ import {
   it,
 } from 'vitest'
 
-import { SkillService } from '../skill-service'
+import { SkillService } from '@/server/services/skill-service'
 
 describe('SkillService', () => {
   let tmpDir: string

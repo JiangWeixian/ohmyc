@@ -11,7 +11,7 @@ import {
   it,
 } from 'vitest'
 
-import { timelineRoutes } from '../timeline'
+import { timelineRoutes } from '@/server/routes/timeline'
 
 describe('timeline routes', () => {
   let tmpDir: string

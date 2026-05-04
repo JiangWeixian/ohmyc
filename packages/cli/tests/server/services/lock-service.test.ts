@@ -10,7 +10,7 @@ import {
   it,
 } from 'vitest'
 
-import { LockService } from '../lock-service'
+import { LockService } from '@/server/services/lock-service'
 
 describe('LockService', () => {
   let tmpDir: string

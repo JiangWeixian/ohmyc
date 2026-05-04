@@ -19,7 +19,7 @@ import {
   createServer,
   resolveStaticRoot,
   startServer,
-} from '../index'
+} from '@/server/index'
 
 describe('Launcher server', () => {
   let tmpDir: string

@@ -19,7 +19,7 @@ import {
   it,
 } from 'vitest'
 
-import { ActivationBlockedError, ProfileService } from '../profile-service'
+import { ActivationBlockedError, ProfileService } from '@/server/services/profile-service'
 
 describe('ProfileService', () => {
   let tmpDir: string

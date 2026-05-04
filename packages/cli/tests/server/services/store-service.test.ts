@@ -17,7 +17,7 @@ import {
   it,
 } from 'vitest'
 
-import { StoreService } from '../store-service'
+import { StoreService } from '@/server/services/store-service'
 
 describe('StoreService', () => {
   let tmpDir: string

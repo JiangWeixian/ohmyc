@@ -11,11 +11,11 @@ import {
   vi,
 } from 'vitest'
 
-import { launchApp } from '../launcher'
-import { startServer } from '../server/index'
+import { launchApp } from '@/launcher'
+import { startServer } from '@/server/index'
 
 // Mock the server module
-vi.mock('../server/index', () => ({
+vi.mock('@/server/index', () => ({
   startServer: vi.fn(),
 }))
 
@@ -140,7 +140,7 @@ describe('CLI launcher', () => {
 
   describe('package metadata', () => {
     it('exposes a "cui" bin entry that resolves to the launcher entrypoint', () => {
-      const packagePath = path.resolve(import.meta.dirname, '../../package.json')
+      const packagePath = path.resolve(import.meta.dirname, '../package.json')
       const package_ = JSON.parse(readFileSync(packagePath, 'utf8'))
 
       expect(package_.bin).toBeDefined()

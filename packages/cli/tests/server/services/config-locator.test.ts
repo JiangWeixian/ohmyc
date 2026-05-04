@@ -18,7 +18,7 @@ import {
   AGENT_DIR_NAME,
   ConfigLocator,
   WRITE_DIR_NAME,
-} from '../config-locator'
+} from '@/server/services/config-locator'
 
 describe('ConfigLocator', () => {
   let tmpDir: string
