@@ -19,7 +19,13 @@ export async function launchApp(options: LaunchOptions = {}): Promise<void> {
 
   console.log('Starting OhMyC server...')
 
-  const result = await startServer(serverOptions)
+  let result
+  try {
+    result = await startServer(serverOptions)
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error)
+    throw new Error(`Failed to start OhMyC: ${message}`)
+  }
 
   const url = `http://localhost:${result.port}`
 
