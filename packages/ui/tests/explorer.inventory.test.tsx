@@ -8,25 +8,25 @@ import {
   vi,
 } from 'vitest'
 
-import { Explorer } from '../explorer'
-import { renderWithProviders } from '../test/render-with-providers'
+import { renderWithProviders } from './test/render-with-providers'
+import { Explorer } from '@/explorer'
 
-vi.mock('../hooks/use-agents', () => ({
+vi.mock('@/hooks/use-agents', () => ({
   useAgents: () => ({ data: [], isLoading: false, isError: false }),
   useAgent: () => ({ data: null }),
 }))
 
-vi.mock('../hooks/use-skills', () => ({
+vi.mock('@/hooks/use-skills', () => ({
   useSkills: () => ({ data: [], isLoading: false, isError: false }),
   useSkill: () => ({ data: null }),
 }))
 
-vi.mock('../hooks/use-commands', () => ({
+vi.mock('@/hooks/use-commands', () => ({
   useCommands: () => ({ data: [], isLoading: false, isError: false }),
   useCommand: () => ({ data: null }),
 }))
 
-vi.mock('../hooks/use-configs', () => ({
+vi.mock('@/hooks/use-configs', () => ({
   useMcpServers: () => ({
     data: [
       { name: 'filesystem', config: {}, source: 'local' },
@@ -54,7 +54,7 @@ vi.mock('../hooks/use-configs', () => ({
   }),
 }))
 
-vi.mock('../hooks/use-plugins', () => ({
+vi.mock('@/hooks/use-plugins', () => ({
   usePlugins: () => ({
     data: [
       {
@@ -80,7 +80,7 @@ vi.mock('../hooks/use-plugins', () => ({
   }),
 }))
 
-vi.mock('../hooks/use-profiles', () => ({
+vi.mock('@/hooks/use-profiles', () => ({
   useProfiles: () => ({
     data: {
       profiles: [

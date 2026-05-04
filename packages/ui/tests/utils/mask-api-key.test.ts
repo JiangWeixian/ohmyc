@@ -4,7 +4,7 @@ import {
   it,
 } from 'vitest'
 
-import { isMaskedValue, maskApiKey } from '../mask-api-key'
+import { isMaskedValue, maskApiKey } from '@/utils/mask-api-key'
 
 describe('maskApiKey', () => {
   it('masks a standard key showing last 4 chars', () => {

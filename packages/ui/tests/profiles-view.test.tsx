@@ -9,23 +9,22 @@ import {
   vi,
 } from 'vitest'
 
-import { ProfilesView } from '../profiles-view'
-import { renderWithProviders } from '../test/render-with-providers'
+import { renderWithProviders } from './test/render-with-providers'
+import { ProfilesView } from '@/profiles-view'
 
 const mockStoreComponentList = vi.fn()
 
-// Mutable state for per-test active profile control
 let mockActiveProfile: string | null = null
 let mockActivateMutate = vi.fn()
 
-vi.mock('../components/store/store-component-list', () => ({
+vi.mock('@/components/store/store-component-list', () => ({
   StoreComponentList: ({ category }: { category: 'agents' | 'all' | 'commands' | 'model-configs' | 'skills' }) => {
     mockStoreComponentList(category)
     return <div>store:{category}</div>
   },
 }))
 
-vi.mock('../hooks/use-profiles', () => ({
+vi.mock('@/hooks/use-profiles', () => ({
   useProfiles: () => ({
     data: {
       profiles: [{ name: 'daily', agents: [], skills: [], commands: [], plugins: [] }],
@@ -49,23 +48,23 @@ vi.mock('../hooks/use-profiles', () => ({
   useDeleteProfile: () => ({ mutate: vi.fn() }),
 }))
 
-vi.mock('../hooks/use-store', () => ({
+vi.mock('@/hooks/use-store', () => ({
   useStoreAgents: () => ({ data: [], isLoading: false }),
   useStoreSkills: () => ({ data: [], isLoading: false }),
   useStoreCommands: () => ({ data: [], isLoading: false }),
 }))
 
-vi.mock('../hooks/use-plugins', () => ({
+vi.mock('@/hooks/use-plugins', () => ({
   usePlugins: () => ({ data: [], isLoading: false }),
 }))
 
-vi.mock('../components/profiles/profile-editor', () => ({
+vi.mock('@/components/profiles/profile-editor', () => ({
   ProfileEditor: ({ profile }: { profile?: { name: string } }) => (
     <div data-testid="mock-editor">{profile ? `Edit ${profile.name}` : 'New Profile Editor'}</div>
   ),
 }))
 
-vi.mock('../components/store/store-component-editor', () => ({
+vi.mock('@/components/store/store-component-editor', () => ({
   StoreComponentEditor: ({ category, editName }: { category: string; editName?: string }) => (
     <div data-testid="mock-component-editor">
       {editName ? `Edit ${category}:${editName}` : `New ${category}`}
@@ -73,7 +72,7 @@ vi.mock('../components/store/store-component-editor', () => ({
   ),
 }))
 
-vi.mock('../components/profiles/profile-card', () => ({
+vi.mock('@/components/profiles/profile-card', () => ({
   ProfileCard: ({ profile, isActive }: { profile: { name: string }; isActive: boolean }) => (
     <div data-testid="mock-card">
       <span>ProfileCard:{profile.name}</span>
@@ -240,7 +239,6 @@ describe('ProfilesView active state and activation feedback', () => {
       { route: '/profiles/daily' },
     )
 
-    // The mock ProfileCard renders the active-badge when isActive is true
     expect(screen.getByTestId('active-badge')).toHaveTextContent('Active')
   })
 
@@ -254,7 +252,6 @@ describe('ProfilesView active state and activation feedback', () => {
       { route: '/profiles/daily' },
     )
 
-    // Verify the card rendered (profile is accessible by name)
     expect(screen.getByTestId('mock-card')).toBeInTheDocument()
   })
 })

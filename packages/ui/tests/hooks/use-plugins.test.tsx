@@ -8,8 +8,8 @@ import {
   vi,
 } from 'vitest'
 
-import { renderWithProviders } from '../../test/render-with-providers'
-import { usePlugins } from '../use-plugins.ts'
+import { renderWithProviders } from '../test/render-with-providers'
+import { usePlugins } from '@/hooks/use-plugins.ts'
 
 function HookProbe() {
   const { data = [], isLoading } = usePlugins()

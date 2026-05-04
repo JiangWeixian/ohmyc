@@ -9,8 +9,8 @@ import {
   vi,
 } from 'vitest'
 
-import { renderWithProviders } from '../../../test/render-with-providers'
-import { StoreComponentList } from '../store-component-list'
+import { renderWithProviders } from '../../test/render-with-providers'
+import { StoreComponentList } from '@/components/store/store-component-list'
 
 const mockUseStoreAgents = vi.fn()
 const mockUseStoreSkills = vi.fn()
@@ -18,7 +18,7 @@ const mockUseStoreCommands = vi.fn()
 const mockUseStoreModelConfigs = vi.fn()
 const mockUseProfiles = vi.fn()
 
-vi.mock('../../../hooks/use-store', () => ({
+vi.mock('@/hooks/use-store', () => ({
   useStoreAgents: () => mockUseStoreAgents(),
   useStoreSkills: () => mockUseStoreSkills(),
   useStoreCommands: () => mockUseStoreCommands(),
@@ -41,7 +41,7 @@ vi.mock('../../../hooks/use-store', () => ({
   useUpdateStoreModelConfig: () => ({ mutate: vi.fn(), isPending: false }),
 }))
 
-vi.mock('../../../hooks/use-profiles', () => ({
+vi.mock('@/hooks/use-profiles', () => ({
   useProfiles: () => mockUseProfiles(),
 }))
 

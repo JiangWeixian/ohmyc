@@ -7,19 +7,19 @@ import {
   vi,
 } from 'vitest'
 
-import { renderWithProviders } from '../../../test/render-with-providers'
-import { ProfileCard } from '../profile-card'
+import { renderWithProviders } from '../../test/render-with-providers'
+import { ProfileCard } from '@/components/profiles/profile-card'
 
 import type { Profile } from '@ohmyc/shared'
 
-vi.mock('../../../hooks/use-profiles', () => ({
+vi.mock('@/hooks/use-profiles', () => ({
   usePreflight: () => ({
     mutateAsync: vi.fn(),
     isPending: false,
   }),
 }))
 
-vi.mock('../../../hooks/use-store', () => ({
+vi.mock('@/hooks/use-store', () => ({
   useStoreModelConfigs: () => ({
     data: [
       { name: 'gpt-4', apiKey: 'sk-test-key-1234', baseUrl: 'https://api.openai.com', modelName: 'gpt-4', provider: 'openai' },
@@ -28,7 +28,7 @@ vi.mock('../../../hooks/use-store', () => ({
   }),
 }))
 
-vi.mock('../../../utils/mask-api-key', () => ({
+vi.mock('@/utils/mask-api-key', () => ({
   maskApiKey: (key: string) => `****${key.slice(-4)}`,
 }))
 

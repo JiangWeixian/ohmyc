@@ -9,7 +9,7 @@
   "license": "ISC",
   "author": "",
   "scripts": {
-    "build": "pnpm --filter @ohmyc/timeline build && pnpm --filter @ohmyc/ui build && pnpm --filter @ohmyc/cli build",
+    "build": "pnpm -r build",
     "test": "pnpm -r test",
     "dev": "pnpm --filter @ohmyc/timeline build && concurrently -n server,ui -c blue,green \"pnpm --filter @ohmyc/cli dev:server\" \"pnpm --filter @ohmyc/ui dev\"",
     "ci:version": "pnpm changeset version",
@@ -36,7 +36,6 @@
     "eslint": "^10.2.1",
     "husky": "^8.0.3",
     "lint-staged": "^13.1.0",
-    "pnpm": "^8.0.0",
     "typescript": "^5.9.3",
     "vitest": "^2.1.9"
   },

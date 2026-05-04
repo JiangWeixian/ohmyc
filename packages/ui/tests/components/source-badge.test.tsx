@@ -6,8 +6,8 @@ import {
   it,
 } from 'vitest'
 
-import { renderWithProviders } from '../../test/render-with-providers'
-import { SourceBadge } from '../source-badge'
+import { renderWithProviders } from '../test/render-with-providers'
+import { SourceBadge } from '@/components/source-badge'
 
 describe('SourceBadge', () => {
   it('renders a local source label', () => {
@@ -34,17 +34,14 @@ describe('SourceBadge', () => {
 
     const badge = screen.getByText('project')
     expect(badge).toBeInTheDocument()
-    // D-09: green color via CSS var (replaces hardcoded #22c55e)
     expect(badge.className).toContain('[var(--accent-green)]/10')
     expect(badge.className).toContain('text-[var(--accent-green)]')
-    // D-07: uppercase label (applied via Tailwind class)
     expect(badge.className).toContain('uppercase')
   })
 
   it('does not render pluginId sub-label for project variant', () => {
     renderWithProviders(<SourceBadge source="project" />)
 
-    // project variant should not show any secondary label
     expect(screen.queryByText(/@/)).not.toBeInTheDocument()
   })
 })

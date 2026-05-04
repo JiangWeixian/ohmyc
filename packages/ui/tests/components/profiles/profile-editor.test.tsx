@@ -8,15 +8,15 @@ import {
   vi,
 } from 'vitest'
 
-import { renderWithProviders } from '../../../test/render-with-providers'
-import { ProfileEditor } from '../profile-editor'
+import { renderWithProviders } from '../../test/render-with-providers'
+import { ProfileEditor } from '@/components/profiles/profile-editor'
 
 import type { Profile } from '@ohmyc/shared'
 
 const mockCreateMutate = vi.fn()
 const mockUpdateMutate = vi.fn()
 
-vi.mock('../../../hooks/use-profiles', () => ({
+vi.mock('@/hooks/use-profiles', () => ({
   useCreateProfile: () => ({
     mutate: mockCreateMutate,
     isPending: false,
@@ -27,7 +27,7 @@ vi.mock('../../../hooks/use-profiles', () => ({
   }),
 }))
 
-vi.mock('../../../hooks/use-store', () => ({
+vi.mock('@/hooks/use-store', () => ({
   useStoreAgents: () => ({
     data: [{ id: 'agent-a', frontmatter: { description: 'Test agent' } }],
     isLoading: false,
@@ -49,7 +49,7 @@ vi.mock('../../../hooks/use-store', () => ({
   }),
 }))
 
-vi.mock('../../../hooks/use-plugins', () => ({
+vi.mock('@/hooks/use-plugins', () => ({
   usePlugins: () => ({
     data: [
       { id: 'plugin-x', name: 'Plugin X', marketplace: 'npm' },
@@ -58,7 +58,7 @@ vi.mock('../../../hooks/use-plugins', () => ({
   }),
 }))
 
-vi.mock('../../json-editor', () => ({
+vi.mock('@/components/json-editor', () => ({
   JsonEditor: ({ value, onChange, placeholder }: { value: string; onChange: (v: string) => void; placeholder?: string }) => (
     <div data-testid="json-editor">
       <textarea

@@ -9,12 +9,10 @@ import {
   vi,
 } from 'vitest'
 
-import { renderWithProviders } from '../../../test/render-with-providers'
-import { StoreComponentEditor } from '../store-component-editor'
+import { renderWithProviders } from '../../test/render-with-providers'
+import { StoreComponentEditor } from '@/components/store/store-component-editor'
 
-// CodeMirror needs heavy DOM APIs; stub MarkdownEditor with a textarea so we
-// can drive it via userEvent in jsdom.
-vi.mock('../../markdown-editor', () => ({
+vi.mock('@/components/markdown-editor', () => ({
   MarkdownEditor: ({ value, onChange }: { value: string; onChange: (v: string) => void }) => (
     <textarea
       data-testid="markdown-editor"
@@ -33,7 +31,7 @@ const existingAgent = {
   raw: '---\nname: existing-agent\ndescription: Existing description\n---\n\nExisting content',
 }
 
-vi.mock('../../../hooks/use-store', () => ({
+vi.mock('@/hooks/use-store', () => ({
   useStoreAgent: (name: string | null) => ({
     data: name === 'existing-agent' ? existingAgent : null,
   }),
@@ -157,7 +155,6 @@ describe('StoreComponentEditor (markdown-doc mode)', () => {
 
     const editor = screen.getByTestId('markdown-editor') as HTMLTextAreaElement
     await user.clear(editor)
-    // Missing closing fence
     await user.type(editor, '---\nname: broken\n\nbody without close')
 
     expect(screen.getByText(/frontmatter invalid/)).toBeInTheDocument()

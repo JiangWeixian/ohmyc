@@ -9,13 +9,13 @@ import {
   vi,
 } from 'vitest'
 
-import { renderWithProviders } from '../../../test/render-with-providers'
-import { ImportComponentsDialog } from '../import-components-dialog'
+import { renderWithProviders } from '../../test/render-with-providers'
+import { ImportComponentsDialog } from '@/components/store/import-components-dialog'
 
 const previewImport = vi.fn()
 const applyImport = vi.fn()
 
-vi.mock('../../../hooks/use-store', () => ({
+vi.mock('@/hooks/use-store', () => ({
   useStoreImport: () => ({ previewImport, applyImport, isPending: false }),
 }))
 
