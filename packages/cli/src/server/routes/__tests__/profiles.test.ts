@@ -26,7 +26,7 @@ describe('profiles routes', () => {
     tmpDir = mkdtempSync(path.join(os.tmpdir(), 'profiles-route-test-'))
     writeFileSync(path.join(tmpDir, 'settings.json'), JSON.stringify({}))
     app = Fastify()
-    await app.register(profilesRoutes, { baseDir: tmpDir, claudeSettingsPath: path.join(tmpDir, 'settings.json') })
+    await app.register(profilesRoutes, { baseDir: tmpDir, claudeSettingsPath: path.join(tmpDir, 'settings.json'), pluginsDir: path.join(tmpDir, 'claude-plugins') })
     await app.ready()
   })
 

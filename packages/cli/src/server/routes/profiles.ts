@@ -7,10 +7,11 @@ import type { FastifyPluginAsync } from 'fastify'
 interface ProfilesRoutesOptions {
   baseDir: string
   claudeSettingsPath: string
+  pluginsDir: string
 }
 
 export const profilesRoutes: FastifyPluginAsync<ProfilesRoutesOptions> = async (fastify, options) => {
-  const service = new ProfileService(options.baseDir, options.claudeSettingsPath)
+  const service = new ProfileService(options.baseDir, options.claudeSettingsPath, options.pluginsDir)
 
   fastify.get('/api/profiles', async () => {
     return service.list()

@@ -27,7 +27,11 @@ describe('ProfileService', () => {
 
   beforeEach(() => {
     tmpDir = mkdtempSync(path.join(os.tmpdir(), 'profile-test-'))
-    service = new ProfileService(tmpDir, path.join(tmpDir, 'settings.json'))
+    service = new ProfileService(
+      tmpDir,
+      path.join(tmpDir, 'settings.json'),
+      path.join(tmpDir, 'claude-plugins'),
+    )
   })
 
   afterEach(() => {
@@ -196,6 +200,68 @@ describe('ProfileService', () => {
       expect(existsSync(path.join(profileDir, '.lsp.json'))).toBe(true)
     })
 
+    it('writes ohmyc-profiles marketplace.json listing all profiles', async () => {
+      await service.create({ name: 'alpha', description: 'first' })
+      await service.create({ name: 'beta', description: 'second' })
+      await service.activate('alpha')
+
+      const marketplacePath = path.join(tmpDir, '.claude-plugin', 'marketplace.json')
+      expect(existsSync(marketplacePath)).toBe(true)
+      const marketplace = JSON.parse(readFileSync(marketplacePath, 'utf8'))
+      expect(marketplace.name).toBe('ohmyc-profiles')
+      expect(marketplace.plugins).toHaveLength(2)
+      const names = marketplace.plugins.map((p: any) => p.name).toSorted()
+      expect(names).toEqual(['profile-alpha', 'profile-beta'])
+      const alpha = marketplace.plugins.find((p: any) => p.name === 'profile-alpha')
+      expect(alpha.source).toBe('./profiles/alpha')
+    })
+
+    it('registers profile in installed_plugins.json with qualified id', async () => {
+      await service.create({ name: 'test' })
+      await service.activate('test')
+
+      const installedPath = path.join(tmpDir, 'claude-plugins', 'installed_plugins.json')
+      expect(existsSync(installedPath)).toBe(true)
+      const installed = JSON.parse(readFileSync(installedPath, 'utf8'))
+      const id = 'profile-test@ohmyc-profiles'
+      expect(installed.plugins[id]).toBeDefined()
+      expect(installed.plugins[id]).toHaveLength(1)
+      expect(installed.plugins[id][0].installPath).toBe(path.join(tmpDir, 'profiles', 'test'))
+      expect(installed.plugins[id][0].scope).toBe('user')
+    })
+
+    it('enables qualified plugin id in claude settings.json', async () => {
+      await service.create({ name: 'test' })
+      await service.activate('test')
+
+      const settings = JSON.parse(readFileSync(path.join(tmpDir, 'settings.json'), 'utf8'))
+      expect(settings.enabledPlugins['profile-test@ohmyc-profiles']).toBe(true)
+      // Old unqualified id should not be used
+      expect(settings.enabledPlugins['profile-test']).toBeUndefined()
+    })
+
+    it('registers ohmyc-profiles in known_marketplaces.json pointing at baseDir', async () => {
+      await service.create({ name: 'test' })
+      await service.activate('test')
+
+      const knownPath = path.join(tmpDir, 'claude-plugins', 'known_marketplaces.json')
+      expect(existsSync(knownPath)).toBe(true)
+      const known = JSON.parse(readFileSync(knownPath, 'utf8'))
+      expect(known['ohmyc-profiles']).toBeDefined()
+      expect(known['ohmyc-profiles'].source.source).toBe('directory')
+      expect(known['ohmyc-profiles'].source.path).toBe(tmpDir)
+      expect(known['ohmyc-profiles'].installLocation).toBe(tmpDir)
+    })
+
+    it('deactivate removes profile from installed_plugins.json', async () => {
+      await service.create({ name: 'test' })
+      await service.activate('test')
+      await service.deactivate()
+
+      const installed = JSON.parse(readFileSync(path.join(tmpDir, 'claude-plugins', 'installed_plugins.json'), 'utf8'))
+      expect(installed.plugins['profile-test@ohmyc-profiles']).toBeUndefined()
+    })
+
     it('backs up and merges settings.json', async () => {
       await service.create({
         name: 'test',
@@ -247,7 +313,7 @@ describe('ProfileService', () => {
       const claudeSettingsPath = path.join(claudeDir, 'settings.json')
       writeFileSync(claudeSettingsPath, JSON.stringify({ model: 'opus' }))
 
-      const isolated = new ProfileService(tmpDir, claudeSettingsPath)
+      const isolated = new ProfileService(tmpDir, claudeSettingsPath, path.join(tmpDir, 'claude-plugins'))
       // store/agents already populated by outer beforeEach; recreate empty cui settings
       writeFileSync(path.join(tmpDir, 'settings.json'), JSON.stringify({ model: 'unchanged-cui' }))
 
