@@ -2,7 +2,7 @@
 
 ## Overview
 
-ClaudeUI is a local management tool for Claude Code extensions and configuration. It revolves around two core concepts: the **Store** (component repository) and **Profile** (environment configuration). Users can import components into a local store, compose reusable profiles from them, and safely switch between environments.
+OhMyC is a local management tool for Claude Code extensions and configuration. It revolves around two core concepts: the **Store** (component repository) and **Profile** (environment configuration). Users can import components into a local store, compose reusable profiles from them, and safely switch between environments.
 
 ## Agent Home
 
@@ -20,7 +20,7 @@ Agent Home is the root directory where Claude Code stores all configuration, plu
 ├── skills/                # Skill definitions (directories with SKILL.md)
 ├── commands/              # Command definitions (.md files)
 ├── plugins/               # Installed plugins
-├── store/                 # Component store (managed by ClaudeUI)
+├── store/                 # Component store (managed by OhMyC)
 │   ├── agents/            # Store agents
 │   ├── skills/            # Store skills
 │   ├── commands/          # Store commands

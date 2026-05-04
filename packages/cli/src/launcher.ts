@@ -8,6 +8,8 @@ export interface LaunchOptions {
   cwd?: string
 }
 
+let closing = false
+
 export async function launchApp(options: LaunchOptions = {}): Promise<void> {
   const serverOptions: StartServerOptions = {
     defaultPort: options.defaultPort ?? 3000,
@@ -15,25 +17,45 @@ export async function launchApp(options: LaunchOptions = {}): Promise<void> {
     cwd: options.cwd,
   }
 
-  console.log('Starting ClaudeUI server...')
+  console.log('Starting OhMyC server...')
 
+  let result
   try {
-    const result = await startServer(serverOptions)
-
-    const url = `http://localhost:${result.port}`
-
-    if (result.fallback) {
-      console.log(`ClaudeUI is ready at ${url} (port ${serverOptions.defaultPort} was busy, using ${result.port})`)
-    } else {
-      console.log(`ClaudeUI is ready at ${url}`)
-    }
-
-    if (!options.apiOnly) {
-      console.log('Opening browser...')
-      await open(url)
-    }
+    result = await startServer(serverOptions)
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error)
-    throw new Error(`Failed to start ClaudeUI: ${message}`)
+    throw new Error(`Failed to start OhMyC: ${message}`)
+  }
+
+  const url = `http://localhost:${result.port}`
+
+  if (result.fallback) {
+    console.log(`OhMyC is ready at ${url} (port ${serverOptions.defaultPort} was busy, using ${result.port})`)
+  } else {
+    console.log(`OhMyC is ready at ${url}`)
+  }
+
+  async function shutdown() {
+    if (closing) {
+      return
+    }
+    closing = true
+    console.log('\nShutting down...')
+    try {
+      await result.close()
+      console.log('Server closed.')
+    } catch (error) {
+      console.error('Error closing server:', error)
+    }
+    // eslint-disable-next-line unicorn/no-process-exit
+    process.exit(0)
+  }
+
+  process.on('SIGINT', shutdown)
+  process.on('SIGTERM', shutdown)
+
+  if (!options.apiOnly) {
+    console.log('Opening browser...')
+    await open(url)
   }
 }

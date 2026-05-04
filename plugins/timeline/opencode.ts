@@ -1,4 +1,4 @@
-// OpenCode plugin for ClaudeUI Timeline — captures session lifecycle
+// OpenCode plugin for OhMyC Timeline — captures session lifecycle
 // events (turns, tokens, tools, skills) and writes them to a shared
 // SQLite database at ~/.cui/timeline.db.
 import { appendFileSync, mkdirSync } from 'node:fs'

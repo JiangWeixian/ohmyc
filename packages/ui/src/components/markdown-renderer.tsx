@@ -10,7 +10,7 @@ interface MarkdownRendererProperties {
 
 export function MarkdownRenderer({ content, className }: MarkdownRendererProperties) {
   return (
-    <div className={cn('prose prose-claudeui mx-auto', className)}>
+    <div className={cn('prose prose-ohmyc mx-auto', className)}>
       <ReactMarkdown remarkPlugins={[remarkGfm]}>{content}</ReactMarkdown>
     </div>
   )

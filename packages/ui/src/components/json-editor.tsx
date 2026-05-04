@@ -10,7 +10,7 @@ import {
 import { basicSetup } from 'codemirror'
 import { useEffect, useRef } from 'react'
 
-import { claudeUIContainerTheme } from './codemirror-container-theme'
+import { ohmycContainerTheme } from './codemirror-container-theme'
 
 interface JsonEditorProperties {
   value: string
@@ -61,7 +61,7 @@ export function JsonEditor({ value, onChange, placeholder }: JsonEditorPropertie
         keymap.of(defaultKeymap),
         json(),
         oneDark,
-        claudeUIContainerTheme,
+        ohmycContainerTheme,
         jsonEditorOverlay,
         EditorView.lineWrapping,
         ...(placeholder ? [cmPlaceholder(placeholder)] : []),

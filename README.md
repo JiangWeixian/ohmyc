@@ -1,4 +1,4 @@
-# claudeui
+# ohmyc
 
 A CLI tool with a built-in WebUI for visualizing and editing `.claude` configuration files.
 
@@ -20,13 +20,13 @@ A CLI tool with a built-in WebUI for visualizing and editing `.claude` configura
 ## Installation
 
 ```bash
-npm install -g claudeui
+npm install -g ohmyc
 ```
 
 ## Usage
 
 ```bash
-claudeui
+ohmyc
 ```
 
 This starts a local web server and opens the UI in your browser, where you can browse and edit your `.claude` configuration.

@@ -631,7 +631,7 @@ Replace the `activate` and `deactivate` methods in profileService.ts:
     await writeFile(path.join(pluginDir, 'plugin.json'), JSON.stringify({
       name: `profile-${name}`,
       version: '1.0.0',
-      description: `ClaudeUI profile: ${profile.description || name}`,
+      description: `OhMyC profile: ${profile.description || name}`,
     }, null, 2), 'utf-8');
 
     if (profile.hooks) {

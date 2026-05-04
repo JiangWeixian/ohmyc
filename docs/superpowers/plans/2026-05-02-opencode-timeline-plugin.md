@@ -793,7 +793,7 @@ git commit -m "feat(timeline): tag Claude sessions with agent_name=claude"
 - [ ] **Step 1: Create symlink**
 
 ```bash
-cd /Volumes/ORICO/Users/jiangwei/projects/claudeui
+cd /Volumes/ORICO/Users/jiangwei/projects/ohmyc
 ln -s ../../plugins/timeline/opencode.ts .opencode/plugins/timeline.ts
 ```
 
@@ -834,9 +834,9 @@ git commit -m "chore(timeline): register OpenCode plugin"
 Replace `plugins/timeline/README.md` with:
 
 ```markdown
-# ClaudeUI Timeline Plugin
+# OhMyC Timeline Plugin
 
-Collects session data (turns, tokens, tools, skills) from both **Claude Code** and **OpenCode** agents and ingests it into the ClaudeUI Timeline dashboard.
+Collects session data (turns, tokens, tools, skills) from both **Claude Code** and **OpenCode** agents and ingests it into the OhMyC Timeline dashboard.
 
 ## Supported Agents
 

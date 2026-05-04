@@ -1187,7 +1187,7 @@ const PAGE = {
       code: `const cli = cac('cu')
 
 cli
-  .command('start', 'Start the ClaudeUI server and open the browser')
+  .command('start', 'Start the OhMyC server and open the browser')
   .option('--port <port>', 'Port to listen on', { default: 3000 })
   .option('--api-only', 'Start API server only, skip static file serving')
   .option('--cwd <cwd>', 'Working directory for project discovery')
@@ -1228,7 +1228,7 @@ cli
     {
       kind: "concept",
       title: "ConfigLocator is the filesystem constitution",
-      body: "One class, every path. `ConfigLocator` knows where agents live, where skills go, where settings.json sits, and whether a project-scoped `.claude/` directory exists in the current working directory. The key insight: reads come from `~/.claude/` (the agent's home), writes go to `~/.cui/` (our managed dir). That split exists because ClaudeUI manages its own data without polluting the Claude Code directory. If `AGENT_HOME` or `CUI_HOME` env vars are set, they override the defaults \u2014 which is how tests swap directories."
+      body: "One class, every path. `ConfigLocator` knows where agents live, where skills go, where settings.json sits, and whether a project-scoped `.claude/` directory exists in the current working directory. The key insight: reads come from `~/.claude/` (the agent's home), writes go to `~/.cui/` (our managed dir). That split exists because OhMyC manages its own data without polluting the Claude Code directory. If `AGENT_HOME` or `CUI_HOME` env vars are set, they override the defaults \u2014 which is how tests swap directories."
     },
     {
       kind: "takeaway",

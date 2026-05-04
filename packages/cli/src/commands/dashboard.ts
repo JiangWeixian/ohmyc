@@ -103,9 +103,9 @@ export async function runInstall(): Promise<void> {
     scope: 'user',
   }
 
-  registry.plugins['claudeui-timeline'] = [installRecord]
+  registry.plugins['ohmyc-timeline'] = [installRecord]
   writeInstalledPlugins(registry)
-  console.log('Plugin claudeui-timeline registered.')
+  console.log('Plugin ohmyc-timeline registered.')
 
   // Open database and optionally backfill
   const db = openDatabase()
@@ -135,8 +135,8 @@ export async function runInstall(): Promise<void> {
 
 export async function runUninstall(): Promise<void> {
   const registry = readInstalledPlugins()
-  if (registry.plugins['claudeui-timeline']) {
-    delete registry.plugins['claudeui-timeline']
+  if (registry.plugins['ohmyc-timeline']) {
+    delete registry.plugins['ohmyc-timeline']
     writeInstalledPlugins(registry)
   }
   console.log('Plugin removed. Database preserved — run `cu dashboard --install` to re-register.')
@@ -232,9 +232,9 @@ export async function runDoctor(): Promise<void> {
 
   // 1. Check plugin installed
   const registry = readInstalledPlugins()
-  const pluginInstalled = !!registry.plugins['claudeui-timeline']
+  const pluginInstalled = !!registry.plugins['ohmyc-timeline']
   if (!pluginInstalled) {
-    issues.push('Plugin claudeui-timeline is not installed.')
+    issues.push('Plugin ohmyc-timeline is not installed.')
   }
 
   // 2. Check jq available

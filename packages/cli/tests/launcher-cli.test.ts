@@ -130,7 +130,7 @@ describe('CLI launcher', () => {
       startServerMock.mockRejectedValue(new Error('Port 3000 is in use'))
 
       await expect(launchApp({ defaultPort: 3000 })).rejects.toThrow(
-        /failed to start claudeui/i,
+        /failed to start ohmyc/i,
       )
 
       // Browser opener should NOT have been called

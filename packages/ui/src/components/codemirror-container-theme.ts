@@ -3,12 +3,12 @@ import { EditorView } from '@codemirror/view'
 /**
  * Shared CodeMirror theme extension that overrides editor chrome
  * (background, borders, selection, tooltips, panels, scrollbars, etc.)
- * to match the ClaudeUI monochrome dark palette.
+ * to match the OhMyC monochrome dark palette.
  *
  * Place this AFTER `oneDark` in the extensions array so monochrome
  * chrome wins while syntax token colors stay colorful.
  */
-export const claudeUIContainerTheme = EditorView.theme({
+export const ohmycContainerTheme = EditorView.theme({
   // Remove default focus outline; editors handle their own border changes
   '&.cm-focused': {
     outline: 'none',
