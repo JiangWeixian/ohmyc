@@ -15,7 +15,7 @@
     "start": "node dist/index.mjs",
     "test": "vitest run",
     "test:watch": "vitest",
-    "prepublishOnly": "pnpm build:full && node scripts/prepublish.mjs"
+    "prepublishOnly": "pnpm build:full"
   },
   "publishConfig": {
     "access": "public",
