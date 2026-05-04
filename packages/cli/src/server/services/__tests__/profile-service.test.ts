@@ -240,6 +240,35 @@ describe('ProfileService', () => {
       expect(settings.model).toBe('sonnet')
     })
 
+    it('writes to claudeSettingsPath, not baseDir/settings.json', async () => {
+      // Use a separate claude settings path to prove routing
+      const claudeDir = path.join(tmpDir, 'claude')
+      mkdirSync(claudeDir, { recursive: true })
+      const claudeSettingsPath = path.join(claudeDir, 'settings.json')
+      writeFileSync(claudeSettingsPath, JSON.stringify({ model: 'opus' }))
+
+      const isolated = new ProfileService(tmpDir, claudeSettingsPath)
+      // store/agents already populated by outer beforeEach; recreate empty cui settings
+      writeFileSync(path.join(tmpDir, 'settings.json'), JSON.stringify({ model: 'unchanged-cui' }))
+
+      await isolated.create({ name: 'test', plugins: ['gitlab@market'], settings: { effort: 'high' } })
+      await isolated.activate('test')
+
+      // claude settings.json got merged
+      const claudeSettings = JSON.parse(readFileSync(claudeSettingsPath, 'utf8'))
+      expect(claudeSettings.model).toBe('opus')
+      expect(claudeSettings.effort).toBe('high')
+      expect(claudeSettings.enabledPlugins['gitlab@market']).toBe(true)
+
+      // cui settings.json was NOT touched
+      const cuiSettings = JSON.parse(readFileSync(path.join(tmpDir, 'settings.json'), 'utf8'))
+      expect(cuiSettings).toEqual({ model: 'unchanged-cui' })
+
+      // Backup snapshot reflects pre-activation claude state
+      const backup = JSON.parse(readFileSync(path.join(tmpDir, 'settings.backup.test.json'), 'utf8'))
+      expect(backup).toEqual({ model: 'opus' })
+    })
+
     it('uses per-profile backup naming when switching', async () => {
       await service.create({ name: 'first', settings: { effort: 'low' } })
       await service.create({ name: 'second', settings: { effort: 'high' } })
