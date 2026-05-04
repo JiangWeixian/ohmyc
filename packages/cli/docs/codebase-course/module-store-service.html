@@ -1,0 +1,1190 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Store Service — @ohmyc/cli</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+<style>
+/* _base.css — shared across essay and index pages.
+   Design tokens, resets, typography, hero, prereq chips, container, footer, badges. */
+
+:root {
+  --bg: #07080a;
+  --surface: #101111;
+  --surface-2: #161718;
+  --border: hsl(195, 5%, 15%);
+  --border-soft: hsl(195, 5%, 12%);
+  --text: #f9f9f9;
+  --text-dim: #9c9c9d;
+  --text-faint: #6b6b6c;
+  --accent: #FF6363;
+  --accent-soft: rgba(255, 99, 99, 0.12);
+  --code-bg: #0c0d0f;
+  --highlight: rgba(255, 99, 99, 0.10);
+  --shadow-card:
+    0 1px 0 rgba(255,255,255,0.04) inset,
+    0 0 0 1px rgba(255,255,255,0.02),
+    0 8px 24px rgba(0,0,0,0.35),
+    0 2px 6px rgba(0,0,0,0.25);
+  --shadow-pill:
+    0 1px 0 rgba(255,255,255,0.10) inset,
+    0 4px 12px rgba(255, 99, 99, 0.25),
+    0 2px 4px rgba(0,0,0,0.4);
+  --font-primary: 'Inter', -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+  --font-mono: 'Geist Mono', ui-monospace, SFMono-Regular, Menlo, Monaco, monospace;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+*, *::before, *::after { box-sizing: border-box; }
+
+html, body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font-primary);
+  font-feature-settings: 'calt', 'kern', 'liga', 'ss03';
+  letter-spacing: 0.2px;
+  font-weight: 400;
+  line-height: 1.65;
+  font-size: 16px;
+  -webkit-font-smoothing: antialiased;
+}
+
+a { color: var(--accent); text-decoration: none; }
+code, pre { font-family: var(--font-mono); }
+
+/* Page width */
+.container {
+  max-width: 760px;
+  margin: 0 auto;
+  padding: 80px 32px 160px;
+}
+
+/* Topbar (back link) */
+.topbar {
+  position: absolute;
+  top: 24px;
+  left: 32px;
+}
+.back-link {
+  font-size: 13px;
+  color: var(--text-faint);
+  border-bottom: 1px solid transparent;
+}
+.back-link:hover { color: var(--text-dim); }
+
+/* HERO */
+.hero { margin-bottom: 56px; }
+.eyebrow {
+  color: var(--accent);
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 1.4px;
+  margin-bottom: 16px;
+}
+h1 {
+  font-size: 44px;
+  font-weight: 600;
+  line-height: 1.15;
+  letter-spacing: -0.5px;
+  margin-bottom: 20px;
+}
+h2 {
+  font-size: 26px;
+  font-weight: 600;
+  line-height: 1.25;
+  letter-spacing: -0.2px;
+  margin-bottom: 16px;
+}
+h3 {
+  font-size: 18px;
+  font-weight: 600;
+  line-height: 1.3;
+  margin-bottom: 12px;
+}
+h4 {
+  font-size: 15px;
+  font-weight: 600;
+  line-height: 1.3;
+  margin-bottom: 10px;
+}
+.learning-promise,
+.promise {
+  font-size: 19px;
+  color: var(--text-dim);
+  line-height: 1.55;
+  margin-bottom: 28px;
+  max-width: 640px;
+}
+.prereqs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  list-style: none;
+  padding: 0;
+}
+.prereqs li,
+.chip {
+  display: inline-flex;
+  align-items: center;
+  padding: 6px 12px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 86px;
+  font-size: 12px;
+  color: var(--text-dim);
+  font-weight: 500;
+}
+.prereqs li::before,
+.chip::before {
+  content: '';
+  width: 5px;
+  height: 5px;
+  background: var(--text-faint);
+  border-radius: 50%;
+  margin-right: 8px;
+}
+
+/* Badges */
+.badges { display: flex; gap: 8px; }
+.badge {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text);
+  background: var(--surface-2);
+  padding: 3px 10px;
+  border-radius: 6px;
+  border: 1px solid var(--border-soft);
+}
+
+/* Footer / next */
+.page-footer,
+.footer {
+  margin-top: 72px;
+  padding-top: 32px;
+  border-top: 1px solid var(--border-soft);
+  color: var(--text-faint);
+  font-size: 13px;
+}
+.page-footer { text-align: left; }
+.footer { text-align: center; }
+.next-link {
+  display: inline-block;
+  font-size: 15px;
+  font-weight: 500;
+  color: var(--accent);
+  margin-bottom: 8px;
+}
+.recap {
+  color: var(--text-faint);
+  font-size: 13.5px;
+  line-height: 1.55;
+  max-width: 540px;
+}
+
+/* _essay.css — essay-page-only styles.
+   Anchor diagram, unit renderers, code-walk layouts, zoom overlay, responsive collapse. */
+
+.wide {
+  width: min(1100px, calc(100vw - 64px));
+  position: relative;
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+/* ANCHOR DIAGRAM (page-level Mermaid map) */
+.anchor {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 32px;
+  margin-bottom: 64px;
+  box-shadow: var(--shadow-card);
+}
+.anchor-label {
+  font-size: 11px;
+  color: var(--text-faint);
+  text-transform: uppercase;
+  letter-spacing: 1.2px;
+  font-weight: 600;
+  margin-bottom: 16px;
+}
+.mermaid { display: flex; justify-content: center; }
+.mermaid svg { max-width: 100%; height: auto; }
+
+/* Mermaid active-node accent (applied by _essay.js) */
+.mermaid g.node.active rect,
+.mermaid g.node.active polygon,
+.mermaid g.node.active circle {
+  fill: #FF6363 !important;
+  stroke: #FF6363 !important;
+  transition: fill 0.25s ease, stroke 0.25s ease;
+}
+.mermaid g.node.active text,
+.mermaid g.node.active text tspan {
+  fill: #07080a !important;
+  font-weight: 600;
+}
+.mermaid g.node { cursor: pointer; transition: opacity 0.2s ease; }
+.mermaid g.node:hover { opacity: 0.85; }
+
+/* UNIT BLOCKS */
+.unit { margin-bottom: 56px; }
+.unit + .unit { margin-top: 0; }
+.unit-kind {
+  display: inline-block;
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 1.5px;
+  color: var(--text-faint);
+  margin-bottom: 12px;
+  padding: 3px 8px;
+  background: var(--surface);
+  border-radius: 4px;
+  border: 1px solid var(--border-soft);
+}
+.unit p {
+  color: var(--text-dim);
+  margin-bottom: 14px;
+  font-size: 16px;
+}
+.unit p strong { color: var(--text); font-weight: 600; }
+.unit a {
+  color: var(--accent);
+  text-decoration: none;
+  border-bottom: 1px solid var(--accent-soft);
+}
+
+/* CODE-WALK shared shell */
+.codewalk {
+  background: var(--code-bg);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  overflow: hidden;
+  margin: 20px 0 16px;
+  box-shadow: var(--shadow-card);
+}
+.codewalk-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 16px;
+  background: var(--surface-2);
+  border-bottom: 1px solid var(--border);
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--text-faint);
+}
+.codewalk pre,
+pre.code-block {
+  margin: 0;
+  padding: 18px 0;
+  font-family: var(--font-mono);
+  font-size: 13.5px;
+  line-height: 1.7;
+  overflow-x: auto;
+}
+.codewalk .line,
+pre.code-block .line {
+  display: block;
+  padding: 0 20px;
+  color: var(--text);
+  white-space: pre;
+}
+.codewalk .line.hl,
+.codewalk .line.line-hl,
+pre.code-block .line.line-hl {
+  background: var(--highlight);
+  border-left: 2px solid var(--accent);
+  padding-left: 18px;
+}
+.codewalk .ln {
+  display: inline-block;
+  width: 28px;
+  color: var(--text-faint);
+  user-select: none;
+}
+.explain {
+  color: var(--text-dim);
+  font-size: 15px;
+  line-height: 1.6;
+  padding-left: 16px;
+  border-left: 2px solid var(--border);
+}
+
+/* code-walk LAYOUTS */
+.layout-stacked { /* default flow, no extra rules */ }
+
+.layout-split,
+.split {
+  display: grid;
+  grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr);
+  gap: 20px;
+  align-items: start;
+  margin: 20px 0 16px;
+}
+.layout-split .codewalk,
+.split .codewalk { margin: 0; position: sticky; top: 24px; }
+.layout-split .side,
+.split .side {
+  color: var(--text-dim);
+  font-size: 15.5px;
+  line-height: 1.65;
+  padding-top: 6px;
+}
+.layout-split .side h3,
+.split .side h3 {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text);
+  margin: 18px 0 6px;
+  letter-spacing: 0.1px;
+}
+.layout-split .side h3:first-child,
+.split .side h3:first-child { margin-top: 0; }
+.layout-split .side .ref,
+.split .side .ref {
+  display: inline-block;
+  font-family: var(--font-mono);
+  font-size: 11.5px;
+  color: var(--accent);
+  background: var(--accent-soft);
+  padding: 1px 6px;
+  border-radius: 4px;
+  margin-right: 6px;
+}
+
+.layout-stepped,
+.stepped {
+  display: grid;
+  grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr);
+  gap: 24px;
+  align-items: start;
+  margin: 24px 0;
+}
+.layout-stepped .codewalk,
+.stepped .codewalk { margin: 0; position: sticky; top: 32px; }
+.steps {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding-top: 6px;
+}
+.step {
+  border: 1px solid var(--border);
+  background: var(--surface);
+  border-radius: 12px;
+  padding: 16px 18px;
+  cursor: pointer;
+  transition: border-color 0.2s ease, background 0.2s ease, transform 0.2s ease;
+  color: var(--text-dim);
+  font-size: 15px;
+  line-height: 1.55;
+  position: relative;
+}
+.step:hover { border-color: var(--text-faint); }
+.step.active {
+  border-color: var(--accent);
+  background: linear-gradient(180deg, rgba(255,99,99,0.08), rgba(255,99,99,0.02));
+  color: var(--text);
+  box-shadow: 0 4px 16px rgba(255, 99, 99, 0.12);
+}
+.step-num {
+  display: inline-block;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--text-faint);
+  margin-right: 8px;
+  font-weight: 600;
+}
+.step.active .step-num { color: var(--accent); }
+.step .lines {
+  display: inline-block;
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  color: var(--text-faint);
+  background: var(--code-bg);
+  padding: 1px 6px;
+  border-radius: 3px;
+  margin-left: 6px;
+  border: 1px solid var(--border-soft);
+}
+.step + .step { margin-top: 0; }
+.layout-stepped .steps::after,
+.stepped .steps::after {
+  content: '';
+  height: 40vh;
+  display: block;
+}
+.layout-stepped .steps::before,
+.stepped .steps::before {
+  content: '';
+  height: 10vh;
+  display: block;
+}
+
+/* GUESS-FIRST */
+.guess,
+.unit-guess-first {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 24px 28px;
+  margin: 16px 0;
+  box-shadow: var(--shadow-card);
+}
+.guess summary,
+.unit-guess-first summary {
+  cursor: pointer;
+  list-style: none;
+  font-weight: 500;
+  font-size: 17px;
+  color: var(--text);
+}
+.guess summary::-webkit-details-marker,
+.unit-guess-first summary::-webkit-details-marker { display: none; }
+.guess summary::before,
+.unit-guess-first summary::before {
+  content: '\1F914  ';
+  margin-right: 4px;
+}
+.guess[open] summary,
+.unit-guess-first[open] summary {
+  margin-bottom: 18px;
+  color: var(--text-dim);
+  font-weight: 400;
+}
+.guess[open] summary::before,
+.unit-guess-first[open] summary::before { content: '\1F4A1  '; }
+
+/* COMPARE */
+.compare {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  margin: 20px 0 16px;
+}
+.compare .col {
+  background: var(--code-bg);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  overflow: hidden;
+}
+.compare .col-label {
+  padding: 10px 16px;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  border-bottom: 1px solid var(--border);
+  background: var(--surface-2);
+}
+.compare .col.bad .col-label { color: #ff8a8a; }
+.compare .col.good .col-label { color: #8aff9c; }
+.compare pre {
+  margin: 0;
+  padding: 16px 18px;
+  font-family: var(--font-mono);
+  font-size: 12.5px;
+  line-height: 1.65;
+  overflow-x: auto;
+  color: var(--text);
+}
+.lesson {
+  color: var(--text);
+  font-size: 16px;
+  padding: 14px 18px;
+  background: var(--accent-soft);
+  border-left: 2px solid var(--accent);
+  border-radius: 4px;
+  margin-top: 8px;
+}
+
+/* SURPRISE */
+.surprise,
+.unit-surprise {
+  border: 1px solid var(--accent);
+  background: linear-gradient(180deg, rgba(255,99,99,0.06), rgba(255,99,99,0.02));
+  border-radius: 16px;
+  padding: 28px 32px;
+  margin: 16px 0;
+  box-shadow: 0 8px 32px rgba(255, 99, 99, 0.08);
+}
+.surprise .unit-kind,
+.unit-surprise .unit-kind {
+  background: var(--accent);
+  color: var(--bg);
+  border: none;
+}
+.surprise h2,
+.unit-surprise h2 { color: var(--text); }
+.surprise p,
+.unit-surprise p { color: var(--text); font-size: 17px; }
+
+/* TAKEAWAY */
+.takeaway,
+.unit-takeaway {
+  margin-top: 80px;
+  padding: 32px 36px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  box-shadow: var(--shadow-card);
+}
+.takeaway .unit-kind,
+.unit-takeaway .unit-kind {
+  background: var(--accent-soft);
+  color: var(--accent);
+  border: none;
+}
+.takeaway p,
+.unit-takeaway p {
+  font-size: 18px;
+  color: var(--text);
+  line-height: 1.55;
+}
+
+/* DIAGRAM unit (Role 2 — inline architecture/sequence figure) */
+.figure,
+.unit-diagram .figure {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 28px 32px 22px;
+  margin: 24px 0 14px;
+  box-shadow: var(--shadow-card);
+  position: relative;
+}
+.figure .figure-mermaid {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 14px;
+}
+.figure .figure-mermaid svg { max-width: 100%; height: auto; }
+.figure figcaption {
+  color: var(--text-dim);
+  font-size: 13.5px;
+  line-height: 1.55;
+  text-align: center;
+  border-top: 1px solid var(--border-soft);
+  padding-top: 14px;
+  font-style: italic;
+}
+.figure figcaption strong { color: var(--text); font-style: normal; font-weight: 600; }
+
+.zoom-btn {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  color: var(--text-dim);
+  border-radius: 6px;
+  padding: 6px 10px;
+  font-family: var(--font-primary);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.4px;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: color 0.15s, border-color 0.15s, background 0.15s;
+  z-index: 2;
+}
+.zoom-btn:hover {
+  color: var(--text);
+  border-color: var(--accent);
+  background: var(--accent-soft);
+}
+
+/* ZOOM OVERLAY */
+.zoom-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(7, 8, 10, 0.92);
+  backdrop-filter: blur(8px);
+  z-index: 1000;
+  display: none;
+  cursor: grab;
+  overflow: hidden;
+}
+.zoom-overlay.open {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.zoom-overlay.dragging { cursor: grabbing; }
+.zoom-stage {
+  transform-origin: center center;
+  transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.zoom-overlay.dragging .zoom-stage { transition: none; }
+.zoom-stage svg,
+.zoom-svg-fix {
+  display: block;
+  max-width: none !important;
+  max-height: none !important;
+  width: auto;
+  height: auto;
+  shape-rendering: geometricPrecision;
+  text-rendering: geometricPrecision;
+}
+.zoom-controls {
+  position: fixed;
+  bottom: 24px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  gap: 8px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 86px;
+  padding: 6px;
+  box-shadow: var(--shadow-card);
+  z-index: 1001;
+}
+.zoom-controls button {
+  background: transparent;
+  border: none;
+  color: var(--text);
+  font-family: var(--font-mono);
+  font-size: 14px;
+  font-weight: 600;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.zoom-controls button:hover { background: var(--surface-2); }
+.zoom-controls .zoom-level {
+  color: var(--text-dim);
+  font-family: var(--font-mono);
+  font-size: 12px;
+  align-self: center;
+  padding: 0 10px;
+  min-width: 56px;
+  text-align: center;
+}
+
+/* Responsive: collapse split/stepped to stacked */
+@media (max-width: 880px) {
+  .wide { width: 100%; left: 0; transform: none; }
+  .layout-split,
+  .split,
+  .layout-stepped,
+  .stepped { grid-template-columns: 1fr; }
+  .layout-split .codewalk,
+  .split .codewalk,
+  .layout-stepped .codewalk,
+  .stepped .codewalk { position: static; }
+  .layout-stepped .steps::before,
+  .layout-stepped .steps::after,
+  .stepped .steps::before,
+  .stepped .steps::after { display: none; }
+}
+</style>
+</head>
+<body>
+<header class="topbar">
+  <a class="back-link" href="index.html">← Index</a>
+</header>
+
+<main class="container">
+  <section class="hero">
+    <div class="eyebrow">@ohmyc/cli</div>
+    <h1>Store Service</h1>
+    <p class="learning-promise">After reading, you'll understand how the import pipeline copies agents, skills, and commands from external sources into the store with provenance tracking.</p>
+    <ul class="prereqs"><li>File copy</li><li>untildify</li></ul>
+  </section>
+
+  <section class="anchor">
+    <div class="anchor-label">Anchor diagram</div>
+    <div class="mermaid"></div>
+  </section>
+
+  <section class="units"></section>
+
+  <footer class="page-footer">
+    <a class="next-link" href="module-plugin-resolver.html">Plugin Resolver →</a>
+    <p class="recap">StoreService imports external components with conflict detection and provenance tracking.</p>
+  </footer>
+</main>
+
+<div class="zoom-overlay" hidden>
+  <div class="zoom-stage"></div>
+  <div class="zoom-controls">
+    <button data-zoom-out>−</button>
+    <span class="zoom-level" data-zoom-level>100%</span>
+    <button data-zoom-reset>Reset</button>
+    <button data-zoom-in>+</button>
+    <button data-zoom-close>Close</button>
+  </div>
+</div>
+
+<script>
+/* _runtime.js — shared runtime helpers for essay AND index pages.
+   Mermaid init, render helper, markdown link parser, escape, line-highlighted code renderer. */
+
+mermaid.initialize({
+  startOnLoad: false,
+  theme: 'base',
+  themeVariables: {
+    background: '#101111',
+    primaryColor: '#161718',
+    primaryTextColor: '#f9f9f9',
+    primaryBorderColor: '#252829',
+    lineColor: '#9c9c9d',
+    secondaryColor: '#FF6363',
+    tertiaryColor: '#0c0d0f',
+    fontFamily: 'Inter, sans-serif',
+  },
+  flowchart: { curve: 'basis', padding: 20 },
+});
+
+async function renderMermaid(selector) {
+  const nodes = document.querySelectorAll(selector);
+  for (const node of nodes) {
+    const src = node.textContent.trim();
+    if (!src) continue;
+    const id = 'm' + Math.random().toString(36).slice(2);
+    const { svg } = await mermaid.render(id, src);
+    node.innerHTML = svg;
+  }
+}
+
+function escapeHtml(s) {
+  return String(s)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
+}
+
+function renderMarkdownLinks(text) {
+  // Minimal markdown: [label](href) -> <a href="href">label</a>.
+  // Caller is responsible for escaping non-link content if needed.
+  return String(text).replace(/\[([^\]]+)\]\(([^)]+)\)/g, (_, label, href) =>
+    `<a href="${escapeHtml(href)}">${escapeHtml(label)}</a>`);
+}
+
+function renderCode(code, highlightLines = []) {
+  const lines = String(code).split('\n');
+  const set = new Set(highlightLines);
+  const body = lines.map((line, i) => {
+    const n = i + 1;
+    const cls = set.has(n) ? 'line line-hl' : 'line';
+    const safe = escapeHtml(line);
+    return `<span class="${cls}" data-line="${n}">${safe || ' '}</span>`;
+  }).join('\n');
+  return `<pre class="code-block">${body}</pre>`;
+}
+
+/* _essay.js — essay page runtime.
+   renderUnit dispatcher, bootEssay, anchor-diagram scroll-link, stepped-walk highlight migration,
+   zoomable diagram overlay. Depends on helpers from _runtime.js. */
+
+function renderUnit(unit) {
+  switch (unit.kind) {
+    case 'concept':     return renderConcept(unit);
+    case 'code-walk':   return renderCodeWalk(unit);
+    case 'guess-first': return renderGuessFirst(unit);
+    case 'compare':     return renderCompare(unit);
+    case 'surprise':    return renderSurprise(unit);
+    case 'takeaway':    return renderTakeaway(unit);
+    case 'diagram':     return renderDiagram(unit);
+    default:
+      return `<p style="color:#ff8a8a">Unknown unit kind: ${escapeHtml(unit.kind)}</p>`;
+  }
+}
+
+function renderConcept(u) {
+  const title = u.title ? `<h2>${escapeHtml(u.title)}</h2>` : '';
+  const body = renderMarkdownLinks(escapeBodyParagraphs(u.body || ''));
+  return `<span class="unit-kind">concept</span>${title}${body}`;
+}
+
+function renderSurprise(u) {
+  const title = u.title ? `<h2>${escapeHtml(u.title)}</h2>` : '';
+  const body = renderMarkdownLinks(escapeBodyParagraphs(u.body || ''));
+  return `<span class="unit-kind">surprise</span>${title}${body}`;
+}
+
+function renderTakeaway(u) {
+  const title = u.title ? `<h2>${escapeHtml(u.title)}</h2>` : '';
+  const body = renderMarkdownLinks(escapeBodyParagraphs(u.body || ''));
+  return `<span class="unit-kind">takeaway</span>${title}${body}`;
+}
+
+function escapeBodyParagraphs(text) {
+  // Split body on blank lines into <p>; preserve markdown link tokens for renderMarkdownLinks.
+  return String(text)
+    .split(/\n{2,}/)
+    .map((p) => `<p>${escapeHtml(p).replace(/\n/g, '<br>')}</p>`)
+    .join('')
+    // Restore [label](href) tokens that escapeHtml has not damaged (brackets/parens are not escaped).
+    ;
+}
+
+function renderCodeWalk(u) {
+  const layout = u.layout || 'stacked';
+  const headLabel = u.file ? escapeHtml(u.file) : '';
+  const titleHtml = u.title ? `<h2>${escapeHtml(u.title)}</h2>` : '';
+
+  if (layout === 'stepped') {
+    const steps = (u.steps || []);
+    const allLines = steps[0] ? steps[0].highlightLines : [];
+    return `
+      <span class="unit-kind">code-walk &middot; stepped</span>${titleHtml}
+      <div class="layout-stepped wide" data-stepped>
+        <div class="codewalk">
+          <div class="codewalk-head"><span>${headLabel}</span><span>stepped</span></div>
+          ${renderCode(u.code || '', allLines)}
+        </div>
+        <div class="steps">
+          ${steps.map((s, i) => `
+            <div class="step${i === 0 ? ' active' : ''}" data-lines="${(s.highlightLines || []).join(',')}">
+              <span class="step-num">${String(i + 1).padStart(2, '0')}</span>
+              ${renderMarkdownLinks(escapeHtml(s.beat || ''))}
+              <span class="lines">L${(s.highlightLines || []).join(', ')}</span>
+            </div>
+          `).join('')}
+        </div>
+      </div>`;
+  }
+
+  if (layout === 'split') {
+    return `
+      <span class="unit-kind">code-walk &middot; split</span>${titleHtml}
+      <div class="layout-split wide">
+        <div class="codewalk">
+          <div class="codewalk-head"><span>${headLabel}</span><span>split</span></div>
+          ${renderCode(u.code || '', u.highlightLines || [])}
+        </div>
+        <div class="side">${renderMarkdownLinks(escapeBodyParagraphs(u.explanation || ''))}</div>
+      </div>`;
+  }
+
+  // stacked
+  return `
+    <span class="unit-kind">code-walk</span>${titleHtml}
+    <div class="codewalk">
+      <div class="codewalk-head"><span>${headLabel}</span><span>stacked</span></div>
+      ${renderCode(u.code || '', u.highlightLines || [])}
+    </div>
+    <div class="explain">${renderMarkdownLinks(escapeBodyParagraphs(u.explanation || ''))}</div>`;
+}
+
+function renderGuessFirst(u) {
+  const reveal = u.reveal || {};
+  const code = reveal.code
+    ? `<div class="codewalk" style="margin-top:14px">${renderCode(reveal.code, reveal.highlightLines || [])}</div>`
+    : '';
+  const expl = reveal.explanation
+    ? `<div class="explain" style="margin-top:12px">${renderMarkdownLinks(escapeBodyParagraphs(reveal.explanation))}</div>`
+    : '';
+  return `
+    <details class="guess unit-guess-first">
+      <summary>${escapeHtml(u.question || '')}</summary>
+      ${code}${expl}
+    </details>`;
+}
+
+function renderCompare(u) {
+  const left = u.left || {};
+  const right = u.right || {};
+  const titleHtml = u.title ? `<h2>${escapeHtml(u.title)}</h2>` : '';
+  return `
+    <span class="unit-kind">compare</span>${titleHtml}
+    <div class="compare">
+      <div class="col bad">
+        <div class="col-label">${escapeHtml(left.label || 'before')}</div>
+        <pre>${escapeHtml(left.code || '')}</pre>
+      </div>
+      <div class="col good">
+        <div class="col-label">${escapeHtml(right.label || 'after')}</div>
+        <pre>${escapeHtml(right.code || '')}</pre>
+      </div>
+    </div>
+    ${u.lesson ? `<div class="lesson">${renderMarkdownLinks(escapeHtml(u.lesson))}</div>` : ''}`;
+}
+
+function renderDiagram(u) {
+  const zoomable = u.zoomable !== false;
+  const titleHtml = u.title ? `<h2>${escapeHtml(u.title)}</h2>` : '';
+  return `
+    <span class="unit-kind">diagram</span>${titleHtml}
+    <figure class="figure" ${zoomable ? 'data-zoomable="true"' : ''}>
+      ${zoomable ? '<button class="zoom-btn" data-zoom-trigger>Zoom</button>' : ''}
+      <div class="figure-mermaid"><div class="mermaid">${escapeHtml(u.mermaid || '')}</div></div>
+      ${u.caption ? `<figcaption>${renderMarkdownLinks(escapeHtml(u.caption))}</figcaption>` : ''}
+    </figure>`;
+}
+
+async function bootEssay(page) {
+  const unitsRoot = document.querySelector('.units');
+  if (unitsRoot) {
+    unitsRoot.innerHTML = (page.units || []).map((u, i) => {
+      const anchorAttr = u.anchorNode ? ` data-anchor="${escapeHtml(u.anchorNode)}"` : '';
+      return `<section class="unit unit-${u.kind}" data-unit-index="${i}"${anchorAttr}>${renderUnit(u)}</section>`;
+    }).join('');
+  }
+
+  if (page.diagram) {
+    const anchorMermaid = document.querySelector('.anchor .mermaid');
+    if (anchorMermaid) {
+      anchorMermaid.textContent = page.diagram;
+      await renderMermaid('.anchor .mermaid');
+      initAnchorScrollLink();
+    }
+  }
+
+  await renderMermaid('.unit-diagram .mermaid, .figure .mermaid');
+  initSteppedWalks();
+  initZoomOverlay();
+  startScrollLoop();
+}
+
+/* ------- Anchor diagram scroll-link ------- */
+const _anchorState = {
+  nodeIndex: new Map(), // anchor key -> mermaid <g.node>
+  units: [],
+  active: null,
+};
+
+function initAnchorScrollLink() {
+  const anchorEl = document.querySelector('.anchor .mermaid');
+  if (!anchorEl) return;
+  _anchorState.units = Array.from(document.querySelectorAll('.unit[data-anchor]'));
+  _anchorState.nodeIndex.clear();
+  anchorEl.querySelectorAll('g.node').forEach((g) => {
+    const m = g.id.match(/-([A-Za-z0-9_]+)-\d+$/);
+    if (m) _anchorState.nodeIndex.set(m[1], g);
+  });
+  _anchorState.nodeIndex.forEach((g, key) => {
+    g.addEventListener('click', () => {
+      const u = _anchorState.units.find((x) => x.dataset.anchor === key);
+      if (u) u.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    });
+  });
+}
+
+function pickActiveUnit() {
+  if (_anchorState.units.length === 0) return;
+  const center = window.innerHeight / 2;
+  let best = null, bestDist = Infinity;
+  for (const u of _anchorState.units) {
+    const r = u.getBoundingClientRect();
+    const mid = (r.top + r.bottom) / 2;
+    const d = Math.abs(mid - center);
+    if (d < bestDist) { bestDist = d; best = u; }
+  }
+  if (best && best !== _anchorState.active) {
+    _anchorState.active = best;
+    const key = best.dataset.anchor;
+    _anchorState.nodeIndex.forEach((g, k) => g.classList.toggle('active', k === key));
+  }
+}
+
+/* ------- Stepped code-walk highlight migration ------- */
+function initSteppedWalks() {
+  document.querySelectorAll('[data-stepped]').forEach((root) => {
+    const codeEl = root.querySelector('.code-block');
+    if (!codeEl) return;
+    const lineEls = new Map();
+    codeEl.querySelectorAll('.line').forEach((el) => {
+      lineEls.set(el.dataset.line, el);
+    });
+    const steps = Array.from(root.querySelectorAll('.step'));
+
+    function highlight(linesAttr) {
+      const wanted = new Set(String(linesAttr || '').split(',').map((s) => s.trim()).filter(Boolean));
+      lineEls.forEach((el, k) => el.classList.toggle('line-hl', wanted.has(k)));
+    }
+
+    function activateStep(s) {
+      if (!s) return;
+      steps.forEach((x) => x.classList.toggle('active', x === s));
+      highlight(s.dataset.lines);
+    }
+
+    steps.forEach((s) => {
+      s.addEventListener('click', () => {
+        s.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        activateStep(s);
+      });
+    });
+
+    activateStep(steps[0]);
+
+    let activeStep = null;
+    root._pickActiveStep = function pickActiveStep() {
+      const center = window.innerHeight / 2;
+      let best = null, bestDist = Infinity;
+      for (const s of steps) {
+        const r = s.getBoundingClientRect();
+        if (r.bottom < 0 || r.top > window.innerHeight) continue;
+        const mid = (r.top + r.bottom) / 2;
+        const d = Math.abs(mid - center);
+        if (d < bestDist) { bestDist = d; best = s; }
+      }
+      if (best && best !== activeStep) {
+        activeStep = best;
+        activateStep(best);
+      }
+    };
+  });
+}
+
+/* ------- Zoomable diagram overlay ------- */
+function initZoomOverlay() {
+  const overlay = document.querySelector('.zoom-overlay');
+  if (!overlay) return;
+  const stage = overlay.querySelector('.zoom-stage');
+  const levelEl = overlay.querySelector('[data-zoom-level]');
+  let scale = 1, tx = 0, ty = 0;
+  const MIN = 0.3, MAX = 6;
+
+  function applyTransform() {
+    stage.style.transform = `translate(${tx}px, ${ty}px) scale(${scale})`;
+    if (levelEl) levelEl.textContent = Math.round(scale * 100) + '%';
+  }
+
+  function openZoom(svg) {
+    const clone = svg.cloneNode(true);
+    const r = svg.getBoundingClientRect();
+    clone.removeAttribute('style');
+    clone.setAttribute('width', r.width);
+    clone.setAttribute('height', r.height);
+    clone.classList.add('zoom-svg-fix');
+    stage.innerHTML = '';
+    stage.appendChild(clone);
+    scale = 1; tx = 0; ty = 0;
+    applyTransform();
+    overlay.classList.add('open');
+    overlay.removeAttribute('hidden');
+    document.body.style.overflow = 'hidden';
+  }
+
+  function closeZoom() {
+    overlay.classList.remove('open');
+    overlay.setAttribute('hidden', '');
+    document.body.style.overflow = '';
+  }
+
+  document.querySelectorAll('[data-zoom-trigger]').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      const fig = btn.closest('.figure, .unit-diagram');
+      const svg = fig && fig.querySelector('svg');
+      if (svg) openZoom(svg);
+    });
+  });
+
+  overlay.querySelector('[data-zoom-close]')?.addEventListener('click', closeZoom);
+  overlay.addEventListener('click', (e) => { if (e.target === overlay) closeZoom(); });
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && overlay.classList.contains('open')) closeZoom();
+  });
+
+  overlay.querySelector('[data-zoom-in]')?.addEventListener('click', () => {
+    scale = Math.min(MAX, scale * 1.25); applyTransform();
+  });
+  overlay.querySelector('[data-zoom-out]')?.addEventListener('click', () => {
+    scale = Math.max(MIN, scale / 1.25); applyTransform();
+  });
+  overlay.querySelector('[data-zoom-reset]')?.addEventListener('click', () => {
+    scale = 1; tx = 0; ty = 0; applyTransform();
+  });
+
+  overlay.addEventListener('wheel', (e) => {
+    if (!overlay.classList.contains('open')) return;
+    e.preventDefault();
+    const rect = stage.getBoundingClientRect();
+    const cxFromCenter = e.clientX - (rect.left + rect.width / 2);
+    const cyFromCenter = e.clientY - (rect.top + rect.height / 2);
+    const factor = e.deltaY < 0 ? 1.12 : 1 / 1.12;
+    const newScale = Math.min(MAX, Math.max(MIN, scale * factor));
+    const ratio = newScale / scale;
+    tx -= cxFromCenter * (ratio - 1);
+    ty -= cyFromCenter * (ratio - 1);
+    scale = newScale;
+    applyTransform();
+  }, { passive: false });
+
+  let dragging = false, lastX = 0, lastY = 0;
+  overlay.addEventListener('mousedown', (e) => {
+    if (e.target.closest('.zoom-controls')) return;
+    dragging = true; lastX = e.clientX; lastY = e.clientY;
+    overlay.classList.add('dragging');
+  });
+  window.addEventListener('mousemove', (e) => {
+    if (!dragging) return;
+    tx += e.clientX - lastX; ty += e.clientY - lastY;
+    lastX = e.clientX; lastY = e.clientY;
+    applyTransform();
+  });
+  window.addEventListener('mouseup', () => {
+    dragging = false; overlay.classList.remove('dragging');
+  });
+}
+
+/* ------- Single rAF scroll loop ------- */
+function startScrollLoop() {
+  let ticking = false;
+  function onScroll() {
+    if (ticking) return;
+    ticking = true;
+    requestAnimationFrame(() => {
+      pickActiveUnit();
+      document.querySelectorAll('[data-stepped]').forEach((r) => r._pickActiveStep && r._pickActiveStep());
+      ticking = false;
+    });
+  }
+  window.addEventListener('scroll', onScroll, { passive: true });
+  window.addEventListener('resize', onScroll);
+  onScroll();
+}
+
+const PAGE = {
+  module: "store-service",
+  learningPromise: "After reading, you'll understand how the import pipeline copies agents, skills, and commands from external sources into the store with provenance tracking.",
+  prereqs: ["File copy", "untildify"],
+  units: [
+    {
+      kind: "concept",
+      title: "The store is the source of truth for profile components",
+      body: "Profiles reference agents/skills/commands by name. When a profile is activated, symlinks point from the profile directory into the store. The store lives at `~/.cui/store/` and has subdirectories for agents, skills, commands, and model-configs. The import pipeline is how external content gets INTO the store \u2014 it scans a source directory, copies matching files, and records where they came from in a provenance index."
+    },
+    {
+      kind: "code-walk",
+      title: "The three-phase import",
+      layout: "stacked",
+      file: "src/server/services/store-service.ts",
+      code: `async import(request: StoreImportRequest | string): Promise<StoreImportResult> {\n  const raw = typeof request === 'string'\n    ? { sourceDir: request, dryRun: false, overwrite: false }\n    : request\n\n  const normalized = {\n    ...raw,\n    sourceDir: path.resolve(untildify(raw.sourceDir)),\n  }\n\n  if (normalized.dryRun) {\n    return this.scanImport(normalized.sourceDir)\n  }\n\n  return this.applyImport(normalized.sourceDir, normalized.overwrite ?? false)\n}`,
+      highlightLines: [3, 4, 9, 13, 16],
+      explanation: "Three phases: normalize the input (resolve `~` paths), optionally dry-run (scan only, report conflicts), then apply (copy files and record provenance). The `dryRun` flag is the key feature \u2014 the UI can show a preview of what would be imported before the user commits. Overwrite mode is separate and exclusive with dry-run."
+    },
+    {
+      kind: "surprise",
+      title: "Provenance tracks where each component came from",
+      body: "Every imported agent/skill/command gets a provenance record in `~/.cui/store/.metadata/imports.json` \u2014 the source path and the import timestamp. That's how the UI shows \"imported from ~/.claude/agents/my-agent.md on 2024-01-15\" without re-scanning the filesystem every time."
+    },
+    {
+      kind: "guess-first",
+      question: "Why does `getReferencingProfiles()` scan every profile JSON file?",
+      reveal: {
+        explanation: "It's a referential integrity check. Before deleting a store item, the UI calls this to see which profiles reference it. If any profile uses the item, the delete returns 409 Conflict with a list of the referencing profiles \u2014 the user has to remove it from those profiles first. It's brute-force (reads every profile.json), but there are typically fewer than 20 profiles, so the scan is fast."
+      }
+    },
+    {
+      kind: "takeaway",
+      body: "StoreService manages the import lifecycle: scan for candidates, detect conflicts, copy files, record provenance. The dry-run/apply split lets the UI preview changes before committing. Provenance tracking means the UI can always answer \"where did this component come from?\" \u2014 and the referential integrity check prevents deleting items that active profiles depend on."
+    }
+  ]
+};
+bootEssay(PAGE);
+</script>
+</body>
+</html>

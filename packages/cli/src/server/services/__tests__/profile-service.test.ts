@@ -27,7 +27,7 @@ describe('ProfileService', () => {
 
   beforeEach(() => {
     tmpDir = mkdtempSync(path.join(os.tmpdir(), 'profile-test-'))
-    service = new ProfileService(tmpDir)
+    service = new ProfileService(tmpDir, path.join(tmpDir, 'settings.json'))
   })
 
   afterEach(() => {

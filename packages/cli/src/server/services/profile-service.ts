@@ -65,7 +65,7 @@ export class ProfileService {
   private storeDir: string
   private modelConfigService: ModelConfigService
 
-  constructor(private baseDir: string) {
+  constructor(private baseDir: string, private claudeSettingsPath: string) {
     this.profilesDir = path.join(baseDir, 'profiles')
     this.storeDir = path.join(baseDir, 'store')
     this.lockService = new LockService(this.profilesDir)
@@ -211,9 +211,8 @@ export class ProfileService {
   }
 
   private async readSettings(): Promise<any> {
-    const settingsPath = path.join(this.baseDir, 'settings.json')
     try {
-      return JSON.parse(await readFile(settingsPath, 'utf8'))
+      return JSON.parse(await readFile(this.claudeSettingsPath, 'utf8'))
     } catch {
       return {}
     }
@@ -592,7 +591,8 @@ export class ProfileService {
       enabledPlugins[`profile-${name}`] = true
       merged.enabledPlugins = enabledPlugins
 
-      await writeFile(path.join(this.baseDir, 'settings.json'), JSON.stringify(merged, null, 2), 'utf8')
+      await mkdir(path.dirname(this.claudeSettingsPath), { recursive: true })
+      await writeFile(this.claudeSettingsPath, JSON.stringify(merged, null, 2), 'utf8')
       // Settings backup already recorded in undo stack
 
       return { warnings: settingsWarnings }
@@ -625,7 +625,7 @@ export class ProfileService {
    * Internal deactivation without lock -- called from within activate's transaction.
    */
   private async deactivateInternal(activeName: string): Promise<void> {
-    const settingsPath = path.join(this.baseDir, 'settings.json')
+    const settingsPath = this.claudeSettingsPath
     const profileDir = path.join(this.profilesDir, activeName)
 
     // Restore per-profile settings backup
