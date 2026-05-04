@@ -1,5 +1,5 @@
 #!/bin/bash
-# ClaudeUI Timeline Stop Hook
+# OhMyC Timeline Stop Hook
 # Extracts session data from transcript and ingests into ~/.cui/timeline.db
 #
 # Usage: Triggered by Claude Code's Stop hook automatically.

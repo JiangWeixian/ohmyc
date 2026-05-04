@@ -1169,16 +1169,16 @@ const PAGE = {
     cwd: options.cwd,
   }
 
-  console.log('Starting ClaudeUI server...')
+  console.log('Starting OhMyC server...')
 
   try {
     const result = await startServer(serverOptions)
     const url = \`http://localhost:\${result.port}\`
 
     if (result.fallback) {
-      console.log(\`ClaudeUI is ready at \${url} (port \${serverOptions.defaultPort} was busy)\`)
+      console.log(\`OhMyC is ready at \${url} (port \${serverOptions.defaultPort} was busy)\`)
     } else {
-      console.log(\`ClaudeUI is ready at \${url}\`)
+      console.log(\`OhMyC is ready at \${url}\`)
     }
 
     if (!options.apiOnly) {
@@ -1187,7 +1187,7 @@ const PAGE = {
     }
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error)
-    throw new Error(\`Failed to start ClaudeUI: \${message}\`)
+    throw new Error(\`Failed to start OhMyC: \${message}\`)
   }
 }`,
       highlightLines: [1, 2, 3, 14, 19, 20, 21],
@@ -1203,7 +1203,7 @@ const PAGE = {
     {
       kind: "surprise",
       title: "The 'Starting...' message fires before the server starts",
-      body: "That `console.log('Starting ClaudeUI server...')` on line 11 runs synchronously before the `await startServer()`. It's a UX trick — the user sees immediate feedback that something is happening, even though the server startup takes a few hundred milliseconds. Without it, there'd be a silent pause between pressing enter and seeing the URL."
+      body: "That `console.log('Starting OhMyC server...')` on line 11 runs synchronously before the `await startServer()`. It's a UX trick — the user sees immediate feedback that something is happening, even though the server startup takes a few hundred milliseconds. Without it, there'd be a silent pause between pressing enter and seeing the URL."
     },
     {
       kind: "takeaway",

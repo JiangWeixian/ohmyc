@@ -1,4 +1,4 @@
-# ClaudeUI 开发者指南
+# OhMyC 开发者指南
 
 ## 目录
 
@@ -19,7 +19,7 @@
 
 ### 项目定位
 
-ClaudeUI 是一个 CLI 工具，带有 Web UI，用于**可视化展示和管理 Claude Code 的配置文件**。它能够浏览、编辑 `.claude`（或 `.cui`）目录下的 agents、skills、commands、plugins、settings、MCP servers、hooks、LSP servers 等配置资源，并支持 Profile（配置档案）的创建、激活与切换。
+OhMyC 是一个 CLI 工具，带有 Web UI，用于**可视化展示和管理 Claude Code 的配置文件**。它能够浏览、编辑 `.claude`（或 `.cui`）目录下的 agents、skills、commands、plugins、settings、MCP servers、hooks、LSP servers 等配置资源，并支持 Profile（配置档案）的创建、激活与切换。
 
 ### 架构设计
 
@@ -63,7 +63,7 @@ ClaudeUI 是一个 CLI 工具，带有 Web UI，用于**可视化展示和管理
 ### 目录树
 
 ```
-claudeui/
+ohmyc/
 ├── package.json              # 根 workspace 配置
 ├── pnpm-workspace.yaml       # workspace 声明
 ├── tsconfig.json             # 项目引用基础配置
@@ -130,7 +130,7 @@ claudeui/
 
 ```bash
 # 克隆仓库
-git clone <repo-url> && cd claudeui
+git clone <repo-url> && cd ohmyc
 
 # 安装所有 workspace 依赖
 pnpm install
@@ -184,13 +184,13 @@ CLI 使用 `cac` 库解析命令行参数，注册了两个命令：
 const cli = cac('cu');
 
 // 显式 start 命令
-cli.command('start', 'Start the ClaudeUI server and open the browser')
+cli.command('start', 'Start the OhMyC server and open the browser')
   .option('--port <port>', 'Port to listen on', { default: 3000 })
   .option('--api-only', 'Start API server only, skip static file serving')
   .action(async (options) => { ... });
 
 // 默认命令：直接运行 `cu` 等同于 `cu start`
-cli.command('[...args]', 'Start ClaudeUI (default)')
+cli.command('[...args]', 'Start OhMyC (default)')
   .action(async (args) => { ... });
 ```
 
@@ -934,13 +934,13 @@ CLI 包配置了 `prepublishOnly` 脚本：
 {
   "bin": {
     "cu": "dist/index.cjs",
-    "claudeui": "dist/index.cjs"
+    "ohmyc": "dist/index.cjs"
   },
   "files": ["dist", "README.md"]
 }
 ```
 
-用户安装后可以通过 `cu` 或 `claudeui` 命令启动。
+用户安装后可以通过 `cu` 或 `ohmyc` 命令启动。
 
 ---
 

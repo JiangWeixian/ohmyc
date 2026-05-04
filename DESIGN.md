@@ -1,4 +1,4 @@
-# Design System — ClaudeUI
+# Design System — OhMyC
 
 ## Product Context
 - **What this is:** CLI tool with WebUI for managing .claude configuration files (agents, skills, commands, profiles)
@@ -403,8 +403,8 @@ The editor replaces the prior wall-of-cards layout. Three structural pieces — 
 - **Empty profile (new):** all chip clouds empty, all JSON editors empty, dirty bit only flips after first edit. Save button reads `Create profile` instead of `Save profile`.
 
 ### Wireframe reference
-- **Layout & Interaction wireframe:** `~/.gstack/projects/JiangWeixian-claudeui/designs/layout-interaction-20260426/wireframe.html` — six screens: Profiles front door · ⌘K palette open · Compare side panel · Explorer view (chrome propagation) · Profiles → Agents store · Profile editor.
-- **Timeline wireframe:** `~/.gstack/projects/JiangWeixian-claudeui/designs/timeline-20260430/wireframe.html` — single Timeline screen: sidebar entry, controls bar, 53×7 heatmap, day/project/session event list.
+- **Layout & Interaction wireframe:** `~/.gstack/projects/JiangWeixian-ohmyc/designs/layout-interaction-20260426/wireframe.html` — six screens: Profiles front door · ⌘K palette open · Compare side panel · Explorer view (chrome propagation) · Profiles → Agents store · Profile editor.
+- **Timeline wireframe:** `~/.gstack/projects/JiangWeixian-ohmyc/designs/timeline-20260430/wireframe.html` — single Timeline screen: sidebar entry, controls bar, 53×7 heatmap, day/project/session event list.
 - Open the relevant wireframe before changing the surfaces it covers — placement is settled there, not in this doc.
 
 ## Decisions Log

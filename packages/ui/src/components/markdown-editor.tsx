@@ -11,7 +11,7 @@ import {
 } from '@codemirror/view'
 import { useEffect, useRef } from 'react'
 
-import { claudeUIContainerTheme } from './codemirror-container-theme'
+import { ohmycContainerTheme } from './codemirror-container-theme'
 
 interface MarkdownEditorProperties {
   value: string
@@ -82,7 +82,7 @@ export function MarkdownEditor({
         // detects fenced frontmatter; we attach a base yaml() pass for keys/values.
         yaml(),
         oneDark,
-        claudeUIContainerTheme,
+        ohmycContainerTheme,
         markdownEditorOverlay,
         EditorView.lineWrapping,
         ...(placeholder ? [cmPlaceholder(placeholder)] : []),

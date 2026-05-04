@@ -2,7 +2,7 @@
 
 ## 概述
 
-ClaudeUI 是一个本地管理工具，用于管理 Claude Code 的扩展组件和配置。它围绕两个核心概念构建：**Store**（组件仓库）和 **Profile**（环境配置）。用户可以导入组件到本地仓库，组合成可复用的 Profile，并在不同环境之间安全切换。
+OhMyC 是一个本地管理工具，用于管理 Claude Code 的扩展组件和配置。它围绕两个核心概念构建：**Store**（组件仓库）和 **Profile**（环境配置）。用户可以导入组件到本地仓库，组合成可复用的 Profile，并在不同环境之间安全切换。
 
 ## Agent Home
 
@@ -20,7 +20,7 @@ Agent Home 是 Claude Code 存储所有配置、插件和组件的根目录。
 ├── skills/                # Skill 定义（含 SKILL.md 的目录）
 ├── commands/              # Command 定义文件（.md）
 ├── plugins/               # 已安装的插件
-├── store/                 # 组件仓库（ClaudeUI 管理）
+├── store/                 # 组件仓库（OhMyC 管理）
 │   ├── agents/            # 仓库中的 Agent
 │   ├── skills/            # 仓库中的 Skill
 │   ├── commands/          # 仓库中的 Command

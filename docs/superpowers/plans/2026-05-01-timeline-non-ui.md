@@ -2,7 +2,7 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Build the non-UI backend for ClaudeUI Timeline: a new `@ohmyc/timeline` package that ingests Claude Code session transcripts into a local SQLite database, a CLI `dashboard` subcommand for plugin management and data sync, Fastify API endpoints for heatmap and event data, and a built-in plugin for automatic ingest via Stop hooks.
+**Goal:** Build the non-UI backend for OhMyC Timeline: a new `@ohmyc/timeline` package that ingests Claude Code session transcripts into a local SQLite database, a CLI `dashboard` subcommand for plugin management and data sync, Fastify API endpoints for heatmap and event data, and a built-in plugin for automatic ingest via Stop hooks.
 
 **Architecture:** A new workspace package `packages/timeline` provides the core data layer: SQLite schema, migrations, JSONL parsing, incremental ingest, and query API. The `@ohmyc/cli` package consumes it to provide the `dashboard` CLI command and `/api/timeline/*` Fastify routes. A built-in plugin at `plugins/timeline/` declares a Stop hook that triggers ingest after each Claude Code turn. The database lives at `~/.cui/timeline.db`.
 
@@ -1604,7 +1604,7 @@ import {
   getStatus,
 } from '@ohmyc/timeline'
 
-const PLUGIN_NAME = 'claudeui-timeline'
+const PLUGIN_NAME = 'ohmyc-timeline'
 
 function getPluginsDir(): string {
   const agentHome = process.env.AGENT_HOME
@@ -1715,7 +1715,7 @@ export async function runUninstall(): Promise<void> {
 
   delete registry.plugins[PLUGIN_NAME]
   await writeInstalledPlugins(registry)
-  console.log('Plugin removed. Database preserved at ~/.cui/timeline.db. Run `claudeui dashboard --install` to resume.')
+  console.log('Plugin removed. Database preserved at ~/.cui/timeline.db. Run `ohmyc dashboard --install` to resume.')
 }
 
 export async function runSync(): Promise<void> {
@@ -1794,7 +1794,7 @@ export async function runDoctor(): Promise<void> {
     console.log('Plugin: installed')
   } else {
     console.log('Plugin: NOT installed')
-    issues.push('Run `claudeui dashboard --install` to register the plugin.')
+    issues.push('Run `ohmyc dashboard --install` to register the plugin.')
     ok = false
   }
 
@@ -1834,7 +1834,7 @@ export async function runDoctor(): Promise<void> {
     }
   } else {
     console.log(`Database: ${dbPath} does not exist`)
-    issues.push('Run `claudeui dashboard --install` to create the database.')
+    issues.push('Run `ohmyc dashboard --install` to create the database.')
     ok = false
   }
 
@@ -1910,7 +1910,7 @@ import { runInstall, runUninstall, runSync, runIngest, runDoctor } from './comma
 const cli = cac('cu')
 
 cli
-  .command('start', 'Start the ClaudeUI server and open the browser')
+  .command('start', 'Start the OhMyC server and open the browser')
   .option('--port <port>', 'Port to listen on', { default: 3000 })
   .option('--api-only', 'Start API server only, skip static file serving')
   .option('--cwd <cwd>', 'Working directory for project discovery (default: current directory)')
@@ -1966,7 +1966,7 @@ cli
 
 // Default command: just running `cu` starts the app
 cli
-  .command('[...args]', 'Start ClaudeUI (default)')
+  .command('[...args]', 'Start OhMyC (default)')
   .option('--cwd <cwd>', 'Working directory for project discovery (default: current directory)')
   .action(async (arguments_, options) => {
     if (arguments_.length === 0) {
@@ -2269,9 +2269,9 @@ git commit -m "feat(timeline): add /api/timeline/* routes and register in server
 
 ```json
 {
-  "name": "claudeui-timeline",
+  "name": "ohmyc-timeline",
   "version": "1.0.0",
-  "description": "Auto-collects Claude Code session data for ClaudeUI Timeline dashboard"
+  "description": "Auto-collects Claude Code session data for OhMyC Timeline dashboard"
 }
 ```
 
@@ -2327,7 +2327,7 @@ git commit -m "feat(timeline): add built-in plugin manifest and Stop hook config
 
 This shell script is triggered by Claude Code's Stop hook. It locates the transcript for the given session ID and either:
 1. Uses `jq` to preprocess and pipe to Node.js ingest (fast path)
-2. Falls back to `claudeui dashboard --ingest --session <id>` (slow path, no jq)
+2. Falls back to `ohmyc dashboard --ingest --session <id>` (slow path, no jq)
 
 - [ ] **Step 1: Write `plugins/timeline/hooks/ingest.sh`**
 
@@ -2380,18 +2380,18 @@ if command -v jq >/dev/null 2>&1; then
     '
 else
   # Fallback: use the CLI for full Node.js parsing
-  if command -v claudeui >/dev/null 2>&1; then
-    claudeui dashboard --ingest --session "$SESSION_ID" --file "$TRANSCRIPT_FILE"
+  if command -v ohmyc >/dev/null 2>&1; then
+    ohmyc dashboard --ingest --session "$SESSION_ID" --file "$TRANSCRIPT_FILE"
   elif command -v cu >/dev/null 2>&1; then
     cu dashboard --ingest --session "$SESSION_ID" --file "$TRANSCRIPT_FILE"
   else
-    echo "Neither jq nor claudeui CLI found. Cannot ingest session $SESSION_ID." >&2
+    echo "Neither jq nor ohmyc CLI found. Cannot ingest session $SESSION_ID." >&2
     exit 1
   fi
 fi
 ```
 
-**NOTE:** The jq + Node.js fast path in the script above is a scaffold. The actual Node.js ingest code lives in `@ohmyc/timeline` and is bundled with the CLI. The hook script could alternatively call a small Node.js script that imports `@ohmyc/timeline`, but since `@ohmyc/timeline` is bundled into the CLI, the simplest approach is for the hook to always call `claudeui dashboard --ingest --session <id> --file <path>`.
+**NOTE:** The jq + Node.js fast path in the script above is a scaffold. The actual Node.js ingest code lives in `@ohmyc/timeline` and is bundled with the CLI. The hook script could alternatively call a small Node.js script that imports `@ohmyc/timeline`, but since `@ohmyc/timeline` is bundled into the CLI, the simplest approach is for the hook to always call `ohmyc dashboard --ingest --session <id> --file <path>`.
 
 For V1, simplify the script to always use the CLI fallback:
 
@@ -2415,12 +2415,12 @@ if [ -z "$TRANSCRIPT_FILE" ] || [ ! -f "$TRANSCRIPT_FILE" ]; then
 fi
 
 # Ingest via CLI (reuses full Node.js parsing logic)
-if command -v claudeui >/dev/null 2>&1; then
-  claudeui dashboard --ingest --session "$SESSION_ID" --file "$TRANSCRIPT_FILE"
+if command -v ohmyc >/dev/null 2>&1; then
+  ohmyc dashboard --ingest --session "$SESSION_ID" --file "$TRANSCRIPT_FILE"
 elif command -v cu >/dev/null 2>&1; then
   cu dashboard --ingest --session "$SESSION_ID" --file "$TRANSCRIPT_FILE"
 else
-  echo "claudeui CLI not found. Cannot ingest session $SESSION_ID." >&2
+  echo "ohmyc CLI not found. Cannot ingest session $SESSION_ID." >&2
   exit 1
 fi
 ```

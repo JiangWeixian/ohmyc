@@ -4,7 +4,7 @@
 
 **Goal:** Create a shared CodeMirror theme extension that overrides editor chrome (background, borders, selection, tooltips, etc.) to match the app's monochrome dark palette while keeping `oneDark` syntax token colors untouched.
 
-**Architecture:** Extract a shared `claudeUIContainerTheme` extension from `codemirror-container-theme.ts` that overrides all editor UI chrome. Both `JsonEditor` and `MarkdownEditor` import this shared extension plus a thin editor-specific overlay for sizing/border differences. Theme layers stack after `oneDark` so monochrome chrome wins while syntax colors stay colorful.
+**Architecture:** Extract a shared `ohmycContainerTheme` extension from `codemirror-container-theme.ts` that overrides all editor UI chrome. Both `JsonEditor` and `MarkdownEditor` import this shared extension plus a thin editor-specific overlay for sizing/border differences. Theme layers stack after `oneDark` so monochrome chrome wins while syntax colors stay colorful.
 
 **Tech Stack:** React, CodeMirror 6, `@codemirror/theme-one-dark`, `@codemirror/view`
 
@@ -14,7 +14,7 @@
 
 | File | Responsibility |
 |------|--------------|
-| `packages/ui/src/components/codemirror-container-theme.ts` | **NEW** — Shared `claudeUIContainerTheme` extension covering all editor chrome (selection, cursor, tooltips, panels, scrollbars, etc.) |
+| `packages/ui/src/components/codemirror-container-theme.ts` | **NEW** — Shared `ohmycContainerTheme` extension covering all editor chrome (selection, cursor, tooltips, panels, scrollbars, etc.) |
 | `packages/ui/src/components/json-editor.tsx` | **REFACTOR** — Remove inline theme object; import shared theme + thin overlay for JSON editor sizing/border |
 | `packages/ui/src/components/markdown-editor.tsx` | **REFACTOR** — Remove inline theme object; import shared theme + thin overlay for markdown editor sizing |
 
@@ -29,7 +29,7 @@
 
 ---
 
-### Task 1: Create shared `claudeUIContainerTheme` extension
+### Task 1: Create shared `ohmycContainerTheme` extension
 
 **Files:**
 - Create: `packages/ui/src/components/codemirror-container-theme.ts`
@@ -46,12 +46,12 @@ import { EditorView } from '@codemirror/view'
 /**
  * Shared CodeMirror theme extension that overrides editor chrome
  * (background, borders, selection, tooltips, panels, scrollbars, etc.)
- * to match the ClaudeUI monochrome dark palette.
+ * to match the OhMyC monochrome dark palette.
  *
  * Place this AFTER `oneDark` in the extensions array so monochrome
  * chrome wins while syntax token colors stay colorful.
  */
-export const claudeUIContainerTheme = EditorView.theme({
+export const ohmycContainerTheme = EditorView.theme({
   // Remove default focus outline; editors handle their own border changes
   '&.cm-focused': {
     outline: 'none',
@@ -231,7 +231,7 @@ git commit -m "feat: add shared CodeMirror monochrome chrome theme extension"
 
 **Context:** The `JsonEditor` currently has an inline `theme` object (lines 20–64) that mixes chrome styling with token color overrides. We need to:
 1. Remove the inline `theme` object entirely
-2. Import `claudeUIContainerTheme` from the new shared file
+2. Import `ohmycContainerTheme` from the new shared file
 3. Create a thin `jsonEditorOverlay` for editor-specific sizing/border only
 4. Keep `oneDark` in the extensions array
 5. Remove the blue focus shadow (line 29)
@@ -252,7 +252,7 @@ import {
 import { basicSetup } from 'codemirror'
 import { useEffect, useRef } from 'react'
 
-import { claudeUIContainerTheme } from './codemirror-container-theme'
+import { ohmycContainerTheme } from './codemirror-container-theme'
 
 interface JsonEditorProperties {
   value: string
@@ -303,7 +303,7 @@ export function JsonEditor({ value, onChange, placeholder, minHeight = '100px' }
         keymap.of(defaultKeymap),
         json(),
         oneDark,
-        claudeUIContainerTheme,
+        ohmycContainerTheme,
         jsonEditorOverlay,
         EditorView.lineWrapping,
         ...(placeholder ? [cmPlaceholder(placeholder)] : []),
@@ -362,7 +362,7 @@ Expected: No errors.
 
 Run:
 ```bash
-cd /Volumes/ORICO/Users/jiangwei/projects/claudeui && npx eslint --config ./eslint.config.mjs packages/ui/src/components/json-editor.tsx
+cd /Volumes/ORICO/Users/jiangwei/projects/ohmyc && npx eslint --config ./eslint.config.mjs packages/ui/src/components/json-editor.tsx
 ```
 
 Expected: No warnings or errors.
@@ -383,7 +383,7 @@ git commit -m "refactor: JsonEditor uses shared monochrome chrome theme"
 
 **Context:** The `MarkdownEditor` currently has an inline `theme` object (lines 22–57) that mixes chrome styling with editor-specific sizing. We need to:
 1. Remove the inline `theme` object entirely
-2. Import `claudeUIContainerTheme` from the new shared file
+2. Import `ohmycContainerTheme` from the new shared file
 3. Create a thin `markdownEditorOverlay` for editor-specific sizing only
 4. Keep `oneDark` in the extensions array
 5. Remove duplicate chrome styles that are now in the shared theme (e.g., `.cm-focused`, `.cm-activeLineGutter`, `.cm-activeLine`)
@@ -404,7 +404,7 @@ import {
 } from '@codemirror/view'
 import { useEffect, useRef } from 'react'
 
-import { claudeUIContainerTheme } from './codemirror-container-theme'
+import { ohmycContainerTheme } from './codemirror-container-theme'
 
 interface MarkdownEditorProperties {
   value: string
@@ -476,7 +476,7 @@ export function MarkdownEditor({
         // detects fenced frontmatter; we attach a base yaml() pass for keys/values.
         yaml(),
         oneDark,
-        claudeUIContainerTheme,
+        ohmycContainerTheme,
         markdownEditorOverlay,
         EditorView.lineWrapping,
         ...(placeholder ? [cmPlaceholder(placeholder)] : []),
@@ -534,7 +534,7 @@ Expected: No errors.
 
 Run:
 ```bash
-cd /Volumes/ORICO/Users/jiangwei/projects/claudeui && npx eslint --config ./eslint.config.mjs packages/ui/src/components/markdown-editor.tsx
+cd /Volumes/ORICO/Users/jiangwei/projects/ohmyc && npx eslint --config ./eslint.config.mjs packages/ui/src/components/markdown-editor.tsx
 ```
 
 Expected: No warnings or errors.
@@ -563,7 +563,7 @@ Expected: No errors across all files.
 
 Run:
 ```bash
-cd /Volumes/ORICO/Users/jiangwei/projects/claudeui && npx eslint --config ./eslint.config.mjs packages/ui/src/components/codemirror-container-theme.ts packages/ui/src/components/json-editor.tsx packages/ui/src/components/markdown-editor.tsx
+cd /Volumes/ORICO/Users/jiangwei/projects/ohmyc && npx eslint --config ./eslint.config.mjs packages/ui/src/components/codemirror-container-theme.ts packages/ui/src/components/json-editor.tsx packages/ui/src/components/markdown-editor.tsx
 ```
 
 Expected: No warnings or errors.
@@ -585,7 +585,7 @@ git commit -m "chore: type-check and lint after CodeMirror theme refactor" || ec
 
 Run:
 ```bash
-cd /Volumes/ORICO/Users/jiangwei/projects/claudeui && npm run dev
+cd /Volumes/ORICO/Users/jiangwei/projects/ohmyc && npm run dev
 ```
 
 Wait for both the CLI server and UI to start (you'll see two processes in the output).
@@ -638,7 +638,7 @@ git commit --allow-empty -m "test: visual regression verified for CodeMirror dar
 
 | Design Spec Requirement | Task |
 |------------------------|------|
-| Create shared `claudeUIContainerTheme` extension | Task 1 |
+| Create shared `ohmycContainerTheme` extension | Task 1 |
 | Remove blue focus ring from JsonEditor | Task 2 (`.cm-focused` in overlay removes blue shadow) |
 | Remove JsonEditor token color overrides | Task 2 (no `.cm-property`, `.cm-string`, etc. in overlay) |
 | JsonEditor specific overlay (border, sizing) | Task 2 |
@@ -665,7 +665,7 @@ git commit --allow-empty -m "test: visual regression verified for CodeMirror dar
 
 ## Type Consistency Check
 
-- [ ] `claudeUIContainerTheme` is imported from `./codemirror-container-theme` in both editors
+- [ ] `ohmycContainerTheme` is imported from `./codemirror-container-theme` in both editors
 - [ ] Overlay names: `jsonEditorOverlay`, `markdownEditorOverlay` — consistent pattern
-- [ ] Extension ordering: `oneDark` → `claudeUIContainerTheme` → `editorOverlay` in both editors
+- [ ] Extension ordering: `oneDark` → `ohmycContainerTheme` → `editorOverlay` in both editors
 - [ ] CSS variable names match DESIGN.md (`--text-primary`, `--text-secondary`, `--text-tertiary`, `--text-quaternary`, `--border-default`, `--border-standard`, `--surface-panel`)

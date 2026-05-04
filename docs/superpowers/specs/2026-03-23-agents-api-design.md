@@ -2,7 +2,7 @@
 
 ## Overview
 
-为 ClaudeUI 的 `packages/cli` 添加 Agents CRUD API，读取真实的 agent 文件（YAML frontmatter + Markdown），通过 HTTP API 暴露给前端。采用 TDD 方式开发，使用 vitest。
+为 OhMyC 的 `packages/cli` 添加 Agents CRUD API，读取真实的 agent 文件（YAML frontmatter + Markdown），通过 HTTP API 暴露给前端。采用 TDD 方式开发，使用 vitest。
 
 ## 数据模型
 

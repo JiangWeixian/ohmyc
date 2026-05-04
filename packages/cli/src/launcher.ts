@@ -17,16 +17,16 @@ export async function launchApp(options: LaunchOptions = {}): Promise<void> {
     cwd: options.cwd,
   }
 
-  console.log('Starting ClaudeUI server...')
+  console.log('Starting OhMyC server...')
 
   const result = await startServer(serverOptions)
 
   const url = `http://localhost:${result.port}`
 
   if (result.fallback) {
-    console.log(`ClaudeUI is ready at ${url} (port ${serverOptions.defaultPort} was busy, using ${result.port})`)
+    console.log(`OhMyC is ready at ${url} (port ${serverOptions.defaultPort} was busy, using ${result.port})`)
   } else {
-    console.log(`ClaudeUI is ready at ${url}`)
+    console.log(`OhMyC is ready at ${url}`)
   }
 
   async function shutdown() {
