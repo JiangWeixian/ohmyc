@@ -43,6 +43,8 @@ jobs:
       - name: Install
         run: |
           pnpm install --frozen-lockfile=false
+      - uses: oven-sh/setup-bun@v2
+        name: Install bun
       - name: Build
         run: pnpm build
       - name: Test
