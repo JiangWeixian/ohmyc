@@ -8,6 +8,7 @@ export default defineConfig({
   format: ['esm'],
   splitting: false,
   clean: true,
+  bundle: true,
   platform: 'node',
   target: 'node18',
   outExtension: () => ({ js: '.mjs' }),
@@ -16,8 +17,7 @@ export default defineConfig({
   },
   external: ['better-sqlite3'],
   noExternal: [
-    '@ohmyc/shared',
-    '@ohmyc/timeline',
+    /@[\w-]+\/[\w-]+/,
     '@fastify/static',
     'cac',
     'fastify',
