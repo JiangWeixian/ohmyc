@@ -3,7 +3,14 @@ import path from 'node:path'
 
 import pino from 'pino'
 
-const logDir = path.join(homedir(), '.cui', 'logs')
+// Detect test environment
+const isTest = process.env.NODE_ENV === 'test' || process.env.VITEST
+
+// In test environment, use a temp log path and disable symlink
+// to avoid race conditions when tests run in parallel
+const logDir = isTest
+  ? path.join(homedir(), '.cui', 'logs', `test-${process.pid}`)
+  : path.join(homedir(), '.cui', 'logs')
 const logFile = path.join(logDir, 'ohmyc.log')
 
 // Check if console output is enabled via env var
@@ -17,7 +24,7 @@ const targets: pino.TransportTargetOptions[] = [
       file: logFile,
       frequency: 'daily',
       mkdir: true,
-      symlink: true,
+      symlink: !isTest,
     },
     level: 'info',
   },
