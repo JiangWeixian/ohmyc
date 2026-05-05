@@ -45,3 +45,6 @@ Thumbs.db
 .claude/
 log/
 .gstack/
+
+# Coverage
+coverage/
