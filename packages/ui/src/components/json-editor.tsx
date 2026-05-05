@@ -1,3 +1,4 @@
+// CodeMirror-based JSON editor with OhMyC dark theme, used for editing config files.
 import { defaultKeymap } from '@codemirror/commands'
 import { json } from '@codemirror/lang-json'
 import { EditorState } from '@codemirror/state'
@@ -12,12 +13,14 @@ import { useEffect, useRef } from 'react'
 
 import { ohmycContainerTheme } from './codemirror-container-theme'
 
+/** Properties for the {@link JsonEditor} component. */
 interface JsonEditorProperties {
   value: string
   onChange: (value: string) => void
   placeholder?: string
 }
 
+/** Per-instance style overrides specific to the JSON editor (font size, border, padding). */
 const jsonEditorOverlay = EditorView.theme({
   '&': {
     fontSize: '13px',
@@ -40,11 +43,14 @@ const jsonEditorOverlay = EditorView.theme({
   },
 }, { dark: true })
 
+/** CodeMirror-backed JSON editor. Creates the editor view once on mount and
+ *  syncs external value changes via a dispatch on the existing view. */
 export function JsonEditor({ value, onChange, placeholder }: JsonEditorProperties) {
   const containerRef = useRef<HTMLDivElement>(null)
   const viewRef = useRef<EditorView | null>(null)
   const onChangeRef = useRef(onChange)
 
+  // Keep callback refs fresh so the editor listener always calls the latest closure
   useEffect(() => {
     onChangeRef.current = onChange
   })
@@ -89,7 +95,7 @@ export function JsonEditor({ value, onChange, placeholder }: JsonEditorPropertie
   }, [])
   /* eslint-enable react-hooks/exhaustive-deps, react/exhaustive-deps, react-hooks-extra/exhaustive-deps, react-naming-convention/exhaustive-deps */
 
-  // Sync external value changes
+  // Sync external value changes into the editor without recreating it
   useEffect(() => {
     const view = viewRef.current
     if (!view) {

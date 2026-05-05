@@ -47,6 +47,7 @@ function AppCommandPalette() {
   const { data: skills } = useSkills()
   const { data: commands } = useCommands()
 
+  // First 3 profiles receive ⌘1-3 shortcuts; beyond that keyboard real estate runs out.
   const profileCommands = profiles
     .filter(p => p.name !== active)
     .map((p, i) => ({
@@ -137,6 +138,8 @@ function AppCommandPalette() {
     },
   ]
 
+  // Entity search lands on the section list rather than a detail view because
+  // the detail panel requires selection state that doesn't exist in the URL yet.
   const searchCommands = [
     ...(agents ?? [])
       .filter(a => a.frontmatter.name)

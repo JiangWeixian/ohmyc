@@ -1,3 +1,6 @@
+// Expandable event list for the timeline page.
+// Renders day headings, project rollups (collapsible), and per-session detail rows.
+
 import Claude from '@lobehub/icons/es/Claude'
 import OpenCode from '@lobehub/icons/es/OpenCode'
 import { ChevronRight } from 'lucide-react'
@@ -8,6 +11,8 @@ import type {
   ProjectGroup,
   SessionRow,
 } from '@/hooks/use-timeline'
+
+// ── Agent glyph components ────────────────────────────────────────
 
 // Map agent_name → lobehub Mono icon component.
 // `null`/unknown → no glyph (legacy rows without agent attribution).
@@ -61,6 +66,8 @@ function AgentStack({ agents }: { agents: string[] }) {
   )
 }
 
+// ── Formatting & scoring utilities ────────────────────────────────
+
 const TODAY_ISO = (() => {
   const d = new Date()
   const y = d.getFullYear()
@@ -80,6 +87,7 @@ function formatDayHeading(day: string): string {
   return day === TODAY_ISO ? `${text} · Today` : text
 }
 
+// Compact k/M formatting matches the heatmap legend for page-wide consistency.
 function formatTokens(n: number): string {
   if (n >= 1_000_000) {
     return `${(n / 1_000_000).toFixed(1)}M tokens`
@@ -124,6 +132,8 @@ function formatTimeRange(start: number, end: number): string {
   return `${formatHm(start)} → ${formatHm(end)}`
 }
 
+// Rounds to whole minutes — sub-minute sessions show "0 min" rather than
+// misleading seconds-level precision.
 function formatDuration(ms: number): string {
   const min = Math.round(ms / 60_000)
   if (min < 60) {
@@ -134,6 +144,8 @@ function formatDuration(ms: number): string {
   return m === 0 ? `${h}h` : `${h}h ${m}m`
 }
 
+// Composite score blends sessions (weight 1) with turns (weight 1/12) so that
+// a day with many short sessions is not visually identical to one long session.
 function bucketForDay(day: DayEvents, max: number): 0 | 1 | 2 | 3 {
   if (max <= 0) {
     return 0
@@ -152,11 +164,18 @@ function bucketForDay(day: DayEvents, max: number): 0 | 1 | 2 | 3 {
   return 3
 }
 
+// ── EventList (exported) ──────────────────────────────────────────
+
 interface EventListProps {
   days: DayEvents[]
   highlightedDay?: string | null
 }
 
+/**
+ * Expandable event list grouped by day and project. The most recent day's
+ * projects start expanded; all others start collapsed. Each session row
+ * shows summary, duration, turn count, and token usage.
+ */
 export function EventList({ days, highlightedDay }: EventListProps) {
   const [openProjects, setOpenProjects] = useState<Set<string>>(() => {
     // Open the most recent day's projects by default for quick scan.
@@ -254,6 +273,8 @@ export function EventList({ days, highlightedDay }: EventListProps) {
   )
 }
 
+// ── ProjectRollup ─────────────────────────────────────────────────
+
 function ProjectRollup({
   group,
   open,
@@ -276,6 +297,8 @@ function ProjectRollup({
         onClick={onToggle}
         onKeyDown={e => (e.key === 'Enter' || e.key === ' ') && onToggle()}
         className="flex cursor-pointer items-center gap-3 rounded-md hover:bg-[rgba(255,255,255,0.02)]"
+          // Expanded state gets taller padding so the chevron/content
+          // transition does not feel cramped against the session list below.
         style={{
           padding: open ? '10px 14px' : '7px 14px',
           marginBottom: open ? 2 : 1,
@@ -331,8 +354,12 @@ function ProjectRollup({
   )
 }
 
+// ── SessionItem ───────────────────────────────────────────────────
+
 function SessionItem({ session, bucket }: { session: SessionRow; bucket: 0 | 1 | 2 | 3 }) {
   const totalTokens = session.tokens_input + session.tokens_output + session.tokens_cached
+  // Summaries sourced from the user's first message are wrapped in quotes to
+  // visually distinguish verbatim prompts from AI-generated summaries.
   const isQuoted = session.summary_source === 'first_message'
   const summary = session.summary ?? '(no summary)'
   const start = new Date(session.started_at).toLocaleTimeString('en-US', {

@@ -1,3 +1,4 @@
+// Shared utility helpers for the UI package.
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
 

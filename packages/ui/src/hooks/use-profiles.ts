@@ -11,6 +11,8 @@ import type {
   UpdateProfileBody,
 } from '@ohmyc/shared'
 
+// --- Internal fetch helpers ---
+
 /** Shape of the GET /api/profiles response. */
 interface ProfilesListResponse {
   profiles: Profile[]
@@ -127,6 +129,8 @@ async function fetchPreflight(name: string): Promise<PreflightResult> {
   return res.json()
 }
 
+// --- Query hooks ---
+
 /** Query hook for listing all profiles and the active profile. */
 export function useProfiles() {
   return useQuery({ queryKey: ['profiles'], queryFn: fetchProfiles })
@@ -140,6 +144,8 @@ export function useProfile(name: string | null) {
     enabled: !!name,
   })
 }
+
+// --- Mutation hooks (CRUD) ---
 
 /** Mutation hook for creating a new profile. */
 export function useCreateProfile() {
@@ -168,6 +174,8 @@ export function useDeleteProfile() {
   })
 }
 
+// --- Mutation hooks (activation) ---
+
 /** Mutation hook for activating a profile. */
 export function useActivateProfile() {
   const qc = useQueryClient()
@@ -185,6 +193,8 @@ export function useDeactivateProfile() {
     onSuccess: () => qc.invalidateQueries({ queryKey: ['profiles'] }),
   })
 }
+
+// --- Preflight ---
 
 /** Mutation hook for running a profile preflight check. */
 export function usePreflight() {

@@ -1,3 +1,6 @@
+// Confirmation dialog shown before activating a profile that carries
+// settings warnings or model-config changes.
+
 import { ModelConfigChangeList } from './model-config-change-list'
 import { Button } from '@/components/ui/button'
 import {
@@ -17,6 +20,10 @@ interface ActivateConfirmDialogProperties {
   onCancel: () => void
 }
 
+/**
+ * Warns the user about settings that will be overwritten and/or model-config
+ * changes before proceeding with activation.
+ */
 export function ActivateConfirmDialog({
   targetProfile,
   settingsWarnings,

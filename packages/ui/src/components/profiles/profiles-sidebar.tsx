@@ -1,3 +1,6 @@
+// Left sidebar for the Profiles page. Lists activity timeline link,
+// user profiles with activate/compare hover actions, and component categories.
+
 import {
   Activity,
   Bot,
@@ -19,6 +22,10 @@ import { cn } from '@/lib/utils'
 
 import type { Profile } from '@ohmyc/shared'
 
+/**
+ * Union type representing what the sidebar can select: a profile, the
+ * new-profile form, or a component category with an optional edit target.
+ */
 export type SidebarSelection
   = { type: 'components'; category: 'agents' | 'commands' | 'model-configs' | 'skills'; editName?: string } | { type: 'new-profile' } | { type: 'profile'; name: string }
 
@@ -84,6 +91,11 @@ const COMPONENTS = [
   { category: 'model-configs' as const, label: 'Model Configs', icon: Settings },
 ] as const
 
+/**
+ * Sidebar navigation with three groups: Activity (timeline), My Profiles
+ * (with inline activate/compare actions), and Components (store categories).
+ * Selection state is managed externally via SidebarSelection.
+ */
 export function ProfilesSidebar({ profiles, active, selection, onSelect, onCompare, onActivate, headerSlot, timelineActive }: ProfilesSidebarProperties) {
   const currentValue = getTabValue(selection)
   const navigate = useNavigate()

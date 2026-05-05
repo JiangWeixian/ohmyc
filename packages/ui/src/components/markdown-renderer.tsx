@@ -1,13 +1,19 @@
+// Lightweight Markdown renderer using react-markdown with GitHub-Flavored Markdown support.
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 
 import { cn } from '@/lib/utils'
 
+/** Properties for the {@link MarkdownRenderer} component. */
 interface MarkdownRendererProperties {
+  /** Raw markdown string to render. */
   content: string
+  /** Additional CSS classes applied to the wrapper div. */
   className?: string
 }
 
+/** Renders markdown content with GFM (tables, strikethrough, task lists)
+ *  using the OhMyC prose typography styles. */
 export function MarkdownRenderer({ content, className }: MarkdownRendererProperties) {
   return (
     <div className={cn('prose prose-ohmyc mx-auto', className)}>

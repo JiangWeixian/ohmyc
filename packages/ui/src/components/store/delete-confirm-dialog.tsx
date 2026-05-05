@@ -1,3 +1,5 @@
+// Delete confirmation dialog — warns when a store component is still referenced
+// by profiles before allowing a force-delete.
 import { Button } from '@/components/ui/button'
 import {
   NativeDialog,
@@ -13,6 +15,11 @@ interface DeleteConfirmDialogProperties {
   onCancel: () => void
 }
 
+/**
+ * Confirmation dialog for deleting a store component. When `referencedBy` is
+ * non-empty, displays a warning listing the profiles that reference it and
+ * requires explicit "Delete anyway?" consent.
+ */
 export function DeleteConfirmDialog({ name, referencedBy, onConfirm, onCancel }: DeleteConfirmDialogProperties) {
   const isReferenced = referencedBy.length > 0
 

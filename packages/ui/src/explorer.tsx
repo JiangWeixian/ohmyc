@@ -46,6 +46,8 @@ import type {
   Skill,
 } from '@ohmyc/shared'
 
+// ═══════════ Sidebar Section Definitions ═══════════
+
 const SECTIONS: SidebarSection[] = [
   { id: 'agents', label: 'Agents', icon: Bot },
   { id: 'skills', label: 'Skills', icon: Sparkles },
@@ -68,7 +70,8 @@ const SECTION_DESCRIPTIONS: Record<string, string> = {
   'lsp-servers': 'Language Server Protocol servers providing code intelligence.',
 }
 
-// Entity card configurations
+// ═══════════ Entity Card Configurations ═══════════
+
 const ENTITY_CONFIG = {
   agents: {
     iconAccentVar: '--text-primary',
@@ -110,6 +113,8 @@ const ENTITY_CONFIG = {
   },
 } as const
 
+// ═══════════ Explorer Component ═══════════
+
 /** Props for the {@link Explorer} component. */
 interface ExplorerProperties {
   viewSwitcher?: React.ReactNode
@@ -146,6 +151,7 @@ export function Explorer({ viewSwitcher }: ExplorerProperties) {
   const mcpCount = (mcpServers ?? []).length
   const lspCount = (lspServers ?? []).length
 
+  // Reverse-lookup from plugin ID to profile names — powers the "used by N profiles" display.
   const pluginReferenceMap = useMemo(() => {
     const allProfiles = profilesData?.profiles ?? []
     const map = new Map<string, string[]>()
@@ -241,6 +247,7 @@ export function Explorer({ viewSwitcher }: ExplorerProperties) {
             SECTION_DESCRIPTIONS[sectionId]
           )
 
+    // Selected entity: harvest frontmatter fields for the detail panel metadata list.
     if (selectedItem && selectedEntity) {
       const fm = selectedEntity.frontmatter as Record<string, unknown>
       const meta: { label: string; value: string }[] = []
@@ -417,6 +424,7 @@ export function Explorer({ viewSwitcher }: ExplorerProperties) {
                     <div>Commands: {plugin.componentCounts.commands}</div>
                     <div>Installs: {installCount}</div>
                   </div>
+                  {/* Compact display: inline badges for 1-2 profiles, count summary for 3+. */}
                   <div className="mt-5">
                     <div className="text-[10px] font-medium tracking-[0.04em] text-[var(--text-tertiary)]">Profiles</div>
                     {referenceCount === 0

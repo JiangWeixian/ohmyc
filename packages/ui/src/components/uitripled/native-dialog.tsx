@@ -1,3 +1,7 @@
+// Animated dialog with scale+blur entrance/exit transitions.
+// Uses Radix UI Dialog for accessibility and focus trapping, wrapped
+// with framer-motion for smooth overlay and content animations.
+
 'use client'
 
 import * as DialogPrimitive from '@radix-ui/react-dialog'
@@ -10,14 +14,19 @@ import { cn } from '@/lib/utils'
 // Use Radix UI Dialog consistently — the animated overlay and content
 // require Radix Dialog.Root context. base-ui Dialog cannot provide it.
 
+/** Uncontrolled dialog root — opens/closes via trigger interaction. */
 const NativeDialog = DialogPrimitive.Root
 
+/** Element that opens the dialog when activated. */
 const NativeDialogTrigger = DialogPrimitive.Trigger
 
+/** Portals dialog content outside the DOM tree to avoid z-index conflicts. */
 const NativeDialogPortal = DialogPrimitive.Portal
 
+/** Element that closes the dialog. */
 const NativeDialogClose = DialogPrimitive.Close
 
+/** Semi-transparent backdrop with backdrop-blur that fades in/out. */
 const NativeDialogOverlay = React.forwardRef<
   React.ElementRef<typeof DialogPrimitive.Overlay>,
   React.ComponentPropsWithoutRef<typeof DialogPrimitive.Overlay>
@@ -36,6 +45,7 @@ const NativeDialogOverlay = React.forwardRef<
 ))
 NativeDialogOverlay.displayName = 'NativeDialogOverlay'
 
+/** Dialog content panel with scale+blur entrance and glassmorphism background. */
 const NativeDialogContent = React.forwardRef<
   React.ElementRef<typeof DialogPrimitive.Content>,
   React.ComponentPropsWithoutRef<typeof DialogPrimitive.Content>
@@ -44,6 +54,8 @@ const NativeDialogContent = React.forwardRef<
     <NativeDialogOverlay />
     <DialogPrimitive.Content ref={reference} asChild {...properties}>
       <div className="fixed left-[50%] top-[50%] z-50 -translate-x-1/2 -translate-y-1/2">
+      // Combined scale-down + gaussian blur creates a "focusing" entrance:
+      // the dialog materializes from a slightly smaller, blurred state.
       <motion.div
         initial={{ opacity: 0, scale: 0.95, filter: 'blur(10px)' }}
         animate={{ opacity: 1, scale: 1, filter: 'blur(0px)' }}
@@ -66,6 +78,7 @@ const NativeDialogContent = React.forwardRef<
 ))
 NativeDialogContent.displayName = 'NativeDialogContent'
 
+/** Container for dialog header content. */
 const NativeDialogHeader = ({
   className,
   ...properties
@@ -78,6 +91,7 @@ const NativeDialogHeader = ({
 )
 NativeDialogHeader.displayName = 'NativeDialogHeader'
 
+/** Container for dialog footer actions. */
 const NativeDialogFooter = ({
   className,
   ...properties
@@ -93,6 +107,7 @@ const NativeDialogFooter = ({
 )
 NativeDialogFooter.displayName = 'NativeDialogFooter'
 
+/** Accessible dialog title rendered by Radix. */
 const NativeDialogTitle = React.forwardRef<
   React.ElementRef<typeof DialogPrimitive.Title>,
   React.ComponentPropsWithoutRef<typeof DialogPrimitive.Title>
@@ -105,6 +120,7 @@ const NativeDialogTitle = React.forwardRef<
 ))
 NativeDialogTitle.displayName = 'NativeDialogTitle'
 
+/** Accessible dialog description rendered beneath the title. */
 const NativeDialogDescription = React.forwardRef<
   React.ElementRef<typeof DialogPrimitive.Description>,
   React.ComponentPropsWithoutRef<typeof DialogPrimitive.Description>

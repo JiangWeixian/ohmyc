@@ -16,6 +16,7 @@ export function useGlobalKeyboardShortcuts() {
 
   useEffect(() => {
     let gPressed = false
+    // Reset the `g` prefix after 1 s to avoid trapping accidental keypresses.
     let gTimeout: ReturnType<typeof setTimeout> | null = null
 
     const isInputFocused = () => {
@@ -42,6 +43,7 @@ export function useGlobalKeyboardShortcuts() {
       }
 
       if (gPressed) {
+        // Second key after `g` — consume the pending prefix and dispatch navigation.
         gPressed = false
         if (gTimeout) {
           clearTimeout(gTimeout)
@@ -60,6 +62,7 @@ export function useGlobalKeyboardShortcuts() {
         }
         if (e.key === 's') {
           e.preventDefault()
+          // `g-s` is context-aware: goes to Explorer settings inside /explore, global settings otherwise.
           if (location.pathname.startsWith('/explore')) {
             navigate('/explore/settings')
           } else {

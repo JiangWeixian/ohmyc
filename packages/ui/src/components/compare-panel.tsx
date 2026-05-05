@@ -1,3 +1,5 @@
+// Slide-in comparison panel — shows a side-by-side diff of two profiles' contents
+// (agents, skills, commands, model config, plugins) with activate action.
 import * as DialogPrimitive from '@radix-ui/react-dialog'
 import { AnimatePresence, motion } from 'framer-motion'
 import { X } from 'lucide-react'
@@ -7,15 +9,24 @@ import { cn } from '@/lib/utils'
 
 import type { Profile } from '@ohmyc/shared'
 
+/** Props for the {@link ComparePanel} component. */
 interface ComparePanelProps {
+  /** Whether the panel is visible. */
   open: boolean
+  /** Callback to close the panel. */
   onClose: () => void
+  /** The currently active profile (left side of diff). */
   activeProfile: Profile | null
+  /** The profile being compared against (right side of diff). */
   targetProfile: Profile | null
+  /** Callback to activate the target profile, replacing the active one. */
   onActivateTarget: () => void
 }
 
-// Custom overlay for compare panel with darker dim
+// ---------------------------------------------------------------------------
+// Overlay — animated backdrop that dims the page behind the panel
+// ---------------------------------------------------------------------------
+
 const CompareOverlay = React.forwardRef<
   React.ElementRef<typeof DialogPrimitive.Overlay>,
   React.ComponentPropsWithoutRef<typeof DialogPrimitive.Overlay>
@@ -31,7 +42,10 @@ const CompareOverlay = React.forwardRef<
 ))
 CompareOverlay.displayName = 'CompareOverlay'
 
-// Custom content that slides in from the right
+// ---------------------------------------------------------------------------
+// Content — animated panel that slides in from the right edge
+// ---------------------------------------------------------------------------
+
 const CompareContent = React.forwardRef<
   React.ElementRef<typeof DialogPrimitive.Content>,
   React.ComponentPropsWithoutRef<typeof DialogPrimitive.Content>
@@ -57,11 +71,19 @@ const CompareContent = React.forwardRef<
 ))
 CompareContent.displayName = 'CompareContent'
 
+// ---------------------------------------------------------------------------
+// DiffSection — renders a single category diff (e.g. "Agents") between profiles
+// ---------------------------------------------------------------------------
+
+/** Renders a unified-diff view of one profile category. Items present only in
+ *  the target are marked `+`, items only in the active profile are marked `−`,
+ *  and shared items show `=`. */
 function DiffSection({ title, activeItems, targetItems }: {
   title: string
   activeItems: string[]
   targetItems: string[]
 }) {
+  // Merge both lists into a unique set so every item appears once
   const allItems = [...new Set([...activeItems, ...targetItems])]
 
   if (allItems.length === 0) {
@@ -81,6 +103,7 @@ function DiffSection({ title, activeItems, targetItems }: {
           const inActive = activeItems.includes(item)
           const inTarget = targetItems.includes(item)
 
+          // Determine diff marker: + = added in target, − = removed in target, = = unchanged
           let marker = '='
           let markerClass = 'text-[#62666d]'
 
@@ -104,6 +127,12 @@ function DiffSection({ title, activeItems, targetItems }: {
   )
 }
 
+// ---------------------------------------------------------------------------
+// ComparePanel — public export, the full slide-in dialog
+// ---------------------------------------------------------------------------
+
+/** Slide-in panel that compares two profiles side-by-side, showing which
+ *  agents, skills, commands, model configs, and plugins are added or removed. */
 export function ComparePanel({ open, onClose, activeProfile, targetProfile, onActivateTarget }: ComparePanelProps) {
   if (!activeProfile || !targetProfile) {
     return null

@@ -1,3 +1,6 @@
+// Confirmation dialog for switching from one active profile to another.
+// Displays deactivation side-effects, missing components, and settings warnings.
+
 import { ModelConfigChangeList } from './model-config-change-list'
 import { Button } from '@/components/ui/button'
 import {
@@ -19,6 +22,11 @@ interface ConfirmSwitchDialogProperties {
   onCancel: () => void
 }
 
+/**
+ * Two-step confirmation for profile switching: shows what the current profile's
+ * deactivation will undo and what the target profile will apply. Blocks the
+ * switch if the target has missing components.
+ */
 export function ConfirmSwitchDialog({
   currentActive,
   targetProfile,

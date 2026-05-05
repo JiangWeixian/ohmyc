@@ -250,7 +250,12 @@ export function useDeleteStoreModelConfig() {
 
 /**
  * Mutation hook for importing components into the store.
- * Provides `previewImport` (dry-run) and `applyImport` helpers.
+ *
+ * The import flow is two-phase:
+ * 1. `previewImport` — dry-run that returns what *would* be imported without writing files.
+ * 2. `applyImport` — performs the actual write, optionally overwriting existing components.
+ *
+ * Cache is only refreshed after a real (non-dry-run) import to avoid unnecessary refetches.
  */
 export function useStoreImport() {
   const qc = useQueryClient()

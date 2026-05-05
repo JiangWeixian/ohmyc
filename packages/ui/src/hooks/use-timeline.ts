@@ -10,6 +10,7 @@ export interface HeatmapPoint {
   value: number
 }
 
+/** A single coding session row from the timeline database. */
 export interface SessionRow {
   session_id: string
   project: string
@@ -29,6 +30,7 @@ export interface SessionRow {
   agent_name: string | null
 }
 
+/** Sessions grouped by project, with aggregated counts. */
 export interface ProjectGroup {
   project: string
   sessions: SessionRow[]
@@ -40,6 +42,7 @@ export interface ProjectGroup {
   agents: string[]
 }
 
+/** All sessions for a single day, grouped by project. */
 export interface DayEvents {
   day: string
   projectGroups: ProjectGroup[]
@@ -48,11 +51,13 @@ export interface DayEvents {
   token_count: number
 }
 
+/** Paginated result of day-grouped session events. */
 export interface EventsResult {
   days: DayEvents[]
   nextCursor?: string
 }
 
+/** Timeline database status — total sessions and last sync timestamp. */
 export interface TimelineStatus {
   sessionCount: number
   lastSyncAt: number | null
