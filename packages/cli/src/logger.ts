@@ -7,11 +7,8 @@ const logDir = path.join(homedir(), '.cui', 'logs')
 const logFile = path.join(logDir, 'ohmyc.log')
 
 // Check if console output is enabled via env var
-// Default: true in development, false in production (bundled)
-const isDev = process.env.NODE_ENV === 'development' || !process.env.NODE_ENV
-const enableConsole = process.env.OHMYC_LOG_CONSOLE
-  ? process.env.OHMYC_LOG_CONSOLE === 'true'
-  : isDev
+// Default: disabled (only file logging), enable with OHMYC_LOG_CONSOLE=true
+const enableConsole = process.env.OHMYC_LOG_CONSOLE === 'true'
 
 const targets: pino.TransportTargetOptions[] = [
   {
