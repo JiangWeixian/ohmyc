@@ -3,12 +3,13 @@ import path from 'node:path'
 
 import pino from 'pino'
 
-// Detect test environment
+// Detect test or CI environment
 const isTest = process.env.NODE_ENV === 'test' || process.env.VITEST
+const isCI = process.env.CI === 'true'
 
-// In test environment, use a temp log path and disable symlink
+// In test or CI environment, use a temp log path and disable symlink
 // to avoid race conditions when tests run in parallel
-const logDir = isTest
+const logDir = isTest || isCI
   ? path.join(homedir(), '.cui', 'logs', `test-${process.pid}`)
   : path.join(homedir(), '.cui', 'logs')
 const logFile = path.join(logDir, 'ohmyc.log')
@@ -24,7 +25,7 @@ const targets: pino.TransportTargetOptions[] = [
       file: logFile,
       frequency: 'daily',
       mkdir: true,
-      symlink: !isTest,
+      symlink: !(isTest || isCI),
     },
     level: 'info',
   },
