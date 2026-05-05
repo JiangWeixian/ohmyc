@@ -12,7 +12,7 @@ import {
 import { launchApp } from './launcher'
 import { logger } from './logger'
 
-const cli = cac('cu')
+const cli = cac('ohmyc')
 
 cli
   .command('start', 'Start the OhMyC server and open the browser')
@@ -33,7 +33,7 @@ cli
     }
   })
 
-// Default command: just running `cu` starts the app
+// Default command: just running `ohmyc` starts the app
 cli
   .command('[...args]', 'Start OhMyC (default)')
   .option('--cwd <cwd>', 'Working directory for project discovery (default: current directory)')
@@ -46,7 +46,7 @@ cli
         process.exit(1)
       }
     } else {
-      logger.error(`Unknown arguments: ${arguments_.join(' ')}. Did you mean 'cu start'?`)
+      logger.error(`Unknown arguments: ${arguments_.join(' ')}. Did you mean 'ohmyc start'?`)
       process.exit(1)
     }
   })
