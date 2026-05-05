@@ -1,3 +1,4 @@
+// Explorer view — browse agents, skills, commands, plugins, hooks, MCP/LSP configs via sidebar tabs.
 import {
   Anchor,
   Blocks,
@@ -109,10 +110,15 @@ const ENTITY_CONFIG = {
   },
 } as const
 
+/** Props for the {@link Explorer} component. */
 interface ExplorerProperties {
   viewSwitcher?: React.ReactNode
 }
 
+/**
+ * Main explorer view — renders a sidebar with section tabs and a detail panel
+ * for the selected agent, skill, command, plugin, hook, MCP server, or LSP server.
+ */
 export function Explorer({ viewSwitcher }: ExplorerProperties) {
   const { tab } = useParams<{ tab: string }>()
   const navigate = useNavigate()

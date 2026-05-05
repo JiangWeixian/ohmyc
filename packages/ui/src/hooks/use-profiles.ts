@@ -1,3 +1,4 @@
+// React Query hooks for profile CRUD, activation, and deactivation.
 import {
   useMutation,
   useQuery,
@@ -10,11 +11,13 @@ import type {
   UpdateProfileBody,
 } from '@ohmyc/shared'
 
+/** Shape of the GET /api/profiles response. */
 interface ProfilesListResponse {
   profiles: Profile[]
   active: string | null
 }
 
+/** Fetches the list of all profiles and the active profile name. */
 async function fetchProfiles(): Promise<ProfilesListResponse> {
   const res = await fetch('/api/profiles')
   if (!res.ok) {
@@ -23,6 +26,7 @@ async function fetchProfiles(): Promise<ProfilesListResponse> {
   return res.json()
 }
 
+/** Fetches a single profile by name. */
 async function fetchProfile(name: string): Promise<Profile> {
   const res = await fetch(`/api/profiles/${encodeURIComponent(name)}`)
   if (!res.ok) {
@@ -32,6 +36,7 @@ async function fetchProfile(name: string): Promise<Profile> {
   return data.profile
 }
 
+/** Creates a new profile. */
 async function createProfile(body: CreateProfileBody): Promise<Profile> {
   const res = await fetch('/api/profiles', {
     method: 'POST',
@@ -46,6 +51,7 @@ async function createProfile(body: CreateProfileBody): Promise<Profile> {
   return result.profile
 }
 
+/** Updates an existing profile (all fields optional except name). */
 async function updateProfile(name: string, body: UpdateProfileBody): Promise<Profile> {
   const res = await fetch(`/api/profiles/${encodeURIComponent(name)}`, {
     method: 'PUT',
@@ -60,6 +66,7 @@ async function updateProfile(name: string, body: UpdateProfileBody): Promise<Pro
   return result.profile
 }
 
+/** Deletes a profile by name. */
 async function deleteProfile(name: string): Promise<void> {
   const res = await fetch(`/api/profiles/${encodeURIComponent(name)}`, { method: 'DELETE' })
   if (!res.ok) {
@@ -67,6 +74,7 @@ async function deleteProfile(name: string): Promise<void> {
   }
 }
 
+/** Activates a profile, creating symlinks and updating Claude Code settings. */
 async function activateProfile(name: string): Promise<{ warnings: string[] }> {
   const res = await fetch(`/api/profiles/${encodeURIComponent(name)}/activate`, { method: 'POST' })
   if (!res.ok) {
@@ -76,6 +84,7 @@ async function activateProfile(name: string): Promise<{ warnings: string[] }> {
   return res.json()
 }
 
+/** Deactivates the currently active profile. */
 async function deactivateProfile(name: string): Promise<void> {
   const res = await fetch(`/api/profiles/${encodeURIComponent(name)}/deactivate`, { method: 'POST' })
   if (!res.ok) {
@@ -83,6 +92,7 @@ async function deactivateProfile(name: string): Promise<void> {
   }
 }
 
+/** A single environment variable change predicted by the preflight check. */
 export interface ModelConfigEnvChange {
   action: 'CHANGE' | 'REMOVE' | 'SET'
   key: string
@@ -90,6 +100,7 @@ export interface ModelConfigEnvChange {
   previousValue?: string
 }
 
+/** Summary of model-config environment changes for a profile activation. */
 export interface ModelConfigChanges {
   configName: string
   changes: ModelConfigEnvChange[]
@@ -97,6 +108,7 @@ export interface ModelConfigChanges {
   deactivationConfigName?: string
 }
 
+/** Result of a profile preflight check — lists missing components and predicted side effects. */
 export interface PreflightResult {
   canActivate: boolean
   missing: string[]
@@ -105,6 +117,7 @@ export interface PreflightResult {
   modelConfigChanges?: ModelConfigChanges
 }
 
+/** Fetches the preflight result for a profile before activation. */
 async function fetchPreflight(name: string): Promise<PreflightResult> {
   const res = await fetch(`/api/profiles/${encodeURIComponent(name)}/preflight`)
   if (!res.ok) {
@@ -114,10 +127,12 @@ async function fetchPreflight(name: string): Promise<PreflightResult> {
   return res.json()
 }
 
+/** Query hook for listing all profiles and the active profile. */
 export function useProfiles() {
   return useQuery({ queryKey: ['profiles'], queryFn: fetchProfiles })
 }
 
+/** Query hook for fetching a single profile by name. */
 export function useProfile(name: string | null) {
   return useQuery({
     queryKey: ['profiles', name],
@@ -126,6 +141,7 @@ export function useProfile(name: string | null) {
   })
 }
 
+/** Mutation hook for creating a new profile. */
 export function useCreateProfile() {
   const qc = useQueryClient()
   return useMutation({
@@ -134,6 +150,7 @@ export function useCreateProfile() {
   })
 }
 
+/** Mutation hook for updating an existing profile. */
 export function useUpdateProfile() {
   const qc = useQueryClient()
   return useMutation({
@@ -142,6 +159,7 @@ export function useUpdateProfile() {
   })
 }
 
+/** Mutation hook for deleting a profile. */
 export function useDeleteProfile() {
   const qc = useQueryClient()
   return useMutation({
@@ -150,6 +168,7 @@ export function useDeleteProfile() {
   })
 }
 
+/** Mutation hook for activating a profile. */
 export function useActivateProfile() {
   const qc = useQueryClient()
   return useMutation({
@@ -158,6 +177,7 @@ export function useActivateProfile() {
   })
 }
 
+/** Mutation hook for deactivating the current profile. */
 export function useDeactivateProfile() {
   const qc = useQueryClient()
   return useMutation({
@@ -166,6 +186,7 @@ export function useDeactivateProfile() {
   })
 }
 
+/** Mutation hook for running a profile preflight check. */
 export function usePreflight() {
   return useMutation({
     mutationFn: fetchPreflight,

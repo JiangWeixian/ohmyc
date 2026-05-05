@@ -1,3 +1,4 @@
+// Profiles view — list, create, edit, compare, and activate OhMyC profiles.
 import {
   useEffect,
   useMemo,

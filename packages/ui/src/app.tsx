@@ -1,3 +1,4 @@
+// Root application component — sets up routing, command palette, and global keyboard shortcuts.
 import {
   Activity,
   Bot,
@@ -33,6 +34,7 @@ import { useActivateProfile, useProfiles } from './hooks/use-profiles'
 import { useSkills } from './hooks/use-skills'
 import { ProfilesView } from './profiles-view'
 
+/** Command palette content — exposes profile actions, navigation, and entity search. */
 function AppCommandPalette() {
   const navigate = useNavigate()
   const { data } = useProfiles()
@@ -180,6 +182,8 @@ function AppCommandPalette() {
     />
   )
 }
+
+/** Renders the timeline view with the profiles sidebar and view switcher. */
 function TimelineRoute({ viewSwitcher }: { viewSwitcher: React.ReactNode }) {
   const navigate = useNavigate()
   const { data } = useProfiles()
@@ -214,6 +218,7 @@ function TimelineRoute({ viewSwitcher }: { viewSwitcher: React.ReactNode }) {
   )
 }
 
+/** Main layout with route configuration and global keyboard shortcuts. */
 function AppLayout() {
   const location = useLocation()
   const navigate = useNavigate()
@@ -239,6 +244,7 @@ function AppLayout() {
   )
 }
 
+/** Root exported component — wraps the app in the command palette provider and toaster. */
 export function App() {
   return (
     <CommandPaletteProvider>
