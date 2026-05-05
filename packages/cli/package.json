@@ -11,7 +11,7 @@
     "ohmyc": "dist/index.mjs"
   },
   "scripts": {
-    "build": "tsup",
+    "build": "rm -rf dist && tsup",
     "build:full": "pnpm --filter @ohmyc/ui build && tsup",
     "dev": "tsx watch src/index.ts start --api-only --cwd $INIT_CWD",
     "dev:server": "tsx watch src/index.ts --cwd $INIT_CWD",
