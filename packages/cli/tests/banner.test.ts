@@ -45,24 +45,28 @@ describe('banner', () => {
       const originalIsTTY = process.stdout.isTTY
       Object.defineProperty(process.stdout, 'isTTY', { value: true, writable: true })
 
-      printBanner()
+      try {
+        printBanner()
 
-      expect(logSpy).toHaveBeenCalledTimes(1)
-      const printed = logSpy.mock.calls[0][0] as string
-      expect(printed).toContain('OhMyC')
-
-      Object.defineProperty(process.stdout, 'isTTY', { value: originalIsTTY, writable: true })
+        expect(logSpy).toHaveBeenCalledTimes(1)
+        const printed = logSpy.mock.calls[0][0] as string
+        expect(printed).toContain('OhMyC')
+      } finally {
+        Object.defineProperty(process.stdout, 'isTTY', { value: originalIsTTY, writable: true })
+      }
     })
 
     it('does not print when stdout is not a TTY', () => {
       const originalIsTTY = process.stdout.isTTY
       Object.defineProperty(process.stdout, 'isTTY', { value: false, writable: true })
 
-      printBanner()
+      try {
+        printBanner()
 
-      expect(logSpy).not.toHaveBeenCalled()
-
-      Object.defineProperty(process.stdout, 'isTTY', { value: originalIsTTY, writable: true })
+        expect(logSpy).not.toHaveBeenCalled()
+      } finally {
+        Object.defineProperty(process.stdout, 'isTTY', { value: originalIsTTY, writable: true })
+      }
     })
   })
 })

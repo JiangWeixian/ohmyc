@@ -6,9 +6,14 @@ const __dirname = fileURLToPath(new URL('.', import.meta.url))
 
 export function getBanner(): string {
   // Read version from package.json
-  const packagePath = path.resolve(__dirname, '../package.json')
-  const packageJson = JSON.parse(readFileSync(packagePath, 'utf8'))
-  const version = packageJson.version
+  let version = 'unknown'
+  try {
+    const packagePath = path.resolve(__dirname, '../package.json')
+    const packageJson = JSON.parse(readFileSync(packagePath, 'utf8'))
+    version = packageJson.version ?? 'unknown'
+  } catch {
+    // fallback to unknown version
+  }
 
   return [
     '   ___   _   _   __  __     ____',
