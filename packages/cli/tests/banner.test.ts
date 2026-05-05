@@ -1,3 +1,5 @@
+import path from 'node:path'
+
 import {
   afterEach,
   beforeEach,
@@ -9,17 +11,17 @@ import {
 
 import { getBanner, printBanner } from '@/banner'
 
+let logSpy: ReturnType<typeof vi.spyOn>
+
+beforeEach(() => {
+  logSpy = vi.spyOn(console, 'log').mockImplementation(() => {})
+})
+
+afterEach(() => {
+  logSpy.mockRestore()
+})
+
 describe('banner', () => {
-  let logSpy: ReturnType<typeof vi.spyOn>
-
-  beforeEach(() => {
-    logSpy = vi.spyOn(console, 'log').mockImplementation(() => {})
-  })
-
-  afterEach(() => {
-    logSpy.mockRestore()
-  })
-
   describe('getBanner', () => {
     it('returns the OhMyC ASCII wordmark', () => {
       const banner = getBanner()
@@ -68,5 +70,26 @@ describe('banner', () => {
         Object.defineProperty(process.stdout, 'isTTY', { value: originalIsTTY, writable: true })
       }
     })
+  })
+})
+
+describe('CLI integration', () => {
+  it('prints banner on startup when TTY is available', async () => {
+    const originalIsTTY = process.stdout.isTTY
+    Object.defineProperty(process.stdout, 'isTTY', { value: true, writable: true })
+
+    // Clear module cache to re-run module-level code
+    const modulePath = path.resolve(import.meta.dirname, '../src/index.ts')
+    vi.resetModules()
+
+    await import(modulePath)
+
+    // Banner should have been printed
+    expect(logSpy).toHaveBeenCalled()
+    const calls = logSpy.mock.calls.map((args: any[]) => args.join(' '))
+    const hasBanner = calls.some((msg: string) => msg.includes('OhMyC'))
+    expect(hasBanner).toBe(true)
+
+    Object.defineProperty(process.stdout, 'isTTY', { value: originalIsTTY, writable: true })
   })
 })

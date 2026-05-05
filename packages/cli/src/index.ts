@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 import { cac } from 'cac'
 
+import { printBanner } from './banner'
 import {
   runDoctor,
   runIngest,
@@ -88,4 +89,5 @@ cli
 cli.help()
 cli.version('0.1.0')
 
+printBanner()
 cli.parse()
