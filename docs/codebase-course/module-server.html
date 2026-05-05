@@ -3,11 +3,11 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Dashboard Command — @ohmyc/cli</title>
+<title>server — OhMyC</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet">
-<script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/mermaid@11.4.1/dist/mermaid.min.js"></script>
 <style>
 /* _base.css — shared across essay and index pages.
    Design tokens, resets, typography, hero, prereq chips, container, footer, badges. */
@@ -25,6 +25,10 @@
   --accent-soft: rgba(255, 99, 99, 0.12);
   --code-bg: #0c0d0f;
   --highlight: rgba(255, 99, 99, 0.10);
+  --scrollbar-size: 10px;
+  --scrollbar-track: rgba(255, 255, 255, 0.035);
+  --scrollbar-thumb: rgba(156, 156, 157, 0.42);
+  --scrollbar-thumb-hover: rgba(249, 249, 249, 0.58);
   --shadow-card:
     0 1px 0 rgba(255,255,255,0.04) inset,
     0 0 0 1px rgba(255,255,255,0.02),
@@ -40,6 +44,25 @@
 
 * { box-sizing: border-box; margin: 0; padding: 0; }
 *, *::before, *::after { box-sizing: border-box; }
+* {
+  scrollbar-color: var(--scrollbar-thumb) var(--scrollbar-track);
+  scrollbar-width: thin;
+}
+*::-webkit-scrollbar {
+  width: var(--scrollbar-size);
+  height: var(--scrollbar-size);
+}
+*::-webkit-scrollbar-track {
+  background: var(--scrollbar-track);
+  border-radius: 999px;
+}
+*::-webkit-scrollbar-thumb {
+  background: var(--scrollbar-thumb);
+  border: 2px solid var(--bg);
+  border-radius: 999px;
+}
+*::-webkit-scrollbar-thumb:hover { background: var(--scrollbar-thumb-hover); }
+*::-webkit-scrollbar-corner { background: transparent; }
 
 html, body {
   background: var(--bg);
@@ -226,8 +249,16 @@ h4 {
 }
 .mermaid g.node.active text,
 .mermaid g.node.active text tspan {
-  fill: #07080a !important;
+  fill: #ffffff !important;
   font-weight: 600;
+}
+.mermaid g.node.active foreignObject,
+.mermaid g.node.active .nodeLabel,
+.mermaid g.node.active .nodeLabel *,
+.mermaid g.node.active span {
+  color: #ffffff !important;
+  fill: #ffffff !important;
+  font-weight: 700;
 }
 .mermaid g.node { cursor: pointer; transition: opacity 0.2s ease; }
 .mermaid g.node:hover { opacity: 0.85; }
@@ -288,13 +319,17 @@ pre.code-block {
   font-size: 13.5px;
   line-height: 1.7;
   overflow-x: auto;
+  scrollbar-gutter: stable;
 }
 .codewalk .line,
 pre.code-block .line {
-  display: block;
+  display: grid;
+  grid-template-columns: 32px max-content;
+  gap: 14px;
   padding: 0 20px;
   color: var(--text);
-  white-space: pre;
+  min-width: max-content;
+  white-space: normal;
 }
 .codewalk .line.hl,
 .codewalk .line.line-hl,
@@ -303,11 +338,24 @@ pre.code-block .line.line-hl {
   border-left: 2px solid var(--accent);
   padding-left: 18px;
 }
-.codewalk .ln {
+.codewalk .line.storyboard-range-hl,
+pre.code-block .line.storyboard-range-hl {
+  background: rgba(85, 179, 255, 0.07);
+  border-left: 2px solid var(--info, #55b3ff);
+  padding-left: 18px;
+}
+.codewalk .ln,
+pre.code-block .ln {
   display: inline-block;
-  width: 28px;
+  width: 32px;
   color: var(--text-faint);
+  font-variant-numeric: tabular-nums;
+  text-align: right;
   user-select: none;
+}
+.codewalk .code-text,
+pre.code-block .code-text {
+  white-space: pre;
 }
 .explain {
   color: var(--text-dim);
@@ -336,6 +384,50 @@ pre.code-block .line.line-hl {
   font-size: 15.5px;
   line-height: 1.65;
   padding-top: 6px;
+}
+.layout-split .split-notes,
+.split .split-notes {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  max-height: clamp(280px, 48vh, 520px);
+  overflow-y: auto;
+  padding: 6px 4px 6px 0;
+  scrollbar-gutter: stable;
+}
+.split-note-card {
+  border: 1px solid var(--border);
+  background: var(--surface);
+  border-radius: 12px;
+  padding: 16px 18px;
+  color: var(--text-dim);
+  cursor: pointer;
+  font-size: 15px;
+  line-height: 1.55;
+  position: relative;
+  transition: border-color 0.2s ease, background 0.2s ease, transform 0.2s ease;
+}
+.split-note-card:hover { border-color: var(--text-faint); }
+.split-note-card.active {
+  border-color: var(--accent);
+  background: linear-gradient(180deg, rgba(255,99,99,0.08), rgba(255,99,99,0.02));
+  color: var(--text);
+  box-shadow: 0 4px 16px rgba(255, 99, 99, 0.12);
+}
+.split-note-card p { display: inline; }
+.split-note-card p + p { margin-top: 10px; }
+.split-note-card strong { color: var(--text); }
+.split-note-card.active .step-num { color: var(--accent); }
+.split-note-card .lines {
+  display: inline-block;
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  color: var(--text-faint);
+  background: var(--code-bg);
+  padding: 1px 6px;
+  border-radius: 3px;
+  margin-top: 8px;
+  border: 1px solid var(--border-soft);
 }
 .layout-split .side h3,
 .split .side h3 {
@@ -450,7 +542,7 @@ pre.code-block .line.line-hl {
 .unit-guess-first summary::-webkit-details-marker { display: none; }
 .guess summary::before,
 .unit-guess-first summary::before {
-  content: '\1F914  ';
+  content: '🤔  ';
   margin-right: 4px;
 }
 .guess[open] summary,
@@ -460,7 +552,7 @@ pre.code-block .line.line-hl {
   font-weight: 400;
 }
 .guess[open] summary::before,
-.unit-guess-first[open] summary::before { content: '\1F4A1  '; }
+.unit-guess-first[open] summary::before { content: '💡  '; }
 
 /* COMPARE */
 .compare {
@@ -486,7 +578,7 @@ pre.code-block .line.line-hl {
 .compare .col.good .col-label { color: #8aff9c; }
 .compare pre {
   margin: 0;
-  padding: 16px 18px;
+  padding: 16px 0;
   font-family: var(--font-mono);
   font-size: 12.5px;
   line-height: 1.65;
@@ -575,6 +667,277 @@ pre.code-block .line.line-hl {
 }
 .figure figcaption strong { color: var(--text); font-style: normal; font-weight: 600; }
 
+/* STORYBOARD unit — Variant B Cinema Strip with P3 aside annotations */
+.storyboard {
+  margin: 24px 0 18px;
+}
+.storyboard-mobile-guard {
+  display: none;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 18px 20px;
+  color: var(--text-dim);
+  line-height: 1.55;
+}
+.storyboard-shell {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  box-shadow: var(--shadow-card);
+  overflow: hidden;
+}
+.storyboard-caption {
+  color: var(--text-dim);
+  font-size: 15px;
+  margin: -4px 0 18px;
+}
+.storyboard-stage {
+  position: relative;
+  min-height: 430px;
+  padding: 28px 32px 22px;
+  border-bottom: 1px solid var(--border);
+  background: radial-gradient(circle at 50% 40%, rgba(255,255,255,0.025), transparent 70%);
+}
+.storyboard-scene-label {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 18px;
+  color: var(--text-faint);
+  font-family: var(--font-mono);
+  font-size: 12px;
+}
+.storyboard-zoom {
+  position: static;
+}
+.storyboard-mermaid {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 300px;
+}
+.storyboard-mermaid svg {
+  max-width: 100%;
+  height: auto;
+}
+.storyboard-explanation {
+  margin-top: 18px;
+  padding: 10px 14px;
+  color: var(--text);
+  font-size: 13px;
+  font-style: italic;
+  line-height: 1.5;
+  background: rgba(7, 8, 10, 0.78);
+  backdrop-filter: blur(6px);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+}
+.storyboard-explanation p {
+  margin-bottom: 0;
+  color: var(--text);
+  font-size: 13px;
+}
+.storyboard-strip {
+  display: flex;
+  gap: 10px;
+  padding: 14px 18px;
+  border-bottom: 1px solid var(--border);
+  background: var(--code-bg);
+  overflow-x: auto;
+}
+.storyboard-tab {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+  min-width: 140px;
+  min-height: 64px;
+  color: var(--text-dim);
+  background: rgba(255,255,255,0.015);
+  border: 1.5px dashed rgba(255,255,255,0.16);
+  border-radius: 8px;
+  padding: 10px 12px;
+  font-family: var(--font-primary);
+  font-size: 12px;
+  cursor: pointer;
+  transition: color 0.15s, border-color 0.15s, background 0.15s, box-shadow 0.15s;
+}
+.storyboard-tab:hover {
+  color: var(--text);
+  border-color: var(--text-faint);
+}
+.storyboard-tab.active {
+  color: var(--text);
+  border-style: solid;
+  border-color: var(--accent);
+  background: rgba(255, 99, 99, 0.05);
+  box-shadow: 0 0 0 3px rgba(255, 99, 99, 0.08);
+}
+.storyboard-tab-num {
+  display: inline-grid;
+  place-items: center;
+  width: 18px;
+  height: 18px;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--text-faint);
+  border: 1px solid rgba(255,255,255,0.16);
+  border-radius: 4px;
+}
+.storyboard-tab.active .storyboard-tab-num {
+  color: var(--text);
+  border-color: var(--accent);
+}
+.storyboard-code-slot {
+  background: var(--code-bg);
+}
+.storyboard-code-drawer {
+  border: 0;
+  background: var(--code-bg);
+}
+.storyboard-code-drawer summary {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  cursor: pointer;
+  list-style: none;
+  padding: 10px 14px;
+  color: var(--text-faint);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  background: var(--surface-2);
+  border-bottom: 1px solid var(--border);
+}
+.storyboard-code-drawer summary::-webkit-details-marker {
+  display: none;
+}
+.storyboard-code-drawer summary::after {
+  content: '▸ expand';
+  color: var(--text-dim);
+}
+.storyboard-code-drawer[open] summary::after {
+  content: '∨ collapse';
+}
+.storyboard-code-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 280px;
+  align-items: stretch;
+  height: clamp(360px, 52vh, 560px);
+  min-height: 0;
+}
+.storyboard-code-grid .codewalk {
+  margin: 0;
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+.storyboard-code-grid .codewalk-head {
+  border-top: 0;
+  flex: 0 0 auto;
+}
+.storyboard-code-grid pre.code-block {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: auto;
+}
+.storyboard-notes {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  border-left: 1px solid var(--border);
+  padding: 14px;
+  background: var(--surface-2);
+  min-height: 0;
+  overflow: auto;
+  scrollbar-gutter: stable;
+}
+.storyboard-notes.empty {
+  justify-content: center;
+  color: var(--text-faint);
+  font-size: 13px;
+  font-style: italic;
+}
+.storyboard-note {
+  position: relative;
+  border: 1px dashed var(--accent);
+  border-radius: 6px;
+  padding: 10px 12px;
+  background: rgba(255, 99, 99, 0.04);
+  cursor: pointer;
+  transition: background 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
+}
+.storyboard-note.active {
+  background: rgba(255, 99, 99, 0.11);
+  box-shadow: 0 0 0 1px rgba(255, 99, 99, 0.22);
+}
+.storyboard-note.range {
+  border-color: var(--info, #55b3ff);
+  background: rgba(85, 179, 255, 0.05);
+}
+.storyboard-note.range.active {
+  background: rgba(85, 179, 255, 0.12);
+  box-shadow: 0 0 0 1px rgba(85, 179, 255, 0.24);
+}
+.storyboard-note::before {
+  content: '';
+  position: absolute;
+  left: -15px;
+  top: 18px;
+  width: 13px;
+  height: 1px;
+  background: var(--accent);
+  opacity: 0.55;
+}
+.storyboard-note.range::before {
+  background: var(--info, #55b3ff);
+}
+.storyboard-note::after {
+  content: '';
+  position: absolute;
+  left: -18px;
+  top: 14px;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: transparent;
+  border: 1px solid var(--accent);
+  opacity: 0.7;
+}
+.storyboard-note.range::after {
+  border-color: var(--info, #55b3ff);
+}
+.storyboard-note-line {
+  display: inline-block;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--accent);
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  margin-bottom: 3px;
+}
+.storyboard-note.range .storyboard-note-line {
+  color: var(--info, #55b3ff);
+}
+.storyboard-note p {
+  margin: 0;
+  color: var(--text);
+  font-size: 12px;
+  line-height: 1.5;
+}
+.code-block .line.line-hl,
+.code-block .line.storyboard-range-hl {
+  cursor: pointer;
+}
+.code-block .line.active-note-line {
+  outline: 1px solid rgba(255, 255, 255, 0.18);
+  outline-offset: -1px;
+}
+
 .zoom-btn {
   position: absolute;
   top: 14px;
@@ -649,14 +1012,28 @@ pre.code-block .line.line-hl {
   background: transparent;
   border: none;
   color: var(--text);
+  display: grid;
+  place-items: center;
   font-family: var(--font-mono);
   font-size: 14px;
   font-weight: 600;
+  line-height: 0;
   width: 36px;
   height: 36px;
   border-radius: 50%;
   cursor: pointer;
   transition: background 0.15s;
+}
+.zoom-controls button svg {
+  display: block;
+  width: 18px;
+  height: 18px;
+  margin: auto;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
 }
 .zoom-controls button:hover { background: var(--surface-2); }
 .zoom-controls .zoom-level {
@@ -685,19 +1062,34 @@ pre.code-block .line.line-hl {
   .stepped .steps::before,
   .stepped .steps::after { display: none; }
 }
+
+@media (max-width: 760px) {
+  .storyboard {
+    width: 100%;
+    left: 0;
+    transform: none;
+  }
+  .storyboard-mobile-guard {
+    display: block;
+  }
+  .storyboard-shell {
+    display: none;
+  }
+}
+
 </style>
 </head>
 <body>
 <header class="topbar">
-  <a class="back-link" href="index.html">&larr; Index</a>
+  <a class="back-link" href="index.html">← Index</a>
 </header>
 
 <main class="container">
   <section class="hero">
-    <div class="eyebrow">@ohmyc/cli</div>
-    <h1>Dashboard Command</h1>
-    <p class="learning-promise">After reading, you'll understand the CLI subcommand that manages the timeline plugin &mdash; install, sync, ingest, and doctor diagnostics.</p>
-    <ul class="prereqs"><li>@ohmyc/timeline</li><li>better-sqlite3</li><li>jq</li></ul>
+    <div class="eyebrow">OhMyC</div>
+    <h1>server</h1>
+    <p class="learning-promise">After reading, you'll understand how Fastify serves static files, registers route plugins, and resolves the UI asset path across dev and production.</p>
+    <ul class="prereqs"><li>Fastify</li><li>Static file serving</li></ul>
   </section>
 
   <section class="anchor">
@@ -708,19 +1100,27 @@ pre.code-block .line.line-hl {
   <section class="units"></section>
 
   <footer class="page-footer">
-    <a class="next-link" href="index.html">Index &rarr;</a>
-    <p class="recap">The dashboard command manages the timeline plugin lifecycle and SQLite database through five operations.</p>
+    <a class="next-link" href="module-timeline-db.html">timeline-db →</a>
+    <p class="recap">You now understand how Fastify serves static files, registers route plugins, and resolves the UI asset path across dev and production.</p>
   </footer>
 </main>
 
 <div class="zoom-overlay" hidden>
   <div class="zoom-stage"></div>
   <div class="zoom-controls">
-    <button data-zoom-out>&minus;</button>
+    <button data-zoom-out aria-label="Zoom out" title="Zoom out">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14"/></svg>
+    </button>
     <span class="zoom-level" data-zoom-level>100%</span>
-    <button data-zoom-reset>Reset</button>
-    <button data-zoom-in>+</button>
-    <button data-zoom-close>Close</button>
+    <button data-zoom-reset aria-label="Reset zoom" title="Reset zoom">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 12a9 9 0 1 0 3-6.7"/><path d="M3 4v6h6"/></svg>
+    </button>
+    <button data-zoom-in aria-label="Zoom in" title="Zoom in">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14"/><path d="M5 12h14"/></svg>
+    </button>
+    <button data-zoom-close aria-label="Close zoom" title="Close zoom">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+    </button>
   </div>
 </div>
 
@@ -728,23 +1128,26 @@ pre.code-block .line.line-hl {
 /* _runtime.js — shared runtime helpers for essay AND index pages.
    Mermaid init, render helper, markdown link parser, escape, line-highlighted code renderer. */
 
-mermaid.initialize({
-  startOnLoad: false,
-  theme: 'base',
-  themeVariables: {
-    background: '#101111',
-    primaryColor: '#161718',
-    primaryTextColor: '#f9f9f9',
-    primaryBorderColor: '#252829',
-    lineColor: '#9c9c9d',
-    secondaryColor: '#FF6363',
-    tertiaryColor: '#0c0d0f',
-    fontFamily: 'Inter, sans-serif',
-  },
-  flowchart: { curve: 'basis', padding: 20 },
-});
+if (typeof mermaid !== 'undefined') {
+  mermaid.initialize({
+    startOnLoad: false,
+    theme: 'base',
+    themeVariables: {
+      background: '#101111',
+      primaryColor: '#161718',
+      primaryTextColor: '#f9f9f9',
+      primaryBorderColor: '#252829',
+      lineColor: '#9c9c9d',
+      secondaryColor: '#FF6363',
+      tertiaryColor: '#0c0d0f',
+      fontFamily: 'Inter, sans-serif',
+    },
+    flowchart: { curve: 'basis', padding: 20 },
+  });
+}
 
 async function renderMermaid(selector) {
+  if (typeof mermaid === 'undefined') return;
   const nodes = document.querySelectorAll(selector);
   for (const node of nodes) {
     const src = node.textContent.trim();
@@ -764,19 +1167,42 @@ function escapeHtml(s) {
 }
 
 function renderMarkdownLinks(text) {
+  // Minimal markdown: [label](href) -> <a href="href">label</a>.
+  // Caller is responsible for escaping non-link content if needed.
   return String(text).replace(/\[([^\]]+)\]\(([^)]+)\)/g, (_, label, href) =>
     `<a href="${escapeHtml(href)}">${escapeHtml(label)}</a>`);
 }
 
+function normalizeCodeSnippet(code) {
+  return String(code)
+    .replace(/\r\n?/g, '\n')
+    .split('\n')
+    .reduce((acc, line) => {
+      const blank = line.trim() === '';
+      if (blank && (acc.length === 0 || acc[acc.length - 1].trim() === '')) return acc;
+      acc.push(line);
+      return acc;
+    }, [])
+    .filter((line, index, lines) => {
+      const blank = line.trim() === '';
+      return !blank || (index > 0 && index < lines.length - 1);
+    })
+    .join('\n');
+}
+
+function renderCodeLine(line, number, className) {
+  const safe = escapeHtml(line);
+  return `<span class="${className}" data-line="${number}"><span class="ln">${number}</span><span class="code-text">${safe || ' '}</span></span>`;
+}
+
 function renderCode(code, highlightLines = []) {
-  const lines = String(code).split('\n');
+  const lines = normalizeCodeSnippet(code).split('\n');
   const set = new Set(highlightLines);
   const body = lines.map((line, i) => {
     const n = i + 1;
-    const cls = set.has(n) ? 'line line-hl' : 'line';
-    const safe = escapeHtml(line);
-    return `<span class="${cls}" data-line="${n}">${safe || ' '}</span>`;
-  }).join('\n');
+    const cls = set.has(n) && line.trim() !== '' ? 'line line-hl' : 'line';
+    return renderCodeLine(line, n, cls);
+  }).join('');
   return `<pre class="code-block">${body}</pre>`;
 }
 
@@ -793,6 +1219,7 @@ function renderUnit(unit) {
     case 'surprise':    return renderSurprise(unit);
     case 'takeaway':    return renderTakeaway(unit);
     case 'diagram':     return renderDiagram(unit);
+    case 'storyboard':  return renderStoryboard(unit);
     default:
       return `<p style="color:#ff8a8a">Unknown unit kind: ${escapeHtml(unit.kind)}</p>`;
   }
@@ -817,10 +1244,56 @@ function renderTakeaway(u) {
 }
 
 function escapeBodyParagraphs(text) {
+  // Split body on blank lines into <p>; preserve markdown link tokens for renderMarkdownLinks.
   return String(text)
     .split(/\n{2,}/)
     .map((p) => `<p>${escapeHtml(p).replace(/\n/g, '<br>')}</p>`)
-    .join('');
+    .join('')
+    // Restore [label](href) tokens that escapeHtml has not damaged (brackets/parens are not escaped).
+    ;
+}
+
+function renderSplitExplanationCards(text) {
+  const blocks = String(text || '')
+    .trim()
+    .split(/\n{2,}/)
+    .flatMap((block) => {
+      const trimmed = block.trim();
+      if (!trimmed) return [];
+      const lineParts = trimmed
+        .split(/(?=\bLines? \d+(?:[-–]\d+)?(?:, \d+(?:[-–]\d+)?)*:)/g)
+        .map((part) => part.trim())
+        .filter(Boolean);
+      return lineParts.length > 1 ? lineParts : [trimmed];
+    });
+
+  if (blocks.length === 0) return '';
+  return blocks.map((block, index) => `
+    <article class="split-note-card${index === 0 ? ' active' : ''}" data-note-index="${index + 1}" data-lines="${escapeHtml(extractLineRefs(block).join(','))}">
+      <span class="step-num">${String(index + 1).padStart(2, '0')}</span>
+      ${renderMarkdownLinks(`<p>${escapeHtml(block)}</p>`)}
+      ${extractLineRefs(block).length ? `<span class="lines">L${escapeHtml(formatLineRefs(block))}</span>` : ''}
+    </article>
+  `).join('');
+}
+
+function extractLineRefs(text) {
+  const refs = [];
+  const match = String(text || '').match(/\bLines? ([0-9,\s\-–]+)/);
+  if (!match) return refs;
+  match[1].split(',').forEach((part) => {
+    const range = part.trim().match(/^(\d+)(?:[-–](\d+))?$/);
+    if (!range) return;
+    const start = Number(range[1]);
+    const end = Number(range[2] || range[1]);
+    for (let n = start; n <= end; n += 1) refs.push(n);
+  });
+  return refs;
+}
+
+function formatLineRefs(text) {
+  const match = String(text || '').match(/\bLines? ([0-9,\s\-–]+)/);
+  return match ? match[1].trim() : '';
 }
 
 function renderCodeWalk(u) {
@@ -832,7 +1305,7 @@ function renderCodeWalk(u) {
     const steps = (u.steps || []);
     const allLines = steps[0] ? steps[0].highlightLines : [];
     return `
-      <span class="unit-kind">code-walk &middot; stepped</span>${titleHtml}
+      <span class="unit-kind">code-walk · stepped</span>${titleHtml}
       <div class="layout-stepped wide" data-stepped>
         <div class="codewalk">
           <div class="codewalk-head"><span>${headLabel}</span><span>stepped</span></div>
@@ -852,13 +1325,13 @@ function renderCodeWalk(u) {
 
   if (layout === 'split') {
     return `
-      <span class="unit-kind">code-walk &middot; split</span>${titleHtml}
-      <div class="layout-split wide">
+      <span class="unit-kind">code-walk · split</span>${titleHtml}
+      <div class="layout-split wide" data-split-walk data-default-lines="${escapeHtml((u.highlightLines || []).join(','))}">
         <div class="codewalk">
           <div class="codewalk-head"><span>${headLabel}</span><span>split</span></div>
           ${renderCode(u.code || '', u.highlightLines || [])}
         </div>
-        <div class="side">${renderMarkdownLinks(escapeBodyParagraphs(u.explanation || ''))}</div>
+        <div class="side split-notes">${renderSplitExplanationCards(u.explanation || '')}</div>
       </div>`;
   }
 
@@ -896,11 +1369,11 @@ function renderCompare(u) {
     <div class="compare">
       <div class="col bad">
         <div class="col-label">${escapeHtml(left.label || 'before')}</div>
-        <pre>${escapeHtml(left.code || '')}</pre>
+        ${renderCode(left.code || '')}
       </div>
       <div class="col good">
         <div class="col-label">${escapeHtml(right.label || 'after')}</div>
-        <pre>${escapeHtml(right.code || '')}</pre>
+        ${renderCode(right.code || '')}
       </div>
     </div>
     ${u.lesson ? `<div class="lesson">${renderMarkdownLinks(escapeHtml(u.lesson))}</div>` : ''}`;
@@ -916,6 +1389,117 @@ function renderDiagram(u) {
       <div class="figure-mermaid"><div class="mermaid">${escapeHtml(u.mermaid || '')}</div></div>
       ${u.caption ? `<figcaption>${renderMarkdownLinks(escapeHtml(u.caption))}</figcaption>` : ''}
     </figure>`;
+}
+
+function renderStoryboard(u) {
+  const scenes = u.scenes || [];
+  const titleHtml = u.title ? `<h2>${escapeHtml(u.title)}</h2>` : '';
+  const captionHtml = u.caption ? `<p class="storyboard-caption">${renderMarkdownLinks(escapeHtml(u.caption))}</p>` : '';
+  return `
+    <span class="unit-kind">storyboard</span>${titleHtml}${captionHtml}
+    <div class="storyboard wide" data-storyboard>
+      <div class="storyboard-mobile-guard">
+        Storyboard units are designed for desktop-width reading. Open this page on a wider screen to step through the diagrams and code.
+      </div>
+      <div class="storyboard-shell">
+        <div class="storyboard-stage">
+          <div class="storyboard-scene-label">
+            <span data-storyboard-scene-count>Scene 1 of ${scenes.length}</span>
+            <button class="zoom-btn storyboard-zoom" data-zoom-trigger>Zoom</button>
+          </div>
+          <div class="storyboard-mermaid"><div class="mermaid"></div></div>
+          <div class="storyboard-explanation" data-storyboard-explanation></div>
+        </div>
+        <div class="storyboard-strip" role="tablist" aria-label="${escapeHtml(u.title || 'Storyboard scenes')}">
+          ${scenes.map((scene, i) => `
+            <button
+              class="storyboard-tab${i === 0 ? ' active' : ''}"
+              type="button"
+              role="tab"
+              aria-selected="${i === 0 ? 'true' : 'false'}"
+              data-storyboard-tab="${i}">
+              <span class="storyboard-tab-num">${String(i + 1).padStart(2, '0')}</span>
+              <span>${escapeHtml(scene.name || `Scene ${i + 1}`)}</span>
+            </button>
+          `).join('')}
+        </div>
+        <div class="storyboard-code-slot" data-storyboard-code-slot></div>
+      </div>
+      <template data-storyboard-scenes>${escapeHtml(JSON.stringify(scenes))}</template>
+    </div>`;
+}
+
+function renderStoryboardCode(scene) {
+  if (!scene.code) return '';
+  const code = scene.code;
+  const highlights = code.highlights || [];
+  const lineNumbers = new Set();
+  highlights.forEach((h) => {
+    if (Number.isInteger(h.line)) lineNumbers.add(h.line);
+    if (Array.isArray(h.lines)) h.lines.forEach((n) => lineNumbers.add(n));
+  });
+  const sortedLines = Array.from(lineNumbers).sort((a, b) => a - b);
+  const noteCount = highlights.length;
+  const lineCount = normalizeCodeSnippet(code.source || '').split('\n').length;
+  const defaultOpen = noteCount > 0 ? ' open' : '';
+  return `
+    <details class="storyboard-code-drawer"${defaultOpen}>
+      <summary>
+        <span>${escapeHtml(code.file || 'source')}</span>
+        <span>${lineCount} lines · ${noteCount} notes</span>
+      </summary>
+      <div class="storyboard-code-grid">
+        <div class="codewalk">
+          <div class="codewalk-head">
+            <span>${escapeHtml(code.file || '')}</span>
+            <span>${escapeHtml(code.lang || 'text')}</span>
+          </div>
+          ${renderStoryboardCodeBlock(code.source || '', sortedLines, highlights)}
+        </div>
+        ${renderStoryboardAnnotationList(highlights)}
+      </div>
+    </details>`;
+}
+
+function renderStoryboardCodeBlock(source, highlightedLines, highlights) {
+  const rangeLines = new Set();
+  highlights.forEach((h) => {
+    if (Array.isArray(h.lines)) h.lines.forEach((n) => rangeLines.add(n));
+  });
+  const highlighted = new Set(highlightedLines);
+  const lines = normalizeCodeSnippet(source).split('\n');
+  const body = lines.map((line, i) => {
+    const n = i + 1;
+    const classes = ['line'];
+    if (highlighted.has(n) && line.trim() !== '') classes.push(rangeLines.has(n) ? 'storyboard-range-hl' : 'line-hl');
+    return renderCodeLine(line, n, classes.join(' '));
+  }).join('');
+  return `<pre class="code-block">${body}</pre>`;
+}
+
+function renderStoryboardAnnotationList(highlights) {
+  if (!highlights || highlights.length === 0) return '<aside class="storyboard-notes empty">No annotations for this scene.</aside>';
+  return `
+    <aside class="storyboard-notes">
+      ${highlights.map((h) => {
+        const lines = Array.isArray(h.lines) ? h.lines : [h.line];
+        const rangeClass = lines.length > 1 ? ' range' : '';
+        const label = lines.length > 1 ? `L${lines[0]}-${lines[lines.length - 1]}` : `L${lines[0]}`;
+        return `
+          <div class="storyboard-note${rangeClass}" data-note-lines="${lines.join(',')}">
+            <span class="storyboard-note-line">${escapeHtml(label)}</span>
+            <p>${renderMarkdownLinks(escapeHtml(h.note || ''))}</p>
+          </div>`;
+      }).join('')}
+    </aside>`;
+}
+
+async function renderMermaidElement(node) {
+  const src = node.textContent.trim();
+  if (!src) return;
+  const id = 'm' + Math.random().toString(36).slice(2);
+  const { svg } = await mermaid.render(id, src);
+  node.innerHTML = svg;
 }
 
 async function bootEssay(page) {
@@ -938,13 +1522,15 @@ async function bootEssay(page) {
 
   await renderMermaid('.unit-diagram .mermaid, .figure .mermaid');
   initSteppedWalks();
+  initSplitWalks();
+  await initStoryboards();
   initZoomOverlay();
   startScrollLoop();
 }
 
 /* ------- Anchor diagram scroll-link ------- */
 const _anchorState = {
-  nodeIndex: new Map(),
+  nodeIndex: new Map(), // anchor key -> mermaid <g.node>
   units: [],
   active: null,
 };
@@ -981,6 +1567,66 @@ function pickActiveUnit() {
     const key = best.dataset.anchor;
     _anchorState.nodeIndex.forEach((g, k) => g.classList.toggle('active', k === key));
   }
+}
+
+/* ------- Split code-walk note sync ------- */
+function initSplitWalks() {
+  document.querySelectorAll('[data-split-walk]').forEach((root) => {
+    const codeEl = root.querySelector('.code-block');
+    const notes = Array.from(root.querySelectorAll('.split-note-card'));
+    if (!codeEl || notes.length === 0) return;
+
+    const lineEls = new Map();
+    codeEl.querySelectorAll('.line').forEach((el) => {
+      lineEls.set(el.dataset.line, el);
+    });
+
+    function highlight(linesAttr) {
+      const raw = String(linesAttr || '').trim() || root.dataset.defaultLines || '';
+      const wanted = new Set(raw.split(',').map((s) => s.trim()).filter(Boolean));
+      lineEls.forEach((el, k) => {
+        const hasCode = (el.querySelector('.code-text')?.textContent || '').trim() !== '';
+        el.classList.toggle('line-hl', wanted.has(k) && hasCode);
+      });
+    }
+
+    function activate(note) {
+      if (!note) return;
+      notes.forEach((entry) => entry.classList.toggle('active', entry === note));
+      highlight(note.dataset.lines);
+    }
+
+    notes.forEach((note) => {
+      note.addEventListener('click', () => {
+        note.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        activate(note);
+      });
+    });
+
+    activate(notes[0]);
+
+    let activeNote = null;
+    root._pickActiveSplitNote = function pickActiveSplitNote() {
+      const viewport = root.querySelector('.split-notes') || root;
+      const vr = viewport.getBoundingClientRect();
+      const center = (Math.max(vr.top, 0) + Math.min(vr.bottom, window.innerHeight)) / 2;
+      let best = null, bestDist = Infinity;
+      for (const note of notes) {
+        const r = note.getBoundingClientRect();
+        if (r.bottom < vr.top || r.top > vr.bottom) continue;
+        const mid = (r.top + r.bottom) / 2;
+        const d = Math.abs(mid - center);
+        if (d < bestDist) { bestDist = d; best = note; }
+      }
+      if (best && best !== activeNote) {
+        activeNote = best;
+        activate(best);
+      }
+    };
+
+    const scroller = root.querySelector('.split-notes');
+    if (scroller) scroller.addEventListener('scroll', () => root._pickActiveSplitNote(), { passive: true });
+  });
 }
 
 /* ------- Stepped code-walk highlight migration ------- */
@@ -1033,6 +1679,98 @@ function initSteppedWalks() {
   });
 }
 
+/* ------- Storyboard scene player ------- */
+async function setStoryboardScene(root, index) {
+  const scenesEl = root.querySelector('[data-storyboard-scenes]');
+  if (!scenesEl) return;
+  const scenesText = scenesEl.content ? scenesEl.content.textContent : scenesEl.textContent;
+  const scenes = JSON.parse(scenesText || '[]');
+  const scene = scenes[index];
+  if (!scene) return;
+
+  root.querySelectorAll('[data-storyboard-tab]').forEach((tab) => {
+    const active = Number(tab.dataset.storyboardTab) === index;
+    tab.classList.toggle('active', active);
+    tab.setAttribute('aria-selected', active ? 'true' : 'false');
+  });
+
+  const countEl = root.querySelector('[data-storyboard-scene-count]');
+  if (countEl) countEl.textContent = `Scene ${index + 1} of ${scenes.length}`;
+
+  const mermaidEl = root.querySelector('.storyboard-mermaid .mermaid');
+  if (mermaidEl) {
+    mermaidEl.textContent = scene.mermaid || '';
+    await renderMermaidElement(mermaidEl);
+    applyStoryboardFocus(mermaidEl, scene.focus);
+  }
+
+  const explanationEl = root.querySelector('[data-storyboard-explanation]');
+  if (explanationEl) {
+    explanationEl.innerHTML = scene.explanation
+      ? renderMarkdownLinks(escapeBodyParagraphs(scene.explanation))
+      : '';
+  }
+
+  const codeSlot = root.querySelector('[data-storyboard-code-slot]');
+  if (codeSlot) {
+    codeSlot.innerHTML = renderStoryboardCode(scene);
+    bindStoryboardCodeNotes(codeSlot);
+  }
+}
+
+function bindStoryboardCodeNotes(scope) {
+  const notes = Array.from(scope.querySelectorAll('[data-note-lines]')).map((note) => ({
+    note,
+    lines: new Set(String(note.dataset.noteLines || '').split(',').filter(Boolean)),
+  }));
+  const codeLines = Array.from(scope.querySelectorAll('.code-block .line'));
+  if (notes.length === 0 || codeLines.length === 0) return;
+
+  function activate(note, lineNumber) {
+    notes.forEach((entry) => entry.note.classList.toggle('active', entry.note === note));
+    codeLines.forEach((line) => line.classList.toggle('active-note-line', line.dataset.line === lineNumber));
+  }
+
+  codeLines.forEach((line) => {
+    line.addEventListener('click', () => {
+      const target = notes.find((entry) => entry.lines.has(line.dataset.line));
+      if (!target) return;
+      activate(target.note, line.dataset.line);
+      target.note.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    });
+  });
+
+  notes.forEach(({ note, lines }) => {
+    note.addEventListener('click', () => {
+      const firstLine = Array.from(lines)[0];
+      const target = codeLines.find((line) => line.dataset.line === firstLine);
+      if (!target) return;
+      activate(note, firstLine);
+      target.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'nearest' });
+    });
+  });
+}
+
+function applyStoryboardFocus(root, focus) {
+  if (!focus) return;
+  root.querySelectorAll('g.node').forEach((g) => {
+    const matched = g.id.includes(`-${focus}-`) || g.id.endsWith(`-${focus}`);
+    g.classList.toggle('active', matched);
+  });
+}
+
+async function initStoryboards() {
+  const roots = Array.from(document.querySelectorAll('[data-storyboard]'));
+  await Promise.all(roots.map(async (root) => {
+    root.querySelectorAll('[data-storyboard-tab]').forEach((tab) => {
+      tab.addEventListener('click', () => {
+        setStoryboardScene(root, Number(tab.dataset.storyboardTab));
+      });
+    });
+    await setStoryboardScene(root, 0);
+  }));
+}
+
 /* ------- Zoomable diagram overlay ------- */
 function initZoomOverlay() {
   const overlay = document.querySelector('.zoom-overlay');
@@ -1071,7 +1809,7 @@ function initZoomOverlay() {
 
   document.querySelectorAll('[data-zoom-trigger]').forEach((btn) => {
     btn.addEventListener('click', () => {
-      const fig = btn.closest('.figure, .unit-diagram');
+      const fig = btn.closest('.figure, .unit-diagram, .storyboard-stage');
       const svg = fig && fig.querySelector('svg');
       if (svg) openZoom(svg);
     });
@@ -1134,6 +1872,7 @@ function startScrollLoop() {
     requestAnimationFrame(() => {
       pickActiveUnit();
       document.querySelectorAll('[data-stepped]').forEach((r) => r._pickActiveStep && r._pickActiveStep());
+      document.querySelectorAll('[data-split-walk]').forEach((r) => r._pickActiveSplitNote && r._pickActiveSplitNote());
       ticking = false;
     });
   }
@@ -1142,40 +1881,55 @@ function startScrollLoop() {
   onScroll();
 }
 
+
 const PAGE = {
-  module: "dashboard",
-  learningPromise: "After reading, you'll understand the CLI subcommand that manages the timeline plugin \u2014 install, sync, ingest, and doctor diagnostics.",
-  prereqs: ["@ohmyc/timeline", "better-sqlite3", "jq"],
-  units: [
+  "module": "server",
+  "learningPromise": "After reading, you'll understand how Fastify serves static files, registers route plugins, and resolves the UI asset path across dev and production.",
+  "prereqs": [
+    "Fastify",
+    "Static file serving"
+  ],
+  "diagram": "graph TD\n    Server[\"createServer\"] -->|\"static files\"| Static[\"@fastify/static\"]\n    Server -->|\"API routes\"| Routes[\"Route Plugins\"]\n    Server -->|\"SPA fallback\"| Fallback[\"index.html\"]\n    Static -->|\"resolves\"| Paths[\"Candidate Paths\"]\n    Routes -->|\"timeline\"| Timeline[\"/api/timeline/*\"]\n    Routes -->|\"agents\"| Agents[\"/api/agents/*\"]",
+  "units": [
     {
-      kind: "concept",
-      title: "Five operations, one database",
-      body: "The dashboard command delegates to five functions: `runInstall()` registers the timeline plugin and runs an initial backfill, `runUninstall()` removes the registration but preserves the database, `runSync()` re-scans all transcripts for new sessions, `runIngest()` imports a single session by ID or file path, and `runDoctor()` runs diagnostics. All five operate on the same SQLite database managed by the `@ohmyc/timeline` package."
+      "kind": "concept",
+      "title": "Fastify as a static + API hybrid",
+      "body": "The OhMyC server is a Fastify instance that does two things: serve the built React UI from disk, and register REST API routes. The trick is ordering. Static files are registered first with wildcard: false, so specific paths hit the filesystem. API routes are registered next. The not-found handler serves index.html for SPA routing — but only in non-API mode. In api-only mode, 404s return JSON."
     },
     {
-      kind: "code-walk",
-      title: "Install: register + backfill in one shot",
-      layout: "stacked",
-      file: "src/commands/dashboard.ts",
-      code: "export async function runInstall(): Promise<void> {\n  const pluginSourceDir = getPluginSourceDir()\n\n  if (!hasJq()) {\n    console.warn('Warning: jq is not installed. Some plugin operations may be limited.')\n  }\n\n  const registry = readInstalledPlugins()\n  const now = new Date().toISOString()\n  const installRecord: PluginInstall = {\n    version: '1.0.0',\n    installedAt: now,\n    lastUpdated: now,\n    installPath: pluginSourceDir,\n    isLocal: true,\n    scope: 'user',\n  }\n\n  registry.plugins['ohmyc-timeline'] = [installRecord]\n  writeInstalledPlugins(registry)\n\n  const db = openDatabase()\n  try {\n    const status = getStatus(db)\n    if (status.lastSyncAt === undefined) {\n      console.log('Database empty. Running initial backfill...')\n      const result = backfillAll(db, { onProgress: (done, total) => {\n        console.log(`  Backfill: ${done}/${total}`)\n      }})\n      console.log(`Backfill complete: ${result.indexed} indexed`)\n    }\n  } finally {\n    closeDatabase(db)\n  }\n}",
-      highlightLines: [3, 14, 15, 17, 20, 23, 24],
-      explanation: "Two distinct phases: first, write the plugin registration to `~/.claude/plugins/installed_plugins.json` so Claude Code knows the plugin exists. Then open the SQLite database and backfill if it's empty. The `getPluginSourceDir()` function resolves differently in dev vs production \u2014 it checks both the source path and the bundled dist path, using whichever exists."
+      "kind": "code-walk",
+      "title": "Four candidate paths for the UI assets",
+      "file": "packages/cli/src/server/index.ts",
+      "layout": "stacked",
+      "code": "function getDefaultCandidatePaths(): string[] {\n  return [\n    path.resolve(import.meta.dirname, 'ui'),\n    path.resolve(import.meta.dirname, '../../ui/dist'),\n    path.resolve(import.meta.dirname, '../../../ui/dist'),\n    path.resolve(import.meta.dirname, '../../../../ui/dist'),\n  ]\n}",
+      "highlightLines": [
+        3,
+        4,
+        5,
+        6
+      ],
+      "explanation": "Here's the monorepo path resolution strategy. Line 3: the packaged location (production). Lines 4-6: monorepo dev fallbacks at different depths depending on whether the server is imported from dist/index.mjs, dist/server/index.js, or src/server/index.ts. The first path that contains index.html wins."
     },
     {
-      kind: "surprise",
-      title: "Uninstall preserves the database",
-      body: "`runUninstall()` only deletes the `ohmyc-timeline` entry from the plugin registry. It does NOT delete the SQLite database. The console message says \"Database preserved\" explicitly. The reasoning: transcript data is expensive to re-ingest, and the user might be uninstalling to fix a plugin issue, not to wipe data."
+      "kind": "code-walk",
+      "title": "Route registration with dependency injection",
+      "file": "packages/cli/src/server/index.ts",
+      "layout": "split",
+      "code": "await fastify.register(agentsRoutes, {\n  agentsDir: config.agentsDir,\n  projectAgentsDir: config.projectAgentsDir,\n  pluginsDir: config.pluginsDir,\n  claudeSettingsPaths,\n  baseDir: config.baseDir,\n})\nawait fastify.register(timelineRoutes)",
+      "highlightLines": [
+        1,
+        7
+      ],
+      "explanation": "Compare these two registrations. Agents routes receive five config values as options — that's because agents need to read from disk. Timeline routes receive nothing — they only talk to SQLite, which has its own default path logic.\n\nThe move is: each route declares its dependencies explicitly. No route imports ConfigLocator directly. That makes unit testing trivial — pass a temp directory as agentsDir and you're done."
     },
     {
-      kind: "guess-first",
-      question: "Why does `runIngest()` search recursively for transcript files?",
-      reveal: {
-        explanation: "Claude Code stores transcripts as `<session-id>.jsonl` files nested under project directories in `~/.claude/projects/`. The session ID alone doesn't tell you which project directory it's in. When `--file` isn't provided, `runIngest` walks the entire projects directory tree looking for a file matching the session ID. It's slow but correct \u2014 the alternative would require a session-to-project mapping that doesn't exist."
-      }
+      "kind": "surprise",
+      "title": "API routes must register before the SPA fallback",
+      "body": "The not-found handler is the catch-all. If it were registered before the API routes, every API request would get index.html instead of JSON. Fastify matches handlers in registration order, so the timeline route must come before the fallback. That's a common SPA-server mistake — and this codebase avoids it by keeping the registration order explicit in createServer()."
     },
     {
-      kind: "takeaway",
-      body: "The dashboard command is the operational interface to the timeline plugin. It bridges the CLI world (plugin registration, console output) with the data layer (SQLite via `@ohmyc/timeline`). The key design choices: install does both registration and initial backfill, uninstall preserves data, and the doctor command checks plugin + jq + database integrity in one pass."
+      "kind": "takeaway",
+      "body": "The server is a thin Fastify wrapper. Static files are served from one of four candidate paths. API routes receive their dependencies as options. The not-found handler is conditional — JSON for API mode, index.html for SPA mode. Every choice is about keeping the server layer thin and testable."
     }
   ]
 };
