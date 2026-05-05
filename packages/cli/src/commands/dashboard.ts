@@ -19,6 +19,8 @@ import {
   openDatabase,
 } from '@ohmyc/timeline'
 
+import { logger } from '../logger'
+
 import type { PluginInstall } from '@ohmyc/shared'
 import type Database from 'better-sqlite3'
 
@@ -87,7 +89,7 @@ export async function runInstall(): Promise<void> {
   const pluginSourceDir = getPluginSourceDir()
 
   if (!hasJq()) {
-    console.warn('Warning: jq is not installed. Some plugin operations may be limited.')
+    logger.warn('jq is not installed. Some plugin operations may be limited.')
   }
 
   // Read / create registry
@@ -105,28 +107,28 @@ export async function runInstall(): Promise<void> {
 
   registry.plugins['ohmyc-timeline'] = [installRecord]
   writeInstalledPlugins(registry)
-  console.log('Plugin ohmyc-timeline registered.')
+  logger.info('Plugin ohmyc-timeline registered.')
 
   // Open database and optionally backfill
   const db = openDatabase()
   try {
     const status = getStatus(db)
     if (status.lastSyncAt === undefined) {
-      console.log('Database empty. Running initial backfill...')
+      logger.info('Database empty. Running initial backfill...')
       const result = backfillAll(db, {
         onProgress: (done, total) => {
-          console.log(`  Backfill: ${done}/${total}`)
+          logger.info(`Backfill: ${done}/${total}`)
         },
       })
-      console.log(`Backfill complete: ${result.indexed} indexed, ${result.skipped} skipped, ${result.errors} errors`)
+      logger.info(`Backfill complete: ${result.indexed} indexed, ${result.skipped} skipped, ${result.errors} errors`)
     } else {
-      console.log(`Database already has ${status.sessionCount} sessions (last sync: ${formatDate(status.lastSyncAt)})`)
+      logger.info(`Database already has ${status.sessionCount} sessions (last sync: ${formatDate(status.lastSyncAt)})`)
     }
   } finally {
     closeDatabase(db)
   }
 
-  console.log(`Install complete. Plugin source: ${pluginSourceDir}`)
+  logger.info(`Install complete. Plugin source: ${pluginSourceDir}`)
 }
 
 // ------------------------------------------------------------------
@@ -139,7 +141,7 @@ export async function runUninstall(): Promise<void> {
     delete registry.plugins['ohmyc-timeline']
     writeInstalledPlugins(registry)
   }
-  console.log('Plugin removed. Database preserved — run `cu dashboard --install` to re-register.')
+  logger.info('Plugin removed. Database preserved — run `cu dashboard --install` to re-register.')
 }
 
 // ------------------------------------------------------------------
@@ -149,13 +151,13 @@ export async function runUninstall(): Promise<void> {
 export async function runSync(): Promise<void> {
   const db = openDatabase()
   try {
-    console.log('Running sync...')
+    logger.info('Running sync...')
     const result = backfillAll(db, {
       onProgress: (done, total) => {
-        console.log(`  Sync: ${done}/${total}`)
+        logger.info(`Sync: ${done}/${total}`)
       },
     })
-    console.log(`Sync complete: ${result.indexed} indexed, ${result.skipped} skipped, ${result.errors} errors`)
+    logger.info(`Sync complete: ${result.indexed} indexed, ${result.skipped} skipped, ${result.errors} errors`)
   } finally {
     closeDatabase(db)
   }
@@ -189,7 +191,7 @@ export async function runIngest(sessionId: string, filePath?: string): Promise<v
   const db = openDatabase()
   try {
     const result = ingestSession(db, sessionId, transcriptPath)
-    console.log(`Ingested ${result.sessionId} (${result.project}): inserted=${result.sessionsInserted}, updated=${result.sessionsUpdated}`)
+    logger.info(`Ingested ${result.sessionId} (${result.project}): inserted=${result.sessionsInserted}, updated=${result.sessionsUpdated}`)
   } finally {
     closeDatabase(db)
   }
@@ -254,8 +256,8 @@ export async function runDoctor(): Promise<void> {
     }
 
     const status = getStatus(db)
-    console.log(`Sessions: ${status.sessionCount}`)
-    console.log(`Last sync: ${formatDate(status.lastSyncAt)}`)
+    logger.info(`Sessions: ${status.sessionCount}`)
+    logger.info(`Last sync: ${formatDate(status.lastSyncAt)}`)
   } catch (error) {
     issues.push(`Database error: ${error instanceof Error ? error.message : String(error)}`)
   } finally {
@@ -269,5 +271,5 @@ export async function runDoctor(): Promise<void> {
     throw new Error(`Issues found:\n  - ${summary}`)
   }
 
-  console.log('All checks passed.')
+  logger.info('All checks passed.')
 }

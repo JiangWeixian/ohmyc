@@ -63,15 +63,13 @@ After user confirms the analysis:
 
 2. **Detect existing project conventions first.** If the project already uses a specific comment style (e.g., all `//` instead of `/** */`), follow the existing style. Check a few existing files before deciding.
 
-3. **Add four types of annotations (only where they don't already exist):**
+3. **Add three types of annotations (only where they don't already exist):**
 
    a. **File header** — at the top of each source file, a brief description of what the file contains and its role in the module. Skip if the file already has a meaningful header comment.
 
-   b. **Exported functions / classes / interfaces** — a short doc comment explaining purpose, parameters, and return value. For each function parameter, add a `@param` tag describing its purpose and expected shape. Skip if already documented.
+   b. **Exported functions / classes / interfaces** — a short doc comment explaining purpose, parameters, and return value. Skip if already documented.
 
-   c. **TypeScript interfaces, types, and enums** — add a doc comment on the type itself explaining what it represents. For each property/field in interfaces and object types, add an inline comment explaining its purpose and valid values. For enum members, explain what each variant represents.
-
-   d. **Non-obvious logic blocks** — a brief inline comment before complex logic explaining *why* (intent), not *what* (code already says what). Skip trivial code.
+   c. **Non-obvious logic blocks** — a brief inline comment before complex logic explaining *why* (intent), not *what* (code already says what). Skip trivial code.
 
 4. **Rules:**
 

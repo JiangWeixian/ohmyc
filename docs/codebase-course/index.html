@@ -3,10 +3,11 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>@ohmyc/cli — Codebase Course</title>
+<title>OhMyC — Codebase Course</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/mermaid@11.4.1/dist/mermaid.min.js"></script>
 <style>
 /* _base.css — shared across essay and index pages.
    Design tokens, resets, typography, hero, prereq chips, container, footer, badges. */
@@ -24,6 +25,10 @@
   --accent-soft: rgba(255, 99, 99, 0.12);
   --code-bg: #0c0d0f;
   --highlight: rgba(255, 99, 99, 0.10);
+  --scrollbar-size: 10px;
+  --scrollbar-track: rgba(255, 255, 255, 0.035);
+  --scrollbar-thumb: rgba(156, 156, 157, 0.42);
+  --scrollbar-thumb-hover: rgba(249, 249, 249, 0.58);
   --shadow-card:
     0 1px 0 rgba(255,255,255,0.04) inset,
     0 0 0 1px rgba(255,255,255,0.02),
@@ -39,6 +44,25 @@
 
 * { box-sizing: border-box; margin: 0; padding: 0; }
 *, *::before, *::after { box-sizing: border-box; }
+* {
+  scrollbar-color: var(--scrollbar-thumb) var(--scrollbar-track);
+  scrollbar-width: thin;
+}
+*::-webkit-scrollbar {
+  width: var(--scrollbar-size);
+  height: var(--scrollbar-size);
+}
+*::-webkit-scrollbar-track {
+  background: var(--scrollbar-track);
+  border-radius: 999px;
+}
+*::-webkit-scrollbar-thumb {
+  background: var(--scrollbar-thumb);
+  border: 2px solid var(--bg);
+  border-radius: 999px;
+}
+*::-webkit-scrollbar-thumb:hover { background: var(--scrollbar-thumb-hover); }
+*::-webkit-scrollbar-corner { background: transparent; }
 
 html, body {
   background: var(--bg);
@@ -271,17 +295,17 @@ h4 {
   margin-top: 10px;
   font-family: var(--font-mono);
 }
+
 </style>
 </head>
 <body>
 <main class="container">
   <div class="project-header">
-    <h1>@ohmyc/cli</h1>
-    <p>The CLI and API server for OhMyC — a Fastify-based backend that manages agents, skills, commands, profiles, and timeline data for AI coding assistants.</p>
+    <h1>OhMyC</h1>
+    <p>A CLI tool and React dashboard for tracking Claude Code / OpenCode usage statistics.</p>
     <div class="badges">
       <span class="badge">TypeScript</span>
-      <span class="badge">Node.js</span>
-      <span class="badge">Fastify</span>
+      <span class="badge">React + Fastify</span>
     </div>
   </div>
 
@@ -300,12 +324,82 @@ h4 {
 /* _runtime.js — shared runtime helpers for essay AND index pages.
    Mermaid init, render helper, markdown link parser, escape, line-highlighted code renderer. */
 
+if (typeof mermaid !== 'undefined') {
+  mermaid.initialize({
+    startOnLoad: false,
+    theme: 'base',
+    themeVariables: {
+      background: '#101111',
+      primaryColor: '#161718',
+      primaryTextColor: '#f9f9f9',
+      primaryBorderColor: '#252829',
+      lineColor: '#9c9c9d',
+      secondaryColor: '#FF6363',
+      tertiaryColor: '#0c0d0f',
+      fontFamily: 'Inter, sans-serif',
+    },
+    flowchart: { curve: 'basis', padding: 20 },
+  });
+}
+
+async function renderMermaid(selector) {
+  if (typeof mermaid === 'undefined') return;
+  const nodes = document.querySelectorAll(selector);
+  for (const node of nodes) {
+    const src = node.textContent.trim();
+    if (!src) continue;
+    const id = 'm' + Math.random().toString(36).slice(2);
+    const { svg } = await mermaid.render(id, src);
+    node.innerHTML = svg;
+  }
+}
+
 function escapeHtml(s) {
   return String(s)
     .replace(/&/g, '&amp;')
     .replace(/</g, '&lt;')
     .replace(/>/g, '&gt;')
     .replace(/"/g, '&quot;');
+}
+
+function renderMarkdownLinks(text) {
+  // Minimal markdown: [label](href) -> <a href="href">label</a>.
+  // Caller is responsible for escaping non-link content if needed.
+  return String(text).replace(/\[([^\]]+)\]\(([^)]+)\)/g, (_, label, href) =>
+    `<a href="${escapeHtml(href)}">${escapeHtml(label)}</a>`);
+}
+
+function normalizeCodeSnippet(code) {
+  return String(code)
+    .replace(/\r\n?/g, '\n')
+    .split('\n')
+    .reduce((acc, line) => {
+      const blank = line.trim() === '';
+      if (blank && (acc.length === 0 || acc[acc.length - 1].trim() === '')) return acc;
+      acc.push(line);
+      return acc;
+    }, [])
+    .filter((line, index, lines) => {
+      const blank = line.trim() === '';
+      return !blank || (index > 0 && index < lines.length - 1);
+    })
+    .join('\n');
+}
+
+function renderCodeLine(line, number, className) {
+  const safe = escapeHtml(line);
+  return `<span class="${className}" data-line="${number}"><span class="ln">${number}</span><span class="code-text">${safe || ' '}</span></span>`;
+}
+
+function renderCode(code, highlightLines = []) {
+  const lines = normalizeCodeSnippet(code).split('\n');
+  const set = new Set(highlightLines);
+  const body = lines.map((line, i) => {
+    const n = i + 1;
+    const cls = set.has(n) && line.trim() !== '' ? 'line line-hl' : 'line';
+    return renderCodeLine(line, n, cls);
+  }).join('');
+  return `<pre class="code-block">${body}</pre>`;
 }
 
 /* _index.js — index page runtime.
@@ -339,90 +433,92 @@ function renderIndex(index) {
   }
 }
 
+
 const INDEX = {
-  project: {
-    name: "@ohmyc/cli",
-    description: "CLI and API server for OhMyC — manages agents, skills, commands, profiles, plugins, and timeline data",
-    language: "TypeScript",
-    framework: "Fastify"
+  "project": {
+    "name": "OhMyC",
+    "description": "A CLI tool and React dashboard for tracking Claude Code / OpenCode usage statistics.",
+    "language": "TypeScript",
+    "framework": "React + Fastify"
   },
-  perspectives: [
+  "perspectives": [
     {
-      title: "Architecture",
-      description: "How the CLI entry, launcher, Fastify server, routes, and services layer together into a cohesive whole.",
-      page: "architecture.html",
-      diagramType: "architecture",
-      unitCount: 6
+      "title": "Architecture",
+      "description": "How the monorepo splits into CLI, server, timeline library, UI, and plugin layers.",
+      "page": "architecture.html",
+      "diagramType": "architecture",
+      "unitCount": 6
     },
     {
-      title: "Request Flow",
-      description: "Trace an HTTP request from the Fastify listener through route dispatch, service calls, and the response.",
-      page: "request-flow.html",
-      diagramType: "sequence",
-      unitCount: 6
+      "title": "Data Flow",
+      "description": "The journey of a session from OpenCode event to rendered heatmap cell.",
+      "page": "data-flow.html",
+      "diagramType": "data-flow",
+      "unitCount": 5
     },
     {
-      title: "Profile Activation",
-      description: "The transactional symlink-and-settings dance that swaps an entire agent configuration in one atomic operation.",
-      page: "profile-activation.html",
-      diagramType: "state",
-      unitCount: 7
+      "title": "Data Model",
+      "description": "SQLite schema, relationships, and why the table shape matches the query patterns.",
+      "page": "data-model.html",
+      "diagramType": "data-model",
+      "unitCount": 5
+    },
+    {
+      "title": "Plugin Lifecycle",
+      "description": "How the OpenCode plugin captures session events and writes them to SQLite.",
+      "page": "plugin-lifecycle.html",
+      "diagramType": "lifecycle",
+      "unitCount": 5
     }
   ],
-  modules: [
+  "modules": [
     {
-      title: "CLI Entry",
-      description: "The cac-based command parser that routes `cu start`, `cu dashboard`, and the default no-arg invocation.",
-      page: "module-cli-entry.html",
-      unitCount: 5
+      "title": "CLI Entry",
+      "description": "The cac-based CLI that launches the server and manages dashboard commands.",
+      "page": "module-cli-entry.html",
+      "unitCount": 5
     },
     {
-      title: "Launcher",
-      description: "Glue between CLI args and the server — port selection, browser opening, and error wrapping.",
-      page: "module-launcher.html",
-      unitCount: 5
+      "title": "Server",
+      "description": "Fastify server with static file serving and REST API routes for agents, skills, and timeline.",
+      "page": "module-server.html",
+      "unitCount": 5
     },
     {
-      title: "Server",
-      description: "Fastify app assembly — static asset serving, SPA fallback, health check, and route registration.",
-      page: "module-server.html",
-      unitCount: 6
+      "title": "Timeline DB",
+      "description": "SQLite connection, WAL mode, and schema migrations with better-sqlite3.",
+      "page": "module-timeline-db.html",
+      "unitCount": 5
     },
     {
-      title: "Config Locator",
-      description: "Single source of truth for every filesystem path the server cares about — ~/.cui/, ~/.claude/, project-scoped dirs.",
-      page: "module-config-locator.html",
-      unitCount: 5
+      "title": "Timeline Writer",
+      "description": "Prepared statements and transactional upserts for session, tool, and skill data.",
+      "page": "module-timeline-writer.html",
+      "unitCount": 5
     },
     {
-      title: "Agent Service",
-      description: "CRUD over Markdown files with gray-matter frontmatter — the pattern shared by skills and commands too.",
-      page: "module-agent-service.html",
-      unitCount: 6
+      "title": "Timeline Query",
+      "description": "Heatmap aggregation, paginated events, and session detail lookups.",
+      "page": "module-timeline-query.html",
+      "unitCount": 5
     },
     {
-      title: "Profile Service",
-      description: "The most complex service — transactional profile activation with symlinks, settings merging, and rollback.",
-      page: "module-profile-service.html",
-      unitCount: 7
+      "title": "UI App",
+      "description": "React router, command palette, and the timeline view with heatmap + event list.",
+      "page": "module-ui-app.html",
+      "unitCount": 5
     },
     {
-      title: "Store Service",
-      description: "Import pipeline and provenance tracking for agents, skills, and commands from external directories.",
-      page: "module-store-service.html",
-      unitCount: 5
+      "title": "Shared Schemas",
+      "description": "Zod schemas that type-check settings, agents, skills, and commands across packages.",
+      "page": "module-shared.html",
+      "unitCount": 5
     },
     {
-      title: "Plugin Resolver",
-      description: "Reads installed_plugins.json + settings.json to resolve which plugin directories are active.",
-      page: "module-plugin-resolver.html",
-      unitCount: 5
-    },
-    {
-      title: "Dashboard Command",
-      description: "CLI subcommand for installing, syncing, and diagnosing the timeline plugin and its SQLite database.",
-      page: "module-dashboard.html",
-      unitCount: 5
+      "title": "OpenCode Plugin",
+      "description": "Event hooks that accumulate session stats and flush to SQLite on idle.",
+      "page": "module-plugin.html",
+      "unitCount": 5
     }
   ]
 };

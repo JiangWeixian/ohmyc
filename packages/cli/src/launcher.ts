@@ -1,5 +1,6 @@
 import open from 'open'
 
+import { logger } from './logger'
 import { startServer, type StartServerOptions } from './server/index'
 
 export interface LaunchOptions {
@@ -17,7 +18,7 @@ export async function launchApp(options: LaunchOptions = {}): Promise<void> {
     cwd: options.cwd,
   }
 
-  console.log('Starting OhMyC server...')
+  logger.info('Starting OhMyC server...')
 
   let result
   try {
@@ -30,9 +31,9 @@ export async function launchApp(options: LaunchOptions = {}): Promise<void> {
   const url = `http://localhost:${result.port}`
 
   if (result.fallback) {
-    console.log(`OhMyC is ready at ${url} (port ${serverOptions.defaultPort} was busy, using ${result.port})`)
+    logger.info(`OhMyC is ready at ${url} (port ${serverOptions.defaultPort} was busy, using ${result.port})`)
   } else {
-    console.log(`OhMyC is ready at ${url}`)
+    logger.info(`OhMyC is ready at ${url}`)
   }
 
   async function shutdown() {
@@ -40,12 +41,12 @@ export async function launchApp(options: LaunchOptions = {}): Promise<void> {
       return
     }
     closing = true
-    console.log('\nShutting down...')
+    logger.info('Shutting down...')
     try {
       await result.close()
-      console.log('Server closed.')
+      logger.info('Server closed.')
     } catch (error) {
-      console.error('Error closing server:', error)
+      logger.error(error, 'Error closing server')
     }
     // eslint-disable-next-line unicorn/no-process-exit
     process.exit(0)
@@ -55,7 +56,7 @@ export async function launchApp(options: LaunchOptions = {}): Promise<void> {
   process.on('SIGTERM', shutdown)
 
   if (!options.apiOnly) {
-    console.log('Opening browser...')
+    logger.info('Opening browser...')
     await open(url)
   }
 }
