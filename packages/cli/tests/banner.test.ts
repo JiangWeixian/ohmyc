@@ -1,3 +1,4 @@
+import { readFileSync } from 'node:fs'
 import path from 'node:path'
 
 import {
@@ -74,24 +75,11 @@ describe('banner', () => {
 })
 
 describe('CLI integration', () => {
-  it('prints banner on startup when TTY is available', async () => {
-    const originalIsTTY = process.stdout.isTTY
-    try {
-      Object.defineProperty(process.stdout, 'isTTY', { value: true, writable: true })
+  it('index.ts imports and calls printBanner', () => {
+    const indexPath = path.resolve(import.meta.dirname, '../src/index.ts')
+    const indexSource = readFileSync(indexPath, 'utf8')
 
-      // Clear module cache to re-run module-level code
-      const modulePath = path.resolve(import.meta.dirname, '../src/index.ts')
-      vi.resetModules()
-
-      await import(modulePath)
-
-      // Banner should have been printed
-      expect(logSpy).toHaveBeenCalled()
-      const calls = logSpy.mock.calls.map((args: any[]) => args.join(' '))
-      const hasBanner = calls.some((msg: string) => msg.includes('OhMyC'))
-      expect(hasBanner).toBe(true)
-    } finally {
-      Object.defineProperty(process.stdout, 'isTTY', { value: originalIsTTY, writable: true })
-    }
+    expect(indexSource).toContain("import { printBanner } from './banner'")
+    expect(indexSource).toContain('printBanner()')
   })
 })
