@@ -10,18 +10,28 @@ import { AGENT_DIR_NAME } from '../services/config-locator'
 
 import type { FastifyInstance } from 'fastify'
 
+/** Query parameters for the settings read endpoint. */
 interface SettingsQuery {
+  /** Project directory to read settings from (defaults to cwd). */
   project?: string
 }
 
+/** Request body for the settings write endpoint. */
 interface SettingsBody {
+  /** The JSON object to persist as the settings file. */
   content: unknown
 }
 
+/** Options passed when registering the settings routes. */
 interface SettingsRouteOptions {
+  /** Working directory used when no project is specified. */
   cwd?: string
 }
 
+/**
+ * Registers settings read/write routes and a JSON Schema endpoint.
+ * Reads and writes `{AGENT_DIR_NAME}/settings.json` within a project directory.
+ */
 export async function settingsRoutes(fastify: FastifyInstance, options: SettingsRouteOptions = {}) {
   const baseCwd = options.cwd || process.cwd()
 

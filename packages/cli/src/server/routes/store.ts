@@ -21,10 +21,13 @@ import { StoreService } from '../services/store-service'
 
 import type { FastifyPluginAsync } from 'fastify'
 
+/** Route registration options for the store API. */
 interface StoreRoutesOptions {
+  /** Root directory for OhMyC managed data (typically `~/.cui/`). */
   baseDir: string
 }
 
+/** Validates a generic component name against the safe-name regex. */
 function validateName(name: string): string | null {
   if (!SAFE_NAME_PATTERN.test(name)) {
     return 'Invalid name: must match [a-zA-Z0-9_-]'
@@ -32,7 +35,10 @@ function validateName(name: string): string | null {
   return null
 }
 
+/** Regex for model-config names, which may include forward slashes for nested paths. */
 const MODEL_CONFIG_NAME_RE = /^[\w./-]+$/
+
+/** Validates a model-config name, rejecting directory-traversal sequences. */
 function validateModelConfigName(name: string): string | null {
   if (!MODEL_CONFIG_NAME_RE.test(name) || name.includes('..')) {
     return 'Invalid name: must match [a-zA-Z0-9_./-]'
@@ -40,6 +46,11 @@ function validateModelConfigName(name: string): string | null {
   return null
 }
 
+/**
+ * Registers CRUD routes for the OhMyC store (agents, skills, commands, model-configs)
+ * plus a bulk-import endpoint. Every destructive operation checks for profile references
+ * unless `?force=true` is provided.
+ */
 export const storeRoutes: FastifyPluginAsync<StoreRoutesOptions> = async (fastify, options) => {
   const storeDir = path.join(options.baseDir, 'store')
   const profilesDir = path.join(options.baseDir, 'profiles')
@@ -50,6 +61,7 @@ export const storeRoutes: FastifyPluginAsync<StoreRoutesOptions> = async (fastif
   const modelConfigService = new ModelConfigService(path.join(storeDir, 'model-configs'))
   const storeService = new StoreService(storeDir, profilesDir)
 
+  /** Attaches import provenance metadata to a single store item. */
   async function attachProvenance<Item extends { id: string }>(
     type: 'agents' | 'commands' | 'skills',
     item: Item,
@@ -58,6 +70,7 @@ export const storeRoutes: FastifyPluginAsync<StoreRoutesOptions> = async (fastif
     return provenance ? { ...item, provenance } : item
   }
 
+  /** Attaches import provenance metadata to a list of store items. */
   async function attachProvenanceList<Item extends { id: string }>(
     type: 'agents' | 'commands' | 'skills',
     items: Item[],

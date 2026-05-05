@@ -13,15 +13,24 @@ import matter from 'gray-matter'
 
 import type { Agent, AgentFrontmatter } from '@ohmyc/shared'
 
+/**
+ * CRUD service for agent definitions stored as Markdown files with YAML frontmatter.
+ * Each agent is a `.md` file in the configured `agentsDir`.
+ */
 export class AgentService {
   constructor(private agentsDir: string) {}
 
+  /** Validates that a name contains only safe characters ([a-zA-Z0-9_-]). */
   private validateName(name: string): void {
     if (!SAFE_NAME_PATTERN.test(name)) {
       throw new Error(`Agent name "${name}" is invalid: must match [a-zA-Z0-9_-]`)
     }
   }
 
+  /**
+   * Parses a raw Markdown file into an {@link Agent} object.
+   * Returns null when required frontmatter fields (name, description) are missing.
+   */
   private parseAgentFile(filename: string, raw: string): Agent | null {
     const parsed = matter(raw)
     const frontmatter = parsed.data as AgentFrontmatter
@@ -38,6 +47,7 @@ export class AgentService {
     }
   }
 
+  /** Fetches a single agent by name. Returns null if not found or name is invalid. */
   async get(name: string): Promise<Agent | null> {
     if (!SAFE_NAME_PATTERN.test(name)) {
       return null
@@ -51,6 +61,12 @@ export class AgentService {
     }
   }
 
+  /**
+   * Creates a new agent file. Throws if the name is invalid or the file already exists.
+   * @param frontmatter - Agent metadata (must include name and description).
+   * @param content - Markdown body content.
+   * @returns The newly created agent.
+   */
   async create(frontmatter: AgentFrontmatter, content: string): Promise<Agent> {
     this.validateName(frontmatter.name)
 
@@ -81,6 +97,12 @@ export class AgentService {
     }
   }
 
+  /**
+   * Updates an existing agent by merging provided frontmatter/content changes.
+   * @param name - The agent identifier (filename without `.md`).
+   * @param changes - Partial frontmatter and/or content to merge.
+   * @returns The updated agent, or null if not found.
+   */
   async update(
     name: string,
     changes: { frontmatter?: Partial<AgentFrontmatter>; content?: string },
@@ -110,6 +132,7 @@ export class AgentService {
     }
   }
 
+  /** Deletes an agent file by name. Returns true if the file existed and was removed. */
   async delete(name: string): Promise<boolean> {
     if (!SAFE_NAME_PATTERN.test(name)) {
       return false
@@ -124,6 +147,7 @@ export class AgentService {
     }
   }
 
+  /** Lists all agents in the directory, sorted alphabetically by filename. */
   async list(): Promise<Agent[]> {
     try {
       await access(this.agentsDir)

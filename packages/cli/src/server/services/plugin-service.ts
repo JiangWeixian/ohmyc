@@ -12,6 +12,7 @@ import type {
   PluginManifest,
 } from '@ohmyc/shared'
 
+/** Components discovered inside a plugin installation directory. */
 interface PluginComponents {
   agents: string[]
   skills: string[]
@@ -21,12 +22,17 @@ interface PluginComponents {
   lspServers: any | null
 }
 
+/**
+ * Reads the Claude Code plugin registry and resolves installed plugin metadata,
+ * including manifests, discovered components, and enabled state.
+ */
 export class PluginService {
   constructor(
     private pluginsDir: string,
     private claudeSettingsPaths: readonly string[],
   ) {}
 
+  /** Safely reads and parses a JSON file, returning null on any error. */
   private async readJson<Value>(filePath: string): Promise<Value | null> {
     try {
       const raw = await readFile(filePath, 'utf8')
@@ -36,6 +42,7 @@ export class PluginService {
     }
   }
 
+  /** Attempts to load `plugin.json` from the install root or the `.claude-plugin` subdirectory. */
   private async loadManifest(installPath: string): Promise<PluginManifest | null> {
     const manifest = await this.readJson<PluginManifest>(path.join(installPath, 'plugin.json'))
     if (manifest) {
@@ -44,6 +51,7 @@ export class PluginService {
     return this.readJson<PluginManifest>(path.join(installPath, '.claude-plugin', 'plugin.json'))
   }
 
+  /** Scans a plugin directory to discover agents, skills, commands, hooks, MCP and LSP definitions. */
   private async scanComponents(installPath: string): Promise<PluginComponents> {
     const components: PluginComponents = {
       agents: [],
@@ -97,8 +105,8 @@ export class PluginService {
     return components
   }
 
+  /** Merges `enabledPlugins` from all settings paths in low→high precedence (user → project → local). */
   private async getEnabledPlugins(): Promise<Record<string, boolean>> {
-    // Merge enabledPlugins across paths in low→high precedence (user → project → local).
     const merged: Record<string, boolean> = {}
     for (const filePath of this.claudeSettingsPaths) {
       const settings = await this.readJson<{ enabledPlugins?: Record<string, boolean> }>(filePath)
@@ -109,6 +117,7 @@ export class PluginService {
     return merged
   }
 
+  /** Lists all installed plugins with their metadata, components, and enabled state. */
   async listPlugins(): Promise<InstalledPlugin[]> {
     const filePath = path.join(this.pluginsDir, 'installed_plugins.json')
     const data = await this.readJson<{ version?: number; plugins: Record<string, PluginInstall[]> }>(filePath)
@@ -146,11 +155,13 @@ export class PluginService {
     return plugins.toSorted((a, b) => a.name.localeCompare(b.name))
   }
 
+  /** Fetches a single installed plugin by its full ID (e.g. `name@marketplace`). */
   async getPlugin(id: string): Promise<InstalledPlugin | null> {
     const all = await this.listPlugins()
     return all.find(p => p.id === id) ?? null
   }
 
+  /** Lists all known plugin marketplaces from the registry file. */
   async listMarketplaces(): Promise<Marketplace[]> {
     const filePath = path.join(this.pluginsDir, 'known_marketplaces.json')
     const data = await this.readJson<Record<string, Omit<Marketplace, 'id'>>>(filePath)
@@ -163,6 +174,7 @@ export class PluginService {
       .toSorted((a, b) => a.id.localeCompare(b.id))
   }
 
+  /** Fetches a single marketplace by ID. */
   async getMarketplace(id: string): Promise<Marketplace | null> {
     const all = await this.listMarketplaces()
     return all.find(m => m.id === id) ?? null

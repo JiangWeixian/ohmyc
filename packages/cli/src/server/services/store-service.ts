@@ -20,8 +20,10 @@ import {
 } from '@ohmyc/shared'
 import untildify from 'untildify'
 
+/** Maps component types to their imported-source tracking records. */
 type ProvenanceIndex = Record<StoreComponentType, Record<string, StoreComponentProvenance>>
 
+/** A single file or directory queued for import into the store. */
 interface ImportCandidate {
   type: StoreComponentType
   id: string
@@ -30,6 +32,7 @@ interface ImportCandidate {
   isConflict: boolean
 }
 
+/** Factory for an empty import result. */
 const EMPTY_RESULT = (): StoreImportResult => ({
   imported: 0,
   skipped: 0,
@@ -38,16 +41,22 @@ const EMPTY_RESULT = (): StoreImportResult => ({
   conflicts: [],
 })
 
+/**
+ * Manages bulk import of agents, skills, and commands into the OhMyC store,
+ * tracking provenance and preventing accidental overwrites.
+ */
 export class StoreService {
   constructor(
     private storeDir: string,
     private profilesDir: string,
   ) {}
 
+  /** Path to the JSON file that tracks where each store component was imported from. */
   private getProvenanceIndexPath(): string {
     return path.join(this.storeDir, '.metadata', 'imports.json')
   }
 
+  /** Checks whether a path exists without throwing. */
   private async pathExists(targetPath: string): Promise<boolean> {
     try {
       await access(targetPath)
@@ -57,6 +66,7 @@ export class StoreService {
     }
   }
 
+  /** Recursively copies a file or directory tree. */
   private async copyRecursive(sourcePath: string, destinationPath: string): Promise<void> {
     const sourceStat = await stat(sourcePath)
 
@@ -73,6 +83,7 @@ export class StoreService {
     await copyFile(sourcePath, destinationPath)
   }
 
+  /** Reads the provenance index from disk, returning a default empty structure on missing/invalid JSON. */
   private async readProvenanceIndex(): Promise<ProvenanceIndex> {
     const importsPath = this.getProvenanceIndexPath()
     try {
@@ -94,12 +105,14 @@ export class StoreService {
     }
   }
 
+  /** Persists the provenance index back to disk. */
   private async writeProvenanceIndex(index: ProvenanceIndex): Promise<void> {
     const importsPath = this.getProvenanceIndexPath()
     await mkdir(path.dirname(importsPath), { recursive: true })
     await writeFile(importsPath, JSON.stringify(index, null, 2), 'utf8')
   }
 
+  /** Scans `sourceDir/agents` for `.md` files that can be imported. */
   private async scanAgents(sourceDir: string): Promise<ImportCandidate[]> {
     const candidates: ImportCandidate[] = []
     try {
@@ -123,6 +136,7 @@ export class StoreService {
     return candidates
   }
 
+  /** Scans `sourceDir/skills` for directories containing `SKILL.md` that can be imported. */
   private async scanSkills(sourceDir: string): Promise<ImportCandidate[]> {
     const candidates: ImportCandidate[] = []
     try {
@@ -154,6 +168,7 @@ export class StoreService {
     return candidates
   }
 
+  /** Scans `sourceDir/commands` for `.md` files that can be imported. */
   private async scanCommands(sourceDir: string): Promise<ImportCandidate[]> {
     const candidates: ImportCandidate[] = []
     try {
@@ -177,6 +192,7 @@ export class StoreService {
     return candidates
   }
 
+  /** Converts an import candidate into a conflict descriptor. */
   private toConflict(candidate: ImportCandidate): StoreImportConflict {
     return {
       type: candidate.type,
@@ -186,6 +202,12 @@ export class StoreService {
     }
   }
 
+  /**
+   * Dry-run scan: lists all import candidates and identifies conflicts
+   * without modifying the store.
+   * @param sourceDir - Directory containing agents/, skills/, and/or commands/ subdirectories.
+   * @returns Import result with conflicts populated but no files copied.
+   */
   async scanImport(sourceDir: string): Promise<StoreImportResult> {
     const candidates = await this.getImportCandidates(sourceDir)
     return {
@@ -194,6 +216,7 @@ export class StoreService {
     }
   }
 
+  /** Gathers all import candidates from the three component subdirectories in parallel. */
   private async getImportCandidates(sourceDir: string): Promise<ImportCandidate[]> {
     const [agents, skills, commands] = await Promise.all([
       this.scanAgents(sourceDir),
@@ -204,6 +227,13 @@ export class StoreService {
     return [...agents, ...skills, ...commands]
   }
 
+  /**
+   * Applies a bulk import, optionally overwriting existing files.
+   * Tracks provenance for every imported component.
+   * @param sourceDir - Source directory to import from.
+   * @param overwrite - When true, replaces conflicting files instead of skipping them.
+   * @returns Import result with counts and any errors that occurred.
+   */
   async applyImport(sourceDir: string, overwrite = false): Promise<StoreImportResult> {
     const result = await this.scanImport(sourceDir)
     const candidates = await this.getImportCandidates(sourceDir)
@@ -243,6 +273,12 @@ export class StoreService {
     return result
   }
 
+  /**
+   * Public entry point for importing components into the store.
+   * Accepts either a source directory path or a full request object.
+   * @param request - Source directory string or structured import request.
+   * @returns Import result with counts, conflicts, and errors.
+   */
   async import(request: StoreImportRequest | string): Promise<StoreImportResult> {
     const raw = typeof request === 'string'
       ? { sourceDir: request, dryRun: false, overwrite: false }
@@ -260,11 +296,13 @@ export class StoreService {
     return this.applyImport(normalized.sourceDir, normalized.overwrite ?? false)
   }
 
+  /** Retrieves provenance metadata (original import path and timestamp) for a store component. */
   async getProvenance(type: StoreComponentType, id: string): Promise<StoreComponentProvenance | undefined> {
     const index = await this.readProvenanceIndex()
     return index[type][id]
   }
 
+  /** Finds all profiles that reference a given component by name. */
   async getReferencingProfiles(type: 'agents' | 'commands' | 'model-configs' | 'skills', name: string): Promise<string[]> {
     const references: string[] = []
     try {

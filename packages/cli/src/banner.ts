@@ -1,9 +1,11 @@
+// ASCII banner generator — reads the current package version and renders the OhMyC logo.
 import { readFileSync } from 'node:fs'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 
 const __dirname = fileURLToPath(new URL('.', import.meta.url))
 
+/** Builds the multi-line ASCII banner including the current version. */
 export function getBanner(): string {
   // Read version from package.json
   let version = 'unknown'

@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+// CLI entry point for OhMyC — defines all commands and delegates to the launcher or dashboard subcommands.
 import { cac } from 'cac'
 
 import { printBanner } from './banner'
@@ -12,6 +13,7 @@ import {
 import { launchApp } from './launcher'
 import { logger } from './logger'
 
+/** Root CLI instance using the cac framework. */
 const cli = cac('ohmyc')
 
 cli
