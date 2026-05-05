@@ -6,6 +6,7 @@ import fastifyStatic from '@fastify/static'
 import Fastify, { type FastifyInstance } from 'fastify'
 import getPort from 'get-port'
 
+import { logger } from '../logger'
 import { agentsRoutes } from './routes/agents'
 import { commandsRoutes } from './routes/commands'
 import { configRoutes } from './routes/config'
@@ -66,7 +67,7 @@ export interface CreateServerOptions {
 
 export async function createServer(options: CreateServerOptions = {}): Promise<FastifyInstance> {
   const fastify = Fastify({
-    logger: true,
+    logger,
   })
 
   const serverCwd = options.cwd || process.cwd()
@@ -89,7 +90,7 @@ export async function createServer(options: CreateServerOptions = {}): Promise<F
     const uiDistributionPath = resolveStaticRoot(options.staticRoot)
 
     if (uiDistributionPath) {
-      console.log(`Serving static files from: ${uiDistributionPath}`)
+      logger.info(`Serving static files from: ${uiDistributionPath}`)
       fastify.register(fastifyStatic, {
         root: uiDistributionPath,
         prefix: '/',
@@ -153,7 +154,7 @@ export async function startServer(options: StartServerOptions | number = {}): Pr
 
   try {
     const address = await fastify.listen({ port, host: '0.0.0.0' })
-    console.log(`Server listening on ${address}`)
+    logger.info(`Server listening on ${address}`)
     return {
       port,
       address,

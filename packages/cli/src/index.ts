@@ -10,6 +10,7 @@ import {
   runUninstall,
 } from './commands/dashboard.js'
 import { launchApp } from './launcher'
+import { logger } from './logger'
 
 const cli = cac('cu')
 
@@ -21,13 +22,13 @@ cli
   .action(async (options) => {
     const port = Number.parseInt(options.port, 10)
     if (Number.isNaN(port) || port < 0 || port > 65_535) {
-      console.error(`Invalid port: ${options.port}. Must be a number between 0 and 65535.`)
+      logger.error(`Invalid port: ${options.port}. Must be a number between 0 and 65535.`)
       process.exit(1)
     }
     try {
       await launchApp({ defaultPort: port, apiOnly: options.apiOnly, cwd: options.cwd })
     } catch (error) {
-      console.error(error instanceof Error ? error.message : String(error))
+      logger.error(error instanceof Error ? error.message : String(error))
       process.exit(1)
     }
   })
@@ -41,11 +42,11 @@ cli
       try {
         await launchApp({ defaultPort: 3000, cwd: options.cwd })
       } catch (error) {
-        console.error(error instanceof Error ? error.message : String(error))
+        logger.error(error instanceof Error ? error.message : String(error))
         process.exit(1)
       }
     } else {
-      console.error(`Unknown arguments: ${arguments_.join(' ')}. Did you mean 'cu start'?`)
+      logger.error(`Unknown arguments: ${arguments_.join(' ')}. Did you mean 'cu start'?`)
       process.exit(1)
     }
   })
@@ -69,19 +70,19 @@ cli
         await runSync()
       } else if (options.ingest) {
         if (!options.session) {
-          console.error('--session <id> is required')
+          logger.error('--session <id> is required')
           process.exit(1)
         }
         await runIngest(options.session, options.file)
       } else if (options.doctor) {
         await runDoctor()
       } else {
-        console.log('No action specified. Use one of: --install, --uninstall, --sync, --ingest, --doctor')
+        logger.info('No action specified. Use one of: --install, --uninstall, --sync, --ingest, --doctor')
         cli.outputHelp()
         process.exit(1)
       }
     } catch (error) {
-      console.error(error instanceof Error ? error.message : String(error))
+      logger.error(error instanceof Error ? error.message : String(error))
       process.exit(1)
     }
   })

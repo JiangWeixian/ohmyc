@@ -12,6 +12,7 @@ import {
 } from 'vitest'
 
 import { launchApp } from '@/launcher'
+import { logger } from '@/logger'
 import { startServer } from '@/server/index'
 
 // Mock the server module
@@ -30,8 +31,8 @@ describe('CLI launcher', () => {
 
   beforeEach(() => {
     vi.clearAllMocks()
-    logSpy = vi.spyOn(console, 'log').mockImplementation(() => {})
-    errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+    logSpy = vi.spyOn(logger, 'info').mockImplementation(() => logger)
+    errorSpy = vi.spyOn(logger, 'error').mockImplementation(() => logger)
   })
 
   afterEach(() => {
