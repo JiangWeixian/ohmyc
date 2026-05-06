@@ -1,4 +1,5 @@
 // Pino logger setup — daily-rotated file logs under $OHMYC_HOME/logs (defaults to ~/.config/ohmyc/logs) with optional console output.
+import { mkdirSync } from 'node:fs'
 import { homedir } from 'node:os'
 import path from 'node:path'
 
@@ -21,6 +22,8 @@ function build(): pino.Logger {
     ? path.join(ohmycHome, 'logs', `test-${process.pid}`)
     : path.join(ohmycHome, 'logs')
   const logFile = path.join(logDir, 'ohmyc.log')
+
+  mkdirSync(logDir, { recursive: true })
 
   // Console logging is opt-in via OHMYC_LOG_CONSOLE to keep CLI output clean.
   const enableConsole = process.env.OHMYC_LOG_CONSOLE === 'true'
