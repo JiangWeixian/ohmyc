@@ -1,8 +1,10 @@
+// Command palette trigger button — opens the global ⌘K palette.
 import { Search } from 'lucide-react'
 
 import { useCommandPalette } from '@/components/ui/command-palette'
 import { cn } from '@/lib/utils'
 
+/** Header search button that opens the global command palette (⌘K). */
 export function CommandPaletteTrigger() {
   const { open } = useCommandPalette()
 

@@ -1,3 +1,5 @@
+// Config section cards — renders a grid of config entry cards for a given
+// category (MCP servers, hooks, LSP servers) with error and empty states.
 import { AlertCircle } from 'lucide-react'
 
 import { SectionHeader } from './section-header'
@@ -8,6 +10,7 @@ import type { ReactNode } from 'react'
 import type { ConfigEntry } from '../hooks/use-configs'
 import type { IconType } from './icons'
 
+/** Properties for a single config entry card. */
 interface ConfigEntryCardProperties {
   name: string
   data: Record<string, unknown>
@@ -18,6 +21,7 @@ interface ConfigEntryCardProperties {
   pluginId?: string
 }
 
+/** Card displaying a single config entry (e.g. one MCP server or hook). */
 function ConfigEntryCard({ name, data, icon: Icon, iconColor, source = 'local', pluginId }: ConfigEntryCardProperties) {
   return (
     <Card className="panel p-6 transition-smooth hover:border-[var(--border-hover)] hover:shadow-[var(--shadow-sm)]">
@@ -35,6 +39,7 @@ function ConfigEntryCard({ name, data, icon: Icon, iconColor, source = 'local', 
   )
 }
 
+/** Properties for the {@link ConfigSection} component. */
 interface ConfigSectionProperties {
   title: string
   description: ReactNode
@@ -45,6 +50,8 @@ interface ConfigSectionProperties {
   emptyMessage: string
 }
 
+/** Renders an entire config section: header + grid of entry cards, with
+ *  loading-error and empty-state fallbacks. */
 export function ConfigSection({
   title,
   description,
@@ -54,6 +61,7 @@ export function ConfigSection({
   iconColor,
   emptyMessage,
 }: ConfigSectionProperties) {
+  // Render error, populated, or empty state based on data
   function renderContent() {
     if (isError) {
       return (

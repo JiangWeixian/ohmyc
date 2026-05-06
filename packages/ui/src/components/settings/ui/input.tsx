@@ -1,3 +1,5 @@
+// Settings-scoped input field with optional label, icon, and error state.
+
 import { Input as ShadcnInput } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { cn } from '@/lib/utils'
@@ -8,6 +10,10 @@ interface InputProperties extends React.InputHTMLAttributes<HTMLInputElement> {
   icon?: React.ReactNode
 }
 
+/**
+ * Text input for settings forms. Adds a label row, optional leading icon,
+ * and inline error message around the base shadcn Input.
+ */
 export function Input({ label, error, icon, className, ...properties }: InputProperties) {
   return (
     <div className="flex flex-col gap-1.5">

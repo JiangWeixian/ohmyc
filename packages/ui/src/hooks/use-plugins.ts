@@ -1,3 +1,4 @@
+// React Query hooks for installed plugins and marketplace listing.
 import { useQuery } from '@tanstack/react-query'
 
 import type {
@@ -7,6 +8,7 @@ import type {
   PluginManifest,
 } from '@ohmyc/shared'
 
+/** Normalized view of an installed plugin with resolved component counts. */
 export interface PluginInventoryItem {
   id: string
   name: string
@@ -21,6 +23,7 @@ export interface PluginInventoryItem {
   }
 }
 
+/** Normalizes raw InstalledPlugin data into a safe, UI-ready shape. */
 function normalizePlugin(plugin: InstalledPlugin): PluginInventoryItem {
   const installs = Array.isArray(plugin.installs) ? plugin.installs : []
 
@@ -39,6 +42,7 @@ function normalizePlugin(plugin: InstalledPlugin): PluginInventoryItem {
   }
 }
 
+/** Fetches and normalizes the full list of installed plugins. */
 async function fetchPlugins(): Promise<PluginInventoryItem[]> {
   const response = await fetch('/api/plugins')
   if (!response.ok) {
@@ -48,6 +52,7 @@ async function fetchPlugins(): Promise<PluginInventoryItem[]> {
   return Array.isArray(data.plugins) ? data.plugins.map(plugin => normalizePlugin(plugin)) : []
 }
 
+/** Fetches available plugin marketplaces. */
 async function fetchMarketplaces(): Promise<Marketplace[]> {
   const response = await fetch('/api/marketplaces')
   if (!response.ok) {
@@ -57,10 +62,12 @@ async function fetchMarketplaces(): Promise<Marketplace[]> {
   return data.marketplaces
 }
 
+/** Query hook for listing installed plugins with normalized component counts. */
 export function usePlugins() {
   return useQuery({ queryKey: ['plugins'], queryFn: fetchPlugins })
 }
 
+/** Query hook for listing available plugin marketplaces. */
 export function useMarketplaces() {
   return useQuery({ queryKey: ['marketplaces'], queryFn: fetchMarketplaces })
 }

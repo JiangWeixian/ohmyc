@@ -1,3 +1,5 @@
+// Store component editor — unified markdown editor with frontmatter validation,
+// or a dedicated form for model-configs. Handles create and update flows.
 import {
   useCallback,
   useEffect,
@@ -22,6 +24,8 @@ import { DeleteConfirmDialog } from './delete-confirm-dialog'
 import { ModelConfigEditor } from './model-config-editor'
 import { cn } from '@/lib/utils'
 
+// ═══════════ Types & Constants ═══════════
+
 interface StoreComponentEditorProperties {
   category: 'agents' | 'commands' | 'model-configs' | 'skills'
   editName?: string
@@ -29,6 +33,7 @@ interface StoreComponentEditorProperties {
   onCancel: () => void
 }
 
+/** Scaffold templates shown when creating a new component. */
 const SCAFFOLDS: Record<'agents' | 'commands' | 'skills', string> = {
   agents: `---
 name:
@@ -56,10 +61,17 @@ Slash command body — executed when the user types /name.
 `,
 }
 
+/** Returns a human-readable singular noun for a category key. */
 function singularize(category: 'agents' | 'commands' | 'skills'): string {
   return category === 'agents' ? 'agent' : (category === 'skills' ? 'skill' : 'command')
 }
 
+// ═══════════ Public Router Component ═══════════
+
+/**
+ * Top-level editor that delegates to the markdown editor for agents/skills/commands
+ * or to ModelConfigEditor for model-configs.
+ */
 export function StoreComponentEditor({ category, editName, onSaved, onCancel }: StoreComponentEditorProperties) {
   if (category === 'model-configs') {
     return <ModelConfigEditor editName={editName} onSaved={onSaved} onCancel={onCancel} />
@@ -74,6 +86,12 @@ export function StoreComponentEditor({ category, editName, onSaved, onCancel }: 
   )
 }
 
+// ═══════════ Markdown Document Editor ═══════════
+
+/**
+ * Internal markdown-based editor for agents, skills, and commands.
+ * Manages frontmatter parsing, validation, and the create/update lifecycle.
+ */
 function MarkdownDocEditor({
   category,
   editName,
@@ -99,7 +117,8 @@ function MarkdownDocEditor({
   const [error, setError] = useState<string | null>(null)
   const [showDeleteDialog, setShowDeleteDialog] = useState(false)
 
-  // Hydrate from server data once the existing entity loads.
+  // Hydrate editor buffer from the server response. Prefers the raw markdown
+  // string; falls back to reconstructing via stringifyFrontmatterFallback.
   useEffect(() => {
     if (!existing) {
       return
@@ -122,6 +141,7 @@ function MarkdownDocEditor({
 
   const isSaving = [createAgent, updateAgent, createSkill, updateSkill, createCommand, updateCommand].some(m => m.isPending)
 
+  // Parsed frontmatter state — used to drive validation pills and save gating.
   const parsed = useMemo(() => parseMarkdownDocument(buffer), [buffer])
   const lineCount = useMemo(() => buffer.split('\n').length, [buffer])
 
@@ -133,6 +153,8 @@ function MarkdownDocEditor({
 
   const fileSlug = isEdit ? editName! : (filename.trim() || (hasName ? String(frontmatterName).trim() : 'untitled'))
 
+  // Save is gated on: valid frontmatter, required name present, (description for agents),
+  // no in-flight mutation, and either dirty or creating new.
   const canSave = parsed.ok && hasName && (!requiresDescription || hasDescription) && !isSaving && (dirty || !isEdit)
 
   const handleBufferChange = useCallback((next: string) => {
@@ -140,6 +162,8 @@ function MarkdownDocEditor({
     setDirty(true)
     setError(null)
   }, [])
+
+  // ═══════════ Save & Delete Flow ═══════════
 
   const handleSave = useCallback(() => {
     setError(null)
@@ -160,6 +184,7 @@ function MarkdownDocEditor({
       return
     }
 
+    // On create, use the filename input if provided; otherwise derive from frontmatter name.
     const slug = isEdit
       ? null
       : (filename.trim() || String((parsed.frontmatter as { name?: string }).name ?? '').trim())
@@ -195,6 +220,8 @@ function MarkdownDocEditor({
     createCommand, updateCommand, onSaved,
   ])
 
+  // ═══════════ Keyboard Shortcut ═══════════
+
   // ⌘S to save
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
@@ -208,6 +235,8 @@ function MarkdownDocEditor({
     document.addEventListener('keydown', handler)
     return () => document.removeEventListener('keydown', handler)
   }, [canSave, handleSave])
+
+  // ═══════════ Render ═══════════
 
   const breadcrumb = (
     <>
@@ -460,6 +489,7 @@ function MarkdownDocEditor({
   )
 }
 
+/** Green/grey status indicator pill used in the editor footer. */
 function StatusPill({ ok, label }: { ok: boolean; label: string }) {
   return (
     <span className="inline-flex items-center gap-1.5">
@@ -474,8 +504,10 @@ function StatusPill({ ok, label }: { ok: boolean; label: string }) {
   )
 }
 
-// Last-resort fallback when existing.raw is unavailable. The server should
-// always provide raw, but if not we serialize known string keys naively.
+/**
+ * Naive frontmatter serializer used only when `existing.raw` is missing.
+ * Produces `key: value` lines for string values and `key: JSON` for others.
+ */
 function stringifyFrontmatterFallback(fm: Record<string, unknown>): string {
   const lines: string[] = []
   for (const [k, v] of Object.entries(fm)) {

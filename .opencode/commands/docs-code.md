@@ -1,5 +1,5 @@
 ---
-description: Analyze project modules and add code annotations in two phases
+description: Analyze codebase and add code annotations in two phases
 agent: build
 ---
 
@@ -7,9 +7,26 @@ You will work in **two phases**. Complete Phase 1 fully before starting Phase 2.
 
 ---
 
+## Argument Handling
+
+This command accepts an optional argument: `$ARGUMENTS`.
+
+- **No argument** — operate on the entire codebase (default behavior below).
+- **Argument is a directory** — scope Phase 1 exploration and Phase 2 annotation to that directory only. Treat it as the codebase root for this run.
+- **Argument is a file** — skip the module-level Phase 1 report. Instead:
+  1. Read the file.
+  2. Read files it imports/requires and files that import it (one hop, within the project — skip third-party deps).
+  3. Produce a brief context summary (one paragraph: what the file does, what it depends on, what depends on it). Wait for user confirmation.
+  4. In Phase 2, annotate ONLY the target file. Do not modify the related files — they exist only to inform comments on the target.
+- **Argument does not exist** — stop and report the path to the user.
+
+Resolve the argument relative to the project root. Skip directories listed in the exclude list below regardless of argument.
+
+---
+
 ## Phase 1: Module Analysis
 
-1. Scan the project structure. Skip these directories: `node_modules`, `.git`, `dist`, `build`, `.next`, `out`, `target`, `vendor`, `__pycache__`, `.cache`, `coverage`, `.turbo`, `.changeset`, `*.tsbuildinfo`.
+1. Explore codebase exhaustively (or the directory passed as argument). Skip these directories: `node_modules`, `.git`, `dist`, `build`, `.next`, `out`, `target`, `vendor`, `__pycache__`, `.cache`, `coverage`, `.turbo`, `.changeset`, `*.tsbuildinfo`.
 
 2. Identify the project type: monorepo (has workspaces / packages), single package, or multi-language project.
 
@@ -89,6 +106,17 @@ After user confirms the analysis:
     - For known but unfixed bugs, mark with `// FIXME:` and describe the issue and expected behavior.
     - For critical logic that requires extra care, mark with `// NOTE:` and explain why it matters.
 
+    **Long files and functions:**
+    - Triviality is judged per-block, not per-line. A 5-line block may be trivial; a 50-line block almost never is. Don't let "skip trivial code" silently swallow long code.
+    - **Function exceeds 50 lines OR cyclomatic complexity >10:** add intent comments before each major branch / loop explaining *why* (precondition, goal of the block). The rule "explain why, not what" still holds — do not narrate the code line-by-line.
+    - **File exceeds 300 lines:** add section banners at major boundaries to make structure scannable. Use the language's standard comment syntax, e.g.:
+      ```
+      // ═══════════ Parsing ═══════════
+      ```
+      Place banners between logically distinct groups of declarations (parsing / validation / serialization / etc.), not between every export.
+    - **Linter overrides defaults:** if the project configures `max-lines`, `max-lines-per-function`, or `complexity` (ESLint or equivalent), use the project's thresholds instead of 300 / 50 / 10.
+    - For large files, focus on top-level structure and exported API. Don't comment every line — only what helps a developer quickly orient themselves.
+
     **General constraints:**
     - Do NOT overwrite or duplicate existing comments.
     - Do NOT modify any code logic — only add comments.
@@ -97,6 +125,5 @@ After user confirms the analysis:
     - Skip generated / bundled / minified files.
     - Skip test files unless they lack any documentation and are part of the core module structure.
     - Skip `node_modules`, `dist`, `build`, `.next`, `out`, `target`, `vendor`, `__pycache__`, `.cache`, `coverage`.
-    - For large files, focus on top-level structure and exported API. Don't comment every line — only what helps a developer quickly orient themselves.
 
 5. Process files module by module. After annotating each module, briefly list what was changed (file path + type of annotation added).

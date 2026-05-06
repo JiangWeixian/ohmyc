@@ -1,3 +1,4 @@
+// Profiles view — list, create, edit, compare, and activate OhMyC profiles.
 import {
   useEffect,
   useMemo,
@@ -27,6 +28,8 @@ import {
 import { cn } from '@/lib/utils'
 
 import type { Profile } from '@ohmyc/shared'
+
+// ═══════════ Utility Functions ═══════════
 
 function getInitials(name: string): string {
   return name
@@ -127,11 +130,15 @@ function ProfileRow({
   )
 }
 
+// ═══════════ Route Parsing ═══════════
+
 interface ParsedRoute {
   selection: SidebarSelection | null
   editing: boolean
 }
 
+// Manual URL parsing handles deeply nested sub-routes that react-router
+// cannot express with a single wildcard param.
 function parseSelection(parameters: Record<string, string | undefined>): ParsedRoute {
   const { '*': rest } = parameters
   if (!rest) {
@@ -175,10 +182,16 @@ function parseSelection(parameters: Record<string, string | undefined>): ParsedR
   return { selection: { type: 'profile', name: rest }, editing: false }
 }
 
+// ═══════════ Profiles View Component ═══════════
+
 interface ProfilesViewProperties {
   viewSwitcher?: React.ReactNode
 }
 
+/**
+ * Root profiles view — manages sidebar selection, profile CRUD, comparison panel,
+ * store component editing, and keyboard-driven profile switching.
+ */
 export function ProfilesView({ viewSwitcher }: ProfilesViewProperties) {
   const parameters = useParams()
   const navigate = useNavigate()
@@ -272,6 +285,7 @@ export function ProfilesView({ viewSwitcher }: ProfilesViewProperties) {
         return
       }
 
+      // ⌘1-3 activate profiles by position; capped at 3 to avoid browser tab conflicts.
       if ((e.metaKey || e.ctrlKey) && ['1', '2', '3'].includes(e.key)) {
         e.preventDefault()
         const index = Number.parseInt(e.key, 10) - 1
@@ -296,6 +310,8 @@ export function ProfilesView({ viewSwitcher }: ProfilesViewProperties) {
   }, [profiles, active])
   /* eslint-enable react-hooks/exhaustive-deps, react/exhaustive-deps, react-hooks-extra/exhaustive-deps, react-naming-convention/exhaustive-deps */
 
+  // The compare panel can be opened via URL params (e.g. from the command palette);
+  // consume the params once and clear them to keep the URL clean.
   useEffect(() => {
     const action = searchParams.get('action')
     const compareName = searchParams.get('compare')

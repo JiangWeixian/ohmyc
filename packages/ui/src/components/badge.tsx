@@ -1,8 +1,10 @@
+// Styled badge variants — colored text badges and monospace badges for entity metadata.
 import React from 'react'
 
 import { Badge as ShadcnBadge } from '@/components/ui/badge'
 import { cn } from '@/lib/utils'
 
+/** Semantic color variants mapped to CSS token classes. */
 const colorClasses = {
   default: 'text-[var(--text-tertiary)] bg-[var(--surface-overlay)]',
   blue: 'text-[var(--accent-blue)] bg-[var(--accent-blue)]/10',
@@ -13,11 +15,13 @@ const colorClasses = {
 
 type BadgeVariant = keyof typeof colorClasses
 
+/** Properties for the {@link Badge} component. */
 interface BadgeProperties {
   children: React.ReactNode
   variant?: BadgeVariant
 }
 
+/** Colored badge with semantic variant (default, blue, purple, green, amber). */
 export function Badge({ children, variant = 'default' }: BadgeProperties) {
   return (
     <ShadcnBadge
@@ -32,6 +36,7 @@ export function Badge({ children, variant = 'default' }: BadgeProperties) {
   )
 }
 
+/** Monospace badge for technical values (e.g. file extensions, version strings). */
 export function MonoBadge({ children }: { children: React.ReactNode }) {
   return (
     <ShadcnBadge

@@ -1,3 +1,4 @@
+// Config aggregation routes — merges MCP servers, hooks, and LSP configs from local, plugin, and project sources.
 import { readFile } from 'node:fs/promises'
 import path from 'node:path'
 
@@ -5,6 +6,7 @@ import { PluginResolver } from '../services/plugin-resolver'
 
 import type { FastifyPluginAsync } from 'fastify'
 
+/** Route registration options. */
 interface ConfigRoutesOptions {
   baseDir: string
   projectBaseDir: string | null | undefined
@@ -12,6 +14,7 @@ interface ConfigRoutesOptions {
   claudeSettingsPaths: readonly string[]
 }
 
+/** A single MCP server entry after merging all sources. */
 interface McpEntry {
   name: string
   config: any
@@ -20,6 +23,7 @@ interface McpEntry {
   pluginId?: string
 }
 
+/** A single hook entry after flattening and merging all sources. */
 interface HookEntry {
   event: string
   name: string
@@ -29,6 +33,7 @@ interface HookEntry {
   pluginId?: string
 }
 
+/** A single LSP server entry after merging all sources. */
 interface LspEntry {
   name: string
   config: any
@@ -37,6 +42,7 @@ interface LspEntry {
   pluginId?: string
 }
 
+/** Safely reads and parses a JSON file, returning null on any error. */
 async function readJson(filePath: string): Promise<any> {
   try {
     const raw = await readFile(filePath, 'utf8')
@@ -46,6 +52,10 @@ async function readJson(filePath: string): Promise<any> {
   }
 }
 
+/**
+ * Flattens the nested hooks structure from Claude Code settings into a linear list.
+ * Each hook is tagged with its event name and an index for display purposes.
+ */
 function flattenHooks(hooksObject: Record<string, any>): Array<{ event: string; name: string; data: { matcher?: string; type: string; command: string } }> {
   const entries: Array<{ event: string; name: string; data: { matcher?: string; type: string; command: string } }> = []
   for (const [eventName, groups] of Object.entries(hooksObject)) {

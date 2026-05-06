@@ -1,3 +1,5 @@
+// Checkbox picker for marketplace plugins, fetched via usePlugins hook.
+
 import { usePlugins } from '../../hooks/use-plugins'
 import { Checkbox } from '@/components/ui/checkbox'
 import { cn } from '@/lib/utils'
@@ -7,6 +9,10 @@ interface PluginPickerProperties {
   onChange: (selected: string[]) => void
 }
 
+/**
+ * Fetches available plugins and renders a toggle-able checkbox list.
+ * Shows loading and empty states.
+ */
 export function PluginPicker({ selected, onChange }: PluginPickerProperties) {
   const { data: plugins, isLoading } = usePlugins()
 

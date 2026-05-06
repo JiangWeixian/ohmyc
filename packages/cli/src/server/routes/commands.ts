@@ -1,3 +1,4 @@
+// Command inventory routes — merges commands from the store, enabled plugins, and the project directory.
 import path from 'node:path'
 
 import { CommandService } from '../services/command-service'
@@ -6,6 +7,7 @@ import { resolveInventorySource } from './inventory-source'
 
 import type { FastifyPluginAsync } from 'fastify'
 
+/** Route registration options for the commands API. */
 interface CommandsRoutesOptions {
   commandsDir: string
   projectCommandsDir: string | null | undefined
@@ -14,6 +16,13 @@ interface CommandsRoutesOptions {
   baseDir?: string
 }
 
+/**
+ * Registers command listing and detail routes.
+ * Commands are resolved from three sources in priority order:
+ * 1. OhMyC store (`commandsDir`)
+ * 2. Enabled plugins
+ * 3. Project directory (`projectCommandsDir`)
+ */
 export const commandsRoutes: FastifyPluginAsync<CommandsRoutesOptions> = async (fastify, options) => {
   const service = new CommandService(options.commandsDir)
   const resolver = new PluginResolver(options.pluginsDir, options.claudeSettingsPaths)

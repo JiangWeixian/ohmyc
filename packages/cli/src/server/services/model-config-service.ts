@@ -17,6 +17,10 @@ import type {
 // Allows dots and forward slashes for names like "anthropic/claude-3.5-sonnet"
 const MODEL_CONFIG_NAME_RE = /^[\w./-]+$/
 
+/**
+ * Resolves a safe, absolute file path for a model config, preventing directory traversal.
+ * Returns null when the name is invalid or escapes the configs directory.
+ */
 function safeConfigPath(configsDir: string, name: string): string | null {
   if (!MODEL_CONFIG_NAME_RE.test(name)) {
     return null
@@ -32,9 +36,15 @@ function safeConfigPath(configsDir: string, name: string): string | null {
   return filePath
 }
 
+/**
+ * CRUD service for model configuration files stored as JSON.
+ * Each config is a `.json` file in the configured `configsDir`.
+ * Names may include forward slashes to support nested paths (e.g. "provider/model").
+ */
 export class ModelConfigService {
   constructor(private configsDir: string) {}
 
+  /** Fetches a single model config by name. Returns null if not found or name is invalid. */
   async get(name: string): Promise<ModelConfig | null> {
     const filePath = safeConfigPath(this.configsDir, name)
     if (!filePath) {
@@ -48,6 +58,7 @@ export class ModelConfigService {
     }
   }
 
+  /** Lists all model configs recursively, sorted alphabetically by relative path. */
   async list(): Promise<ModelConfig[]> {
     try {
       await access(this.configsDir)
@@ -71,6 +82,11 @@ export class ModelConfigService {
     return configs
   }
 
+  /**
+   * Creates a new model config file. Throws if the name is invalid or the file already exists.
+   * @param data - Model config payload (name, apiKey, baseUrl, etc.).
+   * @returns The newly created model config.
+   */
   async create(data: CreateModelConfigBody): Promise<ModelConfig> {
     const filePath = safeConfigPath(this.configsDir, data.name)
     if (!filePath) {
@@ -100,6 +116,12 @@ export class ModelConfigService {
     return config
   }
 
+  /**
+   * Updates an existing model config by merging provided changes.
+   * @param name - The model config identifier.
+   * @param changes - Partial model config fields to merge.
+   * @returns The updated model config, or null if not found.
+   */
   async update(name: string, changes: UpdateModelConfigBody): Promise<ModelConfig | null> {
     const existing = await this.get(name)
     if (!existing) {
@@ -112,6 +134,7 @@ export class ModelConfigService {
     return updated
   }
 
+  /** Deletes a model config file by name. Returns true if the file existed and was removed. */
   async delete(name: string): Promise<boolean> {
     const filePath = safeConfigPath(this.configsDir, name)
     if (!filePath) {

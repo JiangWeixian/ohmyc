@@ -1,9 +1,11 @@
+// Page header — displays breadcrumb navigation, command palette trigger, and active profile chip.
 import { useLocation } from 'react-router-dom'
 
 import { ActiveProfileChip } from './active-profile-chip'
 import { CommandPaletteTrigger } from './command-palette-trigger'
 import { cn } from '@/lib/utils'
 
+/** Derives breadcrumb labels from the current React Router pathname. */
 function useBreadcrumb(): { root: string; current: string } {
   const { pathname } = useLocation()
   if (pathname.startsWith('/timeline')) {
@@ -61,10 +63,13 @@ function useBreadcrumb(): { root: string; current: string } {
   return { root: 'Explorer', current: '' }
 }
 
+/** Props for the {@link Header} component. */
 interface HeaderProps {
+  /** Optional callback to trigger profile comparison. */
   onCompare?: () => void
 }
 
+/** Top navigation bar with breadcrumb, command palette trigger, and active profile chip. */
 export function Header({ onCompare }: HeaderProps) {
   const breadcrumb = useBreadcrumb()
 

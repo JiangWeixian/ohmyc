@@ -1,3 +1,5 @@
+// Settings-scoped button that adapts variant/size names to the underlying NativeButton API.
+
 import React from 'react'
 
 import { NativeButton } from '@/components/uitripled/native-button'
@@ -14,6 +16,7 @@ interface ButtonProperties {
   type?: 'button' | 'reset' | 'submit'
 }
 
+// Maps settings-style variant names to NativeButton's built-in variants.
 const variantMap: Record<string, 'default' | 'destructive' | 'ghost' | 'outline'> = {
   primary: 'default',
   secondary: 'outline',
@@ -27,6 +30,10 @@ const sizeMap: Record<string, 'default' | 'lg' | 'sm'> = {
   lg: 'lg',
 }
 
+/**
+ * Reusable button for settings forms. Wraps NativeButton with settings-specific
+ * variant and size tokens so consumers don't need to know the underlying API.
+ */
 export function Button({
   variant = 'primary',
   size = 'md',

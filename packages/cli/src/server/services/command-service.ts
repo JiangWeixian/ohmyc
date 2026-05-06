@@ -13,15 +13,24 @@ import matter from 'gray-matter'
 
 import type { Command, CommandFrontmatter } from '@ohmyc/shared'
 
+/**
+ * CRUD service for command definitions stored as Markdown files with YAML frontmatter.
+ * Each command is a `.md` file in the configured `commandsDir`.
+ */
 export class CommandService {
   constructor(private commandsDir: string) {}
 
+  /** Validates that a name contains only safe characters ([a-zA-Z0-9_-]). */
   private validateName(name: string): void {
     if (!SAFE_NAME_PATTERN.test(name)) {
       throw new Error(`Command name "${name}" is invalid: must match [a-zA-Z0-9_-]`)
     }
   }
 
+  /**
+   * Parses a raw Markdown file into a {@link Command} object.
+   * Falls back to the filename (minus `.md`) when the frontmatter name is absent.
+   */
   private parseCommandFile(filename: string, raw: string): Command | null {
     const parsed = matter(raw)
     const frontmatter = parsed.data as CommandFrontmatter
@@ -37,6 +46,7 @@ export class CommandService {
     }
   }
 
+  /** Lists all commands in the directory, sorted alphabetically by filename. */
   async list(): Promise<Command[]> {
     try {
       await access(this.commandsDir)
@@ -64,6 +74,7 @@ export class CommandService {
     return commands
   }
 
+  /** Fetches a single command by name. Returns null if not found or name is invalid. */
   async get(name: string): Promise<Command | null> {
     if (!SAFE_NAME_PATTERN.test(name)) {
       return null
@@ -77,6 +88,12 @@ export class CommandService {
     }
   }
 
+  /**
+   * Creates a new command file. Throws if the name is invalid or the file already exists.
+   * @param frontmatter - Command metadata (name falls back to empty string).
+   * @param content - Markdown body content.
+   * @returns The newly created command.
+   */
   async create(frontmatter: CommandFrontmatter, content: string): Promise<Command> {
     const name = frontmatter.name || ''
     this.validateName(name)
@@ -108,6 +125,12 @@ export class CommandService {
     }
   }
 
+  /**
+   * Updates an existing command by merging provided frontmatter/content changes.
+   * @param name - The command identifier (filename without `.md`).
+   * @param changes - Partial frontmatter and/or content to merge.
+   * @returns The updated command, or null if not found.
+   */
   async update(
     name: string,
     changes: { frontmatter?: Partial<CommandFrontmatter>; content?: string },
@@ -136,6 +159,7 @@ export class CommandService {
     }
   }
 
+  /** Deletes a command file by name. Returns true if the file existed and was removed. */
   async delete(name: string): Promise<boolean> {
     if (!SAFE_NAME_PATTERN.test(name)) {
       return false

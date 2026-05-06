@@ -1,12 +1,17 @@
+// Badge indicating where an entity originates — local, plugin, profile, or project.
 import { Badge } from '@/components/ui/badge'
 
+/** Union of possible inventory sources for an entity. */
 type InventorySource = 'local' | 'plugin' | 'profile' | 'project'
 
+/** Properties for the {@link SourceBadge} component. */
 interface SourceBadgeProperties {
   source: InventorySource
   pluginId?: string
 }
 
+/** Renders a small colored badge indicating the origin of an entity
+ *  (local file, installed plugin, inherited profile, or project directory). */
 export function SourceBadge({ source, pluginId }: SourceBadgeProperties) {
   if (source === 'local') {
     return (
@@ -29,6 +34,7 @@ export function SourceBadge({ source, pluginId }: SourceBadgeProperties) {
     )
   }
   if (source === 'plugin') {
+    // Extract plugin name before the @version segment
     const label = pluginId ? pluginId.split('@')[0] : 'plugin'
     return (
       <Badge

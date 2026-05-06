@@ -1,3 +1,4 @@
+// Skill inventory routes — merges skills from the store, enabled plugins, and the project directory.
 import path from 'node:path'
 
 import { PluginResolver } from '../services/plugin-resolver'
@@ -6,6 +7,7 @@ import { resolveInventorySource } from './inventory-source'
 
 import type { FastifyPluginAsync } from 'fastify'
 
+/** Route registration options for the skills API. */
 interface SkillsRoutesOptions {
   skillsDir: string
   projectSkillsDir: string | null | undefined
@@ -14,6 +16,13 @@ interface SkillsRoutesOptions {
   baseDir?: string
 }
 
+/**
+ * Registers skill listing and detail routes.
+ * Skills are resolved from three sources in priority order:
+ * 1. OhMyC store (`skillsDir`)
+ * 2. Enabled plugins
+ * 3. Project directory (`projectSkillsDir`)
+ */
 export const skillsRoutes: FastifyPluginAsync<SkillsRoutesOptions> = async (fastify, options) => {
   const service = new SkillService(options.skillsDir)
   const resolver = new PluginResolver(options.pluginsDir, options.claudeSettingsPaths)

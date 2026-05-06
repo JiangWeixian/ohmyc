@@ -1,3 +1,7 @@
+// Profile card — displays a single profile with its components, runtime
+// config, and activation controls. Manages the preflight dialog state machine
+// for safe profile switching.
+
 import {
   useCallback,
   useEffect,
@@ -36,11 +40,17 @@ interface UseActivationFlowOptions {
   onDelete: () => void
 }
 
+/**
+ * State machine for the activation flow. Runs a preflight check first, then
+ * branches into one of four dialog outcomes depending on the result:
+ * blocked, switch, activate-warn, or direct activation.
+ */
 function useActivationFlow({ profileName, onActivate, isActive, onDelete }: UseActivationFlowOptions) {
   const preflightMut = usePreflight()
   const [dialogState, setDialogState] = useState<DialogState>(null)
   const [lockError, setLockError] = useState(false)
 
+  // Auto-dismiss the lock-contention error after 5 s
   useEffect(() => {
     if (!lockError) {
       return
@@ -53,12 +63,16 @@ function useActivationFlow({ profileName, onActivate, isActive, onDelete }: UseA
     try {
       const result = await preflightMut.mutateAsync(profileName)
       if (!result.canActivate) {
+        // Preflight says activation is impossible — missing dependencies
         setDialogState({ type: 'blocked', preflight: result })
       } else if (result.currentActive) {
+        // Another profile is already active — confirm switch
         setDialogState({ type: 'switch', preflight: result })
       } else if (result.settingsWarnings.length > 0) {
+        // Can activate but settings will be overwritten — warn first
         setDialogState({ type: 'activate-warn', preflight: result })
       } else {
+        // All clear — activate immediately
         onActivate()
       }
     } catch (error: any) {
@@ -78,6 +92,10 @@ function useActivationFlow({ profileName, onActivate, isActive, onDelete }: UseA
 
   return { dialogState, setDialogState, lockError, preflightMut, handleActivateClick, handleDeleteClick }
 }
+
+// ---------------------------------------------------------------------------
+// Component group — labeled row of pill chips for store items (agents, skills, ...)
+// ---------------------------------------------------------------------------
 
 function ComponentGroup({ label, items }: { label: string; items: string[]; emptyText?: string }) {
   if (items.length === 0) {
@@ -100,6 +118,10 @@ function ComponentGroup({ label, items }: { label: string; items: string[]; empt
   )
 }
 
+// ---------------------------------------------------------------------------
+// Runtime group — labeled row of mono-spaced keys (hooks, MCP, LSP, settings)
+// ---------------------------------------------------------------------------
+
 function RuntimeGroup({ label, keys }: { label: string; keys: string[]; emptyText?: string }) {
   if (keys.length === 0) {
     return null
@@ -121,6 +143,14 @@ function RuntimeGroup({ label, keys }: { label: string; keys: string[]; emptyTex
   )
 }
 
+// ---------------------------------------------------------------------------
+// ProfileCard — main exported component
+// ---------------------------------------------------------------------------
+
+/**
+ * Full profile card with header, component/runtime sections, and a set of
+ * activation dialogs gated by the preflight check in useActivationFlow.
+ */
 export function ProfileCard({ profile, isActive, activeProfileName: _activeProfileName, onActivate, onDeactivate, onDelete, onEdit }: ProfileCardProperties) {
   const hooksKeys = profile.hooks ? Object.keys(profile.hooks) : []
   const mcpKeys = profile.mcpServers ? Object.keys(profile.mcpServers) : []

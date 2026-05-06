@@ -1,3 +1,4 @@
+// Fastify server factory — creates the HTTP server, registers API routes, and optionally serves static UI assets.
 import { existsSync } from 'node:fs'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -19,7 +20,7 @@ import { storeRoutes } from './routes/store'
 import { timelineRoutes } from './routes/timeline'
 import { ConfigLocator } from './services/config-locator'
 
-// Handling import.meta.dirname in ESM context
+// ESM-compatible __dirname replacement for resolving UI asset paths at runtime.
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
 
@@ -59,12 +60,22 @@ export function resolveStaticRoot(staticRoot?: string): string | undefined {
   return undefined
 }
 
+/** Options for {@link createServer}. */
 export interface CreateServerOptions {
+  /** Explicit path to the built UI assets (contains `index.html`). */
   staticRoot?: string
+  /** Skip static file serving; start API server only. */
   apiOnly?: boolean
+  /** Working directory for project discovery (defaults to `process.cwd()`). */
   cwd?: string
 }
 
+/**
+ * Creates and configures a Fastify instance with all API routes registered.
+ * Static file serving is enabled unless `apiOnly` is true.
+ * @param options - Server configuration options.
+ * @returns The configured Fastify instance (not yet listening).
+ */
 export async function createServer(options: CreateServerOptions = {}): Promise<FastifyInstance> {
   const fastify = Fastify({
     logger,
@@ -127,21 +138,37 @@ export async function createServer(options: CreateServerOptions = {}): Promise<F
   return fastify
 }
 
+/** Options for {@link startServer}. */
 export interface StartServerOptions {
+  /** Preferred port. Falls back to alternatives if busy. */
   defaultPort?: number
+  /** Explicit path to built UI assets. */
   staticRoot?: string
+  /** Skip static file serving. */
   apiOnly?: boolean
+  /** Working directory for project discovery. */
   cwd?: string
 }
 
+/** Result of a successful {@link startServer} call. */
 export interface StartServerResult {
+  /** The port the server is listening on. */
   port: number
+  /** Full listen address (e.g. `http://0.0.0.0:3000`). */
   address: string
+  /** Resolved static asset root, or undefined if not serving UI. */
   staticRoot?: string
+  /** True when the server fell back to a different port than requested. */
   fallback: boolean
+  /** Gracefully shuts down the server. */
   close: () => Promise<void>
 }
 
+/**
+ * Starts the OhMyC HTTP server on an available port.
+ * @param options - Port and server options, or just a port number as shorthand.
+ * @returns Server result including the actual port and a close function.
+ */
 export async function startServer(options: StartServerOptions | number = {}): Promise<StartServerResult> {
   const options_: StartServerOptions = typeof options === 'number'
     ? { defaultPort: options }

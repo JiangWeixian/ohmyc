@@ -22,12 +22,15 @@ import { ModelConfigService } from './model-config-service'
 
 import type { Profile } from '@ohmyc/shared'
 
+/** A reversible action recorded during activation so we can roll back on failure. */
 interface UndoAction {
   label: string
   undo: () => Promise<void>
 }
 
+/** Thrown when profile activation is blocked because referenced store components are missing. */
 export class ActivationBlockedError extends Error {
+  /** List of missing component IDs that prevented activation. */
   missing: string[]
 
   constructor(message: string, missing: string[]) {
@@ -37,6 +40,7 @@ export class ActivationBlockedError extends Error {
   }
 }
 
+/** A single environment variable change that would be applied by model-config activation. */
 export interface ModelConfigEnvChange {
   action: 'CHANGE' | 'REMOVE' | 'SET'
   key: string
@@ -44,6 +48,7 @@ export interface ModelConfigEnvChange {
   previousValue?: string // only for CHANGE action
 }
 
+/** Summarizes all model-config environment changes for a profile activation. */
 export interface ModelConfigChanges {
   configName: string
   changes: ModelConfigEnvChange[]
@@ -51,6 +56,7 @@ export interface ModelConfigChanges {
   deactivationConfigName?: string
 }
 
+/** Result of a profile preflight check — lists missing components and predicted side effects. */
 export interface PreflightResult {
   canActivate: boolean
   missing: string[]
@@ -59,6 +65,14 @@ export interface PreflightResult {
   modelConfigChanges?: ModelConfigChanges
 }
 
+/**
+ * Manages profile CRUD, activation, and deactivation.
+ *
+ * Profiles are stored as JSON files under `profiles/<name>/profile.json`.
+ * Activation creates symlinks from `~/.claude/` into the profile directory
+ * and updates Claude Code settings (enabledPlugins, model config env vars).
+ * Each activation is protected by a file-based lock to prevent corruption.
+ */
 export class ProfileService {
   private profilesDir: string
   private lockService: LockService
@@ -202,14 +216,14 @@ export class ProfileService {
     return path.join(this.profilesDir, '.active')
   }
 
+  /** Lists all profiles sorted alphabetically, plus the name of the currently active profile (if any). */
   async list(): Promise<{ profiles: Profile[]; active: string | null }> {
     let active: string | null = null
     try {
       const rawActive = await readFile(this.activePath(), 'utf8')
       const raw = rawActive.trim()
       if (raw) {
-        // If it's an absolute path, extract the directory name (which IS the profile name).
-        // If it's already a bare name, use it directly.
+        // .active may contain either a bare profile name or an absolute path to the profile directory.
         active = path.isAbsolute(raw) ? path.basename(raw) : raw
       }
     } catch { /* no active */ }
@@ -240,6 +254,7 @@ export class ProfileService {
     return { profiles, active }
   }
 
+  /** Fetches a single profile by name. Returns null if the profile does not exist. */
   async get(name: string): Promise<Profile | null> {
     try {
       const raw = await readFile(this.profileJsonPath(name), 'utf8')
@@ -249,6 +264,11 @@ export class ProfileService {
     }
   }
 
+  /**
+   * Creates a new profile directory and writes its `profile.json`.
+   * @param data - Profile fields; `name` is required and must be unique.
+   * @returns The validated profile object.
+   */
   async create(data: Partial<Profile> & { name: string }): Promise<Profile> {
     this.validateName(data.name)
 
@@ -268,6 +288,12 @@ export class ProfileService {
     return profile
   }
 
+  /**
+   * Updates an existing profile by merging the provided changes.
+   * @param name - The profile to update.
+   * @param changes - Partial profile fields (name cannot be changed).
+   * @returns The updated profile, or null if not found.
+   */
   async update(name: string, changes: Partial<Omit<Profile, 'name'>>): Promise<Profile | null> {
     const existing = await this.get(name)
     if (!existing) {
@@ -280,6 +306,7 @@ export class ProfileService {
     return profile
   }
 
+  /** Deletes a profile directory by name. Returns true if the directory existed and was removed. */
   async delete(name: string): Promise<boolean> {
     const dir = this.profileDir(name)
     try {
@@ -398,6 +425,12 @@ export class ProfileService {
     }
   }
 
+  /**
+   * Performs a dry-run check before activation to identify missing store components
+   * and predict settings/model-config side effects.
+   * @param name - The profile to preflight.
+   * @returns Preflight result including missing components, warnings, and model-config deltas.
+   */
   async preflight(name: string): Promise<PreflightResult> {
     const profile = await this.get(name)
     if (!profile) {
@@ -479,12 +512,17 @@ export class ProfileService {
           deactivationConfigName,
         }
       }
-      // If model config not found (deleted), leave modelConfigChanges undefined
     }
 
     return result
   }
 
+  /**
+   * Activates a profile: creates symlinks, updates Claude Code settings, registers the profile-as-plugin.
+   * Uses a file-based lock and an undo stack for transactional safety.
+   * @param name - The profile to activate.
+   * @returns Activation warnings (e.g. settings key overwrites).
+   */
   async activate(name: string): Promise<{ warnings: string[] }> {
     const undoStack: UndoAction[] = []
     let previousActiveName: string | null = null
@@ -814,12 +852,12 @@ export class ProfileService {
     } catch {}
   }
 
+  /** Deactivates the currently active profile, restoring settings backup and removing symlinks. */
   async deactivate(): Promise<void> {
     const activeName = await this.getActiveProfileName()
     if (!activeName) {
       return
     }
-
     await this.deactivateInternal(activeName)
   }
 }

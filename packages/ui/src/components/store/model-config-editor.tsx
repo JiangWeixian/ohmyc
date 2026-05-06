@@ -1,3 +1,5 @@
+// Model config editor — form for API key, base URL, model name, and provider.
+// Handles create, update, and delete-with-force for referenced configs.
 import { useEffect, useState } from 'react'
 
 import {
@@ -18,6 +20,12 @@ interface ModelConfigEditorProperties {
   onCancel: () => void
 }
 
+/**
+ * Form editor for model config store items. In edit mode, the API key field
+ * is pre-filled with a masked placeholder; only an unmasked value is sent on save.
+ * Delete attempts go through a two-phase flow (soft then force) when the config
+ * is referenced by profiles.
+ */
 export function ModelConfigEditor({ editName, onSaved, onCancel }: ModelConfigEditorProperties) {
   const isEdit = !!editName
 
@@ -25,6 +33,7 @@ export function ModelConfigEditor({ editName, onSaved, onCancel }: ModelConfigEd
 
   const [name, setName] = useState('')
   const existingData = existingQ.data
+  // API key is initialized as masked so the real key never appears in the DOM.
   const [apiKey, setApiKey] = useState(() => existingData ? maskApiKey(existingData.apiKey) : '')
   const [baseUrl, setBaseUrl] = useState(() => existingData?.baseUrl || '')
   const [modelName, setModelName] = useState(() => existingData?.modelName || '')
@@ -53,6 +62,7 @@ export function ModelConfigEditor({ editName, onSaved, onCancel }: ModelConfigEd
     setError(null)
 
     if (isEdit) {
+      // On update, only include apiKey if the user changed it (unmasked it).
       const body: Record<string, string> = { baseUrl, modelName, provider }
       if (!isMaskedValue(apiKey)) {
         body.apiKey = apiKey
@@ -83,6 +93,9 @@ export function ModelConfigEditor({ editName, onSaved, onCancel }: ModelConfigEd
 
   const [deleteReferencedBy, setDeleteReferencedBy] = useState<string[]>([])
 
+  // Two-phase delete: first attempt (force:false) is rejected by the server if
+  // the config is referenced; the error payload surfaces the referencing profiles,
+  // which opens the confirmation dialog for a force:true retry.
   const handleDelete = () => {
     deleteMut.mutate({ name: editName!, force: false }, {
       onSuccess: () => onSaved(),

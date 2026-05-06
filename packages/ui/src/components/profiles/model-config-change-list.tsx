@@ -1,3 +1,6 @@
+// Renders a styled list of model-config key changes (ADD, REMOVE, CHANGE)
+// with sensitive values truncated for display.
+
 import { truncateUrl } from '../../utils/truncate-url'
 
 interface ModelConfigChangeListProperties {
@@ -7,6 +10,10 @@ interface ModelConfigChangeListProperties {
 
 const SENSITIVE_KEYS = new Set(['ANTHROPIC_AUTH_TOKEN', 'ANTHROPIC_BASE_URL', 'API_TIMEOUT_MS'])
 
+/**
+ * Displays model-config environment variable changes in a compact mono list.
+ * Sensitive keys are automatically masked via truncateUrl.
+ */
 export function ModelConfigChangeList({ title, changes }: ModelConfigChangeListProperties) {
   return (
     <div className="bg-[#5E6AD2]/8 border border-[#5E6AD2]/15 rounded-[var(--radius-md)] p-4">

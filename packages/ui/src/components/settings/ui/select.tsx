@@ -1,3 +1,5 @@
+// Settings-scoped select dropdown with optional label and error state.
+
 import { Label } from '@/components/ui/label'
 import {
   Select as ShadcnSelect,
@@ -16,6 +18,10 @@ interface SelectFieldProperties extends Omit<React.SelectHTMLAttributes<HTMLSele
   onChange?: (e: { target: { value: string } }) => void
 }
 
+/**
+ * Dropdown select for settings forms. Adapts the shadcn Select component
+ * to a simplified {value, label} options API with optional error display.
+ */
 export function Select({ label, options, error, value, onChange, className, ..._properties }: SelectFieldProperties) {
   return (
     <div className="flex flex-col gap-1.5">
