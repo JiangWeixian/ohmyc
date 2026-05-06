@@ -1,3 +1,4 @@
+// Reusable card for top-level entities (agents, skills, commands) shown in grids.
 import React from 'react'
 
 import { Card } from '@/components/ui/card'
@@ -5,6 +6,7 @@ import { cn } from '@/lib/utils'
 
 import type { IconType } from './icons'
 
+/** Properties for the {@link EntityCard} component. */
 interface EntityCardProperties {
   icon: IconType
   iconAccentVar: string
@@ -14,6 +16,8 @@ interface EntityCardProperties {
   onClick: () => void
 }
 
+/** Clickable card summarizing an entity (agent, skill, or command) with icon,
+ *  title, description, and optional badge row. */
 export function EntityCard({
   icon: Icon,
   title,

@@ -1,3 +1,5 @@
+// Header chip showing the active profile name with a dropdown to switch profiles,
+// compare, or navigate to the profiles management page.
 import { ChevronDown, User } from 'lucide-react'
 import { useState } from 'react'
 
@@ -11,11 +13,16 @@ import {
 import { useActivateProfile, useProfiles } from '@/hooks/use-profiles'
 import { cn } from '@/lib/utils'
 
+/** Properties for the {@link ActiveProfileChip} component. */
 interface ActiveProfileChipProps {
+  /** Callback to open the comparison panel. Falls back to URL navigation. */
   onCompare?: () => void
+  /** Callback to navigate to profiles page. Falls back to URL navigation. */
   onNavigateToProfiles?: () => void
 }
 
+/** Header chip displaying the currently active profile with a dropdown menu
+ *  for switching profiles, comparing, and managing profiles. */
 export function ActiveProfileChip({ onCompare, onNavigateToProfiles }: ActiveProfileChipProps) {
   const { data, isLoading } = useProfiles()
   const active = data?.active

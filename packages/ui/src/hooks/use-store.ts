@@ -1,3 +1,4 @@
+// React Query hooks for the OhMyC store — agents, skills, commands, model-configs, and import.
 import {
   useMutation,
   useQuery,
@@ -46,6 +47,7 @@ async function mutateJson<Type>(url: string, method: string, body?: any): Promis
 
 // --- Store Agents ---
 
+/** Query hook for listing all store agents. */
 export function useStoreAgents() {
   return useQuery({
     queryKey: ['store', 'agents'],
@@ -53,6 +55,7 @@ export function useStoreAgents() {
   })
 }
 
+/** Query hook for fetching a single store agent by name. */
 export function useStoreAgent(name: string | null) {
   return useQuery({
     queryKey: ['store', 'agents', name],
@@ -61,6 +64,7 @@ export function useStoreAgent(name: string | null) {
   })
 }
 
+/** Mutation hook for creating a store agent. */
 export function useCreateStoreAgent() {
   const qc = useQueryClient()
   return useMutation({
@@ -69,6 +73,7 @@ export function useCreateStoreAgent() {
   })
 }
 
+/** Mutation hook for updating a store agent. */
 export function useUpdateStoreAgent() {
   const qc = useQueryClient()
   return useMutation({
@@ -78,6 +83,7 @@ export function useUpdateStoreAgent() {
   })
 }
 
+/** Mutation hook for deleting a store agent. */
 export function useDeleteStoreAgent() {
   const qc = useQueryClient()
   return useMutation({
@@ -89,6 +95,7 @@ export function useDeleteStoreAgent() {
 
 // --- Store Skills ---
 
+/** Query hook for listing all store skills. */
 export function useStoreSkills() {
   return useQuery({
     queryKey: ['store', 'skills'],
@@ -96,6 +103,7 @@ export function useStoreSkills() {
   })
 }
 
+/** Query hook for fetching a single store skill by name. */
 export function useStoreSkill(name: string | null) {
   return useQuery({
     queryKey: ['store', 'skills', name],
@@ -104,6 +112,7 @@ export function useStoreSkill(name: string | null) {
   })
 }
 
+/** Mutation hook for creating a store skill. */
 export function useCreateStoreSkill() {
   const qc = useQueryClient()
   return useMutation({
@@ -112,6 +121,7 @@ export function useCreateStoreSkill() {
   })
 }
 
+/** Mutation hook for updating a store skill. */
 export function useUpdateStoreSkill() {
   const qc = useQueryClient()
   return useMutation({
@@ -121,6 +131,7 @@ export function useUpdateStoreSkill() {
   })
 }
 
+/** Mutation hook for deleting a store skill. */
 export function useDeleteStoreSkill() {
   const qc = useQueryClient()
   return useMutation({
@@ -132,6 +143,7 @@ export function useDeleteStoreSkill() {
 
 // --- Store Commands ---
 
+/** Query hook for listing all store commands. */
 export function useStoreCommands() {
   return useQuery({
     queryKey: ['store', 'commands'],
@@ -139,6 +151,7 @@ export function useStoreCommands() {
   })
 }
 
+/** Query hook for fetching a single store command by name. */
 export function useStoreCommand(name: string | null) {
   return useQuery({
     queryKey: ['store', 'commands', name],
@@ -147,6 +160,7 @@ export function useStoreCommand(name: string | null) {
   })
 }
 
+/** Mutation hook for creating a store command. */
 export function useCreateStoreCommand() {
   const qc = useQueryClient()
   return useMutation({
@@ -155,6 +169,7 @@ export function useCreateStoreCommand() {
   })
 }
 
+/** Mutation hook for updating a store command. */
 export function useUpdateStoreCommand() {
   const qc = useQueryClient()
   return useMutation({
@@ -164,6 +179,7 @@ export function useUpdateStoreCommand() {
   })
 }
 
+/** Mutation hook for deleting a store command. */
 export function useDeleteStoreCommand() {
   const qc = useQueryClient()
   return useMutation({
@@ -175,6 +191,7 @@ export function useDeleteStoreCommand() {
 
 // --- Store Model Configs ---
 
+/** Query hook for listing all store model configs. */
 export function useStoreModelConfigs() {
   return useQuery({
     queryKey: ['store', 'model-configs'],
@@ -182,6 +199,7 @@ export function useStoreModelConfigs() {
   })
 }
 
+/** Query hook for fetching a single store model config by name. */
 export function useStoreModelConfig(name: string | null) {
   return useQuery({
     queryKey: ['store', 'model-configs', name],
@@ -190,6 +208,7 @@ export function useStoreModelConfig(name: string | null) {
   })
 }
 
+/** Mutation hook for creating a store model config. */
 export function useCreateStoreModelConfig() {
   const qc = useQueryClient()
   return useMutation({
@@ -201,6 +220,7 @@ export function useCreateStoreModelConfig() {
   })
 }
 
+/** Mutation hook for updating a store model config. */
 export function useUpdateStoreModelConfig() {
   const qc = useQueryClient()
   return useMutation({
@@ -213,6 +233,7 @@ export function useUpdateStoreModelConfig() {
   })
 }
 
+/** Mutation hook for deleting a store model config. */
 export function useDeleteStoreModelConfig() {
   const qc = useQueryClient()
   return useMutation({
@@ -227,6 +248,15 @@ export function useDeleteStoreModelConfig() {
 
 // --- Store Import ---
 
+/**
+ * Mutation hook for importing components into the store.
+ *
+ * The import flow is two-phase:
+ * 1. `previewImport` — dry-run that returns what *would* be imported without writing files.
+ * 2. `applyImport` — performs the actual write, optionally overwriting existing components.
+ *
+ * Cache is only refreshed after a real (non-dry-run) import to avoid unnecessary refetches.
+ */
 export function useStoreImport() {
   const qc = useQueryClient()
   const mutation = useMutation({

@@ -14,17 +14,27 @@ import matter from 'gray-matter'
 
 import type { Skill, SkillFrontmatter } from '@ohmyc/shared'
 
+/** Filename for the skill definition inside each skill directory. */
 const SKILL_FILE = 'SKILL.md'
 
+/**
+ * CRUD service for skill definitions stored as directories containing a `SKILL.md` file.
+ * Each skill lives in its own subdirectory under `skillsDir`.
+ */
 export class SkillService {
   constructor(private skillsDir: string) {}
 
+  /** Validates that a name contains only safe characters ([a-zA-Z0-9_-]). */
   private validateName(name: string): void {
     if (!SAFE_NAME_PATTERN.test(name)) {
       throw new Error(`Skill name "${name}" is invalid: must match [a-zA-Z0-9_-]`)
     }
   }
 
+  /**
+   * Parses a `SKILL.md` file into a {@link Skill} object.
+   * Falls back to the directory name when frontmatter fields are absent.
+   */
   private parseSkillFile(dirName: string, raw: string): Skill | null {
     const parsed = matter(raw)
     const frontmatter = parsed.data as SkillFrontmatter
@@ -40,6 +50,7 @@ export class SkillService {
     }
   }
 
+  /** Lists all skills by scanning subdirectories and reading their `SKILL.md` files. */
   async list(): Promise<Skill[]> {
     try {
       await access(this.skillsDir)
@@ -72,6 +83,7 @@ export class SkillService {
     return skills
   }
 
+  /** Fetches a single skill by directory name. Returns null if not found or name is invalid. */
   async get(name: string): Promise<Skill | null> {
     if (!SAFE_NAME_PATTERN.test(name)) {
       return null
@@ -85,6 +97,12 @@ export class SkillService {
     }
   }
 
+  /**
+   * Creates a new skill directory and writes its `SKILL.md` file.
+   * @param frontmatter - Skill metadata (name falls back to directory name).
+   * @param content - Markdown body content.
+   * @returns The newly created skill.
+   */
   async create(frontmatter: SkillFrontmatter, content: string): Promise<Skill> {
     const name = frontmatter.name || ''
     this.validateName(name)
@@ -115,6 +133,12 @@ export class SkillService {
     }
   }
 
+  /**
+   * Updates an existing skill by merging provided frontmatter/content changes.
+   * @param name - The skill directory name.
+   * @param changes - Partial frontmatter and/or content to merge.
+   * @returns The updated skill, or null if not found.
+   */
   async update(
     name: string,
     changes: { frontmatter?: Partial<SkillFrontmatter>; content?: string },
@@ -143,6 +167,7 @@ export class SkillService {
     }
   }
 
+  /** Deletes a skill directory by name. Returns true if the directory existed and was removed. */
   async delete(name: string): Promise<boolean> {
     if (!SAFE_NAME_PATTERN.test(name)) {
       return false

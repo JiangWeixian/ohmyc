@@ -1,7 +1,5 @@
-/**
- * Masks an API key by showing only the last 4 characters with a fixed 4-asterisk prefix.
- * Does NOT reveal key length.
- */
+// Mask an API key by showing only the last 4 characters with a fixed 4-asterisk prefix.
+// Does NOT reveal key length.
 export function maskApiKey(key: string): string {
   if (key.length >= 4) {
     return `****${key.slice(-4)}`

@@ -1,3 +1,6 @@
+// Animated tabs with a shared-layout spring indicator and crossfade content transitions.
+// Uses framer-motion layoutId so the active-tab highlight slides smoothly between triggers.
+
 'use client'
 
 import { motion } from 'framer-motion'
@@ -11,6 +14,7 @@ import {
 } from '@/components/ui/tabs'
 import { cn } from '@/lib/utils'
 
+/** Data-driven tabs component with spring-animated active indicator. */
 interface NativeTabsProperties {
   items: {
     id: string
@@ -21,6 +25,7 @@ interface NativeTabsProperties {
   className?: string
 }
 
+/** Renders a data-driven tab group with animated indicator and content transitions. */
 export function NativeTabs({
   items,
   defaultValue,
@@ -43,6 +48,8 @@ export function NativeTabs({
               value={tab.id}
               className="relative z-10 flex-1 rounded-lg px-4 py-2 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 data-[state=active]:text-foreground data-[state=inactive]:text-muted-foreground data-[state=inactive]:hover:text-foreground data-[state=active]:bg-transparent data-[state=active]:shadow-none"
             >
+              {/* Shared layoutId lets framer-motion animate the background pill
+                  between triggers as a single shared element instead of remounting. */}
               {isActive && (
                 <motion.div
                   layoutId="active-tab"

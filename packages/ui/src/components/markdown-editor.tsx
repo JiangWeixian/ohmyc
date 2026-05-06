@@ -1,3 +1,5 @@
+// CodeMirror-based Markdown editor with YAML frontmatter support, OhMyC dark
+// theme, and Cmd+S save shortcut. Used for editing agent/skill/command files.
 import { defaultKeymap } from '@codemirror/commands'
 import { markdown } from '@codemirror/lang-markdown'
 import { yaml } from '@codemirror/lang-yaml'
@@ -13,6 +15,7 @@ import { useEffect, useRef } from 'react'
 
 import { ohmycContainerTheme } from './codemirror-container-theme'
 
+/** Properties for the {@link MarkdownEditor} component. */
 interface MarkdownEditorProperties {
   value: string
   onChange: (value: string) => void
@@ -20,6 +23,7 @@ interface MarkdownEditorProperties {
   placeholder?: string
 }
 
+/** Per-instance style overrides specific to the Markdown editor (larger font, Berkeley Mono, line height). */
 const markdownEditorOverlay = EditorView.theme({
   '&': {
     fontSize: '15px',
@@ -40,6 +44,9 @@ const markdownEditorOverlay = EditorView.theme({
   },
 }, { dark: true })
 
+/** CodeMirror-backed Markdown editor with YAML frontmatter highlighting and
+ *  optional Cmd+S save shortcut. Creates the view once on mount and syncs
+ *  external value changes via dispatch. */
 export function MarkdownEditor({
   value,
   onChange,
@@ -51,6 +58,7 @@ export function MarkdownEditor({
   const onChangeRef = useRef(onChange)
   const onSaveRef = useRef(onSaveShortcut)
 
+  // Keep callback refs fresh so the editor listener always calls the latest closure
   useEffect(() => {
     onChangeRef.current = onChange
     onSaveRef.current = onSaveShortcut
@@ -61,6 +69,7 @@ export function MarkdownEditor({
       return
     }
 
+    // Cmd/Cmd+S shortcut wired to the parent's save handler
     const saveKeymap = keymap.of([
       {
         key: 'Mod-s',
@@ -109,7 +118,7 @@ export function MarkdownEditor({
   }, [])
   /* eslint-enable react-hooks/exhaustive-deps, react/exhaustive-deps, react-hooks-extra/exhaustive-deps, react-naming-convention/exhaustive-deps */
 
-  // Sync external value changes
+  // Sync external value changes into the editor without recreating it
   useEffect(() => {
     const view = viewRef.current
     if (!view) {

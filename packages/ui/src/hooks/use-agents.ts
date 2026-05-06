@@ -1,15 +1,19 @@
+// React Query hooks for agent inventory listing and detail queries.
 import { useQuery } from '@tanstack/react-query'
 
 import type { Agent } from '@ohmyc/shared'
 
+/** Shape of the GET /api/agents response. */
 interface AgentsListResponse {
   agents: Agent[]
 }
 
+/** Shape of the GET /api/agents/:name response. */
 interface AgentDetailResponse {
   agent: Agent
 }
 
+/** Fetches all agents from the inventory (store, plugins, project). */
 async function fetchAgents(): Promise<Agent[]> {
   const response = await fetch('/api/agents')
   if (!response.ok) {
@@ -19,6 +23,7 @@ async function fetchAgents(): Promise<Agent[]> {
   return data.agents
 }
 
+/** Identifies a specific agent, including optional source/plugin/scope for disambiguation. */
 export interface ItemLocator {
   name: string
   source?: string
@@ -26,6 +31,7 @@ export interface ItemLocator {
   scope?: 'global' | 'project'
 }
 
+/** Fetches a single agent by locator. */
 async function fetchAgent(locator: ItemLocator): Promise<Agent> {
   const parameters = new URLSearchParams()
   if (locator.source) {
@@ -46,6 +52,7 @@ async function fetchAgent(locator: ItemLocator): Promise<Agent> {
   return data.agent
 }
 
+/** Query hook for listing all agents. */
 export function useAgents() {
   return useQuery({
     queryKey: ['agents'],
@@ -53,6 +60,7 @@ export function useAgents() {
   })
 }
 
+/** Query hook for fetching a single agent by locator. */
 export function useAgent(locator: ItemLocator | null) {
   return useQuery({
     queryKey: ['agents', locator?.name, locator?.source, locator?.pluginId, locator?.scope],

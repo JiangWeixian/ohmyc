@@ -1,14 +1,20 @@
+// Orchestrates server startup, port selection, browser opening, and graceful shutdown.
 import open from 'open'
 
 import { logger } from './logger'
 import { startServer, type StartServerOptions } from './server/index'
 
+/** Options accepted by {@link launchApp}. */
 export interface LaunchOptions {
+  /** Preferred port. Falls back to the next available if busy. */
   defaultPort?: number
+  /** Skip static file serving and open browser; start API only. */
   apiOnly?: boolean
+  /** Working directory for project discovery (defaults to `process.cwd()`). */
   cwd?: string
 }
 
+// Guard to prevent double-shutdown on repeated signals.
 let closing = false
 
 export async function launchApp(options: LaunchOptions = {}): Promise<void> {

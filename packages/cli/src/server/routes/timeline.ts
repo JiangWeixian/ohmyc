@@ -1,3 +1,4 @@
+// Timeline analytics REST API — exposes heatmap, events, session detail, projects, years, and sync status.
 import {
   closeDatabase,
   getEvents,
@@ -11,6 +12,7 @@ import {
 
 import type { FastifyPluginAsync } from 'fastify'
 
+/** Converts a Unix timestamp (ms) into a UTC `YYYY-MM-DD` string for SQLite queries. */
 function msToDate(ms: number): string {
   const d = new Date(ms)
   const y = d.getUTCFullYear()
@@ -19,8 +21,13 @@ function msToDate(ms: number): string {
   return `${y}-${m}-${day}`
 }
 
+/** Allowed aggregation metrics for the heatmap endpoint. */
 const VALID_METRICS = ['sessions', 'turns', 'tokens'] as const
 
+/**
+ * Registers timeline analytics routes backed by the SQLite database.
+ * Each route opens its own DB connection and closes it in a finally block.
+ */
 export const timelineRoutes: FastifyPluginAsync = async (fastify) => {
   // GET /api/timeline/heatmap?from=<ms>&to=<ms>&metric=<sessions|turns|tokens>&project=<optional>
   fastify.get<{

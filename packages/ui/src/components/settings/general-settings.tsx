@@ -1,3 +1,6 @@
+// General settings panel -- manages model selection, UI preferences, and auto-update channel.
+// Uses local dirty tracking so the user can edit multiple fields before saving in one batch.
+
 import fastDeepEqual from 'fast-deep-equal'
 import { Loader2 } from 'lucide-react'
 import {
@@ -22,6 +25,7 @@ import { NativeButton } from '@/components/uitripled/native-button'
 
 import type { GeneralSettings } from '@ohmyc/shared'
 
+// Fallback values used when the server hasn't returned settings yet or fields are missing.
 const DEFAULT_GENERAL_SETTINGS: GeneralSettings = {
   model: undefined,
   availableModels: undefined,
@@ -31,6 +35,11 @@ const DEFAULT_GENERAL_SETTINGS: GeneralSettings = {
   prefersReducedMotion: false,
 }
 
+/**
+ * Editable form for the "General" settings category.
+ * Syncs with the server via `useSettings` but keeps local draft state so
+ * changes can be reviewed before persisting.
+ */
 export function GeneralSettingsPanel() {
   const { data, isLoading, mutate, isSaving } = useSettings()
   const [formData, setFormData] = useState<GeneralSettings>(
@@ -40,7 +49,8 @@ export function GeneralSettingsPanel() {
   )
   const [saveStatus, setSaveStatus] = useState<'error' | 'idle' | 'saved' | 'saving'>('idle')
 
-  // Reset formData when data changes
+  // Reconcile local draft with server state -- only overwrites when the remote snapshot
+  // actually differs, which avoids dropping in-flight edits.
   useEffect(() => {
     if (data?.content?.general) {
       const next = { ...DEFAULT_GENERAL_SETTINGS, ...data.content.general }
@@ -52,11 +62,14 @@ export function GeneralSettingsPanel() {
     }
   }, [data])
 
+  // Dirty flag: compares the local draft against the last server snapshot.
   const hasChanges = useMemo(() => {
     const originalData = data?.content?.general || DEFAULT_GENERAL_SETTINGS
     return !fastDeepEqual(formData, originalData)
   }, [formData, data])
 
+  // Generic field updater -- spreads the new value into the draft and resets
+  // the save status so the footer reflects "Unsaved changes".
   const updateField = useCallback(
     <Key extends keyof GeneralSettings>(key: Key, value: GeneralSettings[Key]) => {
       setFormData(previous => ({ ...previous, [key]: value }))
@@ -65,6 +78,8 @@ export function GeneralSettingsPanel() {
     [],
   )
 
+  // Persist the full settings object. Merges the general draft into the
+  // existing content so other categories are preserved.
   const handleSave = useCallback(() => {
     setSaveStatus('saving')
     mutate(
@@ -83,7 +98,7 @@ export function GeneralSettingsPanel() {
     )
   }, [mutate, data?.content, formData])
 
-  // Cmd+S keyboard shortcut
+  // Keyboard shortcut -- Cmd/Ctrl+S triggers a save when there are pending changes.
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if ((e.metaKey || e.ctrlKey) && e.key === 's') {
@@ -98,6 +113,8 @@ export function GeneralSettingsPanel() {
     return () => globalThis.removeEventListener('keydown', handleKeyDown)
   }, [hasChanges, isSaving, handleSave])
 
+  // First-time bootstrap: creates the settings file with general defaults
+  // when no persisted settings exist yet.
   const handleCreateSettings = useCallback(() => {
     setSaveStatus('saving')
     mutate(

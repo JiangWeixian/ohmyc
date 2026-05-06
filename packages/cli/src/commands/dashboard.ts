@@ -1,3 +1,4 @@
+// Dashboard CLI subcommands for the OhMyC timeline plugin — install, uninstall, sync, ingest, doctor.
 import { execSync } from 'node:child_process'
 import {
   existsSync,
@@ -6,7 +7,6 @@ import {
   readFileSync,
   writeFileSync,
 } from 'node:fs'
-import os from 'node:os'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 
@@ -28,16 +28,13 @@ import type Database from 'better-sqlite3'
 // Helpers
 // ------------------------------------------------------------------
 
-export function getPluginsDir(): string {
-  const agentHome = process.env.AGENT_HOME
-  const claudeDir = agentHome || path.join(os.homedir(), '.claude')
-  return path.join(claudeDir, 'plugins')
-}
-
+/** Returns the Claude Code plugins directory (respects AGENT_HOME env var). */
+/** Path to the `installed_plugins.json` registry file. */
 export function getInstalledPluginsPath(): string {
   return path.join(getPluginsDir(), 'installed_plugins.json')
 }
 
+/** Reads the plugin registry, returning a default empty record on missing or invalid JSON. */
 export function readInstalledPlugins(): { version?: number; plugins: Record<string, PluginInstall[]> } {
   try {
     const raw = readFileSync(getInstalledPluginsPath(), 'utf8')
@@ -47,12 +44,14 @@ export function readInstalledPlugins(): { version?: number; plugins: Record<stri
   }
 }
 
+/** Persists the plugin registry back to disk, creating the directory if necessary. */
 export function writeInstalledPlugins(data: { version?: number; plugins: Record<string, PluginInstall[]> }): void {
   const pluginsDir = getPluginsDir()
   mkdirSync(pluginsDir, { recursive: true })
   writeFileSync(getInstalledPluginsPath(), JSON.stringify(data, null, 2), 'utf8')
 }
 
+/** Checks whether `jq` is available on PATH (used for some plugin operations). */
 export function hasJq(): boolean {
   try {
     execSync('jq --version', { stdio: 'ignore' })
@@ -62,6 +61,7 @@ export function hasJq(): boolean {
   }
 }
 
+/** Resolves the timeline plugin source directory, preferring the production bundled copy. */
 export function getPluginSourceDir(): string {
   // In development: resolve from src/commands/dashboard.ts → ../../plugins/timeline
   // In production (bundled): resolve from dist/index.mjs → ./plugins/timeline
@@ -74,6 +74,7 @@ export function getPluginSourceDir(): string {
   return srcPath
 }
 
+/** Formats a Unix timestamp into a human-readable string, or "never" when undefined/invalid. */
 function formatDate(ts: number | undefined): string {
   if (ts === undefined || Number.isNaN(ts)) {
     return 'never'
@@ -85,6 +86,7 @@ function formatDate(ts: number | undefined): string {
 // runInstall
 // ------------------------------------------------------------------
 
+/** Registers the timeline plugin and runs an initial backfill if the database is empty. */
 export async function runInstall(): Promise<void> {
   const pluginSourceDir = getPluginSourceDir()
 
@@ -135,6 +137,7 @@ export async function runInstall(): Promise<void> {
 // runUninstall
 // ------------------------------------------------------------------
 
+/** Removes the timeline plugin from the registry without deleting the database. */
 export async function runUninstall(): Promise<void> {
   const registry = readInstalledPlugins()
   if (registry.plugins['ohmyc-timeline']) {
@@ -148,6 +151,7 @@ export async function runUninstall(): Promise<void> {
 // runSync
 // ------------------------------------------------------------------
 
+/** Scans all transcript files and imports any missing sessions into the timeline database. */
 export async function runSync(): Promise<void> {
   const db = openDatabase()
   try {
@@ -167,6 +171,11 @@ export async function runSync(): Promise<void> {
 // runIngest
 // ------------------------------------------------------------------
 
+/**
+ * Ingests a single session transcript into the timeline database.
+ * @param sessionId - The session UUID to ingest.
+ * @param filePath - Optional explicit path to the JSONL transcript (defaults to auto-discovery under the projects directory).
+ */
 export async function runIngest(sessionId: string, filePath?: string): Promise<void> {
   let transcriptPath: string
 
@@ -197,6 +206,7 @@ export async function runIngest(sessionId: string, filePath?: string): Promise<v
   }
 }
 
+/** Recursively searches `dir` for a file matching `filename`. Returns the first match or null. */
 function searchForTranscript(dir: string, filename: string): string | null {
   const entries = readDirRecursive(dir)
   for (const entry of entries) {
@@ -207,6 +217,7 @@ function searchForTranscript(dir: string, filename: string): string | null {
   return null
 }
 
+/** Recursively lists all files under `dir`, silently ignoring permission errors. */
 function readDirRecursive(dir: string): string[] {
   const results: string[] = []
   try {
@@ -220,7 +231,7 @@ function readDirRecursive(dir: string): string[] {
       }
     }
   } catch {
-    // ignore
+    // ignore permission errors and missing directories
   }
   return results
 }
@@ -229,6 +240,7 @@ function readDirRecursive(dir: string): string[] {
 // runDoctor
 // ------------------------------------------------------------------
 
+/** Runs diagnostic checks on the plugin installation, jq availability, and database integrity. */
 export async function runDoctor(): Promise<void> {
   const issues: string[] = []
 

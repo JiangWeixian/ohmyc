@@ -1,3 +1,4 @@
+// Sidebar navigation — Activity link + vertical explorer section tabs.
 import { Activity, LayoutGrid } from 'lucide-react'
 import React from 'react'
 import { useNavigate } from 'react-router-dom'
@@ -11,12 +12,14 @@ import { cn } from '@/lib/utils'
 
 import type { IconType } from './icons'
 
+/** A single section in the explorer sidebar (e.g. Agents, Skills, Commands). */
 export interface SidebarSection {
   id: string
   label: string
   icon: IconType
 }
 
+/** Sidebar header with the Explorer title and an optional view-switcher slot. */
 function SidebarHeader({ headerSlot }: { headerSlot?: React.ReactNode }) {
   return (
     <div className="border-b border-[rgba(255,255,255,0.05)] px-4 pb-4 pt-5">
@@ -31,6 +34,7 @@ function SidebarHeader({ headerSlot }: { headerSlot?: React.ReactNode }) {
   )
 }
 
+/** Props for the {@link Sidebar} component. */
 interface SidebarProperties {
   sections: SidebarSection[]
   activeSection: string
@@ -39,6 +43,13 @@ interface SidebarProperties {
   headerSlot?: React.ReactNode
 }
 
+/**
+ * Explorer sidebar — Activity link + vertical tabs for each section (Agents, Skills, etc.).
+ * @param sections - Sections to render as vertical tabs.
+ * @param activeSection - Currently selected section ID.
+ * @param onSectionChange - Callback when a section tab is selected.
+ * @param headerSlot - Optional content rendered in the sidebar header (e.g. view switcher).
+ */
 export function Sidebar({
   sections,
   activeSection,

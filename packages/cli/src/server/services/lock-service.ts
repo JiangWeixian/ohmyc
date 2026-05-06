@@ -3,6 +3,10 @@ import path from 'node:path'
 
 import lockfile from 'proper-lockfile'
 
+/**
+ * Provides mutual exclusion for profile activation operations.
+ * Uses a file-based lock to prevent concurrent activations from corrupting the profile symlink state.
+ */
 export class LockService {
   private lockPath: string
   private releaseHandle: (() => Promise<void>) | null = null
@@ -11,6 +15,10 @@ export class LockService {
     this.lockPath = path.join(lockDir, '.activation.lock')
   }
 
+  /**
+   * Acquires the activation lock, creating the lock file if necessary.
+   * Throws when the lock is already held by another process.
+   */
   async acquire(): Promise<void> {
     // Ensure the lock file exists before locking
     try {
@@ -29,6 +37,7 @@ export class LockService {
     }
   }
 
+  /** Releases the activation lock if currently held. */
   async release(): Promise<void> {
     if (this.releaseHandle) {
       await this.releaseHandle()

@@ -1,3 +1,6 @@
+// Dialog shown when activation is blocked because the profile references
+// store components that no longer exist.
+
 import { Button } from '@/components/ui/button'
 import {
   NativeDialog,
@@ -12,6 +15,7 @@ interface ActivationBlockedDialogProperties {
   onClose: () => void
 }
 
+/** Lists missing components and explains why activation is blocked. */
 export function ActivationBlockedDialog({
   profileName,
   missing,

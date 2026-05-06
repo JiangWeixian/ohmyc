@@ -1,9 +1,16 @@
+// Two-pane settings layout -- sidebar for category navigation, main area for the
+// active settings form. Uses framer-motion to crossfade between categories.
+
 import { AnimatePresence, motion } from 'framer-motion'
 import { useState } from 'react'
 
 import { SettingsContent } from './settings-content'
 import { type CategoryId, SettingsSidebar } from './settings-sidebar'
 
+/**
+ * Top-level settings shell. Holds the active-category state so sidebar
+ * and content panels stay in sync without lifting state further up.
+ */
 export function SettingsLayout() {
   const [activeCategory, setActiveCategory] = useState<CategoryId>('general')
 

@@ -1,12 +1,16 @@
+// React Query hooks for timeline analytics — heatmap, events, years, projects, and sync status.
 import { useQuery } from '@tanstack/react-query'
 
+/** Allowed aggregation metrics for the timeline heatmap. */
 export type TimelineMetric = 'sessions' | 'tokens' | 'turns'
 
+/** A single data point in the heatmap response. */
 export interface HeatmapPoint {
   date: string
   value: number
 }
 
+/** A single coding session row from the timeline database. */
 export interface SessionRow {
   session_id: string
   project: string
@@ -26,6 +30,7 @@ export interface SessionRow {
   agent_name: string | null
 }
 
+/** Sessions grouped by project, with aggregated counts. */
 export interface ProjectGroup {
   project: string
   sessions: SessionRow[]
@@ -37,6 +42,7 @@ export interface ProjectGroup {
   agents: string[]
 }
 
+/** All sessions for a single day, grouped by project. */
 export interface DayEvents {
   day: string
   projectGroups: ProjectGroup[]
@@ -45,16 +51,19 @@ export interface DayEvents {
   token_count: number
 }
 
+/** Paginated result of day-grouped session events. */
 export interface EventsResult {
   days: DayEvents[]
   nextCursor?: string
 }
 
+/** Timeline database status — total sessions and last sync timestamp. */
 export interface TimelineStatus {
   sessionCount: number
   lastSyncAt: number | null
 }
 
+/** Converts an ISO date string (`YYYY-MM-DD`) to UTC midnight milliseconds. */
 function isoDateToUtcMs(date: string): number {
   return Date.UTC(
     Number(date.slice(0, 4)),
@@ -63,6 +72,7 @@ function isoDateToUtcMs(date: string): number {
   )
 }
 
+/** Generic JSON fetch helper for timeline endpoints. */
 async function fetchJson<TResult>(url: string): Promise<TResult> {
   const r = await fetch(url)
   if (!r.ok) {
@@ -71,6 +81,7 @@ async function fetchJson<TResult>(url: string): Promise<TResult> {
   return r.json() as Promise<TResult>
 }
 
+/** Query hook for the list of years that have timeline data. */
 export function useTimelineYears() {
   return useQuery({
     queryKey: ['timeline', 'years'],
@@ -78,6 +89,7 @@ export function useTimelineYears() {
   })
 }
 
+/** Query hook for the list of projects with timeline data. */
 export function useTimelineProjects() {
   return useQuery({
     queryKey: ['timeline', 'projects'],
@@ -86,6 +98,7 @@ export function useTimelineProjects() {
   })
 }
 
+/** Query hook for timeline database status (session count and last sync). */
 export function useTimelineStatus() {
   return useQuery({
     queryKey: ['timeline', 'status'],
@@ -93,6 +106,12 @@ export function useTimelineStatus() {
   })
 }
 
+/**
+ * Query hook for the yearly heatmap data.
+ * @param params.year - Year to fetch heatmap for.
+ * @param params.metric - Aggregation metric (`sessions`, `tokens`, or `turns`).
+ * @param params.project - Optional project filter.
+ */
 export function useTimelineHeatmap(params: {
   year: number
   metric: TimelineMetric
@@ -118,6 +137,11 @@ export function useTimelineHeatmap(params: {
   })
 }
 
+/**
+ * Query hook for paginated session events grouped by day.
+ * @param params.project - Optional project filter.
+ * @param params.year - Optional year filter.
+ */
 export function useTimelineEvents(params: { project?: string; year?: number }) {
   const { project, year } = params
   const qs = new URLSearchParams()

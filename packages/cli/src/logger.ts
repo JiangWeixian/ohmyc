@@ -1,21 +1,20 @@
+// Pino logger setup — daily-rotated file logs under ~/.cui/logs with optional console output.
 import { homedir } from 'node:os'
 import path from 'node:path'
 
 import pino from 'pino'
 
-// Detect test or CI environment
+// Detect test or CI environment so parallel test runs do not contend for the same log file / symlink.
 const isTest = process.env.NODE_ENV === 'test' || process.env.VITEST
 const isCI = process.env.CI === 'true'
 
-// In test or CI environment, use a temp log path and disable symlink
-// to avoid race conditions when tests run in parallel
+// In test or CI: isolate logs per PID and skip the symlink to avoid race conditions.
 const logDir = isTest || isCI
   ? path.join(homedir(), '.cui', 'logs', `test-${process.pid}`)
   : path.join(homedir(), '.cui', 'logs')
 const logFile = path.join(logDir, 'ohmyc.log')
 
-// Check if console output is enabled via env var
-// Default: disabled (only file logging), enable with OHMYC_LOG_CONSOLE=true
+// Console logging is opt-in via OHMYC_LOG_CONSOLE to keep CLI output clean.
 const enableConsole = process.env.OHMYC_LOG_CONSOLE === 'true'
 
 const targets: pino.TransportTargetOptions[] = [

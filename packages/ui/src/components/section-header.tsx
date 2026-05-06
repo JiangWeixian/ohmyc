@@ -1,10 +1,14 @@
+// Generic section header with "Overview" overline, title, and optional description.
 import React from 'react'
 
+/** Properties for the {@link SectionHeader} component. */
 interface SectionHeaderProperties {
   title: string
   description?: React.ReactNode
 }
 
+/** Renders a section header with an "Overview" overline, title, and optional
+ *  description paragraph. Used at the top of config/entity list pages. */
 export function SectionHeader({ title, description }: SectionHeaderProperties) {
   return (
     <div className="mb-10 border-b border-[var(--border-default)] pb-6">

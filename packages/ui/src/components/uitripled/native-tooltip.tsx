@@ -1,3 +1,6 @@
+// Animated tooltip with two entrance styles: blur (dissolve in) and scale (pop in).
+// Wraps Radix UI Tooltip with framer-motion for smooth open/close transitions.
+
 'use client'
 
 import * as TooltipPrimitive from '@radix-ui/react-tooltip'
@@ -6,6 +9,7 @@ import * as React from 'react'
 
 import { cn } from '@/lib/utils'
 
+/** Tooltip provider with a shorter default delay for snappier appearance. */
 const NativeTooltipProvider = ({
   delayDuration = 100,
   ...properties
@@ -17,6 +21,7 @@ const NativeTooltipRoot = TooltipPrimitive.Root
 
 const NativeTooltipTrigger = TooltipPrimitive.Trigger
 
+/** Tooltip content with configurable entrance animation. */
 const NativeTooltipContent = React.forwardRef<
   React.ElementRef<typeof TooltipPrimitive.Content>,
   React.ComponentPropsWithoutRef<typeof TooltipPrimitive.Content> & {
@@ -27,6 +32,8 @@ const NativeTooltipContent = React.forwardRef<
     { className, sideOffset = 8, children, animation = 'blur', ...properties },
     reference,
   ) => {
+    // Two animation presets: blur dissolves with gaussian blur for subtlety,
+    // scale pops up from below for a more playful feel.
     const animations = {
       blur: {
         initial: { opacity: 0, scale: 0.9, filter: 'blur(4px)' },
@@ -65,6 +72,8 @@ const NativeTooltipContent = React.forwardRef<
 )
 NativeTooltipContent.displayName = TooltipPrimitive.Content.displayName
 
+/** Convenience wrapper that composes root + trigger + content in one component.
+ *  Renders as a passthrough wrapper when no content is provided. */
 const NativeTooltip = ({
   content,
   children,

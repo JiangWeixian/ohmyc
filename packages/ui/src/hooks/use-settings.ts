@@ -1,7 +1,9 @@
+// React Query hook for reading and writing Claude Code settings.json.
 import { useMutation, useQuery } from '@tanstack/react-query'
 
 import type { SettingsJson } from '@ohmyc/shared'
 
+/** Shape of the GET /api/settings response. */
 export interface SettingsResponse {
   path: string
   content: SettingsJson | null
@@ -9,6 +11,7 @@ export interface SettingsResponse {
   error?: string
 }
 
+/** Fetches settings for a project (or global settings when no project is given). */
 async function fetchSettings(project?: string): Promise<SettingsResponse> {
   const url = project
     ? `/api/settings?project=${encodeURIComponent(project)}`
@@ -24,6 +27,7 @@ async function fetchSettings(project?: string): Promise<SettingsResponse> {
   return response.json()
 }
 
+/** Persists settings JSON for a project (or globally). */
 async function saveSettings(
   content: SettingsJson,
   project?: string,
@@ -48,6 +52,11 @@ async function saveSettings(
   return response.json()
 }
 
+/**
+ * Hook for reading and writing Claude Code settings.
+ * @param project - Optional project directory to scope the settings to.
+ * @returns Query data, loading states, and a save mutation.
+ */
 export function useSettings(project?: string) {
   const queryKey = ['settings', project] as const
 

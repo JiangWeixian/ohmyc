@@ -1,3 +1,5 @@
+// Detail view for a single entity — renders frontmatter meta strip + markdown body
+// with back navigation and optional edit/delete actions.
 import { motion } from 'framer-motion'
 import {
   ChevronLeft,
@@ -7,11 +9,13 @@ import {
 
 import { MarkdownRenderer } from './markdown-renderer'
 
+/** A single key-value metadata row shown in the frontmatter strip. */
 interface MetaItem {
   label: string
   value: string
 }
 
+/** Properties for the {@link EntityDetail} component. */
 interface EntityDetailProperties {
   title: string
   name: string
@@ -24,6 +28,9 @@ interface EntityDetailProperties {
   scope?: 'global' | 'project'
 }
 
+/** Full-page detail view for an entity. Renders a frontmatter header with
+ *  metadata, action buttons (edit/delete), and a markdown-rendered body.
+ *  Project-scoped entities are read-only. */
 export function EntityDetail({
   title,
   name,
@@ -35,6 +42,7 @@ export function EntityDetail({
   onDelete,
   scope,
 }: EntityDetailProperties) {
+  // Project-scoped entities cannot be edited from this UI
   const isReadOnly = scope === 'project'
 
   return (

@@ -1,3 +1,5 @@
+// Settings-scoped toggle switch with optional label and description text.
+
 import { Switch } from '@/components/ui/switch'
 
 interface ToggleProperties {
@@ -7,6 +9,10 @@ interface ToggleProperties {
   description?: string
 }
 
+/**
+ * Boolean toggle for settings forms. Wraps the shadcn Switch with a label
+ * and a muted description line for additional context.
+ */
 export function Toggle({ checked, onChange, label, description }: ToggleProperties) {
   return (
     <div className="flex items-start gap-3">

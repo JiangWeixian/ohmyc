@@ -1,3 +1,5 @@
+// Import components dialog — previews a Claude-compatible directory before
+// importing into the store, with conflict resolution when items already exist.
 import { useState } from 'react'
 
 import { useStoreImport } from '../../hooks/use-store'
@@ -16,6 +18,11 @@ interface ImportComponentsDialogProperties {
   onClose: () => void
 }
 
+/**
+ * Modal dialog that previews and imports store components from an external directory.
+ * When no conflicts are found the import applies immediately; otherwise the user
+ * must explicitly choose "Overwrite All" to proceed.
+ */
 export function ImportComponentsDialog({ onClose }: ImportComponentsDialogProperties) {
   const [sourceDir, setSourceDir] = useState('')
   const [preview, setPreview] = useState<StoreImportResult | null>(null)
@@ -23,6 +30,7 @@ export function ImportComponentsDialog({ onClose }: ImportComponentsDialogProper
   const [isApplying, setIsApplying] = useState(false)
   const importMutation = useStoreImport()
 
+  // Preview-then-apply: run a dry-run first; auto-apply only if zero conflicts.
   const runPreview = async () => {
     if (!sourceDir.trim()) {
       setError('Source directory is required')
@@ -36,6 +44,7 @@ export function ImportComponentsDialog({ onClose }: ImportComponentsDialogProper
       const result = await importMutation.previewImport(sourceDir)
       setPreview(result)
 
+      // No conflicts — apply immediately without user confirmation.
       if ((result.conflicts?.length ?? 0) === 0) {
         setIsApplying(true)
         await importMutation.applyImport(sourceDir, false)
@@ -48,6 +57,7 @@ export function ImportComponentsDialog({ onClose }: ImportComponentsDialogProper
     }
   }
 
+  // User explicitly chose to overwrite existing items after seeing conflict list.
   const overwriteAll = async () => {
     setError(null)
     setIsApplying(true)

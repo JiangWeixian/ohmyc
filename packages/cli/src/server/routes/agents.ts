@@ -1,3 +1,4 @@
+// Agent inventory routes — merges agents from the store, enabled plugins, and the project directory.
 import path from 'node:path'
 
 import { AgentService } from '../services/agent-service'
@@ -6,6 +7,7 @@ import { resolveInventorySource } from './inventory-source'
 
 import type { FastifyPluginAsync } from 'fastify'
 
+/** Route registration options for the agents API. */
 interface AgentsRoutesOptions {
   agentsDir: string
   projectAgentsDir: string | null | undefined
@@ -14,6 +16,13 @@ interface AgentsRoutesOptions {
   baseDir?: string
 }
 
+/**
+ * Registers agent listing and detail routes.
+ * Agents are resolved from three sources in priority order:
+ * 1. OhMyC store (`agentsDir`)
+ * 2. Enabled plugins
+ * 3. Project directory (`projectAgentsDir`)
+ */
 export const agentsRoutes: FastifyPluginAsync<AgentsRoutesOptions> = async (fastify, options) => {
   const service = new AgentService(options.agentsDir)
   const resolver = new PluginResolver(options.pluginsDir, options.claudeSettingsPaths)

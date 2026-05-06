@@ -1,3 +1,7 @@
+// Profile editor — 5-section form (Basics, Components, Plugins & model,
+// Runtime config, Settings overlay) with scroll-spy navigation, live JSON
+// validation, and Cmd+S save support.
+
 import {
   ChevronDown,
   Plus,
@@ -40,6 +44,7 @@ interface ProfileEditorProperties {
 
 type SectionId = 'basics' | 'components' | 'plugins-model' | 'runtime' | 'settings'
 
+// Ordered section metadata used by the left nav and scroll-spy
 const SECTIONS: { id: SectionId; number: string; label: string }[] = [
   { id: 'basics', number: '01', label: 'Basics' },
   { id: 'components', number: '02', label: 'Components' },
@@ -48,6 +53,7 @@ const SECTIONS: { id: SectionId; number: string; label: string }[] = [
   { id: 'settings', number: '05', label: 'Settings overlay' },
 ]
 
+/** Safe JSON parser returning a discriminated union instead of throwing. */
 function tryParseJson(value: string): { ok: false; error: string } | { ok: true; data: unknown } {
   const trimmed = value.trim()
   if (!trimmed) {
@@ -86,6 +92,15 @@ function SectionBody({ children }: { children: React.ReactNode }) {
   return <div className="ml-7">{children}</div>
 }
 
+// ---------------------------------------------------------------------------
+// PickerCard — searchable add/remove chip picker for store items
+// ---------------------------------------------------------------------------
+
+/**
+ * Generic picker card with a search-triggered dropdown. Renders selected items
+ * as removable chips and shows an "Add" flow that filters the unselected pool.
+ * Closes on outside-click via a document mousedown listener.
+ */
 function PickerCard({
   icon: Icon,
   label,
@@ -276,6 +291,14 @@ function PickerCard({
   )
 }
 
+// ---------------------------------------------------------------------------
+// CodePanel — JSON editor panel with live validation indicator
+// ---------------------------------------------------------------------------
+
+/**
+ * Dark-themed JSON editor card. Shows a header with the field name, a hint,
+ * and a live valid/invalid badge, then delegates to JsonEditor for editing.
+ */
 function CodePanel({
   name,
   hint,
@@ -325,6 +348,15 @@ function CodePanel({
   )
 }
 
+// ---------------------------------------------------------------------------
+// ProfileEditor — main exported component
+// ---------------------------------------------------------------------------
+
+/**
+ * Full-screen profile editor with a sticky save bar, scroll-spy section nav,
+ * and live JSON validation. Supports both create and edit modes (the presence
+ * of the `profile` prop determines which).
+ */
 export function ProfileEditor({ profile, onSaved, onCancel }: ProfileEditorProperties) {
   const isEdit = !!profile
 
@@ -392,15 +424,19 @@ export function ProfileEditor({ profile, onSaved, onCancel }: ProfileEditorPrope
     return errors
   }, [hooksText, mcpText, lspText, settingsText])
 
+  // isValid gates the save button; canSave also requires dirty state and no pending mutation
   const isValid = !liveJsonErrors.runtime && !liveJsonErrors.settings && (isEdit || name.trim().length > 0)
   const canSave = dirty && isValid && !isSaving
 
+  // Collects all form state, validates JSON fields, and dispatches either
+  // createMut or updateMut depending on mode.
   const handleSave = useCallback(() => {
     if (!isEdit && !name.trim()) {
       setError('Name is required')
       return
     }
 
+    // Parse and validate every JSON text field
     const hooksResult = tryParseJson(hooksText)
     const mcpResult = tryParseJson(mcpText)
     const lspResult = tryParseJson(lspText)
@@ -431,6 +467,7 @@ export function ProfileEditor({ profile, onSaved, onCancel }: ProfileEditorPrope
     const lspServers = lspResult.ok ? lspResult.data : undefined
     const settings = settingsResult.ok ? settingsResult.data as Record<string, unknown> | undefined : undefined
 
+    // Branch: update existing profile vs. create new one
     if (isEdit) {
       const body: UpdateProfileBody = {
         description: description || undefined,
@@ -505,6 +542,8 @@ export function ProfileEditor({ profile, onSaved, onCancel }: ProfileEditorPrope
     if (!root || typeof IntersectionObserver === 'undefined') {
       return
     }
+    // rootMargin biases the trigger zone toward the top of the viewport so
+    // the section you're actually reading is the one highlighted
     const observer = new IntersectionObserver(
       (entries) => {
         const visible = entries

@@ -1,3 +1,4 @@
+// Placeholder config routes — reserved for future use.
 import type { FastifyInstance } from 'fastify'
 
 export async function configRoutes(fastify: FastifyInstance) {

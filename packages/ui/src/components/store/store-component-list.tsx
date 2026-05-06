@@ -1,3 +1,4 @@
+// Store component list — browsable, searchable category view with import/edit/delete.
 import {
   Download,
   Edit2,
@@ -23,6 +24,8 @@ import { maskApiKey } from '../../utils/mask-api-key'
 import { DeleteConfirmDialog } from './delete-confirm-dialog'
 import { ImportComponentsDialog } from './import-components-dialog'
 import { cn } from '@/lib/utils'
+
+// ═══════════ Constants & Helpers ═══════════
 
 type Category = 'agents' | 'commands' | 'model-configs' | 'skills'
 
@@ -52,6 +55,7 @@ const CATEGORY_HEADING: Record<Category, { title: string; description: string }>
   },
 }
 
+/** Derives a two-letter avatar from a display name (first letters of first two words). */
 function makeInitials(name: string): string {
   const cleaned = name.replaceAll(/[^a-z0-9]/gi, ' ').trim()
   if (!cleaned) {
@@ -64,6 +68,7 @@ function makeInitials(name: string): string {
   return cleaned.slice(0, 2).toUpperCase()
 }
 
+/** Renders "Used by profile-a, profile-b" badges; collapses to count when >2. */
 function UsedBy({ names }: { names: string[] }) {
   const count = names.length
   if (count === 0) {
@@ -106,11 +111,17 @@ function UsedBy({ names }: { names: string[] }) {
   )
 }
 
+// ═══════════ Main List Component ═══════════
+
 interface StoreComponentListProperties {
   category: Category
   onEdit?: (category: Category, name?: string) => void
 }
 
+/**
+ * Renders a searchable, filterable list of store components for a given category.
+ * Each row shows the component name, metadata, and which profiles reference it.
+ */
 export function StoreComponentList({ category, onEdit }: StoreComponentListProperties) {
   const [deleteTarget, setDeleteTarget] = useState<{ category: Category; name: string; referencedBy: string[] } | null>(null)
   const [showImportDialog, setShowImportDialog] = useState(false)
@@ -128,6 +139,8 @@ export function StoreComponentList({ category, onEdit }: StoreComponentListPrope
 
   const { data: profilesData } = useProfiles()
 
+  // Build a reverse-index: component-id -> profile names that reference it.
+  // This powers the "Used by" badges and the referenced/unused counter.
   const referencedByMap = useMemo(() => {
     const allProfiles = profilesData?.profiles ?? []
     const m = new Map<string, string[]>()
@@ -152,6 +165,7 @@ export function StoreComponentList({ category, onEdit }: StoreComponentListPrope
     return m
   }, [profilesData])
 
+  // Normalize each category's API response into a uniform shape for rendering.
   const items = useMemo(() => {
     if (category === 'agents') {
       return (agentsQ.data ?? []).map(it => ({
@@ -198,6 +212,7 @@ export function StoreComponentList({ category, onEdit }: StoreComponentListPrope
     }))
   }, [category, agentsQ.data, skillsQ.data, commandsQ.data, modelConfigsQ.data])
 
+  // Client-side search: matches against name and description substrings.
   const filteredItems = useMemo(() => {
     const q = search.trim().toLowerCase()
     if (!q) {
@@ -239,6 +254,8 @@ export function StoreComponentList({ category, onEdit }: StoreComponentListPrope
     return deleteModelConfigMut
   }
 
+  // First delete attempt uses force:false; the server rejects if referenced.
+  // The error payload includes referencedBy, which opens the confirmation dialog.
   const handleDelete = (name: string) => {
     const mut = getDeleteMutation(category)
     mut.mutate({ name, force: false }, {
@@ -252,6 +269,7 @@ export function StoreComponentList({ category, onEdit }: StoreComponentListPrope
     })
   }
 
+  // After the user explicitly confirms, re-issue with force:true to override references.
   const handleForceDelete = () => {
     if (!deleteTarget) {
       return
@@ -273,7 +291,7 @@ export function StoreComponentList({ category, onEdit }: StoreComponentListPrope
         </p>
       </div>
 
-      {/* Toolbar */}
+      {/* ═══════════ Toolbar ═══════════ */}
       <div className="mt-6 flex items-center gap-3">
         <div
           className={cn(
@@ -325,7 +343,7 @@ export function StoreComponentList({ category, onEdit }: StoreComponentListPrope
         </button>
       </div>
 
-      {/* Counter line */}
+      {/* ═══════════ Counter Line ═══════════ */}
       <div
         className={cn(
           'mt-4 mb-3 font-mono text-[12px] text-[var(--text-tertiary)]',
@@ -339,6 +357,7 @@ export function StoreComponentList({ category, onEdit }: StoreComponentListPrope
         {unusedCount} unused
       </div>
 
+      {/* ═══════════ Item Rows ═══════════ */}
       {isLoading
         ? (
           <div className="flex justify-center py-20">
@@ -475,6 +494,7 @@ export function StoreComponentList({ category, onEdit }: StoreComponentListPrope
             </div>
               ))}
 
+      {/* Delete Confirmation Dialog */}
       {deleteTarget && (
         <DeleteConfirmDialog
           name={deleteTarget.name}
@@ -484,6 +504,7 @@ export function StoreComponentList({ category, onEdit }: StoreComponentListPrope
         />
       )}
 
+      {/* Import Dialog */}
       {showImportDialog && (
         <ImportComponentsDialog onClose={() => setShowImportDialog(false)} />
       )}

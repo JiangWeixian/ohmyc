@@ -1,3 +1,6 @@
+// GitHub-style contribution heatmap for timeline activity.
+// Renders a 53-week x 7-day grid with heat-intensity coloring and hover tooltips.
+
 import { useMemo, useState } from 'react'
 
 import type { HeatmapPoint, TimelineMetric } from '@/hooks/use-timeline'
@@ -21,6 +24,8 @@ const HEAT_CLASSES = ['heat-l0', 'heat-l1', 'heat-l2', 'heat-l3', 'heat-l4'] as 
 
 const DOW_LABELS = ['', 'M', '', 'W', '', 'F', ''] as const
 
+// Non-linear bucket thresholds approximate perceptual uniformity — small
+// values spread across more buckets so sparse days remain distinguishable.
 function bucketFor(value: number, max: number): 0 | 1 | 2 | 3 | 4 {
   if (value <= 0 || max <= 0) {
     return 0
@@ -50,6 +55,11 @@ interface ContributionGraphProps {
   onSelectDay?: (date: string) => void
 }
 
+/**
+ * GitHub-style contribution graph. Cells are colored by heat intensity
+ * relative to the maximum value in the dataset. Clicking a cell calls
+ * onSelectDay so the parent can scroll the event list to that date.
+ */
 export function ContributionGraph({ year, metric, data, onSelectDay }: ContributionGraphProps) {
   const [hover, setHover] = useState<{
     x: number
@@ -75,8 +85,9 @@ export function ContributionGraph({ year, metric, data, onSelectDay }: Contribut
     return n
   }, [data])
 
-  // Build 53-week × 7-day grid anchored to this calendar year.
+  // Build 53-week x 7-day grid anchored to this calendar year.
   // Column 0 starts at the Sunday on/before Jan 1.
+  // 53 weeks ensures full-year coverage even when Jan 1 falls on a Saturday.
   const { cells, monthSpans } = useMemo(() => {
     const yearStart = new Date(Date.UTC(year, 0, 1))
     const yearEnd = new Date(Date.UTC(year, 11, 31))
@@ -220,6 +231,7 @@ export function ContributionGraph({ year, metric, data, onSelectDay }: Contribut
           })}
         </div>
 
+        {/* Tooltip: labels adapt to the active metric (tokens suffix vs metric name). */}
         {hover && (
           <div
             style={{

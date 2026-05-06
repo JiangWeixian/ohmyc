@@ -1,3 +1,6 @@
+// Checkbox list for selecting store components (agents, skills, commands)
+// to include in a profile.
+
 import { Checkbox } from '@/components/ui/checkbox'
 import { cn } from '@/lib/utils'
 
@@ -9,6 +12,10 @@ interface ComponentPickerProperties {
   isLoading?: boolean
 }
 
+/**
+ * Generic checkbox picker for store-managed items. Renders a labeled list
+ * with toggle-able checkboxes, a loading placeholder, and an empty-state message.
+ */
 export function ComponentPicker({ label, available, selected, onChange, isLoading }: ComponentPickerProperties) {
   const toggle = (id: string) => {
     onChange(selected.includes(id) ? selected.filter(s => s !== id) : [...selected, id])

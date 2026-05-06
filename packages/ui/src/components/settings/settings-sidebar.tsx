@@ -1,3 +1,6 @@
+// Settings sidebar -- vertical tab list for navigating between settings categories.
+// Uses a shared layout-id animation for the active indicator so it slides smoothly.
+
 import { motion } from 'framer-motion'
 import {
   Anchor,
@@ -19,6 +22,10 @@ import { cn } from '@/lib/utils'
 
 import type { LucideIcon } from 'lucide-react'
 
+/**
+ * Union of every settings category identifier.
+ * Used by both the sidebar and content router to stay in sync.
+ */
 export type CategoryId
   = 'attribution' | 'environment' | 'general' | 'hooks' | 'mcp' | 'permissions' | 'plugins' | 'sandbox'
 
@@ -28,6 +35,8 @@ interface Category {
   icon: LucideIcon
 }
 
+// Ordered list of categories shown in the sidebar. Controls both the labels
+// and the sequence users see.
 const categories: Category[] = [
   { id: 'general', label: 'General', icon: Settings },
   { id: 'permissions', label: 'Permissions', icon: Shield },
@@ -44,6 +53,10 @@ interface SettingsSidebarProperties {
   onCategoryChange: (category: CategoryId) => void
 }
 
+/**
+ * Vertical navigation tabs for switching between settings categories.
+ * Renders a sliding highlight behind the active tab via framer-motion layout animation.
+ */
 export function SettingsSidebar({
   activeCategory,
   onCategoryChange,

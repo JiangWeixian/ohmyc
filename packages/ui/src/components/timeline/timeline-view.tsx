@@ -1,3 +1,6 @@
+// Timeline view — full-page timeline with metric/project/year filters,
+// contribution heatmap, and expandable event list.
+
 import { ChevronDown } from 'lucide-react'
 import {
   useEffect,
@@ -18,7 +21,13 @@ import {
 } from '@/hooks/use-timeline'
 import { cn } from '@/lib/utils'
 
+/**
+ * Top-level timeline page. Owns filter state (metric, project, year),
+ * renders the contribution heatmap and the expandable event list below it.
+ * Clicking a heatmap day scrolls to that day's events.
+ */
 export function TimelineView() {
+  // ── Filter state ─────────────────────────────────────────────────
   const currentYear = new Date().getFullYear()
   const [metric, setMetric] = useState<'activity' | 'tokens'>('activity')
   const [project, setProject] = useState<string | undefined>()
@@ -26,6 +35,7 @@ export function TimelineView() {
   const [highlightedDay, setHighlightedDay] = useState<string | null>(null)
   const eventsRef = useRef<HTMLDivElement | null>(null)
 
+  // ── Data queries ─────────────────────────────────────────────────
   const { data: years } = useTimelineYears()
   const { data: projects } = useTimelineProjects()
   const { data: status } = useTimelineStatus()
@@ -45,6 +55,8 @@ export function TimelineView() {
     year,
   })
 
+  // Snap to the latest available year when the selected year is no longer
+  // present in the backend data (e.g. after a data reset or year-list refresh).
   useEffect(() => {
     if (years && years.length > 0 && !years.includes(year)) {
       // eslint-disable-next-line react-hooks/set-state-in-effect, react-hooks-extra/set-state-in-effect
@@ -172,6 +184,8 @@ export function TimelineView() {
     </div>
   )
 }
+
+// ── Internal helpers ──────────────────────────────────────────────
 
 function formatTokensCompact(n: number): string {
   if (n >= 1_000_000) {
