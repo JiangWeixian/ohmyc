@@ -71,7 +71,6 @@ jobs:
       - name: create and publish versions
         run: |
           pnpm ci:snapshot
-          pnpm changeset pre enter snapshot
           pnpm ci:prerelease
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
