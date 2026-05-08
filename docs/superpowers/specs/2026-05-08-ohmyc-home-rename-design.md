@@ -17,12 +17,15 @@ Replace the legacy `CUI_HOME` environment variable and `~/.cui/` default directo
 ### Runtime call sites
 
 1. `packages/cli/src/server/services/config-locator.ts` — drops the `WRITE_DIR_NAME = '.cui'` constant; reads `OHMYC_HOME`; default path becomes `path.join(os.homedir(), '.config', 'ohmyc')`.
-2. `packages/timeline/src/db.ts` — reads `OHMYC_HOME`; default `~/.config/ohmyc/timeline.db`.
-3. `plugins/timeline/hooks/ingest.sh` — reads `OHMYC_HOME` with a graceful fallback to `~/.cui` while un-migrated installs catch up (see below).
+2. `packages/cli/src/logger.ts` — hardcodes `~/.cui/logs`; switch to `~/.config/ohmyc/logs` (must agree with `ConfigLocator` so respect `OHMYC_HOME` here too).
+3. `packages/timeline/src/db.ts` — reads `OHMYC_HOME`; default `~/.config/ohmyc/timeline.db`.
+4. `plugins/timeline/hooks/ingest.sh` — reads `OHMYC_HOME` with a graceful fallback to `~/.cui` while un-migrated installs catch up (see below).
+5. `plugins/timeline/opencode.ts` — reads `CUI_HOME`; switch to `OHMYC_HOME` with the same `~/.config/ohmyc` default. (OpenCode plugin runs from the same home as the CLI.)
 
 ### Docs
 
 - `packages/cli/README.md` (env var table + directory layout block)
+- `plugins/timeline/README.md`
 - `docs/USER_GUIDE.md`
 - `docs/DEVELOPER_GUIDE.md`
 
