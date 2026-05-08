@@ -1,4 +1,4 @@
-// Pino logger setup — daily-rotated file logs under ~/.cui/logs with optional console output.
+// Pino logger setup — daily-rotated file logs under $OHMYC_HOME/logs (defaults to ~/.config/ohmyc/logs) with optional console output.
 import { homedir } from 'node:os'
 import path from 'node:path'
 
@@ -9,9 +9,10 @@ const isTest = process.env.NODE_ENV === 'test' || process.env.VITEST
 const isCI = process.env.CI === 'true'
 
 // In test or CI: isolate logs per PID and skip the symlink to avoid race conditions.
+const ohmycHome = process.env.OHMYC_HOME ?? path.join(homedir(), '.config', 'ohmyc')
 const logDir = isTest || isCI
-  ? path.join(homedir(), '.cui', 'logs', `test-${process.pid}`)
-  : path.join(homedir(), '.cui', 'logs')
+  ? path.join(ohmycHome, 'logs', `test-${process.pid}`)
+  : path.join(ohmycHome, 'logs')
 const logFile = path.join(logDir, 'ohmyc.log')
 
 // Console logging is opt-in via OHMYC_LOG_CONSOLE to keep CLI output clean.
