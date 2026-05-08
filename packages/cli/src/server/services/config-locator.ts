@@ -5,16 +5,13 @@ import path from 'node:path'
 /** Centralized directory name — single definition point for all .claude references */
 export const AGENT_DIR_NAME = '.claude'
 
-/** Write directory name — single definition point for managed data writes per D-01 */
-export const WRITE_DIR_NAME = '.cui'
-
 /**
  * Resolves all file-system paths used by OhMyC, distinguishing between:
- * - Managed write paths (under ~/.cui/)
+ * - Managed write paths (under ~/.config/ohmyc/)
  * - Claude Code read paths (under ~/.claude/)
  * - Project-scoped paths (cwd/.claude/)
  *
- * Respects the CUI_HOME and AGENT_HOME environment variables.
+ * Respects the OHMYC_HOME and AGENT_HOME environment variables.
  */
 export class ConfigLocator {
   private readonly writeBaseDir: string
@@ -24,10 +21,10 @@ export class ConfigLocator {
   constructor(options?: { cwd?: string }) {
     const agentHome = process.env.AGENT_HOME
 
-    // D-01: writeBaseDir defaults to ~/.cui/, overridden by CUI_HOME (not AGENT_HOME)
-    const cuiHome = process.env.CUI_HOME
-    const writeDirName = cuiHome || WRITE_DIR_NAME
-    this.writeBaseDir = path.join(os.homedir(), writeDirName)
+    // D-01: writeBaseDir defaults to ~/.config/ohmyc/, overridden by OHMYC_HOME (not AGENT_HOME).
+    // OHMYC_HOME, when set, is treated as an absolute path.
+    const ohmycHome = process.env.OHMYC_HOME
+    this.writeBaseDir = ohmycHome || path.join(os.homedir(), '.config', 'ohmyc')
 
     // D-03: claudeCodeDir defaults to ~/.claude/ for plugin reads, overridden by AGENT_HOME
     const claudeDirName = agentHome || AGENT_DIR_NAME
@@ -41,29 +38,29 @@ export class ConfigLocator {
     this.projectDir = existsSync(candidateProject) ? candidateProject : null
   }
 
-  // Managed data paths — all resolve from writeBaseDir (~/.cui/)
+  // Managed data paths — all resolve from writeBaseDir (~/.config/ohmyc/)
 
-  /** Directory for user-managed agent definitions (`~/.cui/agents/`). */
+  /** Directory for user-managed agent definitions (`~/.config/ohmyc/agents/`). */
   get agentsDir(): string {
     return path.join(this.writeBaseDir, 'agents')
   }
 
-  /** Directory for user-managed skill definitions (`~/.cui/skills/`). */
+  /** Directory for user-managed skill definitions (`~/.config/ohmyc/skills/`). */
   get skillsDir(): string {
     return path.join(this.writeBaseDir, 'skills')
   }
 
-  /** Directory for user-managed command definitions (`~/.cui/commands/`). */
+  /** Directory for user-managed command definitions (`~/.config/ohmyc/commands/`). */
   get commandsDir(): string {
     return path.join(this.writeBaseDir, 'commands')
   }
 
-  /** Path to the OhMyC settings file (`~/.cui/settings.json`). */
+  /** Path to the OhMyC settings file (`~/.config/ohmyc/settings.json`). */
   get settingsPath(): string {
     return path.join(this.writeBaseDir, 'settings.json')
   }
 
-  /** Root managed data directory (`~/.cui/`). */
+  /** Root managed data directory (`~/.config/ohmyc/`). */
   get baseDir(): string {
     return this.writeBaseDir
   }
@@ -96,7 +93,7 @@ export class ConfigLocator {
     return paths.filter((p): p is string => p !== null)
   }
 
-  // D-04: readBaseDir initially equals writeBaseDir (both ~/.cui/)
+  // D-04: readBaseDir initially equals writeBaseDir (both ~/.config/ohmyc/)
 
   /** Base directory for read operations (currently the same as `baseDir`). */
   get readBaseDir(): string {

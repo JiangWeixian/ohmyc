@@ -23,7 +23,7 @@ import type { FastifyPluginAsync } from 'fastify'
 
 /** Route registration options for the store API. */
 interface StoreRoutesOptions {
-  /** Root directory for OhMyC managed data (typically `~/.cui/`). */
+  /** Root directory for OhMyC managed data (typically `~/.config/ohmyc/`). */
   baseDir: string
 }
 
