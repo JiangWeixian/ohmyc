@@ -48,3 +48,6 @@ log/
 
 # Coverage
 coverage/
+
+# Worktrees
+.worktrees/
