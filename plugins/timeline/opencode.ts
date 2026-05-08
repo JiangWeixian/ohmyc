@@ -1,6 +1,6 @@
 // OpenCode plugin for OhMyC Timeline — captures session lifecycle
 // events (turns, tokens, tools, skills) and writes them to a shared
-// SQLite database at ~/.cui/timeline.db.
+// SQLite database at ~/.config/ohmyc/timeline.db.
 import { appendFileSync, mkdirSync } from 'node:fs'
 import os from 'node:os'
 import path from 'node:path'
@@ -27,7 +27,7 @@ function log(level: string, message: string, extra?: Record<string, unknown>): v
 }
 
 function getDbPath(): string {
-  const home = process.env.CUI_HOME ?? path.join(os.homedir(), '.cui')
+  const home = process.env.OHMYC_HOME ?? path.join(os.homedir(), '.config', 'ohmyc')
   return path.join(home, 'timeline.db')
 }
 
