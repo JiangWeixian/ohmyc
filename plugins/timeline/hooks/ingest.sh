@@ -1,6 +1,6 @@
 #!/bin/bash
 # OhMyC Timeline Stop Hook
-# Extracts session data from transcript and ingests into ~/.cui/timeline.db
+# Extracts session data from transcript and ingests into $OHMYC_HOME/timeline.db (defaults to ~/.config/ohmyc/timeline.db)
 #
 # Usage: Triggered by Claude Code's Stop hook automatically.
 #        Can also be called manually with session ID as argument.
@@ -14,8 +14,17 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PLUGIN_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
 
-CUI_HOME="${CUI_HOME:-$HOME/.cui}"
-DB_PATH="$CUI_HOME/timeline.db"
+if [ -n "${OHMYC_HOME:-}" ]; then
+  OHMYC_DIR="$OHMYC_HOME"
+elif [ -d "$HOME/.config/ohmyc" ]; then
+  OHMYC_DIR="$HOME/.config/ohmyc"
+elif [ -d "$HOME/.cui" ]; then
+  OHMYC_DIR="$HOME/.cui"
+else
+  OHMYC_DIR="$HOME/.config/ohmyc"
+fi
+export OHMYC_DIR
+DB_PATH="$OHMYC_DIR/timeline.db"
 
 # ---------------------------------------------------------------------------
 # Helper functions

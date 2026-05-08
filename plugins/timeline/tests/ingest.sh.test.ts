@@ -86,7 +86,7 @@ describe('ingest.sh', () => {
       ...process.env,
       PATH: `${tmpDir}:${process.env.PATH}`,
       AGENT_HOME: path.join(tmpDir, '.claude'),
-      CUI_HOME: path.join(tmpDir, '.cui'),
+      OHMYC_HOME: path.join(tmpDir, '.ohmyc-data'),
       ...opts?.env,
     }
 
@@ -348,5 +348,40 @@ describe('ingest.sh', () => {
     const result = runIngest(['test-nocli'], { env: { PATH: `${tmpDir}:/usr/bin:/bin`, CLI_CMD: '' } })
     expect(result.status).toBeGreaterThanOrEqual(1)
     expect(result.stderr).toContain('cui CLI not found')
+  })
+
+  // ---------------------------------------------------------------------------
+  // OHMYC_HOME / legacy ~/.cui fallback
+  // ---------------------------------------------------------------------------
+
+  describe('home directory resolution', () => {
+    it('uses ~/.cui as fallback when OHMYC_HOME unset and ~/.config/ohmyc missing', () => {
+      writeTranscript(fakeClaudeDir, 'test-legacy-home', FIXTURES.minimal)
+      const legacyHome = path.join(tmpDir, '.cui')
+      mkdirSync(legacyHome, { recursive: true })
+
+      const capturePath = path.join(tmpDir, 'captured-path.txt')
+      const cli = path.join(tmpDir, 'ohmyc')
+      writeFileSync(
+        cli,
+        `#!/bin/bash\necho "OHMYC_DIR=$OHMYC_DIR" > "${capturePath}"\nif [ "$1" = "dashboard" ] && [ "$2" = "--ingest-raw" ]; then cat > /dev/null; fi\n`,
+      )
+      chmodSync(cli, 0o755)
+
+      const result = spawnSync('bash', [INGEST_SH, 'test-legacy-home'], {
+        env: {
+          ...process.env,
+          PATH: `${tmpDir}:${process.env.PATH}`,
+          AGENT_HOME: path.join(tmpDir, '.claude'),
+          HOME: tmpDir,
+          OHMYC_HOME: '',
+        },
+        encoding: 'utf8',
+      })
+
+      expect(result.status).toBe(0)
+      const captured = readFileSync(capturePath, 'utf8')
+      expect(captured).toContain(legacyHome)
+    })
   })
 })
