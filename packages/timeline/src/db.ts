@@ -16,12 +16,12 @@ import {
 } from './schema.js'
 
 /**
- * Returns the default database path: `$CUI_HOME/timeline.db` (defaults to `~/.cui/timeline.db`).
+ * Returns the default database path: `$OHMYC_HOME/timeline.db` (defaults to `~/.config/ohmyc/timeline.db`).
  *
  * @returns Absolute path to the database file.
  */
 export function getDefaultDbPath(): string {
-  const home = process.env.CUI_HOME ?? path.join(os.homedir(), '.cui')
+  const home = process.env.OHMYC_HOME ?? path.join(os.homedir(), '.config', 'ohmyc')
   return path.join(home, 'timeline.db')
 }
 
