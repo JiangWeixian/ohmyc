@@ -33,7 +33,7 @@ OhMyC 是一个 CLI 工具，带有 Web UI，用于**可视化展示和管理 Cl
          │                                         │
          │  @ohmyc/shared                       │  文件系统
          ▼                                         ▼
-  类型定义 & Schema                        ~/.cui/ 或 ~/.claude/
+  类型定义 & Schema                        ~/.config/ohmyc/ 或 ~/.claude/
 ```
 
 - **后端**：CLI 包（`@ohmyc/cli`）作为本地 HTTP 服务器运行，通过 Fastify 提供 REST API，直接读写文件系统上的配置文件。
@@ -262,7 +262,7 @@ UI 资产查找按以下优先级顺序搜索（`resolveStaticRoot()` 函数）�
 `packages/cli/src/server/services/configLocator.ts` 是整个系统的路径基础设施：
 
 ```
-写入目录（~/.cui/ 或 $CUI_HOME）：
+写入目录（~/.config/ohmyc/ 或 $OHMYC_HOME）：
 ├── agents/          → 写入用 agents 目录
 ├── skills/          → 写入用 skills 目录
 ├── commands/        → 写入用 commands 目录
@@ -288,7 +288,7 @@ UI 资产查找按以下优先级顺序搜索（`resolveStaticRoot()` 函数）�
 ```
 
 环境变量覆盖：
-- `CUI_HOME` — 覆盖写入目录名称（默认 `.cui`）
+- `OHMYC_HOME` — 覆盖写入目录名称（默认 `.cui`）
 - `AGENT_HOME` — 覆盖 Claude Code 配置目录名称（默认 `.claude`）
 
 ### API 端点列表
@@ -315,7 +315,7 @@ UI 资产查找按以下优先级顺序搜索（`resolveStaticRoot()` 函数）�
 | GET | `/api/commands/:name` | 获取单个 command 详情 | `routes/commands.ts` |
 
 资源列表端点聚合三个来源的数据：
-1. **全局** — `~/.cui/agents|skills|commands/` 目录
+1. **全局** — `~/.config/ohmyc/agents|skills|commands/` 目录
 2. **插件** — 已启用的插件安装路径下的子目录
 3. **项目** — `<cwd>/.claude/agents|skills|commands/` 目录（如存在）
 
@@ -378,7 +378,7 @@ CLI 的路由层只负责参数解析和 HTTP 状态码映射，核心逻辑在 
 管理 `.md` 格式的 agent 文件。使用 `gray-matter` 解析 YAML frontmatter + Markdown 正文：
 
 ```typescript
-// Agent 文件格式（如 ~/.cui/agents/code-reviewer.md）
+// Agent 文件格式（如 ~/.config/ohmyc/agents/code-reviewer.md）
 ---
 name: code-reviewer
 description: Reviews code for quality and best practices
@@ -450,15 +450,15 @@ Profile 管理的核心服务，包含复杂的激活/停用事务逻辑：
 
 | 资源 | 文件格式 | 存储位置 | 解析方式 |
 |------|---------|---------|---------|
-| Agent | `.md` + YAML frontmatter | `~/.cui/agents/*.md` | `gray-matter` |
-| Skill | 目录 + `SKILL.md` | `~/.cui/skills/<name>/SKILL.md` | `gray-matter` |
-| Command | `.md` + YAML frontmatter | `~/.cui/commands/*.md` | `gray-matter` |
-| Settings | JSON | `~/.cui/settings.json` | `JSON.parse` |
-| MCP Servers | JSON | `~/.cui/.mcp.json` | `JSON.parse` |
-| LSP Servers | JSON | `~/.cui/.lsp.json` | `JSON.parse` |
-| Hooks | JSON（嵌套在 settings 中） | `~/.cui/settings.json` | `JSON.parse` |
-| Profile | JSON | `~/.cui/profiles/<name>/profile.json` | Zod `ProfileSchema.parse` |
-| Model Config | JSON | `~/.cui/store/model-configs/*.json` | `JSON.parse` |
+| Agent | `.md` + YAML frontmatter | `~/.config/ohmyc/agents/*.md` | `gray-matter` |
+| Skill | 目录 + `SKILL.md` | `~/.config/ohmyc/skills/<name>/SKILL.md` | `gray-matter` |
+| Command | `.md` + YAML frontmatter | `~/.config/ohmyc/commands/*.md` | `gray-matter` |
+| Settings | JSON | `~/.config/ohmyc/settings.json` | `JSON.parse` |
+| MCP Servers | JSON | `~/.config/ohmyc/.mcp.json` | `JSON.parse` |
+| LSP Servers | JSON | `~/.config/ohmyc/.lsp.json` | `JSON.parse` |
+| Hooks | JSON（嵌套在 settings 中） | `~/.config/ohmyc/settings.json` | `JSON.parse` |
+| Profile | JSON | `~/.config/ohmyc/profiles/<name>/profile.json` | Zod `ProfileSchema.parse` |
+| Model Config | JSON | `~/.config/ohmyc/store/model-configs/*.json` | `JSON.parse` |
 | Plugin 安装记录 | JSON | `~/.claude/plugins/installed_plugins.json` | `JSON.parse` |
 
 ### 静态文件服务（嵌入 UI 产物）
@@ -809,7 +809,7 @@ if (!parsed.success) {
           Fastify Server (localhost:3000)
                │
                ▼
-          文件系统 (~/.cui/, ~/.claude/)
+          文件系统 (~/.config/ohmyc/, ~/.claude/)
 ```
 
 Vite 的 `server.proxy` 将所有 `/api` 请求转发到 Fastify 后端。
@@ -843,7 +843,7 @@ Vite 的 `server.proxy` 将所有 `/api` 请求转发到 Fastify 后端。
       │
 4. Vite proxy 转发到 Fastify → agentsRoutes.GET /api/agents
       │
-5. AgentService.list() 读取 ~/.cui/agents/*.md
+5. AgentService.list() 读取 ~/.config/ohmyc/agents/*.md
       │
 6. PluginResolver 获取已启用插件路径
       │

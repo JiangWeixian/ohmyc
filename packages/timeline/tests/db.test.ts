@@ -52,18 +52,41 @@ describe('db', () => {
     closeDatabase(db)
   })
 
-  it('getDefaultDbPath respects CUI_HOME', () => {
-    const originalCuiHome = process.env.CUI_HOME
-    process.env.CUI_HOME = path.join(tmpDir, 'custom-cui')
+  it('getDefaultDbPath respects OHMYC_HOME', () => {
+    const originalOhmycHome = process.env.OHMYC_HOME
+    process.env.OHMYC_HOME = path.join(tmpDir, 'custom-home')
     try {
       const dbPath = getDefaultDbPath()
-      expect(dbPath).toContain('custom-cui')
+      expect(dbPath).toContain('custom-home')
       expect(dbPath).toMatch(/timeline\.db$/)
+    } finally {
+      if (originalOhmycHome === undefined) {
+        delete process.env.OHMYC_HOME
+      } else {
+        process.env.OHMYC_HOME = originalOhmycHome
+      }
+    }
+  })
+
+  it('getDefaultDbPath ignores CUI_HOME', () => {
+    const originalCuiHome = process.env.CUI_HOME
+    const originalOhmycHome = process.env.OHMYC_HOME
+    delete process.env.OHMYC_HOME
+    process.env.CUI_HOME = path.join(tmpDir, 'should-be-ignored')
+    try {
+      const dbPath = getDefaultDbPath()
+      expect(dbPath).not.toContain('should-be-ignored')
+      expect(dbPath).toContain(path.join('.config', 'ohmyc'))
     } finally {
       if (originalCuiHome === undefined) {
         delete process.env.CUI_HOME
       } else {
         process.env.CUI_HOME = originalCuiHome
+      }
+      if (originalOhmycHome === undefined) {
+        delete process.env.OHMYC_HOME
+      } else {
+        process.env.OHMYC_HOME = originalOhmycHome
       }
     }
   })
