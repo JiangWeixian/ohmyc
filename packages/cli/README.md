@@ -128,7 +128,7 @@ CRUD for user-managed store components. Delete checks profile references unless 
 
 | Variable | Type | Default | Example | Description |
 | --- | --- | --- | --- | --- |
-| `CUI_HOME` | `string` | `.cui` | `CUI_HOME=.ohmyc` | Directory name under home for managed data |
+| `OHMYC_HOME` | `string` | `.config/ohmyc` | `OHMYC_HOME=.ohmyc` | Directory name under home for managed data |
 | `AGENT_HOME` | `string` | `.claude` | `AGENT_HOME=.claude` | Directory name under home for Claude Code paths |
 | `OHMYC_LOG_CONSOLE` | `string` | — | `OHMYC_LOG_CONSOLE=true` | Enable pino-pretty console output |
 | `NODE_ENV` | `string` | — | `NODE_ENV=test` | Isolates logs per PID when `test` or `CI=true` |
@@ -136,7 +136,7 @@ CRUD for user-managed store components. Delete checks profile references unless 
 Directory layout:
 
 ```
-~/.cui/                          # managed data (CUI_HOME)
+~/.config/ohmyc/                 # managed data (OHMYC_HOME)
 ├── agents/                      # user-managed agent definitions
 ├── skills/                      # user-managed skill definitions
 ├── commands/                    # user-managed command definitions
