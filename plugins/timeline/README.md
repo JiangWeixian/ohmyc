@@ -22,11 +22,11 @@ The OpenCode plugin lives at `plugins/timeline/opencode.ts` and is symlinked fro
 - `message.part.updated` — user message text for summaries
 - `tool.execute.before` / `tool.execute.after` — tool and skill tracking
 
-Data is written directly to `~/.cui/timeline.db` using `bun:sqlite` via the shared `@ohmyc/timeline/writer` module.
+Data is written directly to `~/.config/ohmyc/timeline.db` using `bun:sqlite` via the shared `@ohmyc/timeline/writer` module.
 
 ## Shared Code
 
-Both agents write to the same SQLite database (`~/.cui/timeline.db`) using the schema and writer from `@ohmyc/timeline`:
+Both agents write to the same SQLite database (`~/.config/ohmyc/timeline.db`) using the schema and writer from `@ohmyc/timeline`:
 
 - `@ohmyc/timeline/writer` — Runtime-agnostic writer (works with `better-sqlite3` and `bun:sqlite`)
 - `@ohmyc/timeline/schema` — Database schema and TypeScript types

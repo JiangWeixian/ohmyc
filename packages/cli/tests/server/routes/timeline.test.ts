@@ -15,13 +15,13 @@ import { timelineRoutes } from '@/server/routes/timeline'
 
 describe('timeline routes', () => {
   let tmpDir: string
-  let originalCuiHome: string | undefined
+  let originalOhmycHome: string | undefined
   let app: ReturnType<typeof Fastify>
 
   beforeEach(async () => {
     tmpDir = mkdtempSync(path.join(os.tmpdir(), 'timeline-route-test-'))
-    originalCuiHome = process.env.CUI_HOME
-    process.env.CUI_HOME = tmpDir
+    originalOhmycHome = process.env.OHMYC_HOME
+    process.env.OHMYC_HOME = tmpDir
     app = Fastify()
     await app.register(timelineRoutes)
     await app.ready()
@@ -29,10 +29,10 @@ describe('timeline routes', () => {
 
   afterEach(async () => {
     await app.close()
-    if (originalCuiHome === undefined) {
-      delete process.env.CUI_HOME
+    if (originalOhmycHome === undefined) {
+      delete process.env.OHMYC_HOME
     } else {
-      process.env.CUI_HOME = originalCuiHome
+      process.env.OHMYC_HOME = originalOhmycHome
     }
     rmSync(tmpDir, { recursive: true, force: true })
   })

@@ -29,7 +29,7 @@ Claude Code 的配置分布在 `~/.claude/`（或项目级 `.claude/`）目录�
 OhMyC 解决了以下问题：
 
 - **统一可视化管理**：在浏览器中查看和编辑所有 `.claude` 配置
-- **多来源聚合**：自动合并全局（`~/.cui/`）、项目级（`./.claude/`）和插件提供的配置项
+- **多来源聚合**：自动合并全局（`~/.config/ohmyc/`）、项目级（`./.claude/`）和插件提供的配置项
 - **Profile 切换**：通过 Profile 机制在不同工作环境之间快速切换 agents、skills、commands 等组件组合
 - **Store 组件库**：集中管理可复用的 agents、skills、commands 和 model configs
 
@@ -154,7 +154,7 @@ Agent Home 是配置浏览视图，左侧边栏包含以下分区：
 
 查看所有可用的 agent 定义。每个 agent 以卡片形式展示，显示名称、描述和来源标记。
 
-- **来源类型**：`local`（全局 `~/.cui/agents/`）、`plugin`（插件提供）、`project`（项目级 `./.claude/agents/`）
+- **来源类型**：`local`（全局 `~/.config/ohmyc/agents/`）、`plugin`（插件提供）、`project`（项目级 `./.claude/agents/`）
 - 点击卡片可查看 agent 的完整内容（Markdown 格式的 frontmatter + 正文）
 - Agent 的 frontmatter 支持的字段包括：`name`、`description`、`model`、`tools`、`disallowedTools`、`permissionMode`、`maxTurns`、`skills`、`memory`、`background`、`effort`、`isolation`、`mcpServers`、`hooks`
 
@@ -189,7 +189,7 @@ Agent Home 是配置浏览视图，左侧边栏包含以下分区：
 
 查看配置中的所有 hooks（事件钩子）。Hooks 来自三个来源：
 
-- `local`：来自 `~/.cui/settings.json` 中的 `hooks` 字段
+- `local`：来自 `~/.config/ohmyc/settings.json` 中的 `hooks` 字段
 - `plugin`：来自插件的 `hooks/hooks.json`
 - `project`：来自项目的 `settings.json`
 
@@ -199,7 +199,7 @@ Agent Home 是配置浏览视图，左侧边栏包含以下分区：
 
 查看所有 Model Context Protocol 服务器配置。来源包括：
 
-- `local`：来自 `~/.cui/.mcp.json`
+- `local`：来自 `~/.config/ohmyc/.mcp.json`
 - `plugin`：来自插件的 `.mcp.json`
 - `project`：来自项目的 `.mcp.json`
 
@@ -209,7 +209,7 @@ Agent Home 是配置浏览视图，左侧边栏包含以下分区：
 
 查看所有 Language Server Protocol 服务器配置。来源包括：
 
-- `local`：来自 `~/.cui/.lsp.json`
+- `local`：来自 `~/.config/ohmyc/.lsp.json`
 - `plugin`：来自插件的 `.lsp.json`
 - `project`：来自项目的 `.lsp.json`
 
@@ -296,7 +296,7 @@ Profiles 是 OhMyC 的核心功能，允许你创建可复用的配置组合，�
 
 ### Store（组件仓库）
 
-Store 是 OhMyC 管理可复用组件的集中仓库，位于 `~/.cui/store/`。
+Store 是 OhMyC 管理可复用组件的集中仓库，位于 `~/.config/ohmyc/store/`。
 
 #### 组件列表页
 
@@ -410,7 +410,7 @@ Model Config 是特殊的 Store 组件，用于定义 API 连接预设：
 OhMyC 管理两个主要目录：
 
 ```
-~/.cui/                          # OhMyC 托管数据目录（WRITE_DIR）
+~/.config/ohmyc/                          # OhMyC 托管数据目录（WRITE_DIR）
 ├── settings.json                # 设置文件
 ├── agents/                      # 全局 agents
 │   └── my-agent.md
@@ -486,7 +486,7 @@ OhMyC 管理两个主要目录：
 | 变量 | 默认值 | 说明 |
 |------|--------|------|
 | `AGENT_HOME` | `.claude` | 覆盖 Claude Code 配置目录名（同时影响全局和项目级） |
-| `CUI_HOME` | `.cui` | 覆盖 OhMyC 写入目录名 |
+| `OHMYC_HOME` | `.cui` | 覆盖 OhMyC 写入目录名 |
 
 **示例**：如果想使用 `.agent` 代替 `.claude`：
 
@@ -504,7 +504,7 @@ AGENT_HOME=.agent cu
 
 ### Q: OhMyC 会修改我的 `~/.claude/` 目录吗？
 
-不会。OhMyC 从 `~/.claude/plugins/` **读取**插件信息，但所有写入操作都在 `~/.cui/` 目录下进行。Profile 激活时修改的是 `~/.cui/settings.json`，而非 `~/.claude/settings.json`。
+不会。OhMyC 从 `~/.claude/plugins/` **读取**插件信息，但所有写入操作都在 `~/.config/ohmyc/` 目录下进行。Profile 激活时修改的是 `~/.config/ohmyc/settings.json`，而非 `~/.claude/settings.json`。
 
 ### Q: 什么是 Profile？
 
@@ -579,14 +579,14 @@ cu start --api-only
 
 **原因**：存在未释放的操作锁（可能是之前的激活操作异常中断）。
 
-**解决方法**：等待几秒后重试。锁文件位于 `~/.cui/profiles/` 目录下的 lock 文件中，也可手动删除。
+**解决方法**：等待几秒后重试。锁文件位于 `~/.config/ohmyc/profiles/` 目录下的 lock 文件中，也可手动删除。
 
 ### Settings 保存失败
 
 **症状**：修改设置后点击 Save 报错
 
 **排查步骤**：
-1. 检查 `~/.cui/` 目录的写权限
+1. 检查 `~/.config/ohmyc/` 目录的写权限
 2. 检查 settings.json 是否为有效的 JSON
 3. 查看浏览器开发者工具的 Network 面板，确认 API 返回的错误信息
 

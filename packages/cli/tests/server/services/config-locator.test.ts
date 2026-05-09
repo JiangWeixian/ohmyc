@@ -14,23 +14,19 @@ import {
   it,
 } from 'vitest'
 
-import {
-  AGENT_DIR_NAME,
-  ConfigLocator,
-  WRITE_DIR_NAME,
-} from '@/server/services/config-locator'
+import { AGENT_DIR_NAME, ConfigLocator } from '@/server/services/config-locator'
 
 describe('ConfigLocator', () => {
   let tmpDir: string
   let savedAgentHome: string | undefined
-  let savedCuiHome: string | undefined
+  let savedOhmycHome: string | undefined
 
   beforeEach(() => {
     tmpDir = mkdtempSync(path.join(os.tmpdir(), 'config-locator-test-'))
     savedAgentHome = process.env.AGENT_HOME
-    savedCuiHome = process.env.CUI_HOME
+    savedOhmycHome = process.env.OHMYC_HOME
     delete process.env.AGENT_HOME
-    delete process.env.CUI_HOME
+    delete process.env.OHMYC_HOME
   })
 
   afterEach(() => {
@@ -40,20 +36,16 @@ describe('ConfigLocator', () => {
     } else {
       process.env.AGENT_HOME = savedAgentHome
     }
-    if (savedCuiHome === undefined) {
-      delete process.env.CUI_HOME
+    if (savedOhmycHome === undefined) {
+      delete process.env.OHMYC_HOME
     } else {
-      process.env.CUI_HOME = savedCuiHome
+      process.env.OHMYC_HOME = savedOhmycHome
     }
   })
 
   describe('constants', () => {
     it('AGENT_DIR_NAME equals .claude', () => {
       expect(AGENT_DIR_NAME).toBe('.claude')
-    })
-
-    it('WRITE_DIR_NAME equals .cui', () => {
-      expect(WRITE_DIR_NAME).toBe('.cui')
     })
   })
 
@@ -71,13 +63,6 @@ describe('ConfigLocator', () => {
       expect(locator.projectPath).toBeNull()
     })
 
-    it('project discovery still checks cwd/.claude/ when AGENT_HOME is NOT set', () => {
-      // D-01, D-10: project dir always .claude/ unless AGENT_HOME overrides
-      mkdirSync(path.join(tmpDir, '.claude'))
-      const locator = new ConfigLocator({ cwd: tmpDir })
-      expect(locator.projectPath).toBe(path.join(tmpDir, '.claude'))
-    })
-
     it('project discovery uses AGENT_HOME override dir when set', () => {
       process.env.AGENT_HOME = '.custom-claude'
       mkdirSync(path.join(tmpDir, '.custom-claude'))
@@ -87,83 +72,74 @@ describe('ConfigLocator', () => {
     })
   })
 
-  describe('write path rebrand', () => {
-    it('baseDir resolves to ~/.cui/ (not ~/.claude/)', () => {
+  describe('write path defaults to ~/.config/ohmyc/', () => {
+    const expectedBase = path.join(os.homedir(), '.config', 'ohmyc')
+
+    it('baseDir resolves to ~/.config/ohmyc/', () => {
       const locator = new ConfigLocator({ cwd: tmpDir })
-      expect(locator.baseDir).toBe(path.join(os.homedir(), '.cui'))
+      expect(locator.baseDir).toBe(expectedBase)
     })
 
-    it('agentsDir resolves to ~/.cui/agents/', () => {
+    it('agentsDir resolves to ~/.config/ohmyc/agents/', () => {
       const locator = new ConfigLocator({ cwd: tmpDir })
-      expect(locator.agentsDir).toBe(path.join(os.homedir(), '.cui', 'agents'))
+      expect(locator.agentsDir).toBe(path.join(expectedBase, 'agents'))
     })
 
-    it('skillsDir resolves to ~/.cui/skills/', () => {
+    it('skillsDir resolves to ~/.config/ohmyc/skills/', () => {
       const locator = new ConfigLocator({ cwd: tmpDir })
-      expect(locator.skillsDir).toBe(path.join(os.homedir(), '.cui', 'skills'))
+      expect(locator.skillsDir).toBe(path.join(expectedBase, 'skills'))
     })
 
-    it('commandsDir resolves to ~/.cui/commands/', () => {
+    it('commandsDir resolves to ~/.config/ohmyc/commands/', () => {
       const locator = new ConfigLocator({ cwd: tmpDir })
-      expect(locator.commandsDir).toBe(path.join(os.homedir(), '.cui', 'commands'))
+      expect(locator.commandsDir).toBe(path.join(expectedBase, 'commands'))
     })
 
-    it('settingsPath resolves to ~/.cui/settings.json', () => {
+    it('settingsPath resolves to ~/.config/ohmyc/settings.json', () => {
       const locator = new ConfigLocator({ cwd: tmpDir })
-      expect(locator.settingsPath).toBe(path.join(os.homedir(), '.cui', 'settings.json'))
+      expect(locator.settingsPath).toBe(path.join(expectedBase, 'settings.json'))
     })
 
-    it('pluginsDir resolves to ~/.claude/plugins/ (NOT ~/.cui/plugins/) per D-03', () => {
+    it('pluginsDir resolves to ~/.claude/plugins/ (unchanged) per D-03', () => {
       const locator = new ConfigLocator({ cwd: tmpDir })
       expect(locator.pluginsDir).toBe(path.join(os.homedir(), '.claude', 'plugins'))
     })
 
-    it('readBaseDir equals writeBaseDir (both ~/.cui/) per D-04', () => {
+    it('readBaseDir equals writeBaseDir per D-04', () => {
       const locator = new ConfigLocator({ cwd: tmpDir })
       expect(locator.readBaseDir).toBe(locator.baseDir)
-      expect(locator.readBaseDir).toBe(path.join(os.homedir(), '.cui'))
-    })
-
-    it('fresh install — ConfigLocator creates valid paths even when ~/.cui/ does not exist', () => {
-      // No mkdir — ~/.cui/ doesn't exist. ConfigLocator should still return valid paths.
-      const locator = new ConfigLocator({ cwd: tmpDir })
-      expect(locator.baseDir).toBe(path.join(os.homedir(), '.cui'))
-      expect(locator.agentsDir).toBe(path.join(os.homedir(), '.cui', 'agents'))
-      expect(locator.settingsPath).toBe(path.join(os.homedir(), '.cui', 'settings.json'))
     })
   })
 
-  describe('AGENT_HOME env var with split paths', () => {
-    it('AGENT_HOME overrides claudeCodeDir (plugins) and project discovery, NOT writeBaseDir', () => {
-      process.env.AGENT_HOME = '.custom-claude'
+  describe('OHMYC_HOME env var override', () => {
+    it('OHMYC_HOME (absolute) overrides writeBaseDir', () => {
+      const custom = path.join(tmpDir, 'custom-home')
+      process.env.OHMYC_HOME = custom
       const locator = new ConfigLocator({ cwd: tmpDir })
-      expect(locator.baseDir).toBe(path.join(os.homedir(), '.cui'))
-      expect(locator.agentsDir).toBe(path.join(os.homedir(), '.cui', 'agents'))
-      expect(locator.pluginsDir).toBe(path.join(os.homedir(), '.custom-claude', 'plugins'))
-    })
-  })
-
-  describe('CUI_HOME env var override', () => {
-    it('CUI_HOME overrides writeBaseDir', () => {
-      process.env.CUI_HOME = '.custom-cui'
-      const locator = new ConfigLocator({ cwd: tmpDir })
-      expect(locator.baseDir).toBe(path.join(os.homedir(), '.custom-cui'))
-      expect(locator.agentsDir).toBe(path.join(os.homedir(), '.custom-cui', 'agents'))
-      expect(locator.settingsPath).toBe(path.join(os.homedir(), '.custom-cui', 'settings.json'))
+      expect(locator.baseDir).toBe(custom)
+      expect(locator.agentsDir).toBe(path.join(custom, 'agents'))
+      expect(locator.settingsPath).toBe(path.join(custom, 'settings.json'))
     })
 
-    it('CUI_HOME does not affect claudeCodeDir (plugins still from ~/.claude/)', () => {
-      process.env.CUI_HOME = '.custom-cui'
+    it('OHMYC_HOME does not affect claudeCodeDir (plugins still from ~/.claude/)', () => {
+      process.env.OHMYC_HOME = path.join(tmpDir, 'custom-home')
       const locator = new ConfigLocator({ cwd: tmpDir })
       expect(locator.pluginsDir).toBe(path.join(os.homedir(), '.claude', 'plugins'))
     })
 
-    it('CUI_HOME and AGENT_HOME can be set independently', () => {
-      process.env.CUI_HOME = '.custom-cui'
+    it('OHMYC_HOME and AGENT_HOME can be set independently', () => {
+      process.env.OHMYC_HOME = path.join(tmpDir, 'custom-home')
       process.env.AGENT_HOME = '.custom-claude'
       const locator = new ConfigLocator({ cwd: tmpDir })
-      expect(locator.baseDir).toBe(path.join(os.homedir(), '.custom-cui'))
+      expect(locator.baseDir).toBe(path.join(tmpDir, 'custom-home'))
       expect(locator.pluginsDir).toBe(path.join(os.homedir(), '.custom-claude', 'plugins'))
+    })
+
+    it('CUI_HOME is no longer read', () => {
+      process.env.CUI_HOME = path.join(tmpDir, 'should-be-ignored')
+      const locator = new ConfigLocator({ cwd: tmpDir })
+      expect(locator.baseDir).toBe(path.join(os.homedir(), '.config', 'ohmyc'))
+      delete process.env.CUI_HOME
     })
   })
 

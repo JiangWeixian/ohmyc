@@ -2,6 +2,7 @@
 import open from 'open'
 
 import { logger } from './logger'
+import { migrateLegacyHome } from './migrate-home'
 import { startServer, type StartServerOptions } from './server/index'
 
 /** Options accepted by {@link launchApp}. */
@@ -18,6 +19,17 @@ export interface LaunchOptions {
 let closing = false
 
 export async function launchApp(options: LaunchOptions = {}): Promise<void> {
+  try {
+    migrateLegacyHome()
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error)
+    logger.error(
+      { error: message },
+      'Could not migrate ~/.cui to ~/.config/ohmyc automatically. Please move it manually and restart.',
+    )
+    throw new Error(`Migration failed: ${message}`)
+  }
+
   const serverOptions: StartServerOptions = {
     defaultPort: options.defaultPort ?? 3000,
     apiOnly: options.apiOnly,
