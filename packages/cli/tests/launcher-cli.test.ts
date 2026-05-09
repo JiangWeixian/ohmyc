@@ -13,6 +13,7 @@ import {
 
 import { launchApp } from '@/launcher'
 import { logger } from '@/logger'
+import * as migrateHomeModule from '@/migrate-home'
 import { startServer } from '@/server/index'
 
 // Mock the server module
@@ -23,6 +24,11 @@ vi.mock('@/server/index', () => ({
 // Mock the open package
 vi.mock('open', () => ({
   default: vi.fn(),
+}))
+
+// Stub migration to a no-op by default; specific tests override.
+vi.mock('@/migrate-home', () => ({
+  migrateLegacyHome: vi.fn(() => 'skipped-no-legacy'),
 }))
 
 describe('CLI launcher', () => {
@@ -136,6 +142,22 @@ describe('CLI launcher', () => {
 
       // Browser opener should NOT have been called
       expect(openMock).not.toHaveBeenCalled()
+    })
+  })
+
+  describe('legacy home migration', () => {
+    it('surfaces a Migration failed: error and logs the cause when renameSync fails', async () => {
+      const migrateMock = vi.mocked(migrateHomeModule.migrateLegacyHome)
+      migrateMock.mockImplementationOnce(() => {
+        throw new Error('EXDEV: cross-device link not permitted')
+      })
+
+      await expect(launchApp({ defaultPort: 3000 })).rejects.toThrow(
+        /Migration failed: EXDEV/,
+      )
+
+      const errorMessages = errorSpy.mock.calls.map(args => JSON.stringify(args))
+      expect(errorMessages.some(message => /\.cui/.test(message) && /\.config\/ohmyc/.test(message))).toBe(true)
     })
   })
 

@@ -347,7 +347,7 @@ describe('ingest.sh', () => {
 
     const result = runIngest(['test-nocli'], { env: { PATH: `${tmpDir}:/usr/bin:/bin`, CLI_CMD: '' } })
     expect(result.status).toBeGreaterThanOrEqual(1)
-    expect(result.stderr).toContain('cui CLI not found')
+    expect(result.stderr).toContain('ohmyc CLI not found')
   })
 
   // ---------------------------------------------------------------------------

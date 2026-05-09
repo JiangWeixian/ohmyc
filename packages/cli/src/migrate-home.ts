@@ -6,8 +6,6 @@ import {
 import os from 'node:os'
 import path from 'node:path'
 
-import { logger } from './logger'
-
 export type MigrationResult
   = 'migrated' | 'skipped-env-set' | 'skipped-no-legacy' | 'skipped-target-exists'
 
@@ -44,6 +42,10 @@ export function migrateLegacyHome(options: MigrateLegacyHomeOptions = {}): Migra
 
   mkdirSync(path.dirname(target), { recursive: true })
   renameSync(legacy, target)
-  logger.info({ from: legacy, to: target }, 'Migrated legacy ~/.cui directory')
+  // Use console.error (stderr) here, not the pino logger: the logger's pino-roll
+  // transport eagerly mkdir's `$OHMYC_HOME/logs` at module-load, which would
+  // create the target dir and cause this migration to mis-detect it as
+  // pre-existing on the next run. Keep this module logger-free.
+  console.error(`[ohmyc] Migrated legacy ${legacy} → ${target}`)
   return 'migrated'
 }

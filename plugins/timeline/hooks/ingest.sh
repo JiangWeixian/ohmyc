@@ -67,7 +67,7 @@ fi
 FILE_SIZE=$(stat -f%z "$TRANSCRIPT_PATH" 2>/dev/null || stat -c%s "$TRANSCRIPT_PATH" 2>/dev/null || echo 0)
 
 # ---------------------------------------------------------------------------
-# Find cui CLI (for fallback and --ingest-raw)
+# Find ohmyc CLI (for fallback and --ingest-raw); also accepts the legacy `cui` name.
 # ---------------------------------------------------------------------------
 
 if [ "${CLI_CMD+isset}" = "isset" ]; then
@@ -169,6 +169,6 @@ if [ -n "$CLI_CMD" ]; then
   log_info "Using CLI fallback for session $SESSION_ID"
   $CLI_CMD dashboard --ingest --session "$SESSION_ID" --file "$TRANSCRIPT_PATH"
 else
-  log_error "cui CLI not found. Cannot ingest session $SESSION_ID."
+  log_error "ohmyc CLI not found. Cannot ingest session $SESSION_ID."
   exit 1
 fi

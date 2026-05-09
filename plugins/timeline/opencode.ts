@@ -27,7 +27,7 @@ function log(level: string, message: string, extra?: Record<string, unknown>): v
 }
 
 function getDbPath(): string {
-  const home = process.env.OHMYC_HOME ?? path.join(os.homedir(), '.config', 'ohmyc')
+  const home = process.env.OHMYC_HOME || path.join(os.homedir(), '.config', 'ohmyc')
   return path.join(home, 'timeline.db')
 }
 

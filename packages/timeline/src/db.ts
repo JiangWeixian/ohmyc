@@ -21,7 +21,7 @@ import {
  * @returns Absolute path to the database file.
  */
 export function getDefaultDbPath(): string {
-  const home = process.env.OHMYC_HOME ?? path.join(os.homedir(), '.config', 'ohmyc')
+  const home = process.env.OHMYC_HOME || path.join(os.homedir(), '.config', 'ohmyc')
   return path.join(home, 'timeline.db')
 }
 

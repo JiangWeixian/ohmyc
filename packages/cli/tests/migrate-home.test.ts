@@ -85,6 +85,38 @@ describe('migrateLegacyHome', () => {
     expect(existsSync(path.join(tmpHome, '.config', 'ohmyc'))).toBe(false)
   })
 
+  it('does not import the pino logger (would eagerly create target dir)', () => {
+    const source = readFileSync(
+      path.resolve(import.meta.dirname, '../src/migrate-home.ts'),
+      'utf8',
+    )
+    expect(source).not.toMatch(/from ['"]\.\/logger['"]/)
+  })
+
+  it('migrates even when ~/.config already exists (parent dir, not target)', () => {
+    const legacy = path.join(tmpHome, '.cui')
+    const target = path.join(tmpHome, '.config', 'ohmyc')
+    mkdirSync(path.join(tmpHome, '.config'), { recursive: true })
+    mkdirSync(legacy, { recursive: true })
+    writeFileSync(path.join(legacy, 'settings.json'), '{"ok":true}')
+
+    const result = migrateLegacyHome({ home: tmpHome })
+
+    expect(result).toBe('migrated')
+    expect(existsSync(target)).toBe(true)
+    expect(readFileSync(path.join(target, 'settings.json'), 'utf8')).toBe('{"ok":true}')
+  })
+
+  it('propagates filesystem errors to the caller (e.g. ~/.config blocked by a file)', () => {
+    // Real-world failure mode: parent path exists as a non-directory, so
+    // mkdirSync(path.dirname(target), {recursive:true}) throws ENOTDIR.
+    // This exercises the same error-surface path that EXDEV / EACCES would.
+    mkdirSync(path.join(tmpHome, '.cui'), { recursive: true })
+    writeFileSync(path.join(tmpHome, '.config'), 'not a directory')
+
+    expect(() => migrateLegacyHome({ home: tmpHome })).toThrow()
+  })
+
   it('creates ~/.config parent directory if it does not exist', () => {
     const legacy = path.join(tmpHome, '.cui')
     mkdirSync(legacy, { recursive: true })
