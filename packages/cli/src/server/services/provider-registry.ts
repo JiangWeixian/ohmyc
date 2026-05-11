@@ -63,7 +63,7 @@ export class ProviderRegistry {
           }
           byPath.set(canonical, {
             origins: [provider.id],
-            sourceFile: canonical,
+            sourceFile: file,
             scope,
             data,
           })
@@ -94,7 +94,7 @@ export class ProviderRegistry {
           }
           out.push({
             origins: [provider.id],
-            sourceFile: canonicalize(file),
+            sourceFile: file,
             scope,
             data,
           })

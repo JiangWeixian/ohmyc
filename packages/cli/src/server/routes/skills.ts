@@ -1,55 +1,92 @@
-// Skill inventory routes — merges skills from the store, enabled plugins, and the project directory.
 import path from 'node:path'
 
 import { PluginResolver } from '../services/plugin-resolver'
 import { SkillService } from '../services/skill-service'
 import { resolveInventorySource } from './inventory-source'
 
+import type { Origin } from '@ohmyc/shared'
 import type { FastifyPluginAsync } from 'fastify'
+import type { ProviderRegistry } from '../services/provider-registry'
 
-/** Route registration options for the skills API. */
 interface SkillsRoutesOptions {
   skillsDir: string
   projectSkillsDir: string | null | undefined
   pluginsDir: string
   claudeSettingsPaths: readonly string[]
   baseDir?: string
+  registry?: ProviderRegistry
 }
 
-/**
- * Registers skill listing and detail routes.
- * Skills are resolved from three sources in priority order:
- * 1. OhMyC store (`skillsDir`)
- * 2. Enabled plugins
- * 3. Project directory (`projectSkillsDir`)
- */
+function parseOriginsQuery(value: string | undefined): Origin[] | undefined {
+  if (!value) {
+    return undefined
+  }
+  const valid: Origin[] = ['claude', 'opencode', 'agents']
+  const parts = value.split(',').map(s => s.trim()).filter(Boolean)
+  const filtered = parts.filter((p): p is Origin => (valid as string[]).includes(p))
+  return filtered.length > 0 ? filtered : undefined
+}
+
 export const skillsRoutes: FastifyPluginAsync<SkillsRoutesOptions> = async (fastify, options) => {
   const service = new SkillService(options.skillsDir)
   const resolver = new PluginResolver(options.pluginsDir, options.claudeSettingsPaths)
 
-  fastify.get('/api/skills', async () => {
-    const skills = await service.list()
+  fastify.get<{ Querystring: { origins?: string } }>('/api/skills', async (request) => {
+    const origins = parseOriginsQuery(request.query.origins)
 
-    for (const skill of skills) {
-      const dirPath = path.join(options.skillsDir, skill.dirName);
-      (skill as any).source = await resolveInventorySource(dirPath, options.baseDir);
-      (skill as any).scope = 'global'
-    }
+    const skills: any[] = []
 
-    const pluginPaths = await resolver.getEnabledPluginPaths()
-    for (const { id, installPath } of pluginPaths) {
-      const pluginService = new SkillService(path.join(installPath, 'skills'))
-      const pluginSkills = await pluginService.list()
-      for (const skill of pluginSkills) {
-        skills.push({ ...skill, source: 'plugin' as const, scope: 'global' as const, pluginId: id })
+    if (options.registry) {
+      const entries = await options.registry.listSkills(origins ? { origins } : undefined)
+      for (const entry of entries) {
+        const data = entry.data as any
+        const primary = entry.origins[0]
+        const source = entry.scope === 'project'
+          ? 'project'
+          : (primary === 'claude'
+              ? await resolveInventorySource(path.dirname(entry.sourceFile), options.baseDir)
+              : primary)
+        skills.push({
+          ...data,
+          dirName: path.basename(path.dirname(entry.sourceFile)),
+          origins: entry.origins,
+          scope: entry.scope,
+          source,
+        })
+      }
+    } else {
+      const list = await service.list()
+      for (const skill of list) {
+        const dirPath = path.join(options.skillsDir, skill.dirName)
+        ;(skill as any).source = await resolveInventorySource(dirPath, options.baseDir)
+        ;(skill as any).scope = 'global'
+        skills.push(skill)
+      }
+
+      if (options.projectSkillsDir) {
+        const projectService = new SkillService(options.projectSkillsDir)
+        const projectSkills = await projectService.list()
+        for (const skill of projectSkills) {
+          skills.push({ ...skill, source: 'project' as const, scope: 'project' as const })
+        }
       }
     }
 
-    if (options.projectSkillsDir) {
-      const projectService = new SkillService(options.projectSkillsDir)
-      const projectSkills = await projectService.list()
-      for (const skill of projectSkills) {
-        skills.push({ ...skill, source: 'project' as const, scope: 'project' as const })
+    const includeClaude = !origins || origins.includes('claude')
+    if (includeClaude) {
+      const pluginPaths = await resolver.getEnabledPluginPaths()
+      for (const { id, installPath } of pluginPaths) {
+        const pluginService = new SkillService(path.join(installPath, 'skills'))
+        const pluginSkills = await pluginService.list()
+        for (const skill of pluginSkills) {
+          skills.push({
+            ...skill,
+            source: 'plugin' as const,
+            scope: 'global' as const,
+            pluginId: id,
+            origins: ['claude'],
+          })
+        }
       }
     }
 
