@@ -9,6 +9,13 @@ A CLI tool with a built-in WebUI for visualizing and editing `.claude` configura
 - Local web interface powered by React + shadcn/ui
 - Simple CLI to launch the WebUI
 
+### Multi-tool discovery
+
+OhMyC also reads opencode config from `~/.config/opencode/` (or
+`~/Library/Application Support/opencode/` on macOS) and `<cwd>/.opencode/`,
+plus the shared `~/.agents/skills/` and `<cwd>/.agents/skills/` namespace.
+Set `OPENCODE_CONFIG_DIR` to override the global opencode config dir.
+
 ## Tech Stack
 
 - **CLI**: [cac](https://github.com/cacjs/cac)

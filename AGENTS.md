@@ -7,7 +7,7 @@
 - **Layout & Interaction** — placement of header chrome, ⌘K palette, Compare panel, default route, Explorer rules
 - Decisions Log — every visual/layout decision and its rationale
 
-Companion artifact: pixel-level wireframe at `~/.gstack/projects/JiangWeixian-ohmyc/designs/layout-interaction-20260426/wireframe.html` (four screens covering Profiles, ⌘K palette, Compare, Explorer). Open it before changing header / palette / compare layout.
+Companion artifact: pixel-level wireframe index at `~/.gstack/projects/JiangWeixian-claudeui/designs/layout-interaction-20260426/index.html` (8 per-screen files: Profiles, ⌘K palette, Compare, Explorer, Profiles→Agents, Profile editor, Agent detail, Agent editor). Open the index, then jump to the screen you're touching before changing header / palette / compare layout.
 
 When a UI change conflicts with DESIGN.md, update DESIGN.md *first* (add a Decisions Log row + amend the relevant section), then implement. Don't let code drift ahead of the doc.
 
@@ -51,3 +51,10 @@ Key routing rules:
 - Review what gstack has learned → invoke /learn
 - Tune question sensitivity → invoke /plan-tune
 - Code quality dashboard → invoke /health
+
+## Multi-tool provider discovery
+
+The server enumerates agents/skills/commands via a `ProviderRegistry` that
+wraps three `ConfigProvider`s: `ClaudeProvider`, `OpencodeProvider`, and
+`AgentsSharedProvider` (skills only). Read-only routes accept `?origins=`
+to filter (`claude`, `opencode`, `agents`).
