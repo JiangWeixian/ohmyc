@@ -1,7 +1,6 @@
 import {
   mkdirSync,
   mkdtempSync,
-  realpathSync,
   rmSync,
   symlinkSync,
   writeFileSync,
@@ -92,7 +91,7 @@ describe('ProviderRegistry', () => {
     const skills = await registry.listSkills()
 
     expect(skills).toHaveLength(1)
-    expect(skills[0].sourceFile).toBe(realpathSync(realSkill))
+    expect(skills[0].sourceFile).toBe(path.join(claudeSkills, 'shared', 'SKILL.md'))
     expect(skills[0].origins.toSorted()).toEqual(['agents', 'claude'])
   })
 
