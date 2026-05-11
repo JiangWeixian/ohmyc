@@ -1,55 +1,89 @@
-// Agent inventory routes — merges agents from the store, enabled plugins, and the project directory.
 import path from 'node:path'
 
 import { AgentService } from '../services/agent-service'
 import { PluginResolver } from '../services/plugin-resolver'
 import { resolveInventorySource } from './inventory-source'
 
+import type { Origin } from '@ohmyc/shared'
 import type { FastifyPluginAsync } from 'fastify'
+import type { ProviderRegistry } from '../services/provider-registry'
 
-/** Route registration options for the agents API. */
 interface AgentsRoutesOptions {
   agentsDir: string
   projectAgentsDir: string | null | undefined
   pluginsDir: string
   claudeSettingsPaths: readonly string[]
   baseDir?: string
+  registry?: ProviderRegistry
 }
 
-/**
- * Registers agent listing and detail routes.
- * Agents are resolved from three sources in priority order:
- * 1. OhMyC store (`agentsDir`)
- * 2. Enabled plugins
- * 3. Project directory (`projectAgentsDir`)
- */
+function parseOriginsQuery(value: string | undefined): Origin[] | undefined {
+  if (!value) {
+    return undefined
+  }
+  const valid: Origin[] = ['claude', 'opencode', 'agents']
+  const parts = value.split(',').map(s => s.trim()).filter(Boolean)
+  const filtered = parts.filter((p): p is Origin => (valid as string[]).includes(p))
+  return filtered.length > 0 ? filtered : undefined
+}
+
 export const agentsRoutes: FastifyPluginAsync<AgentsRoutesOptions> = async (fastify, options) => {
   const service = new AgentService(options.agentsDir)
   const resolver = new PluginResolver(options.pluginsDir, options.claudeSettingsPaths)
 
-  fastify.get('/api/agents', async () => {
-    const agents = await service.list()
+  fastify.get<{ Querystring: { origins?: string } }>('/api/agents', async (request) => {
+    const origins = parseOriginsQuery(request.query.origins)
 
-    for (const agent of agents) {
-      const filePath = path.join(options.agentsDir, agent.filename);
-      (agent as any).source = await resolveInventorySource(filePath, options.baseDir);
-      (agent as any).scope = 'global'
-    }
+    const agents: any[] = []
 
-    const pluginPaths = await resolver.getEnabledPluginPaths()
-    for (const { id, installPath } of pluginPaths) {
-      const pluginService = new AgentService(path.join(installPath, 'agents'))
-      const pluginAgents = await pluginService.list()
-      for (const agent of pluginAgents) {
-        agents.push({ ...agent, source: 'plugin' as const, scope: 'global' as const, pluginId: id })
+    if (options.registry) {
+      const entries = await options.registry.listAgents(origins ? { origins } : undefined)
+      for (const entry of entries) {
+        const data = entry.data as any
+        const primary = entry.origins[0]
+        const merged = { ...data, origins: entry.origins, scope: entry.scope }
+        if (primary === 'claude' && entry.scope === 'global') {
+          merged.source = await resolveInventorySource(entry.sourceFile, options.baseDir)
+        } else if (primary === 'claude' && entry.scope === 'project') {
+          merged.source = 'project'
+        } else {
+          merged.source = primary
+        }
+        agents.push(merged)
+      }
+    } else {
+      const list = await service.list()
+      for (const agent of list) {
+        const filePath = path.join(options.agentsDir, agent.filename)
+        ;(agent as any).source = await resolveInventorySource(filePath, options.baseDir)
+        ;(agent as any).scope = 'global'
+        agents.push(agent)
+      }
+
+      if (options.projectAgentsDir) {
+        const projectService = new AgentService(options.projectAgentsDir)
+        const projectAgents = await projectService.list()
+        for (const agent of projectAgents) {
+          agents.push({ ...agent, source: 'project' as const, scope: 'project' as const })
+        }
       }
     }
 
-    if (options.projectAgentsDir) {
-      const projectService = new AgentService(options.projectAgentsDir)
-      const projectAgents = await projectService.list()
-      for (const agent of projectAgents) {
-        agents.push({ ...agent, source: 'project' as const, scope: 'project' as const })
+    const includeClaude = !origins || origins.includes('claude')
+    if (includeClaude) {
+      const pluginPaths = await resolver.getEnabledPluginPaths()
+      for (const { id, installPath } of pluginPaths) {
+        const pluginService = new AgentService(path.join(installPath, 'agents'))
+        const pluginAgents = await pluginService.list()
+        for (const agent of pluginAgents) {
+          agents.push({
+            ...agent,
+            source: 'plugin' as const,
+            scope: 'global' as const,
+            pluginId: id,
+            origins: ['claude'],
+          })
+        }
       }
     }
 

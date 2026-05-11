@@ -18,6 +18,16 @@ import {
 } from 'vitest'
 
 import { agentsRoutes } from '@/server/routes/agents'
+import { ProviderRegistry } from '@/server/services/provider-registry'
+import { ClaudeProvider } from '@/server/services/providers/claude-provider'
+
+function buildRegistry(agentsDir: string, projectDir?: string | null) {
+  const claude = new ClaudeProvider({
+    agentsGlobalDir: agentsDir,
+    projectDir,
+  })
+  return new ProviderRegistry([claude])
+}
 
 describe('agents routes', () => {
   let temporaryRoot: string
@@ -34,6 +44,7 @@ describe('agents routes', () => {
       pluginsDir: path.join(temporaryRoot, '_plugins'),
       claudeSettingsPaths: [path.join(temporaryRoot, '_settings.json')],
       baseDir: temporaryRoot,
+      registry: buildRegistry(tmpDir),
     })
     await app.ready()
   })
@@ -111,6 +122,25 @@ describe('agents routes', () => {
       expect(agents.find((agent: any) => agent.id === 'local')?.source).toBe('local')
       expect(agents.find((agent: any) => agent.id === 'linked')?.source).toBe('profile')
     })
+
+    it('tags each agent with origins: ["claude"]', async () => {
+      writeFileSync(path.join(tmpDir, 'alpha.md'),
+        '---\nname: alpha\ndescription: A\n---\nbody')
+
+      const res = await app.inject({ method: 'GET', url: '/api/agents' })
+      expect(res.statusCode).toBe(200)
+      const body = res.json()
+      const alpha = body.agents.find((a: any) => a.id === 'alpha')
+      expect(alpha?.origins).toEqual(['claude'])
+    })
+
+    it('?origins=opencode returns no claude agents', async () => {
+      writeFileSync(path.join(tmpDir, 'alpha.md'),
+        '---\nname: alpha\ndescription: A\n---\nbody')
+      const res = await app.inject({ method: 'GET', url: '/api/agents?origins=opencode' })
+      expect(res.statusCode).toBe(200)
+      expect(res.json().agents.find((a: any) => a.id === 'alpha')).toBeUndefined()
+    })
   })
 
   describe('project-local loading', () => {
@@ -118,22 +148,23 @@ describe('agents routes', () => {
 
     beforeEach(async () => {
       await app.close()
-      projectDir = path.join(temporaryRoot, 'project-agents')
-      mkdirSync(projectDir, { recursive: true })
+      projectDir = path.join(temporaryRoot, '.claude')
+      mkdirSync(path.join(projectDir, 'agents'), { recursive: true })
       app = Fastify()
       await app.register(agentsRoutes, {
         agentsDir: tmpDir,
-        projectAgentsDir: projectDir,
+        projectAgentsDir: path.join(projectDir, 'agents'),
         pluginsDir: path.join(temporaryRoot, '_plugins'),
         claudeSettingsPaths: [path.join(temporaryRoot, '_settings.json')],
         baseDir: temporaryRoot,
+        registry: buildRegistry(tmpDir, projectDir),
       })
       await app.ready()
     })
 
     it('returns both global and project agents with correct scope', async () => {
       writeFileSync(path.join(tmpDir, 'global.md'), '---\nname: global\ndescription: Global\n---\nprompt')
-      writeFileSync(path.join(projectDir, 'proj.md'), '---\nname: proj\ndescription: Proj\n---\nprompt')
+      writeFileSync(path.join(projectDir, 'agents', 'proj.md'), '---\nname: proj\ndescription: Proj\n---\nprompt')
 
       const res = await app.inject({ method: 'GET', url: '/api/agents' })
       const { agents } = res.json()
@@ -148,7 +179,7 @@ describe('agents routes', () => {
 
     it('sorts project agent first when names collide', async () => {
       writeFileSync(path.join(tmpDir, 'shared.md'), '---\nname: shared\ndescription: Global version\n---\nglobal')
-      writeFileSync(path.join(projectDir, 'shared.md'), '---\nname: shared\ndescription: Project version\n---\nproject')
+      writeFileSync(path.join(projectDir, 'agents', 'shared.md'), '---\nname: shared\ndescription: Project version\n---\nproject')
 
       const res = await app.inject({ method: 'GET', url: '/api/agents' })
       const { agents } = res.json()
@@ -168,6 +199,7 @@ describe('agents routes', () => {
         pluginsDir: path.join(temporaryRoot, '_plugins'),
         claudeSettingsPaths: [path.join(temporaryRoot, '_settings.json')],
         baseDir: temporaryRoot,
+        registry: buildRegistry(tmpDir),
       })
       await app.ready()
 
@@ -178,7 +210,7 @@ describe('agents routes', () => {
     })
 
     it('finds project agent by name with source=project', async () => {
-      writeFileSync(path.join(projectDir, 'proj.md'), '---\nname: proj\ndescription: Proj\n---\nprompt')
+      writeFileSync(path.join(projectDir, 'agents', 'proj.md'), '---\nname: proj\ndescription: Proj\n---\nprompt')
 
       const res = await app.inject({ method: 'GET', url: '/api/agents/proj?source=project' })
       expect(res.statusCode).toBe(200)
