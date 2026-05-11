@@ -18,6 +18,17 @@ import {
 } from 'vitest'
 
 import { commandsRoutes } from '@/server/routes/commands'
+import { ProviderRegistry } from '@/server/services/provider-registry'
+import { ClaudeProvider } from '@/server/services/providers/claude-provider'
+
+function buildRegistry(commandsDir: string, projectDir?: string | null) {
+  const claude = new ClaudeProvider({
+    agentsGlobalDir: path.join(commandsDir, '..', 'agents'),
+    commandsGlobalDir: commandsDir,
+    projectDir,
+  })
+  return new ProviderRegistry([claude])
+}
 
 describe('commands routes', () => {
   let temporaryRoot: string
@@ -34,6 +45,7 @@ describe('commands routes', () => {
       pluginsDir: path.join(temporaryRoot, '_plugins'),
       claudeSettingsPaths: [path.join(temporaryRoot, '_settings.json')],
       baseDir: temporaryRoot,
+      registry: buildRegistry(tmpDir),
     })
     await app.ready()
   })
@@ -107,6 +119,21 @@ describe('commands routes', () => {
       expect(commands.find((command: any) => command.id === 'local')?.source).toBe('local')
       expect(commands.find((command: any) => command.id === 'linked')?.source).toBe('profile')
     })
+
+    it('tags entries with origins: ["claude"]', async () => {
+      writeFileSync(path.join(tmpDir, 'hi.md'),
+        '---\nname: hi\ndescription: hello\n---\nbody')
+      const res = await app.inject({ method: 'GET', url: '/api/commands' })
+      expect(res.statusCode).toBe(200)
+      expect(res.json().commands.find((c: any) => c.id === 'hi')?.origins).toEqual(['claude'])
+    })
+
+    it('?origins=opencode hides claude commands', async () => {
+      writeFileSync(path.join(tmpDir, 'hi.md'),
+        '---\nname: hi\ndescription: hello\n---\nbody')
+      const res = await app.inject({ method: 'GET', url: '/api/commands?origins=opencode' })
+      expect(res.json().commands.find((c: any) => c.id === 'hi')).toBeUndefined()
+    })
   })
 
   describe('project-local loading', () => {
@@ -114,22 +141,23 @@ describe('commands routes', () => {
 
     beforeEach(async () => {
       await app.close()
-      projectDir = path.join(temporaryRoot, 'project-commands')
-      mkdirSync(projectDir, { recursive: true })
+      projectDir = path.join(temporaryRoot, '.claude')
+      mkdirSync(path.join(projectDir, 'commands'), { recursive: true })
       app = Fastify()
       await app.register(commandsRoutes, {
         commandsDir: tmpDir,
-        projectCommandsDir: projectDir,
+        projectCommandsDir: path.join(projectDir, 'commands'),
         pluginsDir: path.join(temporaryRoot, '_plugins'),
         claudeSettingsPaths: [path.join(temporaryRoot, '_settings.json')],
         baseDir: temporaryRoot,
+        registry: buildRegistry(tmpDir, projectDir),
       })
       await app.ready()
     })
 
     it('returns both global and project commands with correct scope', async () => {
       writeFileSync(path.join(tmpDir, 'global.md'), '---\nname: global\ndescription: Global\n---\nprompt')
-      writeFileSync(path.join(projectDir, 'proj.md'), '---\nname: proj\ndescription: Proj\n---\nprompt')
+      writeFileSync(path.join(projectDir, 'commands', 'proj.md'), '---\nname: proj\ndescription: Proj\n---\nprompt')
 
       const res = await app.inject({ method: 'GET', url: '/api/commands' })
       const { commands } = res.json()
@@ -142,9 +170,9 @@ describe('commands routes', () => {
       expect(proj.scope).toBe('project')
     })
 
-    it('sorts project command first when names collide', async () => {
+    it('sorts project command first when names coincide', async () => {
       writeFileSync(path.join(tmpDir, 'shared.md'), '---\nname: shared\ndescription: Global version\n---\nglobal')
-      writeFileSync(path.join(projectDir, 'shared.md'), '---\nname: shared\ndescription: Project version\n---\nproject')
+      writeFileSync(path.join(projectDir, 'commands', 'shared.md'), '---\nname: shared\ndescription: Project version\n---\nproject')
 
       const res = await app.inject({ method: 'GET', url: '/api/commands' })
       const { commands } = res.json()
@@ -164,6 +192,7 @@ describe('commands routes', () => {
         pluginsDir: path.join(temporaryRoot, '_plugins'),
         claudeSettingsPaths: [path.join(temporaryRoot, '_settings.json')],
         baseDir: temporaryRoot,
+        registry: buildRegistry(tmpDir),
       })
       await app.ready()
 

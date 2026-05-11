@@ -1,55 +1,89 @@
-// Command inventory routes — merges commands from the store, enabled plugins, and the project directory.
 import path from 'node:path'
 
 import { CommandService } from '../services/command-service'
 import { PluginResolver } from '../services/plugin-resolver'
 import { resolveInventorySource } from './inventory-source'
 
+import type { Origin } from '@ohmyc/shared'
 import type { FastifyPluginAsync } from 'fastify'
+import type { ProviderRegistry } from '../services/provider-registry'
 
-/** Route registration options for the commands API. */
 interface CommandsRoutesOptions {
   commandsDir: string
   projectCommandsDir: string | null | undefined
   pluginsDir: string
   claudeSettingsPaths: readonly string[]
   baseDir?: string
+  registry?: ProviderRegistry
 }
 
-/**
- * Registers command listing and detail routes.
- * Commands are resolved from three sources in priority order:
- * 1. OhMyC store (`commandsDir`)
- * 2. Enabled plugins
- * 3. Project directory (`projectCommandsDir`)
- */
+function parseOriginsQuery(value: string | undefined): Origin[] | undefined {
+  if (!value) {
+    return undefined
+  }
+  const valid: Origin[] = ['claude', 'opencode', 'agents']
+  const parts = value.split(',').map(s => s.trim()).filter(Boolean)
+  const filtered = parts.filter((p): p is Origin => (valid as string[]).includes(p))
+  return filtered.length > 0 ? filtered : undefined
+}
+
 export const commandsRoutes: FastifyPluginAsync<CommandsRoutesOptions> = async (fastify, options) => {
   const service = new CommandService(options.commandsDir)
   const resolver = new PluginResolver(options.pluginsDir, options.claudeSettingsPaths)
 
-  fastify.get('/api/commands', async () => {
-    const commands = await service.list()
+  fastify.get<{ Querystring: { origins?: string } }>('/api/commands', async (request) => {
+    const origins = parseOriginsQuery(request.query.origins)
 
-    for (const cmd of commands) {
-      const filePath = path.join(options.commandsDir, cmd.filename);
-      (cmd as any).source = await resolveInventorySource(filePath, options.baseDir);
-      (cmd as any).scope = 'global'
-    }
+    const commands: any[] = []
 
-    const pluginPaths = await resolver.getEnabledPluginPaths()
-    for (const { id, installPath } of pluginPaths) {
-      const pluginService = new CommandService(path.join(installPath, 'commands'))
-      const pluginCommands = await pluginService.list()
-      for (const cmd of pluginCommands) {
-        commands.push({ ...cmd, source: 'plugin' as const, scope: 'global' as const, pluginId: id })
+    if (options.registry) {
+      const entries = await options.registry.listCommands(origins ? { origins } : undefined)
+      for (const entry of entries) {
+        const data = entry.data as any
+        const primary = entry.origins[0]
+        const merged = { ...data, origins: entry.origins, scope: entry.scope }
+        if (primary === 'claude' && entry.scope === 'global') {
+          merged.source = await resolveInventorySource(entry.sourceFile, options.baseDir)
+        } else if (primary === 'claude' && entry.scope === 'project') {
+          merged.source = 'project'
+        } else {
+          merged.source = primary
+        }
+        commands.push(merged)
+      }
+    } else {
+      const list = await service.list()
+      for (const cmd of list) {
+        const filePath = path.join(options.commandsDir, cmd.filename)
+        ;(cmd as any).source = await resolveInventorySource(filePath, options.baseDir)
+        ;(cmd as any).scope = 'global'
+        commands.push(cmd)
+      }
+
+      if (options.projectCommandsDir) {
+        const projectService = new CommandService(options.projectCommandsDir)
+        const projectCommands = await projectService.list()
+        for (const cmd of projectCommands) {
+          commands.push({ ...cmd, source: 'project' as const, scope: 'project' as const })
+        }
       }
     }
 
-    if (options.projectCommandsDir) {
-      const projectService = new CommandService(options.projectCommandsDir)
-      const projectCommands = await projectService.list()
-      for (const cmd of projectCommands) {
-        commands.push({ ...cmd, source: 'project' as const, scope: 'project' as const })
+    const includeClaude = !origins || origins.includes('claude')
+    if (includeClaude) {
+      const pluginPaths = await resolver.getEnabledPluginPaths()
+      for (const { id, installPath } of pluginPaths) {
+        const pluginService = new CommandService(path.join(installPath, 'commands'))
+        const pluginCommands = await pluginService.list()
+        for (const cmd of pluginCommands) {
+          commands.push({
+            ...cmd,
+            source: 'plugin' as const,
+            scope: 'global' as const,
+            pluginId: id,
+            origins: ['claude'],
+          })
+        }
       }
     }
 
