@@ -80,6 +80,7 @@ export const commandsRoutes: FastifyPluginAsync<CommandsRoutesOptions> = async (
             scope: 'global' as const,
             pluginId: id,
             origins: ['claude'],
+            badges: [],
           })
         }
       }
