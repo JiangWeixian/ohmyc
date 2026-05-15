@@ -40,7 +40,7 @@ export const agentsRoutes: FastifyPluginAsync<AgentsRoutesOptions> = async (fast
           source = primary
         }
         const provider = options.registry.getProvider(primary)
-        const badges = provider ? provider.agentBadges(entry.data as ParsedAgent) : []
+        const badges = provider ? provider.agentBadges(entry.data) : []
         agents.push({
           ...entry.data,
           origins: entry.origins,
@@ -69,18 +69,20 @@ export const agentsRoutes: FastifyPluginAsync<AgentsRoutesOptions> = async (fast
 
     const includeClaude = !origins || origins.includes('claude')
     if (includeClaude) {
+      const claudeProvider = options.registry?.getProvider('claude')
       const pluginPaths = await resolver.getEnabledPluginPaths()
       for (const { id, installPath } of pluginPaths) {
         const pluginService = new AgentService(path.join(installPath, 'agents'))
         const pluginAgents = await pluginService.list()
         for (const agent of pluginAgents) {
+          const badges = claudeProvider ? claudeProvider.agentBadges(agent as ParsedAgent) : []
           agents.push({
             ...agent,
             source: 'plugin' as const,
             scope: 'global' as const,
             pluginId: id,
             origins: ['claude'],
-            badges: [],
+            badges,
           })
         }
       }

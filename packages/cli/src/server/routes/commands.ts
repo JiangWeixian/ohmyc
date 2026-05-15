@@ -40,7 +40,7 @@ export const commandsRoutes: FastifyPluginAsync<CommandsRoutesOptions> = async (
           source = primary
         }
         const provider = options.registry.getProvider(primary)
-        const badges = provider ? provider.commandBadges(entry.data as ParsedCommand) : []
+        const badges = provider ? provider.commandBadges(entry.data) : []
         commands.push({
           ...entry.data,
           origins: entry.origins,
@@ -69,18 +69,20 @@ export const commandsRoutes: FastifyPluginAsync<CommandsRoutesOptions> = async (
 
     const includeClaude = !origins || origins.includes('claude')
     if (includeClaude) {
+      const claudeProvider = options.registry?.getProvider('claude')
       const pluginPaths = await resolver.getEnabledPluginPaths()
       for (const { id, installPath } of pluginPaths) {
         const pluginService = new CommandService(path.join(installPath, 'commands'))
         const pluginCommands = await pluginService.list()
         for (const cmd of pluginCommands) {
+          const badges = claudeProvider ? claudeProvider.commandBadges(cmd as ParsedCommand) : []
           commands.push({
             ...cmd,
             source: 'plugin' as const,
             scope: 'global' as const,
             pluginId: id,
             origins: ['claude'],
-            badges: [],
+            badges,
           })
         }
       }
