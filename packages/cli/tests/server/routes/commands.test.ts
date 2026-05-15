@@ -24,8 +24,9 @@ import { ClaudeProvider } from '@/server/services/providers/claude-provider'
 function buildRegistry(commandsDir: string, projectDir?: string | null) {
   const claude = new ClaudeProvider({
     agentsGlobalDir: path.join(commandsDir, '..', 'agents'),
+    skillsGlobalDir: path.join(commandsDir, '..', 'skills'),
     commandsGlobalDir: commandsDir,
-    projectDir,
+    projectDir: projectDir ?? null,
   })
   return new ProviderRegistry([claude])
 }

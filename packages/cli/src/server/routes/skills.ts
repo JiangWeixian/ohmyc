@@ -3,8 +3,8 @@ import path from 'node:path'
 import { PluginResolver } from '../services/plugin-resolver'
 import { SkillService } from '../services/skill-service'
 import { resolveInventorySource } from './inventory-source'
+import { parseOriginsQuery } from './origins-query'
 
-import type { Origin } from '@ohmyc/shared'
 import type { FastifyPluginAsync } from 'fastify'
 import type { ProviderRegistry } from '../services/provider-registry'
 
@@ -15,16 +15,6 @@ interface SkillsRoutesOptions {
   claudeSettingsPaths: readonly string[]
   baseDir?: string
   registry?: ProviderRegistry
-}
-
-function parseOriginsQuery(value: string | undefined): Origin[] | undefined {
-  if (!value) {
-    return undefined
-  }
-  const valid: Origin[] = ['claude', 'opencode', 'agents']
-  const parts = value.split(',').map(s => s.trim()).filter(Boolean)
-  const filtered = parts.filter((p): p is Origin => (valid as string[]).includes(p))
-  return filtered.length > 0 ? filtered : undefined
 }
 
 export const skillsRoutes: FastifyPluginAsync<SkillsRoutesOptions> = async (fastify, options) => {
@@ -39,7 +29,6 @@ export const skillsRoutes: FastifyPluginAsync<SkillsRoutesOptions> = async (fast
     if (options.registry) {
       const entries = await options.registry.listSkills(origins ? { origins } : undefined)
       for (const entry of entries) {
-        const data = entry.data as any
         const primary = entry.origins[0]
         const source = entry.scope === 'project'
           ? 'project'
@@ -47,11 +36,12 @@ export const skillsRoutes: FastifyPluginAsync<SkillsRoutesOptions> = async (fast
               ? await resolveInventorySource(path.dirname(entry.sourceFile), options.baseDir)
               : primary)
         skills.push({
-          ...data,
+          ...entry.data,
           dirName: path.basename(path.dirname(entry.sourceFile)),
           origins: entry.origins,
           scope: entry.scope,
           source,
+          badges: [],
         })
       }
     } else {

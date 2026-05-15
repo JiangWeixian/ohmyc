@@ -25,7 +25,8 @@ function buildRegistry(skillsDir: string, projectDir?: string | null) {
   const claude = new ClaudeProvider({
     agentsGlobalDir: path.join(skillsDir, '..', 'agents'),
     skillsGlobalDir: skillsDir,
-    projectDir,
+    commandsGlobalDir: path.join(skillsDir, '..', 'commands'),
+    projectDir: projectDir ?? null,
   })
   return new ProviderRegistry([claude])
 }

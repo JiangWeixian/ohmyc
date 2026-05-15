@@ -1,11 +1,14 @@
 import { existsSync } from 'node:fs'
 import path from 'node:path'
 
-import matter from 'gray-matter'
+import { parseGenericSkill } from './parse-skill'
 
 import type {
   ConfigProvider,
   Origin,
+  ParsedAgent,
+  ParsedCommand,
+  ParsedSkill,
   RenderBadge,
 } from '@ohmyc/shared'
 
@@ -43,27 +46,16 @@ export class AgentsSharedProvider implements ConfigProvider {
     return out
   }
 
-  parseAgent(): unknown {
+  parseAgent(): ParsedAgent | null {
     return null
   }
 
-  parseCommand(): unknown {
+  parseCommand(): ParsedCommand | null {
     return null
   }
 
-  parseSkill(file: string, raw: string): unknown {
-    const parsed = matter(raw)
-    const fm = parsed.data as Record<string, unknown>
-    if (typeof fm.name !== 'string' || typeof fm.description !== 'string') {
-      return null
-    }
-    return {
-      id: fm.name,
-      frontmatter: fm,
-      content: parsed.content.trim(),
-      raw,
-      filename: 'SKILL.md',
-    }
+  parseSkill(file: string, raw: string): ParsedSkill | null {
+    return parseGenericSkill(file, raw)
   }
 
   agentBadges(): RenderBadge[] {

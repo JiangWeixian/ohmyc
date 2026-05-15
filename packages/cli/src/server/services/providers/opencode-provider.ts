@@ -3,9 +3,16 @@ import path from 'node:path'
 
 import matter from 'gray-matter'
 
+import { parseGenericSkill } from './parse-skill'
+
 import type {
+  AgentFrontmatter,
+  CommandFrontmatter,
   ConfigProvider,
   Origin,
+  ParsedAgent,
+  ParsedCommand,
+  ParsedSkill,
   RenderBadge,
 } from '@ohmyc/shared'
 
@@ -32,6 +39,8 @@ export class OpencodeProvider implements ConfigProvider {
   private readonly projectDir: string | null
 
   constructor(opts: OpencodeProviderOptions) {
+    // OPENCODE_CONFIG_DIR is read once at construction. Long-running servers
+    // need a restart to pick up env changes.
     const override = process.env.OPENCODE_CONFIG_DIR
     this.globalDir = override && override.length > 0
       ? override
@@ -61,7 +70,7 @@ export class OpencodeProvider implements ConfigProvider {
     return this.dirs('skills')
   }
 
-  parseAgent(file: string, raw: string): unknown {
+  parseAgent(file: string, raw: string): ParsedAgent | null {
     const parsed = matter(raw)
     const fm = parsed.data as Record<string, unknown>
     if (typeof fm.description !== 'string' || fm.description.length === 0) {
@@ -69,56 +78,47 @@ export class OpencodeProvider implements ConfigProvider {
     }
     const id = (typeof fm.name === 'string' && fm.name)
       || path.basename(file).replace(/\.md$/, '')
+    const frontmatter = { ...fm, name: id, description: fm.description } as AgentFrontmatter
     return {
       id,
-      frontmatter: { name: id, ...fm },
+      frontmatter,
       content: parsed.content.trim(),
       raw,
       filename: path.basename(file),
     }
   }
 
-  parseCommand(file: string, raw: string): unknown {
+  parseCommand(file: string, raw: string): ParsedCommand | null {
     const parsed = matter(raw)
     const fm = parsed.data as Record<string, unknown>
     const id = (typeof fm.name === 'string' && fm.name)
       || path.basename(file).replace(/\.md$/, '')
+    const frontmatter = { ...fm, name: id } as CommandFrontmatter
     return {
       id,
-      frontmatter: { name: id, ...fm },
+      frontmatter,
       content: parsed.content.trim(),
       raw,
       filename: path.basename(file),
     }
   }
 
-  parseSkill(file: string, raw: string): unknown {
-    const parsed = matter(raw)
-    const fm = parsed.data as Record<string, unknown>
-    if (typeof fm.name !== 'string' || typeof fm.description !== 'string') {
-      return null
-    }
-    return {
-      id: fm.name,
-      frontmatter: fm,
-      content: parsed.content.trim(),
-      raw,
-      filename: 'SKILL.md',
-    }
+  parseSkill(file: string, raw: string): ParsedSkill | null {
+    return parseGenericSkill(file, raw)
   }
 
-  agentBadges(agent: unknown): RenderBadge[] {
-    const fm = (agent as any)?.frontmatter ?? {}
+  agentBadges(agent: ParsedAgent): RenderBadge[] {
     const out: RenderBadge[] = []
-    if (typeof fm.mode === 'string') {
-      out.push({ kind: 'mono', label: fm.mode })
+    const mode = (agent.frontmatter as Record<string, unknown>).mode
+    if (typeof mode === 'string') {
+      out.push({ kind: 'mono', label: mode })
     }
     return out
   }
 
-  commandBadges(cmd: unknown): RenderBadge[] {
-    const fm = (cmd as any)?.frontmatter ?? {}
+  commandBadges(cmd: ParsedCommand): RenderBadge[] {
     const out: RenderBadge[] = []
+    const fm = cmd.frontmatter as Record<string, unknown>
     if (typeof fm.agent === 'string') {
       out.push({ kind: 'mono', label: fm.agent })
     }

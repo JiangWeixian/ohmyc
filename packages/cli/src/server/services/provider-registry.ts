@@ -6,6 +6,9 @@ import { scanMdFiles, scanSkillDirs } from './scanners'
 import type {
   ConfigProvider,
   Origin,
+  ParsedAgent,
+  ParsedCommand,
+  ParsedSkill,
   ProviderEntity,
 } from '@ohmyc/shared'
 
@@ -31,20 +34,58 @@ function inFilter(entity: ProviderEntity<unknown>, filter?: ListFilter): boolean
 export class ProviderRegistry {
   constructor(private providers: ConfigProvider[]) {}
 
-  async listAgents(filter?: ListFilter): Promise<ProviderEntity<unknown>[]> {
-    return this.listFlat('agents', filter)
+  getProvider(origin: Origin): ConfigProvider | undefined {
+    return this.providers.find(p => p.id === origin)
   }
 
-  async listCommands(filter?: ListFilter): Promise<ProviderEntity<unknown>[]> {
-    return this.listFlat('commands', filter)
-  }
-
-  async listSkills(filter?: ListFilter): Promise<ProviderEntity<unknown>[]> {
-    const byPath = new Map<string, ProviderEntity<unknown>>()
-
+  async listAgents(filter?: ListFilter): Promise<ProviderEntity<ParsedAgent>[]> {
+    const out: ProviderEntity<ParsedAgent>[] = []
     for (const provider of this.providers) {
-      for (let i = 0; i < provider.skillsDirs().length; i++) {
-        const dir = provider.skillsDirs()[i]
+      const dirs = provider.agentsDirs()
+      for (const [i, dir] of dirs.entries()) {
+        const scope = i === 0 ? 'global' : 'project'
+        const files = await scanMdFiles(dir)
+        for (const file of files) {
+          const raw = await readFile(file, 'utf8')
+          const data = provider.parseAgent(file, raw)
+          if (!data) {
+            continue
+          }
+          out.push({ origins: [provider.id], sourceFile: file, scope, data })
+        }
+      }
+    }
+    return out.filter(e => inFilter(e, filter))
+  }
+
+  async listCommands(filter?: ListFilter): Promise<ProviderEntity<ParsedCommand>[]> {
+    const out: ProviderEntity<ParsedCommand>[] = []
+    for (const provider of this.providers) {
+      const dirs = provider.commandsDirs()
+      for (const [i, dir] of dirs.entries()) {
+        const scope = i === 0 ? 'global' : 'project'
+        const files = await scanMdFiles(dir)
+        for (const file of files) {
+          const raw = await readFile(file, 'utf8')
+          const data = provider.parseCommand(file, raw)
+          if (!data) {
+            continue
+          }
+          out.push({ origins: [provider.id], sourceFile: file, scope, data })
+        }
+      }
+    }
+    return out.filter(e => inFilter(e, filter))
+  }
+
+  async listSkills(filter?: ListFilter): Promise<ProviderEntity<ParsedSkill>[]> {
+    const byPath = new Map<string, ProviderEntity<ParsedSkill>>()
+
+    // origins[0] is the highest-priority provider that registered the file —
+    // set by the construction order in `createServer` (claude, opencode, agentsShared).
+    for (const provider of this.providers) {
+      const dirs = provider.skillsDirs()
+      for (const [i, dir] of dirs.entries()) {
         const scope = i === 0 ? 'global' : 'project'
         const skillFiles = await scanSkillDirs(dir)
         for (const file of skillFiles) {
@@ -72,35 +113,5 @@ export class ProviderRegistry {
     }
 
     return [...byPath.values()].filter(e => inFilter(e, filter))
-  }
-
-  private async listFlat(
-    kind: 'agents' | 'commands',
-    filter?: ListFilter,
-  ): Promise<ProviderEntity<unknown>[]> {
-    const out: ProviderEntity<unknown>[] = []
-    for (const provider of this.providers) {
-      const dirs = kind === 'agents' ? provider.agentsDirs() : provider.commandsDirs()
-      for (const [i, dir] of dirs.entries()) {
-        const scope = i === 0 ? 'global' : 'project'
-        const files = await scanMdFiles(dir)
-        for (const file of files) {
-          const raw = await readFile(file, 'utf8')
-          const data = kind === 'agents'
-            ? provider.parseAgent(file, raw)
-            : provider.parseCommand(file, raw)
-          if (!data) {
-            continue
-          }
-          out.push({
-            origins: [provider.id],
-            sourceFile: file,
-            scope,
-            data,
-          })
-        }
-      }
-    }
-    return out.filter(e => inFilter(e, filter))
   }
 }

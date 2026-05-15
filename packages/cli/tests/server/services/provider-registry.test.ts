@@ -48,7 +48,7 @@ describe('ProviderRegistry', () => {
   it('listAgents merges entries from all providers and tags origin', async () => {
     const claudeDir = path.join(tmp, 'claude-agents')
     writeAgent(claudeDir, 'alpha')
-    const claude = new ClaudeProvider({ agentsGlobalDir: claudeDir, projectDir: null })
+    const claude = new ClaudeProvider({ agentsGlobalDir: claudeDir, skillsGlobalDir: path.join(tmp, 'unused-skills'), commandsGlobalDir: path.join(tmp, 'unused-commands'), projectDir: null })
     const registry = new ProviderRegistry([claude])
 
     const agents = await registry.listAgents()
@@ -60,7 +60,7 @@ describe('ProviderRegistry', () => {
   it('filter.origins narrows results by origin', async () => {
     const claudeDir = path.join(tmp, 'claude-agents')
     writeAgent(claudeDir, 'alpha')
-    const claude = new ClaudeProvider({ agentsGlobalDir: claudeDir, projectDir: null })
+    const claude = new ClaudeProvider({ agentsGlobalDir: claudeDir, skillsGlobalDir: path.join(tmp, 'unused-skills'), commandsGlobalDir: path.join(tmp, 'unused-commands'), projectDir: null })
     const registry = new ProviderRegistry([claude])
 
     expect(await registry.listAgents({ origins: ['opencode'] })).toEqual([])
@@ -83,6 +83,7 @@ describe('ProviderRegistry', () => {
     const claude = new ClaudeProvider({
       agentsGlobalDir: path.join(tmp, 'unused-agents'),
       skillsGlobalDir: claudeSkills,
+      commandsGlobalDir: path.join(tmp, 'unused-commands'),
       projectDir: null,
     })
     const agents = new AgentsSharedProvider({ home: agentsHome, cwd: tmp })
@@ -95,12 +96,28 @@ describe('ProviderRegistry', () => {
     expect(skills[0].origins.toSorted()).toEqual(['agents', 'claude'])
   })
 
+  it('listAgents labels project entries scope=project even when global dir is non-existent', async () => {
+    const projectDir = path.join(tmp, 'project')
+    writeAgent(path.join(projectDir, 'agents'), 'omega')
+    const claude = new ClaudeProvider({
+      agentsGlobalDir: path.join(tmp, 'does-not-exist-agents'),
+      skillsGlobalDir: path.join(tmp, 'does-not-exist-skills'),
+      commandsGlobalDir: path.join(tmp, 'does-not-exist-commands'),
+      projectDir,
+    })
+    const registry = new ProviderRegistry([claude])
+    const agents = await registry.listAgents()
+    expect(agents).toHaveLength(1)
+    expect(agents[0].scope).toBe('project')
+  })
+
   it('listSkills filter matches any origin in origins[]', async () => {
     const claudeSkills = path.join(tmp, 'claude-skills')
     writeSkill(claudeSkills, 'foo')
     const claude = new ClaudeProvider({
       agentsGlobalDir: path.join(tmp, 'unused'),
       skillsGlobalDir: claudeSkills,
+      commandsGlobalDir: path.join(tmp, 'unused-commands'),
       projectDir: null,
     })
     const registry = new ProviderRegistry([claude])

@@ -20,11 +20,14 @@ import {
 import { agentsRoutes } from '@/server/routes/agents'
 import { ProviderRegistry } from '@/server/services/provider-registry'
 import { ClaudeProvider } from '@/server/services/providers/claude-provider'
+import { OpencodeProvider } from '@/server/services/providers/opencode-provider'
 
 function buildRegistry(agentsDir: string, projectDir?: string | null) {
   const claude = new ClaudeProvider({
     agentsGlobalDir: agentsDir,
-    projectDir,
+    skillsGlobalDir: path.join(agentsDir, '..', 'skills'),
+    commandsGlobalDir: path.join(agentsDir, '..', 'commands'),
+    projectDir: projectDir ?? null,
   })
   return new ProviderRegistry([claude])
 }
@@ -132,6 +135,48 @@ describe('agents routes', () => {
       const body = res.json()
       const alpha = body.agents.find((a: any) => a.id === 'alpha')
       expect(alpha?.origins).toEqual(['claude'])
+    })
+
+    it('attaches provider badges to each agent in the response', async () => {
+      // Stand up a separate fastify with claude + opencode providers wired in.
+      await app.close()
+      const opencodeHome = path.join(temporaryRoot, 'oc-home')
+      const opencodeAgentsDir = path.join(opencodeHome, '.config', 'opencode', 'agents')
+      mkdirSync(opencodeAgentsDir, { recursive: true })
+      writeFileSync(
+        path.join(opencodeAgentsDir, 'fixture-opencode.md'),
+        '---\nname: fixture-opencode\ndescription: An opencode agent\nmode: primary\n---\nprompt',
+      )
+
+      const claude = new ClaudeProvider({
+        agentsGlobalDir: tmpDir,
+        skillsGlobalDir: path.join(tmpDir, '..', 'skills'),
+        commandsGlobalDir: path.join(tmpDir, '..', 'commands'),
+        projectDir: null,
+      })
+      const opencode = new OpencodeProvider({
+        home: opencodeHome,
+        platform: 'linux',
+        cwd: opencodeHome,
+      })
+
+      app = Fastify()
+      await app.register(agentsRoutes, {
+        agentsDir: tmpDir,
+        pluginsDir: path.join(temporaryRoot, '_plugins'),
+        claudeSettingsPaths: [path.join(temporaryRoot, '_settings.json')],
+        baseDir: temporaryRoot,
+        registry: new ProviderRegistry([claude, opencode]),
+      })
+      await app.ready()
+
+      const response = await app.inject({ method: 'GET', url: '/api/agents' })
+      const body = response.json() as { agents: Array<{ id: string; badges: Array<{ kind: string; label: string }> }> }
+      const agent = body.agents.find(a => a.id === 'fixture-opencode')!
+      expect(agent).toBeDefined()
+      expect(agent.badges).toEqual(expect.arrayContaining([
+        expect.objectContaining({ kind: 'mono', label: 'primary' }),
+      ]))
     })
 
     it('?origins=opencode returns no claude agents', async () => {

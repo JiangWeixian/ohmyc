@@ -26,7 +26,7 @@ describe('ClaudeProvider', () => {
   })
 
   it('exposes id and displayName', () => {
-    const p = new ClaudeProvider({ agentsGlobalDir: tmp, projectDir: null })
+    const p = new ClaudeProvider({ agentsGlobalDir: tmp, skillsGlobalDir: tmp, commandsGlobalDir: tmp, projectDir: null })
     expect(p.id).toBe('claude')
     expect(p.displayName).toMatch(/claude/i)
   })
@@ -47,19 +47,28 @@ describe('ClaudeProvider', () => {
   })
 
   it('parseAgent returns null when required frontmatter is missing', () => {
-    const p = new ClaudeProvider({ agentsGlobalDir: tmp, projectDir: null })
+    const p = new ClaudeProvider({ agentsGlobalDir: tmp, skillsGlobalDir: tmp, commandsGlobalDir: tmp, projectDir: null })
     expect(p.parseAgent('/x.md', '---\n---\nbody')).toBeNull()
   })
 
   it('parseAgent returns parsed agent with name+description', () => {
-    const p = new ClaudeProvider({ agentsGlobalDir: tmp, projectDir: null })
+    const p = new ClaudeProvider({ agentsGlobalDir: tmp, skillsGlobalDir: tmp, commandsGlobalDir: tmp, projectDir: null })
     const parsed: any = p.parseAgent('/x.md', '---\nname: foo\ndescription: bar\n---\nbody')
     expect(parsed.frontmatter.name).toBe('foo')
     expect(parsed.frontmatter.description).toBe('bar')
   })
 
+  it('parseCommand accepts frontmatter without name/description (filename fallback)', () => {
+    const p = new ClaudeProvider({ agentsGlobalDir: tmp, skillsGlobalDir: tmp, commandsGlobalDir: tmp, projectDir: null })
+    const parsed: any = p.parseCommand('/foo.md', '---\nargument-hint: "[issue]"\n---\nbody')
+    expect(parsed).not.toBeNull()
+    expect(parsed.id).toBe('foo')
+    expect(parsed.frontmatter.name).toBe('foo')
+    expect(parsed.frontmatter['argument-hint']).toBe('[issue]')
+  })
+
   it('agentBadges emits model when present', () => {
-    const p = new ClaudeProvider({ agentsGlobalDir: tmp, projectDir: null })
+    const p = new ClaudeProvider({ agentsGlobalDir: tmp, skillsGlobalDir: tmp, commandsGlobalDir: tmp, projectDir: null })
     const badges = p.agentBadges({ frontmatter: { model: 'sonnet' } })
     expect(badges).toEqual([{ kind: 'mono', label: 'sonnet' }])
   })

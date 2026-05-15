@@ -3,8 +3,9 @@ import path from 'node:path'
 import { CommandService } from '../services/command-service'
 import { PluginResolver } from '../services/plugin-resolver'
 import { resolveInventorySource } from './inventory-source'
+import { parseOriginsQuery } from './origins-query'
 
-import type { Origin } from '@ohmyc/shared'
+import type { ParsedCommand } from '@ohmyc/shared'
 import type { FastifyPluginAsync } from 'fastify'
 import type { ProviderRegistry } from '../services/provider-registry'
 
@@ -15,16 +16,6 @@ interface CommandsRoutesOptions {
   claudeSettingsPaths: readonly string[]
   baseDir?: string
   registry?: ProviderRegistry
-}
-
-function parseOriginsQuery(value: string | undefined): Origin[] | undefined {
-  if (!value) {
-    return undefined
-  }
-  const valid: Origin[] = ['claude', 'opencode', 'agents']
-  const parts = value.split(',').map(s => s.trim()).filter(Boolean)
-  const filtered = parts.filter((p): p is Origin => (valid as string[]).includes(p))
-  return filtered.length > 0 ? filtered : undefined
 }
 
 export const commandsRoutes: FastifyPluginAsync<CommandsRoutesOptions> = async (fastify, options) => {
@@ -39,17 +30,24 @@ export const commandsRoutes: FastifyPluginAsync<CommandsRoutesOptions> = async (
     if (options.registry) {
       const entries = await options.registry.listCommands(origins ? { origins } : undefined)
       for (const entry of entries) {
-        const data = entry.data as any
         const primary = entry.origins[0]
-        const merged = { ...data, origins: entry.origins, scope: entry.scope }
+        let source: string
         if (primary === 'claude' && entry.scope === 'global') {
-          merged.source = await resolveInventorySource(entry.sourceFile, options.baseDir)
+          source = await resolveInventorySource(entry.sourceFile, options.baseDir)
         } else if (primary === 'claude' && entry.scope === 'project') {
-          merged.source = 'project'
+          source = 'project'
         } else {
-          merged.source = primary
+          source = primary
         }
-        commands.push(merged)
+        const provider = options.registry.getProvider(primary)
+        const badges = provider ? provider.commandBadges(entry.data as ParsedCommand) : []
+        commands.push({
+          ...entry.data,
+          origins: entry.origins,
+          scope: entry.scope,
+          source,
+          badges,
+        })
       }
     } else {
       const list = await service.list()

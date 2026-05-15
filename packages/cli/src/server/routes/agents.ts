@@ -3,8 +3,9 @@ import path from 'node:path'
 import { AgentService } from '../services/agent-service'
 import { PluginResolver } from '../services/plugin-resolver'
 import { resolveInventorySource } from './inventory-source'
+import { parseOriginsQuery } from './origins-query'
 
-import type { Origin } from '@ohmyc/shared'
+import type { ParsedAgent } from '@ohmyc/shared'
 import type { FastifyPluginAsync } from 'fastify'
 import type { ProviderRegistry } from '../services/provider-registry'
 
@@ -15,16 +16,6 @@ interface AgentsRoutesOptions {
   claudeSettingsPaths: readonly string[]
   baseDir?: string
   registry?: ProviderRegistry
-}
-
-function parseOriginsQuery(value: string | undefined): Origin[] | undefined {
-  if (!value) {
-    return undefined
-  }
-  const valid: Origin[] = ['claude', 'opencode', 'agents']
-  const parts = value.split(',').map(s => s.trim()).filter(Boolean)
-  const filtered = parts.filter((p): p is Origin => (valid as string[]).includes(p))
-  return filtered.length > 0 ? filtered : undefined
 }
 
 export const agentsRoutes: FastifyPluginAsync<AgentsRoutesOptions> = async (fastify, options) => {
@@ -39,17 +30,24 @@ export const agentsRoutes: FastifyPluginAsync<AgentsRoutesOptions> = async (fast
     if (options.registry) {
       const entries = await options.registry.listAgents(origins ? { origins } : undefined)
       for (const entry of entries) {
-        const data = entry.data as any
         const primary = entry.origins[0]
-        const merged = { ...data, origins: entry.origins, scope: entry.scope }
+        let source: string
         if (primary === 'claude' && entry.scope === 'global') {
-          merged.source = await resolveInventorySource(entry.sourceFile, options.baseDir)
+          source = await resolveInventorySource(entry.sourceFile, options.baseDir)
         } else if (primary === 'claude' && entry.scope === 'project') {
-          merged.source = 'project'
+          source = 'project'
         } else {
-          merged.source = primary
+          source = primary
         }
-        agents.push(merged)
+        const provider = options.registry.getProvider(primary)
+        const badges = provider ? provider.agentBadges(entry.data as ParsedAgent) : []
+        agents.push({
+          ...entry.data,
+          origins: entry.origins,
+          scope: entry.scope,
+          source,
+          badges,
+        })
       }
     } else {
       const list = await service.list()
@@ -82,6 +80,7 @@ export const agentsRoutes: FastifyPluginAsync<AgentsRoutesOptions> = async (fast
             scope: 'global' as const,
             pluginId: id,
             origins: ['claude'],
+            badges: [],
           })
         }
       }

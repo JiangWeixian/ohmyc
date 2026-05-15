@@ -7,14 +7,17 @@ import type {
   CommandFrontmatter,
   ConfigProvider,
   Origin,
+  ParsedAgent,
+  ParsedCommand,
+  ParsedSkill,
   RenderBadge,
   SkillFrontmatter,
 } from '@ohmyc/shared'
 
 export interface ClaudeProviderOptions {
   agentsGlobalDir: string
-  skillsGlobalDir?: string
-  commandsGlobalDir?: string
+  skillsGlobalDir: string
+  commandsGlobalDir: string
   projectDir: string | null
 }
 
@@ -33,10 +36,7 @@ export class ClaudeProvider implements ConfigProvider {
   }
 
   commandsDirs(): string[] {
-    const dirs: string[] = []
-    if (this.opts.commandsGlobalDir) {
-      dirs.push(this.opts.commandsGlobalDir)
-    }
+    const dirs: string[] = [this.opts.commandsGlobalDir]
     if (this.opts.projectDir) {
       dirs.push(path.join(this.opts.projectDir, 'commands'))
     }
@@ -44,17 +44,14 @@ export class ClaudeProvider implements ConfigProvider {
   }
 
   skillsDirs(): string[] {
-    const dirs: string[] = []
-    if (this.opts.skillsGlobalDir) {
-      dirs.push(this.opts.skillsGlobalDir)
-    }
+    const dirs: string[] = [this.opts.skillsGlobalDir]
     if (this.opts.projectDir) {
       dirs.push(path.join(this.opts.projectDir, 'skills'))
     }
     return dirs
   }
 
-  parseAgent(file: string, raw: string): unknown {
+  parseAgent(file: string, raw: string): ParsedAgent | null {
     const parsed = matter(raw)
     const fm = parsed.data as AgentFrontmatter
     if (!fm.name || !fm.description) {
@@ -69,22 +66,20 @@ export class ClaudeProvider implements ConfigProvider {
     }
   }
 
-  parseCommand(file: string, raw: string): unknown {
+  parseCommand(file: string, raw: string): ParsedCommand | null {
     const parsed = matter(raw)
     const fm = parsed.data as CommandFrontmatter
-    if (!fm.name && !fm.description) {
-      return null
-    }
+    const id = path.basename(file).replace(/\.md$/, '')
     return {
-      id: path.basename(file).replace(/\.md$/, ''),
-      frontmatter: { name: fm.name ?? path.basename(file).replace(/\.md$/, ''), ...fm },
+      id,
+      frontmatter: { ...fm, name: fm.name || id },
       content: parsed.content.trim(),
       raw,
       filename: path.basename(file),
     }
   }
 
-  parseSkill(file: string, raw: string): unknown {
+  parseSkill(file: string, raw: string): ParsedSkill | null {
     const parsed = matter(raw)
     const fm = parsed.data as SkillFrontmatter
     if (!fm.name || !fm.description) {
@@ -99,20 +94,19 @@ export class ClaudeProvider implements ConfigProvider {
     }
   }
 
-  agentBadges(agent: unknown): RenderBadge[] {
-    const fm = (agent as any)?.frontmatter ?? {}
+  agentBadges(agent: ParsedAgent): RenderBadge[] {
     const out: RenderBadge[] = []
-    if (typeof fm.model === 'string') {
-      out.push({ kind: 'mono', label: fm.model })
+    if (typeof agent.frontmatter.model === 'string') {
+      out.push({ kind: 'mono', label: agent.frontmatter.model })
     }
     return out
   }
 
-  commandBadges(cmd: unknown): RenderBadge[] {
-    const fm = (cmd as any)?.frontmatter ?? {}
+  commandBadges(cmd: ParsedCommand): RenderBadge[] {
     const out: RenderBadge[] = []
-    if (typeof fm['argument-hint'] === 'string') {
-      out.push({ kind: 'mono', label: fm['argument-hint'] })
+    const hint = cmd.frontmatter['argument-hint']
+    if (typeof hint === 'string') {
+      out.push({ kind: 'mono', label: hint })
     }
     return out
   }
