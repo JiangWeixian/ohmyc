@@ -13,7 +13,6 @@ import {
 import { useMemo, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 
-import { Badge, MonoBadge } from './components/badge'
 import { ConfigSection } from './components/config-section'
 import { EntityCard } from './components/entity-card'
 import { EntityDetail } from './components/entity-detail'
@@ -21,7 +20,6 @@ import { Header } from './components/header'
 import { SectionHeader } from './components/section-header'
 import { SettingsLayout } from './components/settings/settings-layout'
 import { Sidebar, type SidebarSection } from './components/sidebar'
-import { SourceBadge } from './components/source-badge'
 import {
   type ItemLocator,
   useAgent,
@@ -43,6 +41,8 @@ import { cn } from '@/lib/utils'
 import type {
   Agent,
   Command,
+  Origin,
+  RenderBadge,
   Skill,
 } from '@ohmyc/shared'
 
@@ -77,39 +77,16 @@ const ENTITY_CONFIG = {
     iconAccentVar: '--text-primary',
     getTitle: (entity: Agent) => entity.frontmatter.name,
     getDescription: (entity: Agent) => entity.frontmatter.description,
-    getBadges: (entity: Agent) => (
-      <>
-        {entity.frontmatter.model && <MonoBadge>{entity.frontmatter.model}</MonoBadge>}
-        <SourceBadge source={entity.source} pluginId={entity.pluginId} />
-      </>
-    ),
   },
   skills: {
     iconAccentVar: '--text-secondary',
     getTitle: (entity: Skill) => entity.frontmatter.name,
     getDescription: (entity: Skill) => entity.frontmatter.description,
-    getBadges: (entity: Skill) => (
-      <>
-        {entity.frontmatter.context === 'fork' && <Badge variant="default">fork</Badge>}
-        {entity.frontmatter['disable-model-invocation'] && (
-          <Badge variant="default">manual</Badge>
-        )}
-        <SourceBadge source={entity.source} pluginId={entity.pluginId} />
-      </>
-    ),
   },
   commands: {
     iconAccentVar: '--text-tertiary',
     getTitle: (entity: Command) => `/${entity.frontmatter.name}`,
     getDescription: (entity: Command) => entity.frontmatter.description,
-    getBadges: (entity: Command) => (
-      <>
-        {entity.frontmatter['argument-hint'] && (
-          <MonoBadge>{entity.frontmatter['argument-hint']}</MonoBadge>
-        )}
-        <SourceBadge source={entity.source} pluginId={entity.pluginId} />
-      </>
-    ),
   },
 } as const
 
@@ -314,7 +291,8 @@ export function Explorer({ viewSwitcher }: ExplorerProperties) {
                 iconAccentVar={entityConfig.iconAccentVar}
                 title={entityConfig.getTitle(entity as never) || ''}
                 description={entityConfig.getDescription(entity as never) || ''}
-                badges={entityConfig.getBadges(entity as never)}
+                origins={(entity as { origins?: Origin[] }).origins}
+                renderBadges={(entity as { badges?: RenderBadge[] }).badges}
                 onClick={() =>
                   setSelectedItem({
                     name: entity.id,

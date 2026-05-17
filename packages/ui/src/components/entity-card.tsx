@@ -1,9 +1,12 @@
 // Reusable card for top-level entities (agents, skills, commands) shown in grids.
 import React from 'react'
 
+import { MonoBadge } from './badge'
+import { RenderBadgeView } from './render-badge'
 import { Card } from '@/components/ui/card'
 import { cn } from '@/lib/utils'
 
+import type { Origin, RenderBadge } from '@ohmyc/shared'
 import type { IconType } from './icons'
 
 /** Properties for the {@link EntityCard} component. */
@@ -12,19 +15,24 @@ interface EntityCardProperties {
   iconAccentVar: string
   title: string
   description: string
-  badges?: React.ReactNode
+  origins?: Origin[]
+  renderBadges?: RenderBadge[]
   onClick: () => void
 }
 
 /** Clickable card summarizing an entity (agent, skill, or command) with icon,
- *  title, description, and optional badge row. */
+ *  title, description, origin chip, and provider-supplied badges. */
 export function EntityCard({
   icon: Icon,
   title,
   description,
-  badges,
+  origins,
+  renderBadges,
   onClick,
 }: EntityCardProperties) {
+  const originLabel = origins && origins.length > 0 ? origins.join(' · ') : null
+  const hasBadges = originLabel || (renderBadges && renderBadges.length > 0)
+
   return (
     <Card
       onClick={onClick}
@@ -41,9 +49,12 @@ export function EntityCard({
         </div>
         <div className="min-w-0 flex-1 pt-0.5">
           <div className="text-[15px] font-[590] text-[var(--text-primary)] truncate">{title}</div>
-          {badges && (
+          {hasBadges && (
             <div className="mt-1 flex flex-wrap items-center gap-1.5">
-              {badges}
+              {originLabel && <MonoBadge>{originLabel}</MonoBadge>}
+              {renderBadges?.map((b, idx) => (
+                <RenderBadgeView key={`${b.kind}-${b.label}-${idx}`} badge={b} />
+              ))}
             </div>
           )}
         </div>
