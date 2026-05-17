@@ -5,11 +5,9 @@ import { PluginResolver } from '../services/plugin-resolver'
 import { resolveInventorySource } from './inventory-source'
 import { parseOriginsQuery } from './origins-query'
 
-import type { Origin, ParsedCommand } from '@ohmyc/shared'
+import type { ParsedCommand } from '@ohmyc/shared'
 import type { FastifyPluginAsync } from 'fastify'
 import type { ProviderRegistry } from '../services/provider-registry'
-
-const PROVIDER_ORIGINS: readonly Origin[] = ['claude', 'opencode', 'agents']
 
 interface CommandsRoutesOptions {
   commandsDir: string
@@ -106,26 +104,6 @@ export const commandsRoutes: FastifyPluginAsync<CommandsRoutesOptions> = async (
     const { name } = request.params
     const { source, pluginId, scope } = request.query
 
-    if (options.registry && source && (PROVIDER_ORIGINS as readonly string[]).includes(source)) {
-      const origin = source as Origin
-      const entries = await options.registry.listCommands({ origins: [origin] })
-      const match = entries.find(e => e.data.id === name)
-      if (match) {
-        const provider = options.registry.getProvider(origin)
-        const badges = provider ? provider.commandBadges(match.data) : []
-        return {
-          command: {
-            ...match.data,
-            origins: match.origins,
-            scope: match.scope,
-            source,
-            badges,
-          },
-        }
-      }
-      return reply.status(404).send({ error: 'Command not found' })
-    }
-
     if (source === 'plugin' && pluginId) {
       const pluginPaths = await resolver.getEnabledPluginPaths()
       const target = pluginPaths.find(p => p.id === pluginId)
@@ -137,6 +115,34 @@ export const commandsRoutes: FastifyPluginAsync<CommandsRoutesOptions> = async (
         }
       }
       return reply.status(404).send({ error: 'Command not found' })
+    }
+
+    if (options.registry) {
+      const entries = await options.registry.listCommands()
+      const candidates = entries.filter(e => e.data.id === name)
+      const match = (scope ? candidates.find(e => e.scope === scope) : undefined) ?? candidates[0]
+      if (match) {
+        const primary = match.origins[0]
+        let resolvedSource: string
+        if (primary === 'claude' && match.scope === 'global') {
+          resolvedSource = await resolveInventorySource(match.sourceFile, options.baseDir)
+        } else if (primary === 'claude' && match.scope === 'project') {
+          resolvedSource = 'project'
+        } else {
+          resolvedSource = primary
+        }
+        const provider = options.registry.getProvider(primary)
+        const badges = provider ? provider.commandBadges(match.data) : []
+        return {
+          command: {
+            ...match.data,
+            origins: match.origins,
+            scope: match.scope,
+            source: resolvedSource,
+            badges,
+          },
+        }
+      }
     }
 
     if ((source === 'project' || scope === 'project') && options.projectCommandsDir) {

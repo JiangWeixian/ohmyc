@@ -5,11 +5,8 @@ import { SkillService } from '../services/skill-service'
 import { resolveInventorySource } from './inventory-source'
 import { parseOriginsQuery } from './origins-query'
 
-import type { Origin } from '@ohmyc/shared'
 import type { FastifyPluginAsync } from 'fastify'
 import type { ProviderRegistry } from '../services/provider-registry'
-
-const PROVIDER_ORIGINS: readonly Origin[] = ['claude', 'opencode', 'agents']
 
 interface SkillsRoutesOptions {
   skillsDir: string
@@ -99,25 +96,6 @@ export const skillsRoutes: FastifyPluginAsync<SkillsRoutesOptions> = async (fast
     const { name } = request.params
     const { source, pluginId, scope } = request.query
 
-    if (options.registry && source && (PROVIDER_ORIGINS as readonly string[]).includes(source)) {
-      const origin = source as Origin
-      const entries = await options.registry.listSkills({ origins: [origin] })
-      const match = entries.find(e => e.data.id === name)
-      if (match) {
-        return {
-          skill: {
-            ...match.data,
-            dirName: path.basename(path.dirname(match.sourceFile)),
-            origins: match.origins,
-            scope: match.scope,
-            source,
-            badges: [],
-          },
-        }
-      }
-      return reply.status(404).send({ error: 'Skill not found' })
-    }
-
     if (source === 'plugin' && pluginId) {
       const pluginPaths = await resolver.getEnabledPluginPaths()
       const target = pluginPaths.find(p => p.id === pluginId)
@@ -129,6 +107,33 @@ export const skillsRoutes: FastifyPluginAsync<SkillsRoutesOptions> = async (fast
         }
       }
       return reply.status(404).send({ error: 'Skill not found' })
+    }
+
+    if (options.registry) {
+      const entries = await options.registry.listSkills()
+      const candidates = entries.filter(e => e.data.id === name)
+      const match = (scope ? candidates.find(e => e.scope === scope) : undefined) ?? candidates[0]
+      if (match) {
+        const primary = match.origins[0]
+        let resolvedSource: string
+        if (primary === 'claude' && match.scope === 'global') {
+          resolvedSource = await resolveInventorySource(path.dirname(match.sourceFile), options.baseDir)
+        } else if (primary === 'claude' && match.scope === 'project') {
+          resolvedSource = 'project'
+        } else {
+          resolvedSource = primary
+        }
+        return {
+          skill: {
+            ...match.data,
+            dirName: path.basename(path.dirname(match.sourceFile)),
+            origins: match.origins,
+            scope: match.scope,
+            source: resolvedSource,
+            badges: [],
+          },
+        }
+      }
     }
 
     if ((source === 'project' || scope === 'project') && options.projectSkillsDir) {

@@ -218,6 +218,34 @@ describe('commands routes', () => {
       expect(res.json().command.id).toBe('deploy')
     })
 
+    it('resolves project command via registry when source=project&scope=project', async () => {
+      await app.close()
+      const projectDir = path.join(temporaryRoot, '.claude')
+      mkdirSync(path.join(projectDir, 'commands'), { recursive: true })
+      writeFileSync(
+        path.join(projectDir, 'commands', 'deploy.md'),
+        '---\nname: deploy\ndescription: Deploy\n---\nprompt',
+      )
+
+      app = Fastify()
+      await app.register(commandsRoutes, {
+        commandsDir: tmpDir,
+        projectCommandsDir: null,
+        pluginsDir: path.join(temporaryRoot, '_plugins'),
+        claudeSettingsPaths: [path.join(temporaryRoot, '_settings.json')],
+        baseDir: temporaryRoot,
+        registry: buildRegistry(tmpDir, projectDir),
+      })
+      await app.ready()
+
+      const res = await app.inject({ method: 'GET', url: '/api/commands/deploy?source=project&scope=project' })
+      expect(res.statusCode).toBe(200)
+      const body = res.json()
+      expect(body.command.id).toBe('deploy')
+      expect(body.command.source).toBe('project')
+      expect(body.command.scope).toBe('project')
+    })
+
     it('resolves opencode command via registry when source=opencode', async () => {
       await app.close()
       const opencodeHome = path.join(temporaryRoot, 'oc-home')

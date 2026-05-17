@@ -277,6 +277,34 @@ describe('agents routes', () => {
       expect(res.json().agent.id).toBe('test')
     })
 
+    it('resolves project agent via registry when source=project&scope=project', async () => {
+      await app.close()
+      const projectDir = path.join(temporaryRoot, '.claude')
+      mkdirSync(path.join(projectDir, 'agents'), { recursive: true })
+      writeFileSync(
+        path.join(projectDir, 'agents', 'write-docs.md'),
+        '---\nname: write-docs\ndescription: Write docs\n---\nprompt',
+      )
+
+      app = Fastify()
+      await app.register(agentsRoutes, {
+        agentsDir: tmpDir,
+        projectAgentsDir: null,
+        pluginsDir: path.join(temporaryRoot, '_plugins'),
+        claudeSettingsPaths: [path.join(temporaryRoot, '_settings.json')],
+        baseDir: temporaryRoot,
+        registry: buildRegistry(tmpDir, projectDir),
+      })
+      await app.ready()
+
+      const res = await app.inject({ method: 'GET', url: '/api/agents/write-docs?source=project&scope=project' })
+      expect(res.statusCode).toBe(200)
+      const body = res.json()
+      expect(body.agent.id).toBe('write-docs')
+      expect(body.agent.source).toBe('project')
+      expect(body.agent.scope).toBe('project')
+    })
+
     it('resolves opencode agent via registry when source=opencode', async () => {
       await app.close()
       const opencodeHome = path.join(temporaryRoot, 'oc-home')
