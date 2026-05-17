@@ -1,7 +1,9 @@
 // React Query hooks for skill inventory listing and detail queries.
 import { useQuery } from '@tanstack/react-query'
 
-import type { Skill } from '@ohmyc/shared'
+import { REGISTERED_ORIGINS, useSources } from '../state/sources'
+
+import type { Origin, Skill } from '@ohmyc/shared'
 import type { ItemLocator } from './use-agents'
 
 /** Shape of the GET /api/skills response. */
@@ -14,9 +16,18 @@ interface SkillDetailResponse {
   skill: Skill
 }
 
-/** Fetches all skills across store, plugins, and project sources. */
-async function fetchSkills(): Promise<Skill[]> {
-  const response = await fetch('/api/skills')
+/** Builds the sorted `origins=` query value, or null when the selection covers the full registered set. */
+function buildOriginsParam(selected: Set<Origin>): string | null {
+  if (selected.size === REGISTERED_ORIGINS.length) {
+    return null
+  }
+  return [...selected].toSorted().join(',')
+}
+
+/** Fetches all skills across store, plugins, and project sources, optionally filtered by origin. */
+async function fetchSkills(origins: string | null): Promise<Skill[]> {
+  const url = origins ? `/api/skills?origins=${origins}` : '/api/skills'
+  const response = await fetch(url)
   if (!response.ok) {
     throw new Error('Failed to fetch skills')
   }
@@ -45,11 +56,13 @@ async function fetchSkill(locator: ItemLocator): Promise<Skill> {
   return data.skill
 }
 
-/** Query hook for listing all skills. */
+/** Query hook for listing all skills, filtered by the active SourceSwitcher selection. */
 export function useSkills() {
+  const selected = useSources(state => state.selected)
+  const originsKey = buildOriginsParam(selected)
   return useQuery({
-    queryKey: ['skills'],
-    queryFn: fetchSkills,
+    queryKey: ['skills', originsKey ?? 'all'],
+    queryFn: () => fetchSkills(originsKey),
   })
 }
 
