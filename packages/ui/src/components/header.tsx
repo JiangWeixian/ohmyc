@@ -3,6 +3,7 @@ import { useLocation } from 'react-router-dom'
 
 import { ActiveProfileChip } from './active-profile-chip'
 import { CommandPaletteTrigger } from './command-palette-trigger'
+import { SourceSwitcher } from './source-switcher'
 import { cn } from '@/lib/utils'
 
 /** Derives breadcrumb labels from the current React Router pathname. */
@@ -72,6 +73,8 @@ interface HeaderProps {
 /** Top navigation bar with breadcrumb, command palette trigger, and active profile chip. */
 export function Header({ onCompare }: HeaderProps) {
   const breadcrumb = useBreadcrumb()
+  const { pathname } = useLocation()
+  const showSourceSwitcher = pathname.startsWith('/explore/')
 
   return (
     <header
@@ -90,6 +93,7 @@ export function Header({ onCompare }: HeaderProps) {
         )}
       </nav>
       <div className="flex items-center gap-3">
+        {showSourceSwitcher && <SourceSwitcher />}
         <CommandPaletteTrigger />
         <ActiveProfileChip onCompare={onCompare} />
       </div>
