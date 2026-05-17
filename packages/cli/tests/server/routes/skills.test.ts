@@ -18,6 +18,19 @@ import {
 } from 'vitest'
 
 import { skillsRoutes } from '@/server/routes/skills'
+import { ProviderRegistry } from '@/server/services/provider-registry'
+import { ClaudeProvider } from '@/server/services/providers/claude-provider'
+import { OpencodeProvider } from '@/server/services/providers/opencode-provider'
+
+function buildRegistry(skillsDir: string, projectDir?: string | null) {
+  const claude = new ClaudeProvider({
+    agentsGlobalDir: path.join(skillsDir, '..', 'agents'),
+    skillsGlobalDir: skillsDir,
+    commandsGlobalDir: path.join(skillsDir, '..', 'commands'),
+    projectDir: projectDir ?? null,
+  })
+  return new ProviderRegistry([claude])
+}
 
 describe('skills routes', () => {
   let temporaryRoot: string
@@ -40,6 +53,7 @@ describe('skills routes', () => {
       pluginsDir: path.join(temporaryRoot, '_plugins'),
       claudeSettingsPaths: [path.join(temporaryRoot, '_settings.json')],
       baseDir: temporaryRoot,
+      registry: buildRegistry(tmpDir),
     })
     await app.ready()
   })
@@ -117,6 +131,21 @@ describe('skills routes', () => {
       expect(skills.find((skill: any) => skill.id === 'local')?.source).toBe('local')
       expect(skills.find((skill: any) => skill.id === 'linked')?.source).toBe('profile')
     })
+
+    it('tags entries with origins[]', async () => {
+      createSkillDir('foo', '---\nname: foo\ndescription: a skill\n---\nbody')
+      const res = await app.inject({ method: 'GET', url: '/api/skills' })
+      expect(res.statusCode).toBe(200)
+      const body = res.json()
+      const foo = body.skills.find((s: any) => s.id === 'foo')
+      expect(foo?.origins).toEqual(['claude'])
+    })
+
+    it('?origins=opencode hides claude skills', async () => {
+      createSkillDir('foo', '---\nname: foo\ndescription: a skill\n---\nbody')
+      const res = await app.inject({ method: 'GET', url: '/api/skills?origins=opencode' })
+      expect(res.json().skills.find((s: any) => s.id === 'foo')).toBeUndefined()
+    })
   })
 
   describe('project-local loading', () => {
@@ -124,23 +153,24 @@ describe('skills routes', () => {
 
     beforeEach(async () => {
       await app.close()
-      projectDir = path.join(temporaryRoot, 'project-skills')
-      mkdirSync(projectDir, { recursive: true })
+      projectDir = path.join(temporaryRoot, '.claude')
+      mkdirSync(path.join(projectDir, 'skills'), { recursive: true })
       app = Fastify()
       await app.register(skillsRoutes, {
         skillsDir: tmpDir,
-        projectSkillsDir: projectDir,
+        projectSkillsDir: path.join(projectDir, 'skills'),
         pluginsDir: path.join(temporaryRoot, '_plugins'),
         claudeSettingsPaths: [path.join(temporaryRoot, '_settings.json')],
         baseDir: temporaryRoot,
+        registry: buildRegistry(tmpDir, projectDir),
       })
       await app.ready()
     })
 
     it('returns both global and project skills with correct scope', async () => {
       createSkillDir('global', '---\nname: global\ndescription: Global\n---\nprompt')
-      mkdirSync(path.join(projectDir, 'proj'), { recursive: true })
-      writeFileSync(path.join(projectDir, 'proj', 'SKILL.md'), '---\nname: proj\ndescription: Proj\n---\nprompt')
+      mkdirSync(path.join(projectDir, 'skills', 'proj'), { recursive: true })
+      writeFileSync(path.join(projectDir, 'skills', 'proj', 'SKILL.md'), '---\nname: proj\ndescription: Proj\n---\nprompt')
 
       const res = await app.inject({ method: 'GET', url: '/api/skills' })
       const { skills } = res.json()
@@ -155,8 +185,8 @@ describe('skills routes', () => {
 
     it('sorts project skill first when names collide', async () => {
       createSkillDir('shared', '---\nname: shared\ndescription: Global version\n---\nglobal')
-      mkdirSync(path.join(projectDir, 'shared'), { recursive: true })
-      writeFileSync(path.join(projectDir, 'shared', 'SKILL.md'), '---\nname: shared\ndescription: Project version\n---\nproject')
+      mkdirSync(path.join(projectDir, 'skills', 'shared'), { recursive: true })
+      writeFileSync(path.join(projectDir, 'skills', 'shared', 'SKILL.md'), '---\nname: shared\ndescription: Project version\n---\nproject')
 
       const res = await app.inject({ method: 'GET', url: '/api/skills' })
       const { skills } = res.json()
@@ -176,6 +206,7 @@ describe('skills routes', () => {
         pluginsDir: path.join(temporaryRoot, '_plugins'),
         claudeSettingsPaths: [path.join(temporaryRoot, '_settings.json')],
         baseDir: temporaryRoot,
+        registry: buildRegistry(tmpDir),
       })
       await app.ready()
 
@@ -197,6 +228,75 @@ describe('skills routes', () => {
       const res = await app.inject({ method: 'GET', url: '/api/skills/test' })
       expect(res.statusCode).toBe(200)
       expect(res.json().skill.id).toBe('test')
+    })
+
+    it('resolves project skill via registry when source=project&scope=project', async () => {
+      await app.close()
+      const projectDir = path.join(temporaryRoot, '.claude')
+      const projectSkillDir = path.join(projectDir, 'skills', 'write-docs')
+      mkdirSync(projectSkillDir, { recursive: true })
+      writeFileSync(
+        path.join(projectSkillDir, 'SKILL.md'),
+        '---\nname: write-docs\ndescription: Write docs\n---\nprompt',
+      )
+
+      app = Fastify()
+      await app.register(skillsRoutes, {
+        skillsDir: tmpDir,
+        projectSkillsDir: null,
+        pluginsDir: path.join(temporaryRoot, '_plugins'),
+        claudeSettingsPaths: [path.join(temporaryRoot, '_settings.json')],
+        baseDir: temporaryRoot,
+        registry: buildRegistry(tmpDir, projectDir),
+      })
+      await app.ready()
+
+      const res = await app.inject({ method: 'GET', url: '/api/skills/write-docs?source=project&scope=project' })
+      expect(res.statusCode).toBe(200)
+      const body = res.json()
+      expect(body.skill.id).toBe('write-docs')
+      expect(body.skill.source).toBe('project')
+      expect(body.skill.scope).toBe('project')
+    })
+
+    it('resolves opencode skill via registry when source=opencode', async () => {
+      await app.close()
+      const opencodeHome = path.join(temporaryRoot, 'oc-home')
+      const opencodeSkillsDir = path.join(opencodeHome, '.config', 'opencode', 'skills', 'fixture-skill')
+      mkdirSync(opencodeSkillsDir, { recursive: true })
+      writeFileSync(
+        path.join(opencodeSkillsDir, 'SKILL.md'),
+        '---\nname: fixture-skill\ndescription: An opencode skill\n---\nprompt',
+      )
+
+      const claude = new ClaudeProvider({
+        agentsGlobalDir: path.join(tmpDir, '..', 'agents'),
+        skillsGlobalDir: tmpDir,
+        commandsGlobalDir: path.join(tmpDir, '..', 'commands'),
+        projectDir: null,
+      })
+      const opencode = new OpencodeProvider({
+        home: opencodeHome,
+        platform: 'linux',
+        cwd: opencodeHome,
+      })
+
+      app = Fastify()
+      await app.register(skillsRoutes, {
+        skillsDir: tmpDir,
+        pluginsDir: path.join(temporaryRoot, '_plugins'),
+        claudeSettingsPaths: [path.join(temporaryRoot, '_settings.json')],
+        baseDir: temporaryRoot,
+        registry: new ProviderRegistry([claude, opencode]),
+      })
+      await app.ready()
+
+      const res = await app.inject({ method: 'GET', url: '/api/skills/fixture-skill?source=opencode' })
+      expect(res.statusCode).toBe(200)
+      const body = res.json()
+      expect(body.skill.id).toBe('fixture-skill')
+      expect(body.skill.source).toBe('opencode')
+      expect(body.skill.origins).toEqual(['opencode'])
     })
   })
 })

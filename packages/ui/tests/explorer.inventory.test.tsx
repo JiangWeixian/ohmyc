@@ -1,4 +1,4 @@
-import { screen } from '@testing-library/react'
+import { fireEvent, screen } from '@testing-library/react'
 import React from 'react'
 import { Route, Routes } from 'react-router-dom'
 import {
@@ -11,9 +11,26 @@ import {
 import { renderWithProviders } from './test/render-with-providers'
 import { Explorer } from '@/explorer'
 
+const opencodeAgentFixture = {
+  id: 'opencode-agent',
+  source: 'opencode' as const,
+  scope: 'user' as const,
+  pluginId: null,
+  filePath: '/tmp/opencode-agent.md',
+  content: '# Opencode agent',
+  frontmatter: {
+    name: 'opencode-agent',
+    description: 'An opencode agent with mode + permission',
+    mode: 'primary',
+    permission: { edit: 'deny', bash: 'ask' },
+  },
+  origins: ['opencode'],
+  badges: [],
+}
+
 vi.mock('@/hooks/use-agents', () => ({
-  useAgents: () => ({ data: [], isLoading: false, isError: false }),
-  useAgent: () => ({ data: null }),
+  useAgents: () => ({ data: [opencodeAgentFixture], isLoading: false, isError: false }),
+  useAgent: () => ({ data: opencodeAgentFixture }),
 }))
 
 vi.mock('@/hooks/use-skills', () => ({
@@ -129,6 +146,29 @@ describe('Explorer inventory views', () => {
     expect(screen.getAllByText('Hooks').length).toBeGreaterThan(0)
     expect(screen.getAllByText('MCP servers').length).toBeGreaterThan(0)
     expect(screen.getAllByText('LSP servers').length).toBeGreaterThan(0)
+  })
+
+  it('renders flattened permission.* rows and mode in the detail panel for opencode agents', async () => {
+    renderWithProviders(
+      <Routes>
+        <Route path="/explore/:tab" element={<Explorer />} />
+      </Routes>,
+      { route: '/explore/agents' },
+    )
+
+    // Click the agent card to open the detail panel.
+    const card = screen.getByText('opencode-agent')
+    fireEvent.click(card)
+
+    // mode + primary
+    expect(screen.getByText('mode')).toBeInTheDocument()
+    expect(screen.getByText('primary')).toBeInTheDocument()
+    // permission.edit + deny
+    expect(screen.getByText('permission.edit')).toBeInTheDocument()
+    expect(screen.getByText('deny')).toBeInTheDocument()
+    // permission.bash + ask
+    expect(screen.getByText('permission.bash')).toBeInTheDocument()
+    expect(screen.getByText('ask')).toBeInTheDocument()
   })
 
   it('does not show environment summary on hooks tab', () => {

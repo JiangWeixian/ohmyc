@@ -1,5 +1,6 @@
 import { z } from 'zod'
 
+import { OriginEnum, RenderBadgeSchema } from './provider'
 import { StoreComponentProvenanceSchema } from './store-schema'
 
 export const SAFE_NAME_PATTERN = /^[\w-]+$/
@@ -34,6 +35,8 @@ export const AgentSchema = z.object({
   scope: ScopeEnum.optional(),
   pluginId: z.string().optional(),
   provenance: StoreComponentProvenanceSchema.optional(),
+  origins: z.array(OriginEnum).optional(),
+  badges: z.array(RenderBadgeSchema).optional(),
 })
 
 export const CreateAgentBodySchema = z.object({

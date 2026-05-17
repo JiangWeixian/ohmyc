@@ -1,6 +1,7 @@
 import { z } from 'zod'
 
 import { ScopeEnum } from './agent-schema'
+import { OriginEnum, RenderBadgeSchema } from './provider'
 import { StoreComponentProvenanceSchema } from './store-schema'
 
 export const SkillFrontmatterSchema = z.object({
@@ -27,6 +28,8 @@ export const SkillSchema = z.object({
   scope: ScopeEnum.optional(),
   pluginId: z.string().optional(),
   provenance: StoreComponentProvenanceSchema.optional(),
+  origins: z.array(OriginEnum).optional(),
+  badges: z.array(RenderBadgeSchema).optional(),
 })
 
 export const CreateSkillBodySchema = z.object({

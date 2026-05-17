@@ -18,6 +18,19 @@ import {
 } from 'vitest'
 
 import { agentsRoutes } from '@/server/routes/agents'
+import { ProviderRegistry } from '@/server/services/provider-registry'
+import { ClaudeProvider } from '@/server/services/providers/claude-provider'
+import { OpencodeProvider } from '@/server/services/providers/opencode-provider'
+
+function buildRegistry(agentsDir: string, projectDir?: string | null) {
+  const claude = new ClaudeProvider({
+    agentsGlobalDir: agentsDir,
+    skillsGlobalDir: path.join(agentsDir, '..', 'skills'),
+    commandsGlobalDir: path.join(agentsDir, '..', 'commands'),
+    projectDir: projectDir ?? null,
+  })
+  return new ProviderRegistry([claude])
+}
 
 describe('agents routes', () => {
   let temporaryRoot: string
@@ -34,6 +47,7 @@ describe('agents routes', () => {
       pluginsDir: path.join(temporaryRoot, '_plugins'),
       claudeSettingsPaths: [path.join(temporaryRoot, '_settings.json')],
       baseDir: temporaryRoot,
+      registry: buildRegistry(tmpDir),
     })
     await app.ready()
   })
@@ -111,6 +125,67 @@ describe('agents routes', () => {
       expect(agents.find((agent: any) => agent.id === 'local')?.source).toBe('local')
       expect(agents.find((agent: any) => agent.id === 'linked')?.source).toBe('profile')
     })
+
+    it('tags each agent with origins: ["claude"]', async () => {
+      writeFileSync(path.join(tmpDir, 'alpha.md'),
+        '---\nname: alpha\ndescription: A\n---\nbody')
+
+      const res = await app.inject({ method: 'GET', url: '/api/agents' })
+      expect(res.statusCode).toBe(200)
+      const body = res.json()
+      const alpha = body.agents.find((a: any) => a.id === 'alpha')
+      expect(alpha?.origins).toEqual(['claude'])
+    })
+
+    it('attaches provider badges to each agent in the response', async () => {
+      // Stand up a separate fastify with claude + opencode providers wired in.
+      await app.close()
+      const opencodeHome = path.join(temporaryRoot, 'oc-home')
+      const opencodeAgentsDir = path.join(opencodeHome, '.config', 'opencode', 'agents')
+      mkdirSync(opencodeAgentsDir, { recursive: true })
+      writeFileSync(
+        path.join(opencodeAgentsDir, 'fixture-opencode.md'),
+        '---\nname: fixture-opencode\ndescription: An opencode agent\nmode: primary\n---\nprompt',
+      )
+
+      const claude = new ClaudeProvider({
+        agentsGlobalDir: tmpDir,
+        skillsGlobalDir: path.join(tmpDir, '..', 'skills'),
+        commandsGlobalDir: path.join(tmpDir, '..', 'commands'),
+        projectDir: null,
+      })
+      const opencode = new OpencodeProvider({
+        home: opencodeHome,
+        platform: 'linux',
+        cwd: opencodeHome,
+      })
+
+      app = Fastify()
+      await app.register(agentsRoutes, {
+        agentsDir: tmpDir,
+        pluginsDir: path.join(temporaryRoot, '_plugins'),
+        claudeSettingsPaths: [path.join(temporaryRoot, '_settings.json')],
+        baseDir: temporaryRoot,
+        registry: new ProviderRegistry([claude, opencode]),
+      })
+      await app.ready()
+
+      const response = await app.inject({ method: 'GET', url: '/api/agents' })
+      const body = response.json() as { agents: Array<{ id: string; badges: Array<{ kind: string; label: string }> }> }
+      const agent = body.agents.find(a => a.id === 'fixture-opencode')!
+      expect(agent).toBeDefined()
+      expect(agent.badges).toEqual(expect.arrayContaining([
+        expect.objectContaining({ kind: 'mono', label: 'primary' }),
+      ]))
+    })
+
+    it('?origins=opencode returns no claude agents', async () => {
+      writeFileSync(path.join(tmpDir, 'alpha.md'),
+        '---\nname: alpha\ndescription: A\n---\nbody')
+      const res = await app.inject({ method: 'GET', url: '/api/agents?origins=opencode' })
+      expect(res.statusCode).toBe(200)
+      expect(res.json().agents.find((a: any) => a.id === 'alpha')).toBeUndefined()
+    })
   })
 
   describe('project-local loading', () => {
@@ -118,22 +193,23 @@ describe('agents routes', () => {
 
     beforeEach(async () => {
       await app.close()
-      projectDir = path.join(temporaryRoot, 'project-agents')
-      mkdirSync(projectDir, { recursive: true })
+      projectDir = path.join(temporaryRoot, '.claude')
+      mkdirSync(path.join(projectDir, 'agents'), { recursive: true })
       app = Fastify()
       await app.register(agentsRoutes, {
         agentsDir: tmpDir,
-        projectAgentsDir: projectDir,
+        projectAgentsDir: path.join(projectDir, 'agents'),
         pluginsDir: path.join(temporaryRoot, '_plugins'),
         claudeSettingsPaths: [path.join(temporaryRoot, '_settings.json')],
         baseDir: temporaryRoot,
+        registry: buildRegistry(tmpDir, projectDir),
       })
       await app.ready()
     })
 
     it('returns both global and project agents with correct scope', async () => {
       writeFileSync(path.join(tmpDir, 'global.md'), '---\nname: global\ndescription: Global\n---\nprompt')
-      writeFileSync(path.join(projectDir, 'proj.md'), '---\nname: proj\ndescription: Proj\n---\nprompt')
+      writeFileSync(path.join(projectDir, 'agents', 'proj.md'), '---\nname: proj\ndescription: Proj\n---\nprompt')
 
       const res = await app.inject({ method: 'GET', url: '/api/agents' })
       const { agents } = res.json()
@@ -148,7 +224,7 @@ describe('agents routes', () => {
 
     it('sorts project agent first when names collide', async () => {
       writeFileSync(path.join(tmpDir, 'shared.md'), '---\nname: shared\ndescription: Global version\n---\nglobal')
-      writeFileSync(path.join(projectDir, 'shared.md'), '---\nname: shared\ndescription: Project version\n---\nproject')
+      writeFileSync(path.join(projectDir, 'agents', 'shared.md'), '---\nname: shared\ndescription: Project version\n---\nproject')
 
       const res = await app.inject({ method: 'GET', url: '/api/agents' })
       const { agents } = res.json()
@@ -168,6 +244,7 @@ describe('agents routes', () => {
         pluginsDir: path.join(temporaryRoot, '_plugins'),
         claudeSettingsPaths: [path.join(temporaryRoot, '_settings.json')],
         baseDir: temporaryRoot,
+        registry: buildRegistry(tmpDir),
       })
       await app.ready()
 
@@ -178,7 +255,7 @@ describe('agents routes', () => {
     })
 
     it('finds project agent by name with source=project', async () => {
-      writeFileSync(path.join(projectDir, 'proj.md'), '---\nname: proj\ndescription: Proj\n---\nprompt')
+      writeFileSync(path.join(projectDir, 'agents', 'proj.md'), '---\nname: proj\ndescription: Proj\n---\nprompt')
 
       const res = await app.inject({ method: 'GET', url: '/api/agents/proj?source=project' })
       expect(res.statusCode).toBe(200)
@@ -198,6 +275,77 @@ describe('agents routes', () => {
       const res = await app.inject({ method: 'GET', url: '/api/agents/test' })
       expect(res.statusCode).toBe(200)
       expect(res.json().agent.id).toBe('test')
+    })
+
+    it('resolves project agent via registry when source=project&scope=project', async () => {
+      await app.close()
+      const projectDir = path.join(temporaryRoot, '.claude')
+      mkdirSync(path.join(projectDir, 'agents'), { recursive: true })
+      writeFileSync(
+        path.join(projectDir, 'agents', 'write-docs.md'),
+        '---\nname: write-docs\ndescription: Write docs\n---\nprompt',
+      )
+
+      app = Fastify()
+      await app.register(agentsRoutes, {
+        agentsDir: tmpDir,
+        projectAgentsDir: null,
+        pluginsDir: path.join(temporaryRoot, '_plugins'),
+        claudeSettingsPaths: [path.join(temporaryRoot, '_settings.json')],
+        baseDir: temporaryRoot,
+        registry: buildRegistry(tmpDir, projectDir),
+      })
+      await app.ready()
+
+      const res = await app.inject({ method: 'GET', url: '/api/agents/write-docs?source=project&scope=project' })
+      expect(res.statusCode).toBe(200)
+      const body = res.json()
+      expect(body.agent.id).toBe('write-docs')
+      expect(body.agent.source).toBe('project')
+      expect(body.agent.scope).toBe('project')
+    })
+
+    it('resolves opencode agent via registry when source=opencode', async () => {
+      await app.close()
+      const opencodeHome = path.join(temporaryRoot, 'oc-home')
+      const opencodeAgentsDir = path.join(opencodeHome, '.config', 'opencode', 'agents')
+      mkdirSync(opencodeAgentsDir, { recursive: true })
+      writeFileSync(
+        path.join(opencodeAgentsDir, 'fixture-opencode.md'),
+        '---\nname: fixture-opencode\ndescription: An opencode agent\nmode: primary\n---\nprompt',
+      )
+
+      const claude = new ClaudeProvider({
+        agentsGlobalDir: tmpDir,
+        skillsGlobalDir: path.join(tmpDir, '..', 'skills'),
+        commandsGlobalDir: path.join(tmpDir, '..', 'commands'),
+        projectDir: null,
+      })
+      const opencode = new OpencodeProvider({
+        home: opencodeHome,
+        platform: 'linux',
+        cwd: opencodeHome,
+      })
+
+      app = Fastify()
+      await app.register(agentsRoutes, {
+        agentsDir: tmpDir,
+        pluginsDir: path.join(temporaryRoot, '_plugins'),
+        claudeSettingsPaths: [path.join(temporaryRoot, '_settings.json')],
+        baseDir: temporaryRoot,
+        registry: new ProviderRegistry([claude, opencode]),
+      })
+      await app.ready()
+
+      const res = await app.inject({ method: 'GET', url: '/api/agents/fixture-opencode?source=opencode' })
+      expect(res.statusCode).toBe(200)
+      const body = res.json()
+      expect(body.agent.id).toBe('fixture-opencode')
+      expect(body.agent.source).toBe('opencode')
+      expect(body.agent.origins).toEqual(['opencode'])
+      expect(body.agent.badges).toEqual(expect.arrayContaining([
+        expect.objectContaining({ kind: 'mono', label: 'primary' }),
+      ]))
     })
   })
 })

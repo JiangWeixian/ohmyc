@@ -403,8 +403,8 @@ The editor replaces the prior wall-of-cards layout. Three structural pieces — 
 - **Empty profile (new):** all chip clouds empty, all JSON editors empty, dirty bit only flips after first edit. Save button reads `Create profile` instead of `Save profile`.
 
 ### Wireframe reference
-- **Layout & Interaction wireframe:** `~/.gstack/projects/JiangWeixian-ohmyc/designs/layout-interaction-20260426/wireframe.html` — six screens: Profiles front door · ⌘K palette open · Compare side panel · Explorer view (chrome propagation) · Profiles → Agents store · Profile editor.
-- **Timeline wireframe:** `~/.gstack/projects/JiangWeixian-ohmyc/designs/timeline-20260430/wireframe.html` — single Timeline screen: sidebar entry, controls bar, 53×7 heatmap, day/project/session event list.
+- **Layout & Interaction wireframe index:** `~/.gstack/projects/JiangWeixian-claudeui/designs/layout-interaction-20260426/index.html` — 8 per-screen files: Profiles front door · ⌘K palette open · Compare side panel · Explorer view (chrome propagation + Source dropdown) · Profiles → Agents store · Profile editor · Agent detail · Agent editor.
+- **Timeline wireframe:** `~/.gstack/projects/JiangWeixian-claudeui/designs/timeline-20260430/wireframe.html` — single Timeline screen: sidebar entry, controls bar, 53×7 heatmap, day/project/session event list.
 - Open the relevant wireframe before changing the surfaces it covers — placement is settled there, not in this doc.
 
 ## Decisions Log
@@ -442,6 +442,8 @@ The editor replaces the prior wall-of-cards layout. Three structural pieces — 
 | 2026-05-01 | Expanded sessions use 28px indent + 1px `border-subtle` left rail, no connector lines | Vertical connectors read as gantt-energy; the rail is enough to communicate child-of-rollup |
 | 2026-05-01 | Day headings sticky with fade-to-bg gradient under them | Content slides under the heading without a hard rule; matches the "no decoration" rule for chrome separations |
 | 2026-05-01 | first_message summaries wrap in typographic quotes; auto summaries render plain | The quote marks are the trust signal — readers know unquoted text is a generated title and quoted text is what the user actually typed |
+| 2026-05-13 | Header gains Explorer-only Source switcher between ⌘K pill and active-profile chip | Default = all sources, persisted to `localStorage` as `ohmyc.sources`. Last-on guard prevents zero-state. Exception to header-chrome-uniformity rule because filter is Explorer-specific |
+| 2026-05-13 | EntityCard takes provider-supplied `badges`; per-entity-type switch removed | Schema branching belonged in the provider, not the card. Origin chip on the card header is `entity.origins.join(' · ')` so shared skills (claude · opencode · agents) read at a glance |
 
 ## Migration Checklist
 
