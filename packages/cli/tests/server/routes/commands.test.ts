@@ -20,6 +20,7 @@ import {
 import { commandsRoutes } from '@/server/routes/commands'
 import { ProviderRegistry } from '@/server/services/provider-registry'
 import { ClaudeProvider } from '@/server/services/providers/claude-provider'
+import { OpencodeProvider } from '@/server/services/providers/opencode-provider'
 
 function buildRegistry(commandsDir: string, projectDir?: string | null) {
   const claude = new ClaudeProvider({
@@ -215,6 +216,49 @@ describe('commands routes', () => {
       const res = await app.inject({ method: 'GET', url: '/api/commands/deploy' })
       expect(res.statusCode).toBe(200)
       expect(res.json().command.id).toBe('deploy')
+    })
+
+    it('resolves opencode command via registry when source=opencode', async () => {
+      await app.close()
+      const opencodeHome = path.join(temporaryRoot, 'oc-home')
+      const opencodeCommandsDir = path.join(opencodeHome, '.config', 'opencode', 'commands')
+      mkdirSync(opencodeCommandsDir, { recursive: true })
+      writeFileSync(
+        path.join(opencodeCommandsDir, 'create-mr.md'),
+        '---\nname: create-mr\ndescription: Create MR\nagent: build\n---\nprompt',
+      )
+
+      const claude = new ClaudeProvider({
+        agentsGlobalDir: path.join(tmpDir, '..', 'agents'),
+        skillsGlobalDir: path.join(tmpDir, '..', 'skills'),
+        commandsGlobalDir: tmpDir,
+        projectDir: null,
+      })
+      const opencode = new OpencodeProvider({
+        home: opencodeHome,
+        platform: 'linux',
+        cwd: opencodeHome,
+      })
+
+      app = Fastify()
+      await app.register(commandsRoutes, {
+        commandsDir: tmpDir,
+        pluginsDir: path.join(temporaryRoot, '_plugins'),
+        claudeSettingsPaths: [path.join(temporaryRoot, '_settings.json')],
+        baseDir: temporaryRoot,
+        registry: new ProviderRegistry([claude, opencode]),
+      })
+      await app.ready()
+
+      const res = await app.inject({ method: 'GET', url: '/api/commands/create-mr?source=opencode' })
+      expect(res.statusCode).toBe(200)
+      const body = res.json()
+      expect(body.command.id).toBe('create-mr')
+      expect(body.command.source).toBe('opencode')
+      expect(body.command.origins).toEqual(['opencode'])
+      expect(body.command.badges).toEqual(expect.arrayContaining([
+        expect.objectContaining({ kind: 'mono', label: 'build' }),
+      ]))
     })
   })
 })

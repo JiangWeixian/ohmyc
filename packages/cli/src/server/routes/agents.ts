@@ -5,9 +5,11 @@ import { PluginResolver } from '../services/plugin-resolver'
 import { resolveInventorySource } from './inventory-source'
 import { parseOriginsQuery } from './origins-query'
 
-import type { ParsedAgent } from '@ohmyc/shared'
+import type { Origin, ParsedAgent } from '@ohmyc/shared'
 import type { FastifyPluginAsync } from 'fastify'
 import type { ProviderRegistry } from '../services/provider-registry'
+
+const PROVIDER_ORIGINS: readonly Origin[] = ['claude', 'opencode', 'agents']
 
 interface AgentsRoutesOptions {
   agentsDir: string
@@ -103,6 +105,26 @@ export const agentsRoutes: FastifyPluginAsync<AgentsRoutesOptions> = async (fast
   fastify.get<{ Params: { name: string }; Querystring: { source?: string; pluginId?: string; scope?: string } }>('/api/agents/:name', async (request, reply) => {
     const { name } = request.params
     const { source, pluginId, scope } = request.query
+
+    if (options.registry && source && (PROVIDER_ORIGINS as readonly string[]).includes(source)) {
+      const origin = source as Origin
+      const entries = await options.registry.listAgents({ origins: [origin] })
+      const match = entries.find(e => e.data.id === name)
+      if (match) {
+        const provider = options.registry.getProvider(origin)
+        const badges = provider ? provider.agentBadges(match.data) : []
+        return {
+          agent: {
+            ...match.data,
+            origins: match.origins,
+            scope: match.scope,
+            source,
+            badges,
+          },
+        }
+      }
+      return reply.status(404).send({ error: 'Agent not found' })
+    }
 
     if (source === 'plugin' && pluginId) {
       const pluginPaths = await resolver.getEnabledPluginPaths()

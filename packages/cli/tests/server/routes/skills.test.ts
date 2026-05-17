@@ -20,6 +20,7 @@ import {
 import { skillsRoutes } from '@/server/routes/skills'
 import { ProviderRegistry } from '@/server/services/provider-registry'
 import { ClaudeProvider } from '@/server/services/providers/claude-provider'
+import { OpencodeProvider } from '@/server/services/providers/opencode-provider'
 
 function buildRegistry(skillsDir: string, projectDir?: string | null) {
   const claude = new ClaudeProvider({
@@ -227,6 +228,46 @@ describe('skills routes', () => {
       const res = await app.inject({ method: 'GET', url: '/api/skills/test' })
       expect(res.statusCode).toBe(200)
       expect(res.json().skill.id).toBe('test')
+    })
+
+    it('resolves opencode skill via registry when source=opencode', async () => {
+      await app.close()
+      const opencodeHome = path.join(temporaryRoot, 'oc-home')
+      const opencodeSkillsDir = path.join(opencodeHome, '.config', 'opencode', 'skills', 'fixture-skill')
+      mkdirSync(opencodeSkillsDir, { recursive: true })
+      writeFileSync(
+        path.join(opencodeSkillsDir, 'SKILL.md'),
+        '---\nname: fixture-skill\ndescription: An opencode skill\n---\nprompt',
+      )
+
+      const claude = new ClaudeProvider({
+        agentsGlobalDir: path.join(tmpDir, '..', 'agents'),
+        skillsGlobalDir: tmpDir,
+        commandsGlobalDir: path.join(tmpDir, '..', 'commands'),
+        projectDir: null,
+      })
+      const opencode = new OpencodeProvider({
+        home: opencodeHome,
+        platform: 'linux',
+        cwd: opencodeHome,
+      })
+
+      app = Fastify()
+      await app.register(skillsRoutes, {
+        skillsDir: tmpDir,
+        pluginsDir: path.join(temporaryRoot, '_plugins'),
+        claudeSettingsPaths: [path.join(temporaryRoot, '_settings.json')],
+        baseDir: temporaryRoot,
+        registry: new ProviderRegistry([claude, opencode]),
+      })
+      await app.ready()
+
+      const res = await app.inject({ method: 'GET', url: '/api/skills/fixture-skill?source=opencode' })
+      expect(res.statusCode).toBe(200)
+      const body = res.json()
+      expect(body.skill.id).toBe('fixture-skill')
+      expect(body.skill.source).toBe('opencode')
+      expect(body.skill.origins).toEqual(['opencode'])
     })
   })
 })
