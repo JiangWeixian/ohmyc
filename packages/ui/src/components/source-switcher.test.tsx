@@ -10,19 +10,6 @@ import {
 import { REGISTERED_ORIGINS, useSources } from '../state/sources'
 import { SourceSwitcher } from './source-switcher'
 
-// jsdom doesn't implement these PointerEvent APIs that Radix uses; stub them
-// so dropdown-menu interactions work under test.
-beforeEach(() => {
-  if (!('PointerEvent' in globalThis)) {
-    // @ts-expect-error – minimal polyfill is sufficient for Radix's checks
-    globalThis.PointerEvent = MouseEvent
-  }
-  Element.prototype.hasPointerCapture = Element.prototype.hasPointerCapture ?? (() => false)
-  Element.prototype.releasePointerCapture = Element.prototype.releasePointerCapture ?? (() => {})
-  Element.prototype.setPointerCapture = Element.prototype.setPointerCapture ?? (() => {})
-  Element.prototype.scrollIntoView = Element.prototype.scrollIntoView ?? (() => {})
-})
-
 describe('SourceSwitcher', () => {
   beforeEach(() => {
     localStorage.clear()

@@ -9,6 +9,7 @@ import {
   DropdownMenuContent,
   DropdownMenuTrigger,
 } from './ui/dropdown-menu'
+import { cn } from '@/lib/utils'
 
 import type { Origin } from '@ohmyc/shared'
 
@@ -36,13 +37,13 @@ export function SourceSwitcher() {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger
-        className={[
+        className={cn(
           'inline-flex h-7 items-center gap-1.5 rounded-md px-2.5',
           'text-[13px] text-[var(--text-secondary)]',
           'bg-[rgba(255,255,255,0.02)] border border-[rgba(255,255,255,0.08)]',
           'hover:bg-[rgba(255,255,255,0.04)] hover:text-[var(--text-primary)]',
           'transition-colors duration-150',
-        ].join(' ')}
+        )}
       >
         <span className="text-[var(--text-tertiary)]">Source:</span>
         <span>{buttonLabel(selected)}</span>
