@@ -235,8 +235,29 @@ export function Explorer({ viewSwitcher }: ExplorerProperties) {
       if (typeof fm.model === 'string') {
         meta.push({ label: 'model', value: fm.model })
       }
+      if (typeof fm.mode === 'string') {
+        meta.push({ label: 'mode', value: fm.mode })
+      }
       if (Array.isArray(fm.tools) && fm.tools.length > 0) {
         meta.push({ label: 'tools', value: (fm.tools as string[]).join(', ') })
+      }
+      // Flatten one-level objects so opencode's permission: { edit, bash } shows
+      // as permission.edit / permission.bash rows. Skip hooks/mcpServers — those
+      // are nested config blobs the detail panel surfaces elsewhere.
+      for (const [key, value] of Object.entries(fm)) {
+        if (
+          value
+          && typeof value === 'object'
+          && !Array.isArray(value)
+          && key !== 'hooks'
+          && key !== 'mcpServers'
+        ) {
+          for (const [subKey, subValue] of Object.entries(value as Record<string, unknown>)) {
+            if (typeof subValue === 'string' || typeof subValue === 'number' || typeof subValue === 'boolean') {
+              meta.push({ label: `${key}.${subKey}`, value: String(subValue) })
+            }
+          }
+        }
       }
       if (selectedEntity.provenance?.importPath) {
         const date = selectedEntity.provenance.importedAt
