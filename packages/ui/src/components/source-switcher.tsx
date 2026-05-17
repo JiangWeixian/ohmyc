@@ -38,7 +38,7 @@ export function SourceSwitcher() {
     <DropdownMenu>
       <DropdownMenuTrigger
         className={cn(
-          'inline-flex h-7 items-center gap-1.5 rounded-md px-2.5',
+          'inline-flex h-9 items-center gap-1.5 rounded-md px-3',
           'text-[13px] text-[var(--text-secondary)]',
           'bg-[rgba(255,255,255,0.02)] border border-[rgba(255,255,255,0.08)]',
           'hover:bg-[rgba(255,255,255,0.04)] hover:text-[var(--text-primary)]',
