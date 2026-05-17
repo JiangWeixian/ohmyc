@@ -65,6 +65,3 @@ export function EntityCard({
     </Card>
   )
 }
-
-// Re-export Badge and MonoBadge from dedicated file for backward compatibility
-export { Badge, MonoBadge } from './badge'

@@ -41,8 +41,6 @@ import { cn } from '@/lib/utils'
 import type {
   Agent,
   Command,
-  Origin,
-  RenderBadge,
   Skill,
 } from '@ohmyc/shared'
 
@@ -291,8 +289,8 @@ export function Explorer({ viewSwitcher }: ExplorerProperties) {
                 iconAccentVar={entityConfig.iconAccentVar}
                 title={entityConfig.getTitle(entity as never) || ''}
                 description={entityConfig.getDescription(entity as never) || ''}
-                origins={(entity as { origins?: Origin[] }).origins}
-                renderBadges={(entity as { badges?: RenderBadge[] }).badges}
+                origins={entity.origins}
+                renderBadges={entity.badges}
                 onClick={() =>
                   setSelectedItem({
                     name: entity.id,
