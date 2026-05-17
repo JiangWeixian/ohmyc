@@ -18,6 +18,19 @@ import {
 } from 'vitest'
 
 import { commandsRoutes } from '@/server/routes/commands'
+import { ProviderRegistry } from '@/server/services/provider-registry'
+import { ClaudeProvider } from '@/server/services/providers/claude-provider'
+import { OpencodeProvider } from '@/server/services/providers/opencode-provider'
+
+function buildRegistry(commandsDir: string, projectDir?: string | null) {
+  const claude = new ClaudeProvider({
+    agentsGlobalDir: path.join(commandsDir, '..', 'agents'),
+    skillsGlobalDir: path.join(commandsDir, '..', 'skills'),
+    commandsGlobalDir: commandsDir,
+    projectDir: projectDir ?? null,
+  })
+  return new ProviderRegistry([claude])
+}
 
 describe('commands routes', () => {
   let temporaryRoot: string
@@ -34,6 +47,7 @@ describe('commands routes', () => {
       pluginsDir: path.join(temporaryRoot, '_plugins'),
       claudeSettingsPaths: [path.join(temporaryRoot, '_settings.json')],
       baseDir: temporaryRoot,
+      registry: buildRegistry(tmpDir),
     })
     await app.ready()
   })
@@ -107,6 +121,21 @@ describe('commands routes', () => {
       expect(commands.find((command: any) => command.id === 'local')?.source).toBe('local')
       expect(commands.find((command: any) => command.id === 'linked')?.source).toBe('profile')
     })
+
+    it('tags entries with origins: ["claude"]', async () => {
+      writeFileSync(path.join(tmpDir, 'hi.md'),
+        '---\nname: hi\ndescription: hello\n---\nbody')
+      const res = await app.inject({ method: 'GET', url: '/api/commands' })
+      expect(res.statusCode).toBe(200)
+      expect(res.json().commands.find((c: any) => c.id === 'hi')?.origins).toEqual(['claude'])
+    })
+
+    it('?origins=opencode hides claude commands', async () => {
+      writeFileSync(path.join(tmpDir, 'hi.md'),
+        '---\nname: hi\ndescription: hello\n---\nbody')
+      const res = await app.inject({ method: 'GET', url: '/api/commands?origins=opencode' })
+      expect(res.json().commands.find((c: any) => c.id === 'hi')).toBeUndefined()
+    })
   })
 
   describe('project-local loading', () => {
@@ -114,22 +143,23 @@ describe('commands routes', () => {
 
     beforeEach(async () => {
       await app.close()
-      projectDir = path.join(temporaryRoot, 'project-commands')
-      mkdirSync(projectDir, { recursive: true })
+      projectDir = path.join(temporaryRoot, '.claude')
+      mkdirSync(path.join(projectDir, 'commands'), { recursive: true })
       app = Fastify()
       await app.register(commandsRoutes, {
         commandsDir: tmpDir,
-        projectCommandsDir: projectDir,
+        projectCommandsDir: path.join(projectDir, 'commands'),
         pluginsDir: path.join(temporaryRoot, '_plugins'),
         claudeSettingsPaths: [path.join(temporaryRoot, '_settings.json')],
         baseDir: temporaryRoot,
+        registry: buildRegistry(tmpDir, projectDir),
       })
       await app.ready()
     })
 
     it('returns both global and project commands with correct scope', async () => {
       writeFileSync(path.join(tmpDir, 'global.md'), '---\nname: global\ndescription: Global\n---\nprompt')
-      writeFileSync(path.join(projectDir, 'proj.md'), '---\nname: proj\ndescription: Proj\n---\nprompt')
+      writeFileSync(path.join(projectDir, 'commands', 'proj.md'), '---\nname: proj\ndescription: Proj\n---\nprompt')
 
       const res = await app.inject({ method: 'GET', url: '/api/commands' })
       const { commands } = res.json()
@@ -142,9 +172,9 @@ describe('commands routes', () => {
       expect(proj.scope).toBe('project')
     })
 
-    it('sorts project command first when names collide', async () => {
+    it('sorts project command first when names coincide', async () => {
       writeFileSync(path.join(tmpDir, 'shared.md'), '---\nname: shared\ndescription: Global version\n---\nglobal')
-      writeFileSync(path.join(projectDir, 'shared.md'), '---\nname: shared\ndescription: Project version\n---\nproject')
+      writeFileSync(path.join(projectDir, 'commands', 'shared.md'), '---\nname: shared\ndescription: Project version\n---\nproject')
 
       const res = await app.inject({ method: 'GET', url: '/api/commands' })
       const { commands } = res.json()
@@ -164,6 +194,7 @@ describe('commands routes', () => {
         pluginsDir: path.join(temporaryRoot, '_plugins'),
         claudeSettingsPaths: [path.join(temporaryRoot, '_settings.json')],
         baseDir: temporaryRoot,
+        registry: buildRegistry(tmpDir),
       })
       await app.ready()
 
@@ -185,6 +216,77 @@ describe('commands routes', () => {
       const res = await app.inject({ method: 'GET', url: '/api/commands/deploy' })
       expect(res.statusCode).toBe(200)
       expect(res.json().command.id).toBe('deploy')
+    })
+
+    it('resolves project command via registry when source=project&scope=project', async () => {
+      await app.close()
+      const projectDir = path.join(temporaryRoot, '.claude')
+      mkdirSync(path.join(projectDir, 'commands'), { recursive: true })
+      writeFileSync(
+        path.join(projectDir, 'commands', 'deploy.md'),
+        '---\nname: deploy\ndescription: Deploy\n---\nprompt',
+      )
+
+      app = Fastify()
+      await app.register(commandsRoutes, {
+        commandsDir: tmpDir,
+        projectCommandsDir: null,
+        pluginsDir: path.join(temporaryRoot, '_plugins'),
+        claudeSettingsPaths: [path.join(temporaryRoot, '_settings.json')],
+        baseDir: temporaryRoot,
+        registry: buildRegistry(tmpDir, projectDir),
+      })
+      await app.ready()
+
+      const res = await app.inject({ method: 'GET', url: '/api/commands/deploy?source=project&scope=project' })
+      expect(res.statusCode).toBe(200)
+      const body = res.json()
+      expect(body.command.id).toBe('deploy')
+      expect(body.command.source).toBe('project')
+      expect(body.command.scope).toBe('project')
+    })
+
+    it('resolves opencode command via registry when source=opencode', async () => {
+      await app.close()
+      const opencodeHome = path.join(temporaryRoot, 'oc-home')
+      const opencodeCommandsDir = path.join(opencodeHome, '.config', 'opencode', 'commands')
+      mkdirSync(opencodeCommandsDir, { recursive: true })
+      writeFileSync(
+        path.join(opencodeCommandsDir, 'create-mr.md'),
+        '---\nname: create-mr\ndescription: Create MR\nagent: build\n---\nprompt',
+      )
+
+      const claude = new ClaudeProvider({
+        agentsGlobalDir: path.join(tmpDir, '..', 'agents'),
+        skillsGlobalDir: path.join(tmpDir, '..', 'skills'),
+        commandsGlobalDir: tmpDir,
+        projectDir: null,
+      })
+      const opencode = new OpencodeProvider({
+        home: opencodeHome,
+        platform: 'linux',
+        cwd: opencodeHome,
+      })
+
+      app = Fastify()
+      await app.register(commandsRoutes, {
+        commandsDir: tmpDir,
+        pluginsDir: path.join(temporaryRoot, '_plugins'),
+        claudeSettingsPaths: [path.join(temporaryRoot, '_settings.json')],
+        baseDir: temporaryRoot,
+        registry: new ProviderRegistry([claude, opencode]),
+      })
+      await app.ready()
+
+      const res = await app.inject({ method: 'GET', url: '/api/commands/create-mr?source=opencode' })
+      expect(res.statusCode).toBe(200)
+      const body = res.json()
+      expect(body.command.id).toBe('create-mr')
+      expect(body.command.source).toBe('opencode')
+      expect(body.command.origins).toEqual(['opencode'])
+      expect(body.command.badges).toEqual(expect.arrayContaining([
+        expect.objectContaining({ kind: 'mono', label: 'build' }),
+      ]))
     })
   })
 })

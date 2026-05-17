@@ -1,12 +1,23 @@
 // React Query hooks for command inventory listing and detail queries.
 import { useQuery } from '@tanstack/react-query'
 
-import type { Command } from '@ohmyc/shared'
+import { REGISTERED_ORIGINS, useSources } from '../state/sources'
+
+import type { Command, Origin } from '@ohmyc/shared'
 import type { ItemLocator } from './use-agents'
 
-/** Fetches all commands across store, plugins, and project sources. */
-async function fetchCommands(): Promise<Command[]> {
-  const response = await fetch('/api/commands')
+/** Builds the sorted `origins=` query value, or null when the selection covers the full registered set. */
+function buildOriginsParam(selected: Set<Origin>): string | null {
+  if (selected.size === REGISTERED_ORIGINS.length) {
+    return null
+  }
+  return [...selected].toSorted().join(',')
+}
+
+/** Fetches all commands across store, plugins, and project sources, optionally filtered by origin. */
+async function fetchCommands(origins: string | null): Promise<Command[]> {
+  const url = origins ? `/api/commands?origins=${origins}` : '/api/commands'
+  const response = await fetch(url)
   if (!response.ok) {
     throw new Error('Failed to fetch commands')
   }
@@ -35,9 +46,14 @@ async function fetchCommand(locator: ItemLocator): Promise<Command> {
   return data.command
 }
 
-/** Query hook for listing all commands. */
+/** Query hook for listing all commands, filtered by the active SourceSwitcher selection. */
 export function useCommands() {
-  return useQuery({ queryKey: ['commands'], queryFn: fetchCommands })
+  const selected = useSources(state => state.selected)
+  const originsKey = buildOriginsParam(selected)
+  return useQuery({
+    queryKey: ['commands', originsKey ?? 'all'],
+    queryFn: () => fetchCommands(originsKey),
+  })
 }
 
 /**

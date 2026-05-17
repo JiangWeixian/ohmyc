@@ -1,5 +1,6 @@
 // Fastify server factory — creates the HTTP server, registers API routes, and optionally serves static UI assets.
 import { existsSync } from 'node:fs'
+import os from 'node:os'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 
@@ -19,6 +20,10 @@ import { skillsRoutes } from './routes/skills'
 import { storeRoutes } from './routes/store'
 import { timelineRoutes } from './routes/timeline'
 import { ConfigLocator } from './services/config-locator'
+import { ProviderRegistry } from './services/provider-registry'
+import { AgentsSharedProvider } from './services/providers/agents-shared-provider'
+import { ClaudeProvider } from './services/providers/claude-provider'
+import { OpencodeProvider } from './services/providers/opencode-provider'
 
 // ESM-compatible __dirname replacement for resolving UI asset paths at runtime.
 const __filename = fileURLToPath(import.meta.url)
@@ -84,6 +89,22 @@ export async function createServer(options: CreateServerOptions = {}): Promise<F
   const serverCwd = options.cwd || process.cwd()
   const config = new ConfigLocator({ cwd: serverCwd })
 
+  const agentHome = process.env.AGENT_HOME ?? '.claude'
+  const claude = new ClaudeProvider({
+    agentsGlobalDir: config.agentsDir,
+    skillsGlobalDir: config.skillsDir,
+    commandsGlobalDir: config.commandsDir,
+    projectDir: config.projectPath,
+  })
+  const opencode = new OpencodeProvider({
+    home: os.homedir(),
+    platform: os.platform(),
+    cwd: serverCwd,
+  })
+  const agentsShared = new AgentsSharedProvider({ home: os.homedir(), cwd: serverCwd })
+
+  const registry = new ProviderRegistry([claude, opencode, agentsShared])
+
   // Health check + debug
   fastify.get('/health', async () => {
     return {
@@ -116,9 +137,9 @@ export async function createServer(options: CreateServerOptions = {}): Promise<F
 
   const claudeSettingsPaths = config.claudeSettingsPaths
 
-  await fastify.register(agentsRoutes, { agentsDir: config.agentsDir, projectAgentsDir: config.projectAgentsDir, pluginsDir: config.pluginsDir, claudeSettingsPaths, baseDir: config.baseDir })
-  await fastify.register(skillsRoutes, { skillsDir: config.skillsDir, projectSkillsDir: config.projectSkillsDir, pluginsDir: config.pluginsDir, claudeSettingsPaths, baseDir: config.baseDir })
-  await fastify.register(commandsRoutes, { commandsDir: config.commandsDir, projectCommandsDir: config.projectCommandsDir, pluginsDir: config.pluginsDir, claudeSettingsPaths, baseDir: config.baseDir })
+  await fastify.register(agentsRoutes, { agentsDir: config.agentsDir, projectAgentsDir: config.projectAgentsDir, pluginsDir: config.pluginsDir, claudeSettingsPaths, baseDir: config.baseDir, registry })
+  await fastify.register(skillsRoutes, { skillsDir: config.skillsDir, projectSkillsDir: config.projectSkillsDir, pluginsDir: config.pluginsDir, claudeSettingsPaths, baseDir: config.baseDir, registry })
+  await fastify.register(commandsRoutes, { commandsDir: config.commandsDir, projectCommandsDir: config.projectCommandsDir, pluginsDir: config.pluginsDir, claudeSettingsPaths, baseDir: config.baseDir, registry })
   await fastify.register(pluginsRoutes, { pluginsDir: config.pluginsDir, claudeSettingsPaths })
   await fastify.register(configsRoutes, { baseDir: config.baseDir, projectBaseDir: config.projectPath, pluginsDir: config.pluginsDir, claudeSettingsPaths })
   await fastify.register(profilesRoutes, { baseDir: config.baseDir, claudeSettingsPath: config.claudeSettingsPath, pluginsDir: config.pluginsDir })
