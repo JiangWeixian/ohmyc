@@ -51,3 +51,4 @@ coverage/
 
 # Worktrees
 .worktrees/
+packages/desktop/src-tauri/target/
