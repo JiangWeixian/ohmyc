@@ -48,6 +48,30 @@ pub fn position_under_tray(
     PhysicalPosition::new(x, y)
 }
 
+/// Popover visibility state.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum PopoverState {
+    Hidden,
+    Visible,
+}
+
+impl PopoverState {
+    pub fn toggle(self) -> Self {
+        match self {
+            Self::Hidden => Self::Visible,
+            Self::Visible => Self::Hidden,
+        }
+    }
+
+    pub fn show(self) -> Self {
+        Self::Visible
+    }
+
+    pub fn hide(self) -> Self {
+        Self::Hidden
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -95,5 +119,27 @@ mod tests {
         let win = PhysicalSize::new(360u32, 440u32);
         let pos = position_under_tray(tray, win, default_monitor());
         assert_eq!(pos.y, 28); // 24 (tray height) + 4 (gap)
+    }
+
+    #[test]
+    fn test_popover_state_toggle_from_hidden() {
+        assert_eq!(PopoverState::Hidden.toggle(), PopoverState::Visible);
+    }
+
+    #[test]
+    fn test_popover_state_toggle_from_visible() {
+        assert_eq!(PopoverState::Visible.toggle(), PopoverState::Hidden);
+    }
+
+    #[test]
+    fn test_popover_state_show_is_idempotent() {
+        assert_eq!(PopoverState::Hidden.show(), PopoverState::Visible);
+        assert_eq!(PopoverState::Visible.show(), PopoverState::Visible);
+    }
+
+    #[test]
+    fn test_popover_state_hide_is_idempotent() {
+        assert_eq!(PopoverState::Visible.hide(), PopoverState::Hidden);
+        assert_eq!(PopoverState::Hidden.hide(), PopoverState::Hidden);
     }
 }
