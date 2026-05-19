@@ -1,7 +1,5 @@
-use serde::Serialize;
-
 /// Identifier for tray menu items. Used to dispatch on click in main.rs.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum TrayMenuId {
     Quit,
 }
@@ -13,7 +11,7 @@ impl TrayMenuId {
         }
     }
 
-    pub fn from_str(s: &str) -> Option<Self> {
+    pub fn from_id(s: &str) -> Option<Self> {
         match s {
             "quit" => Some(Self::Quit),
             _ => None,
@@ -52,13 +50,13 @@ mod tests {
         let id = TrayMenuId::Quit;
         let s = id.as_str();
         assert_eq!(s, "quit");
-        assert_eq!(TrayMenuId::from_str(s), Some(id));
+        assert_eq!(TrayMenuId::from_id(s), Some(id));
     }
 
     #[test]
     fn test_tray_menu_id_from_unknown_string() {
-        assert_eq!(TrayMenuId::from_str("invalid"), None);
-        assert_eq!(TrayMenuId::from_str(""), None);
+        assert_eq!(TrayMenuId::from_id("invalid"), None);
+        assert_eq!(TrayMenuId::from_id(""), None);
     }
 
     #[test]
