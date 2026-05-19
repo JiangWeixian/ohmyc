@@ -12,6 +12,7 @@ struct PopoverGuard(Mutex<PopoverState>);
 fn main() {
     tauri::Builder::default()
         .manage(PopoverGuard(Mutex::new(PopoverState::Hidden)))
+        .invoke_handler(tauri::generate_handler![hide_popover])
         .setup(|app| {
             #[cfg(target_os = "macos")]
             app.set_activation_policy(tauri::ActivationPolicy::Accessory);
@@ -92,6 +93,15 @@ fn main() {
         })
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
+}
+
+#[tauri::command]
+fn hide_popover(app: tauri::AppHandle) {
+    if let Some(win) = app.get_webview_window("popover") {
+        // Hide outside the lock to mirror toggle_popover's reentrancy-safe pattern.
+        let _ = win.hide();
+        *app.state::<PopoverGuard>().0.lock().unwrap() = PopoverState::Hidden;
+    }
 }
 
 fn toggle_popover(app: &tauri::AppHandle, tray: TrayRect) {
