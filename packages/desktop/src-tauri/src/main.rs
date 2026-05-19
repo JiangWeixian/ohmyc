@@ -52,16 +52,18 @@ fn main() {
                             return;
                         };
                         let app = tray.app_handle();
-                        let pos = rect.position.to_physical::<i32>(1.0);
-                        let sz = rect.size.to_physical::<u32>(1.0);
                         match click {
                             TrayClick::Left => {
+                                let pos = rect.position.to_physical::<i32>(1.0);
+                                let sz = rect.size.to_physical::<u32>(1.0);
                                 toggle_popover(
                                     app,
-                                    pos.x,
-                                    pos.y,
-                                    sz.width,
-                                    sz.height,
+                                    TrayRect {
+                                        x: pos.x,
+                                        y: pos.y,
+                                        width: sz.width,
+                                        height: sz.height,
+                                    },
                                 );
                             }
                             TrayClick::Right => {
@@ -92,18 +94,18 @@ fn main() {
         .expect("error while running tauri application");
 }
 
-fn toggle_popover(
-    app: &tauri::AppHandle,
-    tray_x: i32,
-    tray_y: i32,
-    tray_w: u32,
-    tray_h: u32,
-) {
+fn toggle_popover(app: &tauri::AppHandle, tray: TrayRect) {
     let guard = app.state::<PopoverGuard>();
-    let mut state = guard.0.lock().unwrap();
     let Some(window) = app.get_webview_window("popover") else { return };
 
-    match *state {
+    // Snapshot current state, drop lock before Tauri calls (avoid reentrancy
+    // if WindowEvent::Focused fires synchronously and re-acquires the lock).
+    let action = {
+        let state = guard.0.lock().unwrap();
+        *state
+    };
+
+    match action {
         PopoverState::Hidden => {
             let size = window.outer_size().unwrap_or(PhysicalSize::new(360, 440));
             let monitor = window
@@ -116,28 +118,17 @@ fn toggle_popover(
                     width: m.size().width,
                     height: m.size().height,
                 })
-                .unwrap_or(MonitorBounds {
-                    x: 0,
-                    y: 0,
-                    width: 1920,
-                    height: 1080,
-                });
+                .unwrap_or(MonitorBounds { x: 0, y: 0, width: 1920, height: 1080 });
 
-            let tray = TrayRect {
-                x: tray_x,
-                y: tray_y,
-                width: tray_w,
-                height: tray_h,
-            };
             let pos = position_under_tray(tray, size, monitor);
             let _ = window.set_position(pos);
             let _ = window.show();
             let _ = window.set_focus();
-            *state = state.show();
+            *guard.0.lock().unwrap() = PopoverState::Visible;
         }
         PopoverState::Visible => {
             let _ = window.hide();
-            *state = state.hide();
+            *guard.0.lock().unwrap() = PopoverState::Hidden;
         }
     }
 }
