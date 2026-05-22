@@ -138,6 +138,42 @@ export function useTimelineHeatmap(params: {
 }
 
 /**
+ * Date-range variant of {@link useTimelineHeatmap}. Accepts arbitrary
+ * ISO date strings (`YYYY-MM-DD`). Used by the menubar popover, which
+ * needs a 7-day window not aligned to a calendar year.
+ *
+ * @param params.from - Inclusive start date (ISO YYYY-MM-DD).
+ * @param params.to - Inclusive end date (ISO YYYY-MM-DD).
+ * @param params.metric - Which metric to aggregate.
+ * @param params.project - Optional project filter.
+ */
+export function useTimelineHeatmapRange(params: {
+  from: string
+  to: string
+  metric: TimelineMetric
+  project?: string
+}) {
+  const { from, to, metric, project } = params
+  const fromMs = isoDateToUtcMs(from)
+  const toMs = isoDateToUtcMs(to)
+  const qs = new URLSearchParams({
+    from: String(fromMs),
+    to: String(toMs),
+    metric,
+  })
+  if (project) {
+    qs.set('project', project)
+  }
+  return useQuery({
+    queryKey: ['timeline', 'heatmap-range', from, to, metric, project ?? null],
+    queryFn: () =>
+      fetchJson<{ data: HeatmapPoint[] }>(`/api/timeline/heatmap?${qs.toString()}`).then(
+        r => r.data,
+      ),
+  })
+}
+
+/**
  * Query hook for paginated session events grouped by day.
  * @param params.project - Optional project filter.
  * @param params.year - Optional year filter.
