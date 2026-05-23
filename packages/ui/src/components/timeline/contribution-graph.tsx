@@ -48,11 +48,13 @@ function formatDay(date: string): string {
   return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric', timeZone: 'UTC' })
 }
 
-interface ContributionGraphProps {
+export interface ContributionGraphProps {
   year: number
   metric: TimelineMetric
   data: HeatmapPoint[]
   onSelectDay?: (date: string) => void
+  /** Compact mode for the menubar popover: hides month/day-of-week labels and the legend; shrinks cells. */
+  compact?: boolean
 }
 
 /**
@@ -60,7 +62,9 @@ interface ContributionGraphProps {
  * relative to the maximum value in the dataset. Clicking a cell calls
  * onSelectDay so the parent can scroll the event list to that date.
  */
-export function ContributionGraph({ year, metric, data, onSelectDay }: ContributionGraphProps) {
+export function ContributionGraph({ year, metric, data, onSelectDay, compact = false }: ContributionGraphProps) {
+  const CELL_SIZE = compact ? 6 : 10
+  const CELL_GAP = compact ? 2 : 4
   const [hover, setHover] = useState<{
     x: number
     y: number
@@ -140,58 +144,70 @@ export function ContributionGraph({ year, metric, data, onSelectDay }: Contribut
 
   return (
     <div className="rounded-[10px] border border-[var(--border-default)] bg-[rgba(255,255,255,0.02)] px-[22px] py-[18px]">
-      <div className="relative" style={{ display: 'grid', gridTemplateColumns: '18px 1fr', gridTemplateRows: '16px 1fr', gap: 4 }}>
+      <div
+        className="relative"
+        style={{
+          display: 'grid',
+          gridTemplateColumns: compact ? '1fr' : '18px 1fr',
+          gridTemplateRows: compact ? '1fr' : '16px 1fr',
+          gap: CELL_GAP,
+        }}
+      >
         {/* Months strip */}
-        <div
-          style={{
-            gridColumn: 2,
-            display: 'flex',
-            fontSize: 10,
-            fontWeight: 510,
-            color: 'var(--text-quaternary)',
-            fontFamily: 'Berkeley Mono, ui-monospace, SF Mono, Menlo, monospace',
-            letterSpacing: '0.04em',
-            textTransform: 'uppercase',
-          }}
-        >
-          {monthSpans.map((s, i) => (
-            <span key={i} style={{ flex: `0 0 ${s.weeks * 14}px` }}>{s.label}</span>
-          ))}
-        </div>
+        {!compact && (
+          <div
+            style={{
+              gridColumn: 2,
+              display: 'flex',
+              fontSize: 10,
+              fontWeight: 510,
+              color: 'var(--text-quaternary)',
+              fontFamily: 'Berkeley Mono, ui-monospace, SF Mono, Menlo, monospace',
+              letterSpacing: '0.04em',
+              textTransform: 'uppercase',
+            }}
+          >
+            {monthSpans.map((s, i) => (
+              <span key={i} data-month-label={s.label || undefined} style={{ flex: `0 0 ${s.weeks * 14}px` }}>{s.label}</span>
+            ))}
+          </div>
+        )}
 
         {/* Day-of-week labels */}
-        <div
-          style={{
-            gridColumn: 1,
-            gridRow: 2,
-            display: 'grid',
-            gridTemplateRows: 'repeat(7, 10px)',
-            gap: 4,
-            fontSize: 9,
-            fontWeight: 510,
-            color: 'var(--text-quaternary)',
-            fontFamily: 'Berkeley Mono, ui-monospace, SF Mono, Menlo, monospace',
-            textTransform: 'uppercase',
-            alignItems: 'center',
-          }}
-        >
-          {DOW_LABELS.map((label, i) => (
-            <span key={i} style={{ lineHeight: '10px', height: 10, visibility: label ? 'visible' : 'hidden' }}>
-              {label}
-            </span>
-          ))}
-        </div>
+        {!compact && (
+          <div
+            style={{
+              gridColumn: 1,
+              gridRow: 2,
+              display: 'grid',
+              gridTemplateRows: `repeat(7, ${CELL_SIZE}px)`,
+              gap: CELL_GAP,
+              fontSize: 9,
+              fontWeight: 510,
+              color: 'var(--text-quaternary)',
+              fontFamily: 'Berkeley Mono, ui-monospace, SF Mono, Menlo, monospace',
+              textTransform: 'uppercase',
+              alignItems: 'center',
+            }}
+          >
+            {DOW_LABELS.map((label, i) => (
+              <span key={i} style={{ lineHeight: `${CELL_SIZE}px`, height: CELL_SIZE, visibility: label ? 'visible' : 'hidden' }}>
+                {label}
+              </span>
+            ))}
+          </div>
+        )}
 
         {/* Cells grid */}
         <div
           style={{
-            gridColumn: 2,
-            gridRow: 2,
+            gridColumn: compact ? 1 : 2,
+            gridRow: compact ? 1 : 2,
             display: 'grid',
-            gridTemplateColumns: 'repeat(53, 10px)',
-            gridTemplateRows: 'repeat(7, 10px)',
+            gridTemplateColumns: `repeat(53, ${CELL_SIZE}px)`,
+            gridTemplateRows: `repeat(7, ${CELL_SIZE}px)`,
             gridAutoFlow: 'column',
-            gap: 4,
+            gap: CELL_GAP,
           }}
         >
           {cells.map((c, i) => {
@@ -200,6 +216,7 @@ export function ContributionGraph({ year, metric, data, onSelectDay }: Contribut
             return (
               <div
                 key={i}
+                data-heat-cell
                 role={c.inYear && c.value > 0 ? 'button' : undefined}
                 onClick={() => {
                   if (c.inYear && c.value > 0 && onSelectDay) {
@@ -221,8 +238,8 @@ export function ContributionGraph({ year, metric, data, onSelectDay }: Contribut
                 onMouseLeave={() => setHover(null)}
                 className={`heat-cell ${cls}`}
                 style={{
-                  width: 10,
-                  height: 10,
+                  width: CELL_SIZE,
+                  height: CELL_SIZE,
                   borderRadius: 2,
                   cursor: c.inYear && c.value > 0 ? 'pointer' : 'default',
                 }}
@@ -262,23 +279,25 @@ export function ContributionGraph({ year, metric, data, onSelectDay }: Contribut
         )}
       </div>
 
-      <div
-        className="mt-[14px] flex items-center justify-between text-[11px] text-[var(--text-tertiary)]"
-        style={{ fontFamily: 'Berkeley Mono, ui-monospace, SF Mono, Menlo, monospace' }}
-      >
-        <span>
-          Jan 1 → Dec 31, {year}
-        </span>
-        <span className="inline-flex items-center gap-[6px] text-[var(--text-quaternary)]">
-          Less
-          <span className="inline-flex gap-[3px]">
-            {(['heat-l0', 'heat-l1', 'heat-l2', 'heat-l3', 'heat-l4'] as const).map(k => (
-              <span key={k} className={`heat-cell ${k}`} style={{ width: 10, height: 10, borderRadius: 2 }} />
-            ))}
+      {!compact && (
+        <div
+          className="mt-[14px] flex items-center justify-between text-[11px] text-[var(--text-tertiary)]"
+          style={{ fontFamily: 'Berkeley Mono, ui-monospace, SF Mono, Menlo, monospace' }}
+        >
+          <span>
+            Jan 1 → Dec 31, {year}
           </span>
-          More
-        </span>
-      </div>
+          <span className="inline-flex items-center gap-[6px] text-[var(--text-quaternary)]">
+            Less
+            <span className="inline-flex gap-[3px]">
+              {(['heat-l0', 'heat-l1', 'heat-l2', 'heat-l3', 'heat-l4'] as const).map(k => (
+                <span key={k} className={`heat-cell ${k}`} style={{ width: 10, height: 10, borderRadius: 2 }} />
+              ))}
+            </span>
+            More
+          </span>
+        </div>
+      )}
     </div>
   )
 }
