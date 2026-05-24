@@ -22,6 +22,7 @@ import {
 import { Toaster } from 'sonner'
 
 import { Header } from './components/header'
+import { MenubarPage } from './components/menubar/menubar-page'
 import { ProfilesSidebar } from './components/profiles/profiles-sidebar'
 import { TimelineView } from './components/timeline/timeline-view'
 import { CommandPalette, CommandPaletteProvider } from './components/ui/command-palette'
@@ -241,6 +242,7 @@ function AppLayout() {
         <Route path="/profiles/*" element={<ProfilesView viewSwitcher={<ViewSwitcher active={active} onChange={handleChange} />} />} />
         <Route path="/explore/:tab" element={<Explorer viewSwitcher={<ViewSwitcher active={active} onChange={handleChange} />} />} />
         <Route path="/explore" element={<Navigate to="/explore/agents" replace />} />
+        <Route path="/menubar" element={<MenubarPage />} />
         <Route path="*" element={<Navigate to="/profiles" replace />} />
       </Routes>
     </div>
