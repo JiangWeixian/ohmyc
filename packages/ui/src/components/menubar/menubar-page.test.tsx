@@ -13,8 +13,8 @@ import { MenubarPage } from './menubar-page'
 import type { ReactNode } from 'react'
 
 function setupMockFetch() {
-  return vi.spyOn(globalThis, 'fetch').mockImplementation(async (url: URL | string) => {
-    const u = String(url)
+  return vi.spyOn(globalThis, 'fetch').mockImplementation(async (input: RequestInfo | URL) => {
+    const u = typeof input === 'string' ? input : (input instanceof URL ? input.href : input.url)
     if (u.includes('metric=tokens')) {
       return {
         ok: true,
