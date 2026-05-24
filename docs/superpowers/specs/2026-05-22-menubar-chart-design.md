@@ -2,7 +2,14 @@
 
 **Date:** 2026-05-22
 **Branch:** feat/menubar-chart
-**Status:** APPROVED (brainstorming phase)
+**Status:** APPROVED (brainstorming phase) — **heatmap section superseded by `docs/superpowers/specs/2026-05-24-menubar-heatmap-redesign.md`**
+
+> ⚠️ The "ContributionGraph compact" approach in this spec was implemented and then
+> reverted after real-app testing showed cells too small to mouse-target and
+> shared-component coupling risk. The heatmap is now implemented as a dedicated
+> `<RecentHeatmap>` component with 16-week scope and 16×16 cells. See the 05-24
+> redesign spec for current details. The line-view, ViewSwitch, MenubarPage
+> scaffolding, and Tauri repoint sections of this spec remain in effect.
 
 **Upstream references:**
 - Office-hours design (full v0.1 vision):
