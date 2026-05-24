@@ -7,7 +7,8 @@
     "./components/*": "./src/components/*.tsx",
     "./hooks/*": "./src/hooks/*.ts",
     "./state/*": "./src/state/*.ts",
-    "./lib/*": "./src/lib/*.ts"
+    "./lib/*": "./src/lib/*.ts",
+    "./globals.css": "./src/globals.css"
   },
   "scripts": {
     "dev": "vite",
