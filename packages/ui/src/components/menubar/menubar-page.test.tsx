@@ -66,7 +66,7 @@ describe('MenubarPage', () => {
     await screen.findByText(/Last 7 days/i)
     const heatmapBtn = screen.getByRole('tab', { name: /heatmap view/i })
     await userEvent.click(heatmapBtn)
-    expect(await screen.findByText(/Last 365 days/i)).toBeInTheDocument()
+    expect(await screen.findByText(/Last 16 weeks/i)).toBeInTheDocument()
   })
 
   it('renders the DualLineChart in line view (polyline elements present)', async () => {
@@ -82,7 +82,7 @@ describe('MenubarPage', () => {
     const { container } = render(<MenubarPage />, { wrapper })
     await screen.findByText(/Last 7 days/i)
     await userEvent.click(screen.getByRole('tab', { name: /heatmap view/i }))
-    await screen.findByText(/Last 365 days/i)
+    await screen.findByText(/Last 16 weeks/i)
     expect(container.querySelectorAll('polyline')).toHaveLength(0)
   })
 })

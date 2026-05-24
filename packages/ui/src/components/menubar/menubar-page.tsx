@@ -4,8 +4,8 @@
 import { useMemo, useState } from 'react'
 
 import { DualLineChart } from './dual-line-chart'
+import { RecentHeatmap } from './recent-heatmap'
 import { type MenubarView, ViewSwitch } from './view-switch'
-import { ContributionGraph } from '@/components/timeline/contribution-graph'
 import { useTimelineHeatmapRange } from '@/hooks/use-timeline'
 
 function isoDate(d: Date): string {
@@ -28,30 +28,27 @@ function formatTokens(n: number): string {
   return String(n)
 }
 
-const CURRENT_YEAR = new Date().getUTCFullYear()
-
 export function MenubarPage() {
   const [view, setView] = useState<MenubarView>('line')
 
   const today = useMemo(() => new Date(), [])
   const todayIso = isoDate(today)
   const weekAgoIso = isoDate(subDays(today, 6))
-  const yearStartIso = `${CURRENT_YEAR}-01-01`
-  const yearEndIso = `${CURRENT_YEAR}-12-31`
+  const fourMonthAgoIso = isoDate(subDays(today, 16 * 7 - 1))
 
   const tokensWeek = useTimelineHeatmapRange({ from: weekAgoIso, to: todayIso, metric: 'tokens' })
   const sessionsWeek = useTimelineHeatmapRange({ from: weekAgoIso, to: todayIso, metric: 'sessions' })
-  const tokensYear = useTimelineHeatmapRange({ from: yearStartIso, to: yearEndIso, metric: 'tokens' })
-  const sessionsYear = useTimelineHeatmapRange({ from: yearStartIso, to: yearEndIso, metric: 'sessions' })
+  const tokensRecent = useTimelineHeatmapRange({ from: fourMonthAgoIso, to: todayIso, metric: 'tokens' })
+  const sessionsRecent = useTimelineHeatmapRange({ from: fourMonthAgoIso, to: todayIso, metric: 'sessions' })
 
   const tokensWeekTotal = (tokensWeek.data ?? []).reduce((s, p) => s + p.value, 0)
   const sessionsWeekTotal = (sessionsWeek.data ?? []).reduce((s, p) => s + p.value, 0)
-  const tokensYearTotal = (tokensYear.data ?? []).reduce((s, p) => s + p.value, 0)
-  const sessionsYearTotal = (sessionsYear.data ?? []).reduce((s, p) => s + p.value, 0)
+  const tokensRecentTotal = (tokensRecent.data ?? []).reduce((s, p) => s + p.value, 0)
+  const sessionsRecentTotal = (sessionsRecent.data ?? []).reduce((s, p) => s + p.value, 0)
 
-  const headerTokens = view === 'line' ? tokensWeekTotal : tokensYearTotal
-  const headerSessions = view === 'line' ? sessionsWeekTotal : sessionsYearTotal
-  const rangeLabel = view === 'line' ? 'Last 7 days' : 'Last 365 days'
+  const headerTokens = view === 'line' ? tokensWeekTotal : tokensRecentTotal
+  const headerSessions = view === 'line' ? sessionsWeekTotal : sessionsRecentTotal
+  const rangeLabel = view === 'line' ? 'Last 7 days' : 'Last 16 weeks'
 
   return (
     <div
@@ -81,12 +78,7 @@ export function MenubarPage() {
         <DualLineChart tokens={tokensWeek.data ?? []} sessions={sessionsWeek.data ?? []} />
           )
         : (
-        <ContributionGraph
-          year={CURRENT_YEAR}
-          metric="tokens"
-          data={tokensYear.data ?? []}
-          compact
-        />
+        <RecentHeatmap tokens={tokensRecent.data ?? []} sessions={sessionsRecent.data ?? []} />
           )}
     </div>
   )

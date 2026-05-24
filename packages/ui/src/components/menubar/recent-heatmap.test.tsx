@@ -67,7 +67,7 @@ describe('RecentHeatmap', () => {
     const { container } = render(
       <RecentHeatmap tokens={tokens} sessions={makeSessionData()} />,
     )
-    const cells = [...container.querySelectorAll('[data-heat-cell]')]
+    const cells = [...container.querySelectorAll<HTMLElement>('[data-heat-cell]')]
     // Cells render in column-major order: i = col * 7 + row.
     // First cell (i=0) is Feb 2 — test data i=0 → value 100_000 → bucket 4 (max ratio)
     expect(cells[0].dataset.bucket).toBe('4')
@@ -77,7 +77,7 @@ describe('RecentHeatmap', () => {
 
   it('handles empty data — all cells render at bucket 0', () => {
     const { container } = render(<RecentHeatmap tokens={[]} sessions={[]} />)
-    const cells = container.querySelectorAll('[data-heat-cell]')
+    const cells = container.querySelectorAll<HTMLElement>('[data-heat-cell]')
     expect(cells).toHaveLength(112)
     for (const cell of cells) {
       expect(cell.dataset.bucket).toBe('0')
