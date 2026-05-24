@@ -28,6 +28,26 @@ function formatTokens(n: number): string {
   return String(n)
 }
 
+function findPeak(points: { date: string; value: number }[]): { date: string; value: number } | null {
+  if (points.length === 0) {
+    return null
+  }
+  let peak = points[0]
+  for (const p of points) {
+    if (p.value > peak.value) {
+      peak = p
+    }
+  }
+  return peak
+}
+
+function shortDayLabel(iso: string): string {
+  const d = new Date(`${iso}T00:00:00Z`)
+  const dow = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
+  const mon = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
+  return `${dow[d.getUTCDay()]} ${mon[d.getUTCMonth()]} ${d.getUTCDate()}`
+}
+
 export function MenubarPage() {
   const [view, setView] = useState<MenubarView>('line')
 
@@ -49,6 +69,17 @@ export function MenubarPage() {
   const headerTokens = view === 'line' ? tokensWeekTotal : tokensRecentTotal
   const headerSessions = view === 'line' ? sessionsWeekTotal : sessionsRecentTotal
   const rangeLabel = view === 'line' ? 'Last 7 days' : 'Last 16 weeks'
+
+  // Footer meta: peak day for the active view's data set.
+  const peakSource = view === 'line' ? tokensWeek.data : tokensRecent.data
+  const peak = findPeak(peakSource ?? [])
+  const peakSessionsLookup = (view === 'line' ? sessionsWeek.data : sessionsRecent.data) ?? []
+  const peakSessionCount = peak
+    ? peakSessionsLookup.find(p => p.date === peak.date)?.value ?? 0
+    : 0
+  const footerMeta = peak
+    ? `peak ${shortDayLabel(peak.date)} · ${formatTokens(peak.value)} · ${peakSessionCount} sessions`
+    : 'no activity yet'
 
   return (
     <div
@@ -80,6 +111,13 @@ export function MenubarPage() {
         : (
         <RecentHeatmap tokens={tokensRecent.data ?? []} sessions={sessionsRecent.data ?? []} />
           )}
+
+      <div
+        className="mt-2.5 pt-2 border-t border-[var(--border-default)] text-[11px] text-[var(--text-tertiary)]"
+        style={{ fontFamily: '"Berkeley Mono", ui-monospace, SF Mono, Menlo, monospace' }}
+      >
+        {footerMeta}
+      </div>
     </div>
   )
 }

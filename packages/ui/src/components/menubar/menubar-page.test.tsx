@@ -85,4 +85,15 @@ describe('MenubarPage', () => {
     await screen.findByText(/Last 16 weeks/i)
     expect(container.querySelectorAll('polyline')).toHaveLength(0)
   })
+
+  it('renders the footer meta line with peak day for line view', async () => {
+    setupMockFetch()
+    render(<MenubarPage />, { wrapper })
+    // Wait for data to load. The footer reads:
+    //   peak {DOW MMM D} · {peakTokens} · {peakSessions} sessions
+    // Mocked tokens peak at 10_000 on 2026-05-22 → "10k"; 3 sessions that day.
+    const footer = await screen.findByText(/peak/i)
+    expect(footer.textContent).toMatch(/10k/)
+    expect(footer.textContent).toMatch(/3 sessions/)
+  })
 })
