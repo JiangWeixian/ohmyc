@@ -53,8 +53,6 @@ export interface ContributionGraphProps {
   metric: TimelineMetric
   data: HeatmapPoint[]
   onSelectDay?: (date: string) => void
-  /** Compact mode for the menubar popover: hides month/day-of-week labels and the legend; shrinks cells. */
-  compact?: boolean
 }
 
 /**
@@ -62,11 +60,9 @@ export interface ContributionGraphProps {
  * relative to the maximum value in the dataset. Clicking a cell calls
  * onSelectDay so the parent can scroll the event list to that date.
  */
-export function ContributionGraph({ year, metric, data, onSelectDay, compact = false }: ContributionGraphProps) {
-  // Compact cells sized to fit a 360px popover: 53 cols × 4px + 52 × 1px gap = 264px,
-  // well under the ~296px available inside the chart card (popover 360 − page 36 − card 28).
-  const CELL_SIZE = compact ? 4 : 10
-  const CELL_GAP = compact ? 1 : 4
+export function ContributionGraph({ year, metric, data, onSelectDay }: ContributionGraphProps) {
+  const CELL_SIZE = 10
+  const CELL_GAP = 4
   const [hover, setHover] = useState<{
     x: number
     y: number
@@ -150,61 +146,57 @@ export function ContributionGraph({ year, metric, data, onSelectDay, compact = f
         className="relative"
         style={{
           display: 'grid',
-          gridTemplateColumns: compact ? '1fr' : '18px 1fr',
-          gridTemplateRows: compact ? '1fr' : '16px 1fr',
+          gridTemplateColumns: '18px 1fr',
+          gridTemplateRows: '16px 1fr',
           gap: CELL_GAP,
         }}
       >
         {/* Months strip */}
-        {!compact && (
-          <div
-            style={{
-              gridColumn: 2,
-              display: 'flex',
-              fontSize: 10,
-              fontWeight: 510,
-              color: 'var(--text-quaternary)',
-              fontFamily: 'Berkeley Mono, ui-monospace, SF Mono, Menlo, monospace',
-              letterSpacing: '0.04em',
-              textTransform: 'uppercase',
-            }}
-          >
-            {monthSpans.map((s, i) => (
-              <span key={i} data-month-label={s.label || undefined} style={{ flex: `0 0 ${s.weeks * 14}px` }}>{s.label}</span>
-            ))}
-          </div>
-        )}
+        <div
+          style={{
+            gridColumn: 2,
+            display: 'flex',
+            fontSize: 10,
+            fontWeight: 510,
+            color: 'var(--text-quaternary)',
+            fontFamily: 'Berkeley Mono, ui-monospace, SF Mono, Menlo, monospace',
+            letterSpacing: '0.04em',
+            textTransform: 'uppercase',
+          }}
+        >
+          {monthSpans.map((s, i) => (
+            <span key={i} style={{ flex: `0 0 ${s.weeks * 14}px` }}>{s.label}</span>
+          ))}
+        </div>
 
         {/* Day-of-week labels */}
-        {!compact && (
-          <div
-            style={{
-              gridColumn: 1,
-              gridRow: 2,
-              display: 'grid',
-              gridTemplateRows: `repeat(7, ${CELL_SIZE}px)`,
-              gap: CELL_GAP,
-              fontSize: 9,
-              fontWeight: 510,
-              color: 'var(--text-quaternary)',
-              fontFamily: 'Berkeley Mono, ui-monospace, SF Mono, Menlo, monospace',
-              textTransform: 'uppercase',
-              alignItems: 'center',
-            }}
-          >
-            {DOW_LABELS.map((label, i) => (
-              <span key={i} style={{ lineHeight: `${CELL_SIZE}px`, height: CELL_SIZE, visibility: label ? 'visible' : 'hidden' }}>
-                {label}
-              </span>
-            ))}
-          </div>
-        )}
+        <div
+          style={{
+            gridColumn: 1,
+            gridRow: 2,
+            display: 'grid',
+            gridTemplateRows: `repeat(7, ${CELL_SIZE}px)`,
+            gap: CELL_GAP,
+            fontSize: 9,
+            fontWeight: 510,
+            color: 'var(--text-quaternary)',
+            fontFamily: 'Berkeley Mono, ui-monospace, SF Mono, Menlo, monospace',
+            textTransform: 'uppercase',
+            alignItems: 'center',
+          }}
+        >
+          {DOW_LABELS.map((label, i) => (
+            <span key={i} style={{ lineHeight: `${CELL_SIZE}px`, height: CELL_SIZE, visibility: label ? 'visible' : 'hidden' }}>
+              {label}
+            </span>
+          ))}
+        </div>
 
         {/* Cells grid */}
         <div
           style={{
-            gridColumn: compact ? 1 : 2,
-            gridRow: compact ? 1 : 2,
+            gridColumn: 2,
+            gridRow: 2,
             display: 'grid',
             gridTemplateColumns: `repeat(53, ${CELL_SIZE}px)`,
             gridTemplateRows: `repeat(7, ${CELL_SIZE}px)`,
@@ -218,7 +210,6 @@ export function ContributionGraph({ year, metric, data, onSelectDay, compact = f
             return (
               <div
                 key={i}
-                data-heat-cell
                 role={c.inYear && c.value > 0 ? 'button' : undefined}
                 onClick={() => {
                   if (c.inYear && c.value > 0 && onSelectDay) {
@@ -281,25 +272,23 @@ export function ContributionGraph({ year, metric, data, onSelectDay, compact = f
         )}
       </div>
 
-      {!compact && (
-        <div
-          className="mt-[14px] flex items-center justify-between text-[11px] text-[var(--text-tertiary)]"
-          style={{ fontFamily: 'Berkeley Mono, ui-monospace, SF Mono, Menlo, monospace' }}
-        >
-          <span>
-            Jan 1 → Dec 31, {year}
+      <div
+        className="mt-[14px] flex items-center justify-between text-[11px] text-[var(--text-tertiary)]"
+        style={{ fontFamily: 'Berkeley Mono, ui-monospace, SF Mono, Menlo, monospace' }}
+      >
+        <span>
+          Jan 1 → Dec 31, {year}
+        </span>
+        <span className="inline-flex items-center gap-[6px] text-[var(--text-quaternary)]">
+          Less
+          <span className="inline-flex gap-[3px]">
+            {(['heat-l0', 'heat-l1', 'heat-l2', 'heat-l3', 'heat-l4'] as const).map(k => (
+              <span key={k} className={`heat-cell ${k}`} style={{ width: 10, height: 10, borderRadius: 2 }} />
+            ))}
           </span>
-          <span className="inline-flex items-center gap-[6px] text-[var(--text-quaternary)]">
-            Less
-            <span className="inline-flex gap-[3px]">
-              {(['heat-l0', 'heat-l1', 'heat-l2', 'heat-l3', 'heat-l4'] as const).map(k => (
-                <span key={k} className={`heat-cell ${k}`} style={{ width: 10, height: 10, borderRadius: 2 }} />
-              ))}
-            </span>
-            More
-          </span>
-        </div>
-      )}
+          More
+        </span>
+      </div>
     </div>
   )
 }
