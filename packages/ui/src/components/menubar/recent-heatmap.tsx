@@ -19,7 +19,6 @@ const DOW_COL_WIDTH = 14
 const COL_GAP = 4
 
 const MONTH_NAMES = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'] as const
-const DOW_NAMES = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'] as const
 
 const BUCKET_COLORS = [
   'rgba(255,255,255,0.04)', // 0
@@ -138,11 +137,19 @@ export function RecentHeatmap({ tokens, sessions }: RecentHeatmapProps) {
     }
     const wrapRect = wrap.getBoundingClientRect()
     const cellRect = target.getBoundingClientRect()
+    const cellCenterX = cellRect.left - wrapRect.left + cellRect.width / 2
+    // Clamp tooltip x so it stays within the wrap. TT_HALF is half of the
+    // tooltip's max-width (200px / 2 = 100px) plus a 4px margin from the edge.
+    const TT_HALF = 100
+    const MARGIN = 4
+    const minX = TT_HALF + MARGIN
+    const maxX = wrapRect.width - TT_HALF - MARGIN
+    const clampedX = Math.max(minX, Math.min(maxX, cellCenterX))
     setHover({
       date: cell.iso,
       tokens: cell.value,
       sessions: sessionMap.get(cell.iso) ?? 0,
-      x: cellRect.left - wrapRect.left + cellRect.width / 2,
+      x: clampedX,
       y: cellRect.top - wrapRect.top,
     })
   }
@@ -263,7 +270,7 @@ export function RecentHeatmap({ tokens, sessions }: RecentHeatmapProps) {
         </span>
       </div>
 
-      {/* hover tooltip */}
+      {/* hover tooltip — max-width matches the TT_HALF clamping math (100*2) */}
       {hover && (
         <div
           className="absolute pointer-events-none z-10 px-2 py-1.5 rounded text-[11px] text-[var(--text-primary)] shadow-lg"
@@ -276,6 +283,7 @@ export function RecentHeatmap({ tokens, sessions }: RecentHeatmapProps) {
             fontFamily: MONO,
             lineHeight: 1.5,
             whiteSpace: 'nowrap',
+            maxWidth: 200,
             boxShadow: '0 4px 12px rgba(0,0,0,0.5)',
           }}
         >

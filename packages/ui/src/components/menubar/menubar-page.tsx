@@ -83,7 +83,12 @@ export function MenubarPage() {
 
   return (
     <div
-      className="min-h-dvh w-full p-[18px] bg-[#191a1b] text-[var(--text-primary)]"
+      className="min-h-dvh w-full p-[18px] text-[var(--text-primary)] overflow-hidden rounded-[12px]"
+      style={{
+        background: 'rgba(25, 26, 27, 0.78)',
+        backdropFilter: 'blur(40px) saturate(180%)',
+        WebkitBackdropFilter: 'blur(40px) saturate(180%)',
+      }}
       data-menubar-page
     >
       <header className="flex items-start justify-between gap-3 mb-3.5">
