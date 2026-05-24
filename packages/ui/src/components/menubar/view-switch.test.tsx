@@ -1,4 +1,8 @@
-import { render, screen } from '@testing-library/react'
+import {
+  fireEvent,
+  render,
+  screen,
+} from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import {
   describe,
@@ -34,5 +38,12 @@ describe('ViewSwitch', () => {
     render(<ViewSwitch value="heatmap" onChange={onChange} />)
     await userEvent.click(screen.getByRole('tab', { name: /line view/i }))
     expect(onChange).toHaveBeenCalledWith('line')
+  })
+
+  it('applies secondary color to inactive button on hover', () => {
+    render(<ViewSwitch value="line" onChange={() => {}} />)
+    const heatmapBtn = screen.getByRole('tab', { name: /heatmap view/i })
+    fireEvent.mouseEnter(heatmapBtn)
+    expect(heatmapBtn).toHaveStyle({ color: 'var(--text-secondary)' })
   })
 })
