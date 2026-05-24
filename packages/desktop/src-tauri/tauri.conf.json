@@ -16,7 +16,7 @@
         "label": "popover",
         "title": "OhMyC",
         "width": 360,
-        "height": 440,
+        "height": 300,
         "decorations": false,
         "alwaysOnTop": true,
         "skipTaskbar": true,

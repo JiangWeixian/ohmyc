@@ -63,8 +63,10 @@ export interface ContributionGraphProps {
  * onSelectDay so the parent can scroll the event list to that date.
  */
 export function ContributionGraph({ year, metric, data, onSelectDay, compact = false }: ContributionGraphProps) {
-  const CELL_SIZE = compact ? 6 : 10
-  const CELL_GAP = compact ? 2 : 4
+  // Compact cells sized to fit a 360px popover: 53 cols × 4px + 52 × 1px gap = 264px,
+  // well under the ~296px available inside the chart card (popover 360 − page 36 − card 28).
+  const CELL_SIZE = compact ? 4 : 10
+  const CELL_GAP = compact ? 1 : 4
   const [hover, setHover] = useState<{
     x: number
     y: number
