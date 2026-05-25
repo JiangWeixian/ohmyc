@@ -77,6 +77,21 @@ fn main() {
 
             // Focus-loss auto-hide for popover
             let popover_window = app.get_webview_window("popover").unwrap();
+
+            // Apply macOS vibrancy (NSVisualEffectView "HUD window" material)
+            // for the canonical translucent popover look — true desktop-blur,
+            // not the CSS backdrop-filter approximation.
+            #[cfg(target_os = "macos")]
+            {
+                use window_vibrancy::{apply_vibrancy, NSVisualEffectMaterial, NSVisualEffectState};
+                let _ = apply_vibrancy(
+                    &popover_window,
+                    NSVisualEffectMaterial::HudWindow,
+                    Some(NSVisualEffectState::Active),
+                    Some(12.0),
+                );
+            }
+
             let app_handle = app.handle().clone();
             popover_window.on_window_event(move |event| {
                 if let WindowEvent::Focused(false) = event {

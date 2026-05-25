@@ -85,9 +85,10 @@ export function MenubarPage() {
     <div
       className="min-h-dvh w-full p-[18px] text-[var(--text-primary)] overflow-hidden rounded-[12px]"
       style={{
-        background: 'rgba(25, 26, 27, 0.78)',
-        backdropFilter: 'blur(40px) saturate(180%)',
-        WebkitBackdropFilter: 'blur(40px) saturate(180%)',
+        // macOS NSVisualEffectView (HudWindow) is applied to the Tauri window
+        // and provides the desktop-blur. Light dark tint sits on top to
+        // ensure text contrast against bright desktop content.
+        background: 'rgba(25, 26, 27, 0.45)',
       }}
       data-menubar-page
     >
