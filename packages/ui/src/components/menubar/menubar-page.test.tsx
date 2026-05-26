@@ -2,6 +2,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import {
+  beforeAll,
   describe,
   expect,
   it,
@@ -46,6 +47,18 @@ function wrapper({ children }: { children: ReactNode }) {
   return <QueryClientProvider client={client}>{children}</QueryClientProvider>
 }
 
+beforeAll(() => {
+  // Recharts skips SVG emission when container dims are 0×0 in jsdom.
+  // Mock getBoundingClientRect so Tremor's Recharts internals can render.
+  const originalGetBCR = Element.prototype.getBoundingClientRect
+  Element.prototype.getBoundingClientRect = function () {
+    return { x: 0, y: 0, width: 400, height: 200, top: 0, left: 0, right: 400, bottom: 200, toJSON: () => ({}) } as DOMRect
+  }
+  return () => {
+    Element.prototype.getBoundingClientRect = originalGetBCR
+  }
+})
+
 describe('MenubarPage', () => {
   it('renders in line view by default and shows "Last 7 days"', async () => {
     setupMockFetch()
@@ -69,21 +82,21 @@ describe('MenubarPage', () => {
     expect(await screen.findByText(/Last 16 weeks/i)).toBeInTheDocument()
   })
 
-  it('renders the DualLineChart in line view (polyline elements present)', async () => {
+  it('renders the DualLineChart in line view (Recharts wrapper present)', async () => {
     setupMockFetch()
     const { container } = render(<MenubarPage />, { wrapper })
     // Wait for data to load (tokens total appears once queries resolve)
     expect(await screen.findByText(/15k/i)).toBeInTheDocument()
-    expect(container.querySelectorAll('polyline').length).toBeGreaterThanOrEqual(2)
+    expect(container.querySelector('.recharts-wrapper')).toBeInTheDocument()
   })
 
-  it('does not render polylines in heatmap view', async () => {
+  it('does not render the Recharts wrapper in heatmap view', async () => {
     setupMockFetch()
     const { container } = render(<MenubarPage />, { wrapper })
     await screen.findByText(/Last 7 days/i)
     await userEvent.click(screen.getByRole('tab', { name: /heatmap view/i }))
     await screen.findByText(/Last 16 weeks/i)
-    expect(container.querySelectorAll('polyline')).toHaveLength(0)
+    expect(container.querySelector('.recharts-wrapper')).not.toBeInTheDocument()
   })
 
   it('renders the footer meta line with peak day for line view', async () => {

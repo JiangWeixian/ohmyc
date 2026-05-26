@@ -110,13 +110,15 @@ export function MenubarPage() {
         <ViewSwitch value={view} onChange={setView} />
       </header>
 
-      {view === 'line'
-        ? (
-        <DualLineChart tokens={tokensWeek.data ?? []} sessions={sessionsWeek.data ?? []} />
-          )
-        : (
-        <RecentHeatmap tokens={tokensRecent.data ?? []} sessions={sessionsRecent.data ?? []} />
-          )}
+      <div className="min-h-[168px]">
+        {view === 'line'
+          ? (
+          <DualLineChart tokens={tokensWeek.data ?? []} sessions={sessionsWeek.data ?? []} />
+            )
+          : (
+          <RecentHeatmap tokens={tokensRecent.data ?? []} sessions={sessionsRecent.data ?? []} />
+            )}
+      </div>
 
       <div
         className="mt-2.5 pt-2 border-t border-[var(--border-default)] text-[11px] text-[var(--text-tertiary)]"
