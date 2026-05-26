@@ -53,29 +53,21 @@ export function MenubarPage() {
 
   const today = useMemo(() => new Date(), [])
   const todayIso = isoDate(today)
-  const weekAgoIso = isoDate(subDays(today, 6))
   const fourMonthAgoIso = isoDate(subDays(today, 16 * 7 - 1))
 
-  const tokensWeek = useTimelineHeatmapRange({ from: weekAgoIso, to: todayIso, metric: 'tokens' })
-  const sessionsWeek = useTimelineHeatmapRange({ from: weekAgoIso, to: todayIso, metric: 'sessions' })
+  // Both views share the same 16-week rolling window — the line and heatmap
+  // are two visualizations of the same data, not different time scopes.
   const tokensRecent = useTimelineHeatmapRange({ from: fourMonthAgoIso, to: todayIso, metric: 'tokens' })
   const sessionsRecent = useTimelineHeatmapRange({ from: fourMonthAgoIso, to: todayIso, metric: 'sessions' })
 
-  const tokensWeekTotal = (tokensWeek.data ?? []).reduce((s, p) => s + p.value, 0)
-  const sessionsWeekTotal = (sessionsWeek.data ?? []).reduce((s, p) => s + p.value, 0)
-  const tokensRecentTotal = (tokensRecent.data ?? []).reduce((s, p) => s + p.value, 0)
-  const sessionsRecentTotal = (sessionsRecent.data ?? []).reduce((s, p) => s + p.value, 0)
+  const headerTokens = (tokensRecent.data ?? []).reduce((s, p) => s + p.value, 0)
+  const headerSessions = (sessionsRecent.data ?? []).reduce((s, p) => s + p.value, 0)
+  const rangeLabel = 'Last 16 weeks'
 
-  const headerTokens = view === 'line' ? tokensWeekTotal : tokensRecentTotal
-  const headerSessions = view === 'line' ? sessionsWeekTotal : sessionsRecentTotal
-  const rangeLabel = view === 'line' ? 'Last 7 days' : 'Last 16 weeks'
-
-  // Footer meta: peak day for the active view's data set.
-  const peakSource = view === 'line' ? tokensWeek.data : tokensRecent.data
-  const peak = findPeak(peakSource ?? [])
-  const peakSessionsLookup = (view === 'line' ? sessionsWeek.data : sessionsRecent.data) ?? []
+  // Footer meta: peak day across the same 16-week window.
+  const peak = findPeak(tokensRecent.data ?? [])
   const peakSessionCount = peak
-    ? peakSessionsLookup.find(p => p.date === peak.date)?.value ?? 0
+    ? (sessionsRecent.data ?? []).find(p => p.date === peak.date)?.value ?? 0
     : 0
   const footerMeta = peak
     ? `peak ${shortDayLabel(peak.date)} · ${formatTokens(peak.value)} · ${peakSessionCount} sessions`
@@ -113,7 +105,7 @@ export function MenubarPage() {
       <div className="min-h-[168px]">
         {view === 'line'
           ? (
-          <DualLineChart tokens={tokensWeek.data ?? []} sessions={sessionsWeek.data ?? []} />
+          <DualLineChart tokens={tokensRecent.data ?? []} sessions={sessionsRecent.data ?? []} />
             )
           : (
           <RecentHeatmap tokens={tokensRecent.data ?? []} sessions={sessionsRecent.data ?? []} />

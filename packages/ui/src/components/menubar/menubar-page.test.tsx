@@ -60,10 +60,10 @@ beforeAll(() => {
 })
 
 describe('MenubarPage', () => {
-  it('renders in line view by default and shows "Last 7 days"', async () => {
+  it('renders in line view by default and shows the unified "Last 16 weeks" range', async () => {
     setupMockFetch()
     render(<MenubarPage />, { wrapper })
-    expect(await screen.findByText(/Last 7 days/i)).toBeInTheDocument()
+    expect(await screen.findByText(/Last 16 weeks/i)).toBeInTheDocument()
   })
 
   it('renders header totals after data loads', async () => {
@@ -73,10 +73,10 @@ describe('MenubarPage', () => {
     expect(await screen.findByText(/tokens · 5 sessions/i)).toBeInTheDocument()
   })
 
-  it('switches to heatmap view when the heatmap icon is clicked', async () => {
+  it('keeps the same "Last 16 weeks" range label after switching to heatmap view', async () => {
     setupMockFetch()
     render(<MenubarPage />, { wrapper })
-    await screen.findByText(/Last 7 days/i)
+    await screen.findByText(/Last 16 weeks/i)
     const heatmapBtn = screen.getByRole('tab', { name: /heatmap view/i })
     await userEvent.click(heatmapBtn)
     expect(await screen.findByText(/Last 16 weeks/i)).toBeInTheDocument()
@@ -93,9 +93,8 @@ describe('MenubarPage', () => {
   it('does not render the Recharts wrapper in heatmap view', async () => {
     setupMockFetch()
     const { container } = render(<MenubarPage />, { wrapper })
-    await screen.findByText(/Last 7 days/i)
-    await userEvent.click(screen.getByRole('tab', { name: /heatmap view/i }))
     await screen.findByText(/Last 16 weeks/i)
+    await userEvent.click(screen.getByRole('tab', { name: /heatmap view/i }))
     expect(container.querySelector('.recharts-wrapper')).not.toBeInTheDocument()
   })
 
