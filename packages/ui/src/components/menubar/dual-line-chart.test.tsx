@@ -53,7 +53,7 @@ function mockSessions(): HeatmapPoint[] {
 }
 
 describe('DualLineChart', () => {
-  it('renders a Recharts wrapper (Tremor internals)', () => {
+  it('renders a Recharts wrapper (shadcn ChartContainer internals)', () => {
     const { container } = render(
       <DualLineChart tokens={mockTokens()} sessions={mockSessions()} />,
     )
@@ -64,7 +64,18 @@ describe('DualLineChart', () => {
     const { container } = render(
       <DualLineChart tokens={mockTokens()} sessions={mockSessions()} />,
     )
-    expect(container.querySelector('path.recharts-curve')).toBeInTheDocument()
+    // Recharts v3 renames the class from recharts-curve to recharts-area-curve
+    expect(container.querySelector('path.recharts-area-curve')).toBeInTheDocument()
+  })
+
+  it('renders a filled area path for the tokens series', () => {
+    const { container } = render(
+      <DualLineChart tokens={mockTokens()} sessions={mockSessions()} />,
+    )
+    // AreaChart emits both path.recharts-area-area (the filled area shape) and
+    // path.recharts-area-curve (the stroked top line). LineChart emits only curve.
+    // Note: Recharts v3 uses recharts-area-area / recharts-area-curve (v2 used recharts-area / recharts-curve).
+    expect(container.querySelector('path.recharts-area-area')).toBeInTheDocument()
   })
 
   it('handles empty data without crashing', () => {
