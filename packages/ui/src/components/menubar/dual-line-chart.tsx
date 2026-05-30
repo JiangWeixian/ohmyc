@@ -110,7 +110,7 @@ export function DualLineChart({ tokens, sessions }: DualLineChartProps) {
     <SessionMapContext.Provider value={sessionMap}>
       <ChartContainer
         config={chartConfig}
-        className="h-[140px] w-full"
+        className="h-[168px] w-full"
         style={{ fontFamily: MONO }}
       >
         <AreaChart
