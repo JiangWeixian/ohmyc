@@ -1,7 +1,6 @@
 // Menubar popover page — owns view state, fetches data, switches between
 // dual-line and heatmap views. Lives at /menubar.
 
-import { invoke } from '@tauri-apps/api/core'
 import { useMemo, useState } from 'react'
 
 import { DualLineChart } from './dual-line-chart'
@@ -124,6 +123,7 @@ export function MenubarPage() {
         <button
           type="button"
           onClick={async () => {
+            const { invoke } = await import('@tauri-apps/api/core')
             await invoke('open_main_window')
             await invoke('hide_popover')
           }}

@@ -7,6 +7,7 @@ import type { Plugin } from 'vite'
 
 const uiSrc = path.resolve(import.meta.dirname, '../ui/src')
 const desktopSrc = path.resolve(import.meta.dirname, './src')
+const tauriApi = path.resolve(import.meta.dirname, 'node_modules/@tauri-apps/api')
 
 /**
  * Plugin that resolves `@/` imports context-sensitively:
@@ -61,6 +62,7 @@ export default defineConfig({
       { find: /^@ohmyc\/ui\/hooks(.*)$/, replacement: `${uiSrc}/hooks$1` },
       { find: /^@ohmyc\/ui\/state(.*)$/, replacement: `${uiSrc}/state$1` },
       { find: /^@ohmyc\/ui\/lib(.*)$/, replacement: `${uiSrc}/lib$1` },
+      { find: /^@tauri-apps\/api\/(.*)$/, replacement: `${tauriApi}/$1` },
       // NOTE: `@/` is NOT listed here — uiAliasPlugin (enforce:'pre') handles
       // it context-sensitively before the alias table is consulted.
     ],
