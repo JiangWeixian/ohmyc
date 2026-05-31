@@ -21,6 +21,9 @@ function pickFromEnv(): TransportName {
 
 let active: TransportName = pickFromEnv()
 
+// `@tauri-apps/api` is not a dep of @ohmyc/ui (only @ohmyc/desktop pulls it in),
+// so a static import would break `pnpm dev` here. The dynamic import keeps the
+// tauri module out of the web/test bundles unless the active transport asks for it.
 async function resolve(name: TransportName): Promise<Transport> {
   switch (name) {
     case 'tauri': {

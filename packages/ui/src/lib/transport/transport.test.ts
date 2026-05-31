@@ -1,8 +1,4 @@
-import { afterEach, describe, expect, it, vi } from 'vitest'
-
-vi.mock('@tauri-apps/api/core', () => ({
-  invoke: vi.fn(),
-}))
+import { afterEach, describe, expect, it } from 'vitest'
 
 import { resetMock, setMockHandler } from './mock'
 import { __setTransportForTests, request, resetTransportForTests } from '../transport'

@@ -4,7 +4,7 @@
 //! it is not declared in `tauri.conf.json`, because the popover should be
 //! the only auto-built window at launch.
 
-use tauri::{LogicalSize, Manager, WebviewUrl, WebviewWindowBuilder};
+use tauri::{Manager, WebviewUrl, WebviewWindowBuilder};
 
 pub const MAIN_LABEL: &str = "main";
 const DEFAULT_WIDTH: f64 = 1200.0;
@@ -35,6 +35,8 @@ pub fn open_main_window(app: tauri::AppHandle) -> Result<(), String> {
 
 #[cfg(test)]
 mod tests {
+    use tauri::LogicalSize;
+
     use super::*;
 
     #[test]
