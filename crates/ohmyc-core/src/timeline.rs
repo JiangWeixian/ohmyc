@@ -560,6 +560,23 @@ pub fn status(conn: &Connection) -> Result<TimelineStatus, ApiError> {
 
 use rusqlite::OptionalExtension;
 
+/// Open the timeline database at the given path. Returns an `Io` error if the
+/// file does not exist (we never create it — the dashboard plugin owns
+/// schema + writes; this crate is read-only).
+pub fn open_db(path: &std::path::Path) -> Result<Connection, ApiError> {
+    if !path.exists() {
+        return Err(ApiError::Io(format!(
+            "timeline db not found at {}",
+            path.display()
+        )));
+    }
+    let conn = Connection::open(path)
+        .map_err(|e| ApiError::Internal(format!("open db: {e}")))?;
+    conn.pragma_update(None, "journal_mode", "WAL")
+        .map_err(|e| ApiError::Internal(format!("set wal: {e}")))?;
+    Ok(conn)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -878,5 +895,29 @@ mod tests {
         let s = status(&conn).unwrap();
         assert_eq!(s.session_count, 0);
         assert_eq!(s.last_sync_at, None);
+    }
+
+    #[test]
+    fn open_db_creates_a_readable_connection() {
+        let dir = tempfile::tempdir().unwrap();
+        let db_path = dir.path().join("timeline.db");
+        {
+            let conn = rusqlite::Connection::open(&db_path).unwrap();
+            conn.execute_batch(test_db::SCHEMA_SQL).unwrap();
+        }
+        let conn = open_db(&db_path).unwrap();
+        let count: i64 = conn
+            .query_row("SELECT COUNT(*) FROM sessions", [], |row| row.get(0))
+            .unwrap();
+        assert_eq!(count, 0);
+    }
+
+    #[test]
+    fn open_db_errors_when_path_does_not_exist() {
+        let err = open_db(std::path::Path::new("/nonexistent/path/timeline.db")).unwrap_err();
+        match err {
+            ApiError::Io(_) => {}
+            other => panic!("expected Io error, got {other:?}"),
+        }
     }
 }
