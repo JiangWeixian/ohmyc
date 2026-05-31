@@ -15,6 +15,12 @@ fn main() {
         .invoke_handler(tauri::generate_handler![
             hide_popover,
             ohmyc_desktop_lib::windows::open_main_window,
+            ohmyc_desktop_lib::api::timeline::timeline_heatmap,
+            ohmyc_desktop_lib::api::timeline::timeline_events,
+            ohmyc_desktop_lib::api::timeline::timeline_session,
+            ohmyc_desktop_lib::api::timeline::timeline_projects,
+            ohmyc_desktop_lib::api::timeline::timeline_years,
+            ohmyc_desktop_lib::api::timeline::timeline_status,
         ])
         .setup(|app| {
             #[cfg(target_os = "macos")]
@@ -117,6 +123,9 @@ fn main() {
                     }
                 }
             });
+
+            // Filesystem watcher → frontend "fs:changed" events.
+            ohmyc_desktop_lib::events::spawn_watcher(&app.handle().clone());
 
             Ok(())
         })
