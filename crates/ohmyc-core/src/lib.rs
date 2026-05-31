@@ -5,5 +5,6 @@
 pub mod claude_home;
 pub mod error;
 pub mod timeline;
+pub mod watcher;
 
 pub use error::ApiError;
