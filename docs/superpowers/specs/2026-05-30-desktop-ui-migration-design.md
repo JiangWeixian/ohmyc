@@ -254,13 +254,16 @@ commands which share shape). Slice steps:
 3. **Agents + Skills + Commands** — bundled (same shape: list, get). Lights up
    the read-only Explorer surfaces (`/explore/agents`, `/explore/skills`,
    `/explore/commands`) inside the desktop main window.
-4. **Profiles** — list/get/create/update/delete/activate/deactivate/preflight.
-   Largest write surface; first slice with mutating endpoints (POST/PUT/DELETE)
-   so the `transport/fetch.ts` URL table grows to support methods/body. Pulled
-   after Agents+Skills+Commands so Explorer reaches usefulness earlier and the
-   write-endpoint shape lands once the read pattern is proven.
-5. **Configs + Settings + Store** — bundled (config-like). Reads + a few writes.
-6. **Plugins + Marketplaces** — completes Explorer (`/explore/plugins`).
+4. **Configs + Settings + Store** — bundled (config-like). Reads + a few writes;
+   first slice where the `transport/fetch.ts` URL table needs methods/body so
+   the seam shape lands on a smaller, lower-risk surface.
+5. **Plugins + Marketplaces** — completes Explorer (`/explore/plugins`). Main
+   window is fully read-functional by the end of this slice.
+6. **Profiles** — list/get/create/update/delete/activate/deactivate/preflight.
+   Largest surface and biggest risk; pulled last so the transport seam (incl.
+   write-endpoint patterns from slice 4), the watcher, the error shape, and the
+   per-slice migration cadence are all battle-tested before the killer flow
+   moves over.
 7. **Cleanup** — delete `packages/cli/src/server`, `serve`, `launcher`,
    `migrate-home`; delete `transport/fetch.ts`; trim `packages/cli` to only the
    `dashboard` command; delete `pnpm dev` from `packages/ui` (or repurpose to a
@@ -341,7 +344,7 @@ slice ships and the TS reader is gone.
 | 10 | Frozen SQLite contract test for timeline | Highest-risk divergence; cheap mitigation; deleted after timeline slice |
 | 11 | `fs:changed` Tauri event + React Query invalidation | Mirrors existing live-update semantics; debounced 250ms |
 | 12 | Tray menu gains "Open OhMyC" | Discoverability for users who close the popover |
-| 13 | Profiles slice moves to slice 4 (after Agents+Skills+Commands) | Explorer reaches usefulness earlier (read-only browsing works by end of slice 3); write-endpoint patterns land on Profiles once the read pattern in the transport seam is proven by an earlier slice |
+| 13 | Profiles slice moves to last (slice 6, just before cleanup) | Profiles is the killer flow and the highest-risk surface; pulling it last means the transport seam, write-endpoint shape (from Configs/Settings/Store in slice 4), watcher, error shape, and migration cadence are all battle-tested before the killer flow moves over. Explorer reads light up by slice 3; Settings by slice 4; Plugins by slice 5 — main window is fully read-functional before Profiles even starts |
 
 ## Open questions for review
 
