@@ -8,6 +8,9 @@ use serde::Serialize;
 
 use crate::error::ApiError;
 
+#[cfg(test)]
+mod test_db;
+
 const ENV_HOME: &str = "OHMYC_HOME";
 const DB_FILENAME: &str = "timeline.db";
 
