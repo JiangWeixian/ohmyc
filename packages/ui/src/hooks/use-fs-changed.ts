@@ -23,8 +23,9 @@ export function useFsChanged(): void {
     void (async () => {
       try {
         const tauriEventModule = '@tauri-apps/api/event'
-        const { listen } = await import(/* webpackChunkName: "tauri-event" */ tauriEventModule)
-        const off = await listen<FsEvent>('fs:changed', (ev) => {
+        const mod = await import(/* webpackChunkName: "tauri-event" */ tauriEventModule) as Record<string, (...args: unknown[]) => Promise<unknown>>
+        const listen = mod.listen as (event: string, handler: (ev: { payload: FsEvent }) => void) => Promise<() => void>
+        const off = await listen('fs:changed', (ev) => {
           if (ev.payload.kind === 'timeline_db') {
             void qc.invalidateQueries({ queryKey: ['timeline'] })
           }
