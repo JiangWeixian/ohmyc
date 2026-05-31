@@ -1,0 +1,4 @@
+interface:
+  display_name: "UI Review"
+  short_description: "Audit UI fidelity and visual quality"
+  default_prompt: "Use $ui-review to audit this live product and/or design reference, then return actionable UI findings."
