@@ -227,6 +227,233 @@ pub fn heatmap(conn: &Connection, q: HeatmapQuery) -> Result<Vec<HeatmapPoint>, 
         .collect())
 }
 
+pub struct EventsQuery {
+    pub from: Option<String>,   // YYYY-MM-DD
+    pub to: Option<String>,
+    pub project: Option<String>,
+    pub limit: Option<i64>,
+    pub cursor: Option<String>,
+}
+
+pub fn events(conn: &Connection, q: EventsQuery) -> Result<EventsResult, ApiError> {
+    let limit = q.limit.unwrap_or(30);
+    if limit <= 0 {
+        return Err(ApiError::InvalidInput("limit must be > 0".into()));
+    }
+
+    let mut conditions: Vec<String> = Vec::new();
+    let mut args: Vec<rusqlite::types::Value> = Vec::new();
+    if let Some(from) = q.from.as_ref() {
+        conditions.push("started_at >= ?".into());
+        args.push(date_to_utc_ms(parse_ymd(from)?).into());
+    }
+    if let Some(to) = q.to.as_ref() {
+        conditions.push("started_at <= ?".into());
+        args.push((date_to_utc_ms(parse_ymd(to)?) + MS_PER_DAY - 1).into());
+    }
+    if let Some(p) = q.project.as_ref() {
+        conditions.push("project = ?".into());
+        args.push(p.clone().into());
+    }
+    if let Some(c) = q.cursor.as_ref() {
+        conditions.push("date(started_at / 1000, 'unixepoch') < ?".into());
+        args.push(c.clone().into());
+    }
+    let where_clause = if conditions.is_empty() {
+        String::new()
+    } else {
+        format!("WHERE {}", conditions.join(" AND "))
+    };
+
+    let day_sql = format!(
+        "SELECT DISTINCT date(started_at / 1000, 'unixepoch') AS day \
+         FROM sessions {where_clause} ORDER BY day DESC LIMIT ?"
+    );
+    let mut day_args = args.clone();
+    day_args.push((limit + 1).into());
+
+    let mut day_stmt = conn
+        .prepare(&day_sql)
+        .map_err(|e| ApiError::Internal(format!("prepare events day sql: {e}")))?;
+    let day_rows: Vec<String> = day_stmt
+        .query_map(params_from_iter(day_args), |row| row.get::<_, String>(0))
+        .map_err(|e| ApiError::Internal(format!("query events days: {e}")))?
+        .collect::<Result<_, _>>()
+        .map_err(|e| ApiError::Internal(format!("collect events days: {e}")))?;
+
+    let has_more = day_rows.len() as i64 > limit;
+    let day_batch: Vec<String> = if has_more {
+        day_rows.into_iter().take(limit as usize).collect()
+    } else {
+        day_rows
+    };
+
+    if day_batch.is_empty() {
+        return Ok(EventsResult { days: Vec::new(), next_cursor: None });
+    }
+
+    let placeholders = day_batch.iter().map(|_| "?").collect::<Vec<_>>().join(", ");
+    let project_filter = if q.project.is_some() { "AND project = ?" } else { "" };
+    let session_sql = format!(
+        "SELECT session_id, project, agent_name, started_at, ended_at, duration_ms, \
+                turns, tokens_input, tokens_output, tokens_cached, summary, summary_source, \
+                transcript_path, last_offset, ingested_at, model \
+         FROM sessions \
+         WHERE date(started_at / 1000, 'unixepoch') IN ({placeholders}) {project_filter} \
+         ORDER BY started_at DESC"
+    );
+    let mut session_args: Vec<rusqlite::types::Value> =
+        day_batch.iter().map(|d| d.clone().into()).collect();
+    if let Some(p) = q.project.as_ref() {
+        session_args.push(p.clone().into());
+    }
+    let mut session_stmt = conn
+        .prepare(&session_sql)
+        .map_err(|e| ApiError::Internal(format!("prepare events session sql: {e}")))?;
+    let sessions: Vec<SessionRow> = session_stmt
+        .query_map(params_from_iter(session_args), row_to_session)
+        .map_err(|e| ApiError::Internal(format!("query events sessions: {e}")))?
+        .collect::<Result<_, _>>()
+        .map_err(|e| ApiError::Internal(format!("collect events sessions: {e}")))?;
+
+    let mut day_project_map: std::collections::HashMap<String, Vec<ProjectGroup>> =
+        day_batch.iter().map(|d| (d.clone(), Vec::new())).collect();
+
+    for session in &sessions {
+        let day = ms_to_date_string(session.started_at);
+        let groups = day_project_map.entry(day.clone()).or_default();
+        let pos = groups.iter().position(|g| g.project == session.project);
+        let idx = match pos {
+            Some(i) => i,
+            None => {
+                groups.push(ProjectGroup {
+                    project: session.project.clone(),
+                    sessions: Vec::new(),
+                    session_count: 0,
+                    turn_count: 0,
+                    token_count: 0,
+                    tool_count: 0,
+                    skill_count: 0,
+                    agents: Vec::new(),
+                });
+                groups.len() - 1
+            }
+        };
+        let group = &mut groups[idx];
+        group.sessions.push(session.clone());
+        group.session_count += 1;
+        group.turn_count += session.turns;
+        group.token_count +=
+            session.tokens_input + session.tokens_output + session.tokens_cached;
+        if let Some(agent) = session.agent_name.as_ref() {
+            if !group.agents.contains(agent) {
+                group.agents.push(agent.clone());
+            }
+        }
+    }
+
+    for (_day, groups) in day_project_map.iter_mut() {
+        let session_ids: Vec<String> = groups
+            .iter()
+            .flat_map(|g| g.sessions.iter().map(|s| s.session_id.clone()))
+            .collect();
+        if session_ids.is_empty() {
+            continue;
+        }
+        let id_placeholders = session_ids.iter().map(|_| "?").collect::<Vec<_>>().join(", ");
+        let tool_sql = format!(
+            "SELECT session_id, SUM(call_count) AS cnt FROM session_tools \
+             WHERE session_id IN ({id_placeholders}) GROUP BY session_id"
+        );
+        let mut tool_stmt = conn
+            .prepare(&tool_sql)
+            .map_err(|e| ApiError::Internal(format!("prepare tool sql: {e}")))?;
+        let tool_map: std::collections::HashMap<String, i64> = tool_stmt
+            .query_map(
+                params_from_iter(session_ids.iter().cloned().map(rusqlite::types::Value::from)),
+                |row| Ok((row.get::<_, String>(0)?, row.get::<_, i64>(1)?)),
+            )
+            .map_err(|e| ApiError::Internal(format!("query tools: {e}")))?
+            .collect::<Result<_, _>>()
+            .map_err(|e| ApiError::Internal(format!("collect tools: {e}")))?;
+
+        let skill_sql = format!(
+            "SELECT session_id, COUNT(*) AS cnt FROM session_skills \
+             WHERE session_id IN ({id_placeholders}) GROUP BY session_id"
+        );
+        let mut skill_stmt = conn
+            .prepare(&skill_sql)
+            .map_err(|e| ApiError::Internal(format!("prepare skill sql: {e}")))?;
+        let skill_map: std::collections::HashMap<String, i64> = skill_stmt
+            .query_map(
+                params_from_iter(session_ids.iter().cloned().map(rusqlite::types::Value::from)),
+                |row| Ok((row.get::<_, String>(0)?, row.get::<_, i64>(1)?)),
+            )
+            .map_err(|e| ApiError::Internal(format!("query skills: {e}")))?
+            .collect::<Result<_, _>>()
+            .map_err(|e| ApiError::Internal(format!("collect skills: {e}")))?;
+
+        for group in groups.iter_mut() {
+            group.tool_count = group
+                .sessions
+                .iter()
+                .map(|s| tool_map.get(&s.session_id).copied().unwrap_or(0))
+                .sum();
+            group.skill_count = group
+                .sessions
+                .iter()
+                .map(|s| skill_map.get(&s.session_id).copied().unwrap_or(0))
+                .sum();
+        }
+    }
+
+    let mut day_events: Vec<DayEvents> = Vec::new();
+    for day in &day_batch {
+        let mut groups = day_project_map.remove(day).unwrap_or_default();
+        groups.sort_by(|a, b| {
+            let a_first = a.sessions.first().map(|s| s.started_at).unwrap_or(0);
+            let b_first = b.sessions.first().map(|s| s.started_at).unwrap_or(0);
+            b_first.cmp(&a_first)
+        });
+        let session_count = groups.iter().map(|g| g.session_count).sum();
+        let turn_count = groups.iter().map(|g| g.turn_count).sum();
+        let token_count = groups.iter().map(|g| g.token_count).sum();
+        day_events.push(DayEvents {
+            day: day.clone(),
+            project_groups: groups,
+            session_count,
+            turn_count,
+            token_count,
+        });
+    }
+
+    Ok(EventsResult {
+        days: day_events,
+        next_cursor: if has_more { day_batch.last().cloned() } else { None },
+    })
+}
+
+fn row_to_session(row: &rusqlite::Row) -> rusqlite::Result<SessionRow> {
+    Ok(SessionRow {
+        session_id: row.get(0)?,
+        project: row.get(1)?,
+        agent_name: row.get(2)?,
+        started_at: row.get(3)?,
+        ended_at: row.get(4)?,
+        duration_ms: row.get(5)?,
+        turns: row.get(6)?,
+        tokens_input: row.get(7)?,
+        tokens_output: row.get(8)?,
+        tokens_cached: row.get(9)?,
+        summary: row.get(10)?,
+        summary_source: row.get(11)?,
+        transcript_path: row.get(12)?,
+        last_offset: row.get(13)?,
+        ingested_at: row.get(14)?,
+        model: row.get(15)?,
+    })
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -376,5 +603,111 @@ mod tests {
         )
         .unwrap();
         assert!(result.is_empty());
+    }
+
+    use super::test_db::{insert_skill, insert_tool};
+
+    fn seeded_events_db() -> Connection {
+        let conn = empty_db();
+        // Day 2026-01-03: proj-a (2 sessions), proj-b (1 session)
+        insert_session(&conn, "s1", "proj-a", date_ms("2026-01-03") + 1000, 5, 100, 0, 0);
+        insert_session(&conn, "s2", "proj-a", date_ms("2026-01-03") + 2000, 3, 50, 0, 0);
+        insert_session(&conn, "s3", "proj-b", date_ms("2026-01-03") + 3000, 7, 200, 0, 0);
+        insert_tool(&conn, "s1", "Read", 4);
+        insert_tool(&conn, "s2", "Bash", 2);
+        insert_skill(&conn, "s1", "investigate");
+        insert_skill(&conn, "s3", "qa");
+        // Day 2026-01-04: one session in proj-a
+        insert_session(&conn, "s4", "proj-a", date_ms("2026-01-04") + 1000, 1, 10, 0, 0);
+        conn
+    }
+
+    #[test]
+    fn events_groups_sessions_by_day_then_project() {
+        let conn = seeded_events_db();
+        let res = events(
+            &conn,
+            EventsQuery { from: None, to: None, project: None, limit: None, cursor: None },
+        )
+        .unwrap();
+        assert_eq!(res.days.len(), 2);
+        // Days newest first
+        assert_eq!(res.days[0].day, "2026-01-04");
+        assert_eq!(res.days[1].day, "2026-01-03");
+        // 01-03 has two project groups
+        let day3 = &res.days[1];
+        assert_eq!(day3.project_groups.len(), 2);
+        // proj-b's first session started at +3000ms, proj-a's first started at +2000ms
+        // (sessions ordered DESC); proj-b sorts first.
+        assert_eq!(day3.project_groups[0].project, "proj-b");
+        assert_eq!(day3.project_groups[1].project, "proj-a");
+        // proj-a aggregates
+        let proj_a = &day3.project_groups[1];
+        assert_eq!(proj_a.session_count, 2);
+        assert_eq!(proj_a.turn_count, 8); // 5 + 3
+        assert_eq!(proj_a.token_count, 150);
+        assert_eq!(proj_a.tool_count, 6); // 4 (s1 Read) + 2 (s2 Bash)
+        assert_eq!(proj_a.skill_count, 1); // s1 investigate
+    }
+
+    #[test]
+    fn events_project_filter_excludes_other_projects() {
+        let conn = seeded_events_db();
+        let res = events(
+            &conn,
+            EventsQuery {
+                from: None,
+                to: None,
+                project: Some("proj-b".into()),
+                limit: None,
+                cursor: None,
+            },
+        )
+        .unwrap();
+        // Only proj-b sessions exist on 2026-01-03; nothing on 01-04.
+        assert_eq!(res.days.len(), 1);
+        assert_eq!(res.days[0].day, "2026-01-03");
+        assert_eq!(res.days[0].project_groups.len(), 1);
+        assert_eq!(res.days[0].project_groups[0].project, "proj-b");
+    }
+
+    #[test]
+    fn events_pagination_emits_next_cursor_when_more_days_exist() {
+        let conn = seeded_events_db();
+        let res = events(
+            &conn,
+            EventsQuery { from: None, to: None, project: None, limit: Some(1), cursor: None },
+        )
+        .unwrap();
+        assert_eq!(res.days.len(), 1);
+        assert_eq!(res.days[0].day, "2026-01-04");
+        assert_eq!(res.next_cursor.as_deref(), Some("2026-01-04"));
+
+        let page2 = events(
+            &conn,
+            EventsQuery {
+                from: None,
+                to: None,
+                project: None,
+                limit: Some(1),
+                cursor: Some("2026-01-04".into()),
+            },
+        )
+        .unwrap();
+        assert_eq!(page2.days.len(), 1);
+        assert_eq!(page2.days[0].day, "2026-01-03");
+        assert_eq!(page2.next_cursor, None);
+    }
+
+    #[test]
+    fn events_returns_empty_when_no_sessions_match() {
+        let conn = empty_db();
+        let res = events(
+            &conn,
+            EventsQuery { from: None, to: None, project: None, limit: None, cursor: None },
+        )
+        .unwrap();
+        assert!(res.days.is_empty());
+        assert!(res.next_cursor.is_none());
     }
 }
