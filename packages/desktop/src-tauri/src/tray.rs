@@ -2,18 +2,21 @@
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum TrayMenuId {
     Quit,
+    OpenMain,
 }
 
 impl TrayMenuId {
     pub fn as_str(&self) -> &'static str {
         match self {
             Self::Quit => "quit",
+            Self::OpenMain => "open-main",
         }
     }
 
     pub fn from_id(s: &str) -> Option<Self> {
         match s {
             "quit" => Some(Self::Quit),
+            "open-main" => Some(Self::OpenMain),
             _ => None,
         }
     }
@@ -57,6 +60,14 @@ mod tests {
     fn test_tray_menu_id_from_unknown_string() {
         assert_eq!(TrayMenuId::from_id("invalid"), None);
         assert_eq!(TrayMenuId::from_id(""), None);
+    }
+
+    #[test]
+    fn test_open_main_round_trip() {
+        let id = TrayMenuId::OpenMain;
+        let s = id.as_str();
+        assert_eq!(s, "open-main");
+        assert_eq!(TrayMenuId::from_id(s), Some(id));
     }
 
     #[test]

@@ -12,12 +12,22 @@ struct PopoverGuard(Mutex<PopoverState>);
 fn main() {
     tauri::Builder::default()
         .manage(PopoverGuard(Mutex::new(PopoverState::Hidden)))
-        .invoke_handler(tauri::generate_handler![hide_popover])
+        .invoke_handler(tauri::generate_handler![
+            hide_popover,
+            ohmyc_desktop_lib::windows::open_main_window,
+        ])
         .setup(|app| {
             #[cfg(target_os = "macos")]
             app.set_activation_policy(tauri::ActivationPolicy::Accessory);
 
             // Tray menu (right-click)
+            let open_item = MenuItem::with_id(
+                app,
+                TrayMenuId::OpenMain.as_str(),
+                "Open OhMyC",
+                true,
+                Some("CmdOrCtrl+O"),
+            )?;
             let quit_item = MenuItem::with_id(
                 app,
                 TrayMenuId::Quit.as_str(),
@@ -25,7 +35,7 @@ fn main() {
                 true,
                 Some("CmdOrCtrl+Q"),
             )?;
-            let menu = Menu::with_items(app, &[&quit_item])?;
+            let menu = Menu::with_items(app, &[&open_item, &quit_item])?;
 
             // Tray icon
             let _tray = TrayIconBuilder::with_id("main")
@@ -34,8 +44,12 @@ fn main() {
                 .menu(&menu)
                 .show_menu_on_left_click(false)
                 .on_menu_event(|app, event| {
-                    if let Some(TrayMenuId::Quit) = TrayMenuId::from_id(event.id.as_ref()) {
-                        app.exit(0);
+                    match TrayMenuId::from_id(event.id.as_ref()) {
+                        Some(TrayMenuId::Quit) => app.exit(0),
+                        Some(TrayMenuId::OpenMain) => {
+                            let _ = ohmyc_desktop_lib::windows::open_main_window(app.clone());
+                        }
+                        None => {}
                     }
                 })
                 .on_tray_icon_event(|tray, event| {
