@@ -6,6 +6,7 @@ import { useMemo, useState } from 'react'
 import { DualLineChart } from './dual-line-chart'
 import { RecentHeatmap } from './recent-heatmap'
 import { type MenubarView, ViewSwitch } from './view-switch'
+import { useFsChanged } from '@/hooks/use-fs-changed'
 import { useTimelineHeatmapRange } from '@/hooks/use-timeline'
 
 function isoDate(d: Date): string {
@@ -49,6 +50,7 @@ function shortDayLabel(iso: string): string {
 }
 
 export function MenubarPage() {
+  useFsChanged()
   const [view, setView] = useState<MenubarView>('line')
 
   const today = useMemo(() => new Date(), [])
