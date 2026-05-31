@@ -2954,7 +2954,124 @@ git commit -m "test(timeline): TS contract test against the same frozen fixture"
 
 ---
 
-## Task 18: Manual smoke test
+## Task 18: Render the full app in the main window, default to `/timeline`
+
+Today both windows load `index.html` → `main.tsx` → `<Menubar />`. The main
+window therefore renders the popover, not the full app. We branch on the
+Tauri window label: popover stays on `<Menubar />`; main window mounts the
+full `<App />` from `@ohmyc/ui` with the initial path seeded to `/timeline`.
+
+Default route flips to `/timeline` only for the main window; the underlying
+catch-all in `app.tsx` (redirects `*` to `/profiles`) stays untouched so the
+web build is unaffected. Reverted in Slice 7 once Profiles is migrated.
+
+**Files:**
+- Modify: `packages/desktop/src/main.tsx` — branch by window label; seed initial path.
+- Modify: `packages/desktop/index.html` — no functional change, comment noting both windows load it.
+
+- [ ] **Step 1: Replace `packages/desktop/src/main.tsx`**
+
+Replace the entire contents of `packages/desktop/src/main.tsx` with:
+
+```tsx
+import '@ohmyc/ui/globals.css'
+
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import { getCurrentWebviewWindow } from '@tauri-apps/api/webviewWindow'
+import React from 'react'
+import ReactDOM from 'react-dom/client'
+import { BrowserRouter } from 'react-router-dom'
+
+import { Menubar } from './menubar'
+import { App } from '@ohmyc/ui/app'
+
+const docStyle = document.documentElement.style
+const bodyStyle = document.body.style
+
+/**
+ * Tauri opens the popover and main windows with the same WebviewUrl
+ * (`index.html`). We branch on the window label here:
+ *  - `popover` → transparent body, rounded-corner mask, render <Menubar />.
+ *  - `main`    → opaque body, normal scroll, render full <App /> with
+ *                initial route seeded to `/timeline` (slice 2 default;
+ *                reverted in slice 7 when Profiles is migrated).
+ */
+const label = getCurrentWebviewWindow().label
+
+if (label === 'main') {
+  bodyStyle.margin = '0'
+  bodyStyle.background = 'var(--bg-marketing)'
+
+  // Seed initial route to /timeline before BrowserRouter reads window.location.
+  // The catch-all in app.tsx redirects `*` to `/profiles`, so we only override
+  // when the navigated path is the root.
+  if (globalThis.location.pathname === '/') {
+    globalThis.history.replaceState(null, '', '/timeline')
+  }
+
+  const queryClient = new QueryClient({
+    defaultOptions: { queries: { refetchOnWindowFocus: false } },
+  })
+
+  ReactDOM.createRoot(document.querySelector('#root')!).render(
+    <React.StrictMode>
+      <BrowserRouter>
+        <QueryClientProvider client={queryClient}>
+          <App />
+        </QueryClientProvider>
+      </BrowserRouter>
+    </React.StrictMode>,
+  )
+}
+else {
+  // Popover styling — transparent for the macOS vibrancy compositor + rounded
+  // corner mask + no scroll bounce.
+  docStyle.background = 'transparent'
+  bodyStyle.background = 'transparent'
+  docStyle.overscrollBehavior = 'none'
+  bodyStyle.overscrollBehavior = 'none'
+  docStyle.overflow = 'hidden'
+  bodyStyle.overflow = 'hidden'
+  docStyle.height = '100vh'
+  bodyStyle.height = '100vh'
+  bodyStyle.margin = '0'
+
+  ReactDOM.createRoot(document.querySelector('#root')!).render(
+    <React.StrictMode>
+      <Menubar />
+    </React.StrictMode>,
+  )
+}
+```
+
+- [ ] **Step 2: Verify the `@ohmyc/ui/app` subpath export exists**
+
+Run: `cd /Volumes/ORICO/Users/jiangwei/projects/claudeui && grep -nE '"./(app|components|hooks|state|lib)' packages/ui/package.json`
+Expected: an `exports` map entry for `./components/*`, `./hooks/*`, etc., but probably NOT `./app`.
+
+If `./app` is missing, open `packages/ui/package.json`, find the `"exports"` object, and add:
+
+```json
+    "./app": "./src/app.tsx",
+```
+
+(insert as a sibling of the existing `./components/*`, `./hooks/*`, etc. entries.)
+
+- [ ] **Step 3: Build desktop and confirm no TypeScript errors**
+
+Run: `cd /Volumes/ORICO/Users/jiangwei/projects/claudeui/packages/desktop && pnpm build 2>&1 | tail -10`
+Expected: build succeeds. If it errors on a missing `@ohmyc/ui/app` import, Step 2 didn't add the export — fix and retry.
+
+- [ ] **Step 4: Commit**
+
+```bash
+git add packages/desktop/src/main.tsx packages/ui/package.json
+git commit -m "feat(desktop): split main.tsx by window label; main window defaults to /timeline"
+```
+
+---
+
+## Task 19: Manual smoke test
 
 **Files:** none
 
@@ -2968,9 +3085,15 @@ Click the tray icon. The popover renders header + chart + footer with real value
 
 Expected: numbers in the header match what the chart shows; no console errors about `/api/timeline/...`.
 
-- [ ] **Step 3: Verify the main window loads timeline data**
+- [ ] **Step 3: Verify the main window opens directly on `/timeline`**
 
-Click `Open OhMyC →`. Navigate to `/timeline`. The Timeline page should render the heatmap, year picker, project filter, and event list — all sourced via `invoke('timeline.*')`, not HTTP.
+Click `Open OhMyC →`. The main window opens. Expected:
+- The window title bar reads `OhMyC` (not the popover's chrome).
+- The landing view is the Timeline page — NOT the popover content, NOT a broken Profiles screen.
+- The URL bar (if dev tools open) shows `tauri://localhost/timeline` or equivalent.
+- Heatmap, year picker, project filter, and event list render — all sourced via `invoke('timeline.*')`, not HTTP.
+
+If the main window shows the popover content, Task 18 Step 1 wasn't applied correctly. If it shows the broken `/profiles` screen, the initial-path seed in Task 18 didn't take — check the `replaceState` line.
 
 Expected: heatmap cells light up correctly; event list shows sessions grouped by day → project.
 
@@ -3011,7 +3134,8 @@ If any step failed, note which one. Do not mark this task complete until all 6 a
 - `cargo test --workspace` green (all timeline + watcher + contract tests pass).
 - `pnpm -r test` green (UI hook tests use the mock transport; TS contract test passes).
 - `pnpm tauri build --target aarch64-apple-darwin` produces a binary.
-- Manual smoke (Task 18) steps 1-5 pass.
+- Manual smoke (Task 19) steps 1-5 pass.
+- Main window opens directly on `/timeline` (not the popover content, not the broken `/profiles` screen).
 - The TS server's `/api/timeline/*` routes are still alive and still serve the web dev loop. They will be deleted in Slice 7 (Cleanup).
 - The `use-timeline.ts` hook file no longer contains the word `fetch(` (verify: `grep -n 'fetch(' packages/ui/src/hooks/use-timeline.ts` returns nothing).
 
@@ -3023,3 +3147,4 @@ If any step failed, note which one. Do not mark this task complete until all 6 a
 - Does not delete the TS timeline route file (`packages/cli/src/server/routes/timeline.ts`) or its tests. They keep `pnpm dev` working until Slice 7.
 - Does not handle write endpoints (no timeline writes exist; later slices add the routing table support for POST/PUT/DELETE).
 - Does not surface `fs:changed` errors to the UI — the watcher silently no-ops if `default_watch_paths` fails. This is intentional: a missing DB or claude-home should not crash the popover.
+- Does not change `app.tsx`'s default catch-all (which still redirects `*` → `/profiles`). The slice-2 `/timeline` landing is a Tauri-only override implemented via `replaceState` in `packages/desktop/src/main.tsx` before BrowserRouter mounts. Reverted in Slice 7 once Profiles is migrated and `/profiles` works inside the desktop.
