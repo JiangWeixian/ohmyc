@@ -131,6 +131,102 @@ pub struct TimelineStatus {
     pub last_sync_at: Option<i64>,
 }
 
+// ----------------------------------------------------------------------------
+// Queries
+// ----------------------------------------------------------------------------
+
+use rusqlite::{params_from_iter, Connection};
+
+const MS_PER_DAY: i64 = 86_400_000;
+
+pub struct HeatmapQuery {
+    pub from: String, // YYYY-MM-DD
+    pub to: String,
+    pub metric: Metric,
+    pub project: Option<String>,
+}
+
+fn parse_ymd(date: &str) -> Result<chrono::NaiveDate, ApiError> {
+    chrono::NaiveDate::parse_from_str(date, "%Y-%m-%d")
+        .map_err(|e| ApiError::InvalidInput(format!("date '{date}' is not YYYY-MM-DD: {e}")))
+}
+
+fn date_to_utc_ms(date: chrono::NaiveDate) -> i64 {
+    use chrono::{NaiveDateTime, NaiveTime, TimeZone, Utc};
+    let ndt = NaiveDateTime::new(date, NaiveTime::from_hms_opt(0, 0, 0).unwrap());
+    Utc.from_utc_datetime(&ndt).timestamp_millis()
+}
+
+fn ms_to_date_string(ms: i64) -> String {
+    use chrono::{TimeZone, Utc};
+    let dt = Utc.timestamp_millis_opt(ms).single().expect("valid ms");
+    dt.format("%Y-%m-%d").to_string()
+}
+
+fn generate_date_range(from: &str, to: &str) -> Result<Vec<String>, ApiError> {
+    let start = parse_ymd(from)?;
+    let end = parse_ymd(to)?;
+    if start > end {
+        return Ok(Vec::new());
+    }
+    let mut out = Vec::new();
+    let mut cur = start;
+    while cur <= end {
+        out.push(cur.format("%Y-%m-%d").to_string());
+        cur = cur.succ_opt().expect("date increment");
+    }
+    Ok(out)
+}
+
+pub fn heatmap(conn: &Connection, q: HeatmapQuery) -> Result<Vec<HeatmapPoint>, ApiError> {
+    let dates = generate_date_range(&q.from, &q.to)?;
+    if dates.is_empty() {
+        return Ok(Vec::new());
+    }
+
+    let start_ms = date_to_utc_ms(parse_ymd(&q.from)?);
+    let end_ms = date_to_utc_ms(parse_ymd(&q.to)?) + MS_PER_DAY - 1;
+
+    let select_metric = match q.metric {
+        Metric::Sessions => "COUNT(*)",
+        Metric::Turns => "SUM(turns)",
+        Metric::Tokens => "SUM(tokens_input + tokens_output + tokens_cached)",
+    };
+
+    let mut sql = format!(
+        "SELECT date(started_at / 1000, 'unixepoch') AS day, {select_metric} AS value \
+         FROM sessions WHERE started_at >= ? AND started_at <= ?"
+    );
+    let mut args: Vec<rusqlite::types::Value> = vec![start_ms.into(), end_ms.into()];
+    if let Some(p) = q.project.as_ref() {
+        sql.push_str(" AND project = ?");
+        args.push(p.clone().into());
+    }
+    sql.push_str(" GROUP BY day");
+
+    let mut stmt = conn
+        .prepare(&sql)
+        .map_err(|e| ApiError::Internal(format!("prepare heatmap sql: {e}")))?;
+    let rows: Vec<(String, i64)> = stmt
+        .query_map(params_from_iter(args), |row| {
+            let day: String = row.get(0)?;
+            let value: Option<i64> = row.get(1)?;
+            Ok((day, value.unwrap_or(0)))
+        })
+        .map_err(|e| ApiError::Internal(format!("query heatmap: {e}")))?
+        .collect::<Result<_, _>>()
+        .map_err(|e| ApiError::Internal(format!("collect heatmap: {e}")))?;
+
+    let value_map: std::collections::HashMap<String, i64> = rows.into_iter().collect();
+    Ok(dates
+        .into_iter()
+        .map(|date| HeatmapPoint {
+            value: value_map.get(&date).copied().unwrap_or(0),
+            date,
+        })
+        .collect())
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -179,4 +275,106 @@ mod tests {
 
     use std::sync::Mutex;
     static ENV_LOCK: Mutex<()> = Mutex::new(());
+
+    use super::test_db::{date_ms, empty_db, insert_session};
+    use rusqlite::Connection;
+
+    fn seeded_three_days() -> Connection {
+        let conn = empty_db();
+        // 2026-01-01 — 2 sessions, 10 + 20 turns
+        insert_session(&conn, "s1", "proj-a", date_ms("2026-01-01"), 10, 100, 50, 25);
+        insert_session(&conn, "s2", "proj-b", date_ms("2026-01-01"), 20, 200, 100, 50);
+        // 2026-01-02 — nothing
+        // 2026-01-03 — 1 session, 5 turns
+        insert_session(&conn, "s3", "proj-a", date_ms("2026-01-03"), 5, 30, 15, 5);
+        conn
+    }
+
+    #[test]
+    fn heatmap_sessions_metric_counts_sessions_per_day() {
+        let conn = seeded_three_days();
+        let result = heatmap(
+            &conn,
+            HeatmapQuery {
+                from: "2026-01-01".into(),
+                to: "2026-01-03".into(),
+                metric: Metric::Sessions,
+                project: None,
+            },
+        )
+        .unwrap();
+        assert_eq!(result.len(), 3);
+        assert_eq!(result[0], HeatmapPoint { date: "2026-01-01".into(), value: 2 });
+        assert_eq!(result[1], HeatmapPoint { date: "2026-01-02".into(), value: 0 });
+        assert_eq!(result[2], HeatmapPoint { date: "2026-01-03".into(), value: 1 });
+    }
+
+    #[test]
+    fn heatmap_turns_metric_sums_turns_per_day() {
+        let conn = seeded_three_days();
+        let result = heatmap(
+            &conn,
+            HeatmapQuery {
+                from: "2026-01-01".into(),
+                to: "2026-01-03".into(),
+                metric: Metric::Turns,
+                project: None,
+            },
+        )
+        .unwrap();
+        assert_eq!(result[0].value, 30); // 10 + 20
+        assert_eq!(result[2].value, 5);
+    }
+
+    #[test]
+    fn heatmap_tokens_metric_sums_input_output_cached() {
+        let conn = seeded_three_days();
+        let result = heatmap(
+            &conn,
+            HeatmapQuery {
+                from: "2026-01-01".into(),
+                to: "2026-01-03".into(),
+                metric: Metric::Tokens,
+                project: None,
+            },
+        )
+        .unwrap();
+        // Day 1: (100+50+25) + (200+100+50) = 525
+        assert_eq!(result[0].value, 525);
+        // Day 3: 30+15+5 = 50
+        assert_eq!(result[2].value, 50);
+    }
+
+    #[test]
+    fn heatmap_project_filter_limits_to_one_project() {
+        let conn = seeded_three_days();
+        let result = heatmap(
+            &conn,
+            HeatmapQuery {
+                from: "2026-01-01".into(),
+                to: "2026-01-03".into(),
+                metric: Metric::Sessions,
+                project: Some("proj-a".into()),
+            },
+        )
+        .unwrap();
+        assert_eq!(result[0].value, 1); // only s1 on day 1
+        assert_eq!(result[2].value, 1); // s3 on day 3
+    }
+
+    #[test]
+    fn heatmap_returns_empty_when_from_after_to() {
+        let conn = empty_db();
+        let result = heatmap(
+            &conn,
+            HeatmapQuery {
+                from: "2026-01-05".into(),
+                to: "2026-01-01".into(),
+                metric: Metric::Sessions,
+                project: None,
+            },
+        )
+        .unwrap();
+        assert!(result.is_empty());
+    }
 }
