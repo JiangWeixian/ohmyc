@@ -1,7 +1,9 @@
-//! Domain logic for the OhMyC desktop app. Owns all `~/.claude` I/O,
-//! parsing, and watchers. No Tauri imports — testable standalone.
+//! Domain logic for the OhMyC desktop app. Owns all `~/.claude` and
+//! `$OHMYC_HOME` I/O, parsing, and watchers. No Tauri imports —
+//! testable standalone.
 
 pub mod claude_home;
 pub mod error;
+pub mod timeline;
 
 pub use error::ApiError;
