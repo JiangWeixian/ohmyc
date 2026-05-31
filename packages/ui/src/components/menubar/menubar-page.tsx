@@ -1,6 +1,7 @@
 // Menubar popover page — owns view state, fetches data, switches between
 // dual-line and heatmap views. Lives at /menubar.
 
+import { invoke } from '@tauri-apps/api/core'
 import { useMemo, useState } from 'react'
 
 import { DualLineChart } from './dual-line-chart'
@@ -117,6 +118,20 @@ export function MenubarPage() {
         style={{ fontFamily: '"Berkeley Mono", ui-monospace, SF Mono, Menlo, monospace' }}
       >
         {footerMeta}
+      </div>
+
+      <div className="mt-2 flex justify-end">
+        <button
+          type="button"
+          onClick={async () => {
+            await invoke('open_main_window')
+            await invoke('hide_popover')
+          }}
+          className="text-[11px] text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors"
+          style={{ fontFamily: '"Berkeley Mono", ui-monospace, SF Mono, Menlo, monospace' }}
+        >
+          Open OhMyC →
+        </button>
       </div>
     </div>
   )

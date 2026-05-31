@@ -11,6 +11,7 @@ export default defineConfig({
   resolve: {
     alias: {
       '@': path.resolve(rootDir, 'src'),
+      '@tauri-apps/api/core': path.resolve(rootDir, 'tests/test/stubs/tauri-api-core.ts'),
     },
   },
   server: {

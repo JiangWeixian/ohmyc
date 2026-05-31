@@ -1,5 +1,10 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { render, screen } from '@testing-library/react'
+import {
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+} from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import {
   beforeAll,
@@ -12,6 +17,10 @@ import {
 import { MenubarPage } from './menubar-page'
 
 import type { ReactNode } from 'react'
+
+vi.mock('@tauri-apps/api/core', () => ({
+  invoke: vi.fn(async () => {}),
+}))
 
 function setupMockFetch() {
   return vi.spyOn(globalThis, 'fetch').mockImplementation(async (input: RequestInfo | URL) => {
@@ -107,5 +116,20 @@ describe('MenubarPage', () => {
     const footer = await screen.findByText(/peak/i)
     expect(footer.textContent).toMatch(/10k/)
     expect(footer.textContent).toMatch(/3 sessions/)
+  })
+
+  it('renders an Open OhMyC button that invokes open_main_window then hide_popover', async () => {
+    const { invoke } = await import('@tauri-apps/api/core')
+    ;(invoke as ReturnType<typeof vi.fn>).mockClear()
+
+    const { findByRole } = render(<MenubarPage />, { wrapper })
+    const button = await findByRole('button', { name: /open ohmyc/i })
+
+    fireEvent.click(button)
+
+    await waitFor(() => {
+      const calls = (invoke as ReturnType<typeof vi.fn>).mock.calls.map(c => c[0])
+      expect(calls).toEqual(['open_main_window', 'hide_popover'])
+    })
   })
 })
