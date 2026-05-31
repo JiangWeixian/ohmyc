@@ -454,6 +454,112 @@ fn row_to_session(row: &rusqlite::Row) -> rusqlite::Result<SessionRow> {
     })
 }
 
+pub fn session(conn: &Connection, session_id: &str) -> Result<Option<SessionDetail>, ApiError> {
+    let row = conn
+        .query_row(
+            "SELECT session_id, project, agent_name, started_at, ended_at, duration_ms, \
+                    turns, tokens_input, tokens_output, tokens_cached, summary, summary_source, \
+                    transcript_path, last_offset, ingested_at, model \
+             FROM sessions WHERE session_id = ?",
+            [session_id],
+            row_to_session,
+        )
+        .map_err(|e| match e {
+            rusqlite::Error::QueryReturnedNoRows => ApiError::NotFound {
+                kind: "session",
+                name: session_id.to_string(),
+            },
+            other => ApiError::Internal(format!("session query: {other}")),
+        });
+
+    let session = match row {
+        Ok(s) => s,
+        Err(ApiError::NotFound { .. }) => return Ok(None),
+        Err(e) => return Err(e),
+    };
+
+    let mut tool_stmt = conn
+        .prepare("SELECT session_id, tool_name, call_count FROM session_tools WHERE session_id = ?")
+        .map_err(|e| ApiError::Internal(format!("prepare tools: {e}")))?;
+    let tools: Vec<SessionTool> = tool_stmt
+        .query_map([session_id], |row| {
+            Ok(SessionTool {
+                session_id: row.get(0)?,
+                tool_name: row.get(1)?,
+                call_count: row.get(2)?,
+            })
+        })
+        .map_err(|e| ApiError::Internal(format!("query tools: {e}")))?
+        .collect::<Result<_, _>>()
+        .map_err(|e| ApiError::Internal(format!("collect tools: {e}")))?;
+
+    let mut skill_stmt = conn
+        .prepare("SELECT session_id, skill_name FROM session_skills WHERE session_id = ?")
+        .map_err(|e| ApiError::Internal(format!("prepare skills: {e}")))?;
+    let skills: Vec<SessionSkill> = skill_stmt
+        .query_map([session_id], |row| {
+            Ok(SessionSkill {
+                session_id: row.get(0)?,
+                skill_name: row.get(1)?,
+            })
+        })
+        .map_err(|e| ApiError::Internal(format!("query skills: {e}")))?
+        .collect::<Result<_, _>>()
+        .map_err(|e| ApiError::Internal(format!("collect skills: {e}")))?;
+
+    Ok(Some(SessionDetail { session, tools, skills }))
+}
+
+pub fn projects(conn: &Connection) -> Result<Vec<String>, ApiError> {
+    let mut stmt = conn
+        .prepare("SELECT DISTINCT project FROM sessions ORDER BY project")
+        .map_err(|e| ApiError::Internal(format!("prepare projects: {e}")))?;
+    let rows: Vec<String> = stmt
+        .query_map([], |row| row.get::<_, String>(0))
+        .map_err(|e| ApiError::Internal(format!("query projects: {e}")))?
+        .collect::<Result<_, _>>()
+        .map_err(|e| ApiError::Internal(format!("collect projects: {e}")))?;
+    Ok(rows)
+}
+
+pub fn years(conn: &Connection) -> Result<Vec<i64>, ApiError> {
+    let mut stmt = conn
+        .prepare(
+            "SELECT DISTINCT CAST(strftime('%Y', started_at / 1000, 'unixepoch') AS INTEGER) AS year \
+             FROM sessions ORDER BY year",
+        )
+        .map_err(|e| ApiError::Internal(format!("prepare years: {e}")))?;
+    let rows: Vec<i64> = stmt
+        .query_map([], |row| row.get::<_, i64>(0))
+        .map_err(|e| ApiError::Internal(format!("query years: {e}")))?
+        .collect::<Result<_, _>>()
+        .map_err(|e| ApiError::Internal(format!("collect years: {e}")))?;
+    Ok(rows)
+}
+
+pub fn status(conn: &Connection) -> Result<TimelineStatus, ApiError> {
+    let session_count: i64 = conn
+        .query_row("SELECT COUNT(*) FROM sessions", [], |row| row.get(0))
+        .map_err(|e| ApiError::Internal(format!("status count: {e}")))?;
+
+    let last_sync_at: Option<i64> = conn
+        .query_row(
+            "SELECT value FROM meta WHERE key = 'last_sync_at'",
+            [],
+            |row| {
+                let v: String = row.get(0)?;
+                Ok(v.parse::<i64>().ok())
+            },
+        )
+        .optional()
+        .map_err(|e| ApiError::Internal(format!("status meta: {e}")))?
+        .flatten();
+
+    Ok(TimelineStatus { session_count, last_sync_at })
+}
+
+use rusqlite::OptionalExtension;
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -709,5 +815,68 @@ mod tests {
         .unwrap();
         assert!(res.days.is_empty());
         assert!(res.next_cursor.is_none());
+    }
+
+    use super::test_db::set_meta;
+
+    #[test]
+    fn session_returns_row_with_tools_and_skills() {
+        let conn = empty_db();
+        insert_session(&conn, "s1", "proj-a", date_ms("2026-01-01"), 5, 100, 50, 25);
+        insert_tool(&conn, "s1", "Read", 3);
+        insert_tool(&conn, "s1", "Bash", 1);
+        insert_skill(&conn, "s1", "investigate");
+
+        let detail = session(&conn, "s1").unwrap().expect("session present");
+        assert_eq!(detail.session.session_id, "s1");
+        assert_eq!(detail.tools.len(), 2);
+        assert!(detail.tools.iter().any(|t| t.tool_name == "Read" && t.call_count == 3));
+        assert_eq!(detail.skills.len(), 1);
+        assert_eq!(detail.skills[0].skill_name, "investigate");
+    }
+
+    #[test]
+    fn session_returns_none_when_id_absent() {
+        let conn = empty_db();
+        assert!(session(&conn, "nope").unwrap().is_none());
+    }
+
+    #[test]
+    fn projects_returns_distinct_sorted() {
+        let conn = empty_db();
+        insert_session(&conn, "s1", "z-proj", date_ms("2026-01-01"), 1, 0, 0, 0);
+        insert_session(&conn, "s2", "a-proj", date_ms("2026-01-02"), 1, 0, 0, 0);
+        insert_session(&conn, "s3", "a-proj", date_ms("2026-01-03"), 1, 0, 0, 0);
+        let ps = projects(&conn).unwrap();
+        assert_eq!(ps, vec!["a-proj", "z-proj"]);
+    }
+
+    #[test]
+    fn years_returns_distinct_ascending() {
+        let conn = empty_db();
+        insert_session(&conn, "s1", "p", date_ms("2024-06-01"), 1, 0, 0, 0);
+        insert_session(&conn, "s2", "p", date_ms("2026-01-01"), 1, 0, 0, 0);
+        insert_session(&conn, "s3", "p", date_ms("2025-12-31"), 1, 0, 0, 0);
+        let ys = years(&conn).unwrap();
+        assert_eq!(ys, vec![2024, 2025, 2026]);
+    }
+
+    #[test]
+    fn status_reports_count_and_meta_last_sync() {
+        let conn = empty_db();
+        insert_session(&conn, "s1", "p", date_ms("2026-01-01"), 1, 0, 0, 0);
+        insert_session(&conn, "s2", "p", date_ms("2026-01-02"), 1, 0, 0, 0);
+        set_meta(&conn, "last_sync_at", "1700000000000");
+        let s = status(&conn).unwrap();
+        assert_eq!(s.session_count, 2);
+        assert_eq!(s.last_sync_at, Some(1_700_000_000_000));
+    }
+
+    #[test]
+    fn status_returns_none_when_meta_missing() {
+        let conn = empty_db();
+        let s = status(&conn).unwrap();
+        assert_eq!(s.session_count, 0);
+        assert_eq!(s.last_sync_at, None);
     }
 }
