@@ -37,6 +37,9 @@ function uiAliasPlugin(): Plugin {
 
 // Tauri-friendly Vite config. Port 1420 to avoid collision with packages/ui (5173).
 export default defineConfig({
+  define: {
+    'import.meta.env.VITE_TRANSPORT': JSON.stringify('tauri'),
+  },
   plugins: [react(), uiAliasPlugin()],
   clearScreen: false,
   server: {
