@@ -12,6 +12,7 @@ export default defineConfig({
     alias: {
       '@': path.resolve(rootDir, 'src'),
       '@tauri-apps/api/core': path.resolve(rootDir, 'tests/test/stubs/tauri-api-core.ts'),
+      '@tauri-apps/api/event': path.resolve(rootDir, 'tests/test/stubs/tauri-api-event.ts'),
     },
   },
   server: {

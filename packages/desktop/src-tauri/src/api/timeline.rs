@@ -6,8 +6,8 @@ use std::path::PathBuf;
 
 use ohmyc_core::error::ApiError;
 use ohmyc_core::timeline::{
-    self, EventsQuery, EventsResult, HeatmapPoint, HeatmapQuery, Metric, ProjectGroup,
-    SessionDetail, TimelineStatus,
+    self, EventsQuery, EventsResult, HeatmapPoint, HeatmapQuery, Metric, SessionDetail,
+    TimelineStatus,
 };
 use serde::Serialize;
 
@@ -94,9 +94,6 @@ pub fn timeline_status() -> Result<TimelineStatus, ApiError> {
     let conn = timeline::open_db(&db_path()?)?;
     timeline::status(&conn)
 }
-
-#[allow(dead_code)]
-fn _project_group_used(_: ProjectGroup) {}
 
 fn ms_to_date(ms: i64) -> String {
     use chrono::{TimeZone, Utc};

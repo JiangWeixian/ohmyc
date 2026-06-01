@@ -3,7 +3,7 @@
 //! to the frontend as `fs:changed`.
 
 use std::path::PathBuf;
-use std::sync::mpsc::{Receiver, Sender};
+use std::sync::mpsc::Sender;
 use std::time::Duration;
 
 use notify::RecursiveMode;
@@ -54,9 +54,12 @@ pub fn spawn(
         if !path.exists() {
             continue;
         }
+        // Recursive: slices 3+ depend on detecting writes nested under
+        // ~/.claude (e.g. profiles/<name>.yaml, agents/<name>.md). The
+        // debouncer collapses bursts so cost stays low.
         debouncer
             .watcher()
-            .watch(path, RecursiveMode::NonRecursive)
+            .watch(path, RecursiveMode::Recursive)
             .map_err(|e| ApiError::Internal(format!("watch {}: {e}", path.display())))?;
     }
     Ok(debouncer)
@@ -77,7 +80,7 @@ pub fn default_watch_paths() -> Result<Vec<PathBuf>, ApiError> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use std::sync::mpsc::channel;
+    use std::sync::mpsc::{channel, Receiver};
 
     #[test]
     fn fs_event_serializes_with_tag_and_path() {
@@ -114,5 +117,29 @@ mod tests {
 
         let event = rx.recv_timeout(Duration::from_secs(2)).expect("event received");
         assert!(matches!(event, FsEvent::TimelineDb { .. }));
+    }
+
+    #[test]
+    fn debouncer_emits_event_for_nested_writes() {
+        // Slices 3+ will rely on this — claude-home writes land under
+        // nested dirs (profiles/<name>.yaml, agents/<name>.md). Lock in
+        // that the recursive watcher catches them.
+        let dir = tempfile::tempdir().unwrap();
+        let nested = dir.path().join("profiles");
+        std::fs::create_dir_all(&nested).unwrap();
+        let (tx, rx): (Sender<FsEvent>, Receiver<FsEvent>) = channel();
+        let _debouncer = spawn(vec![dir.path().to_path_buf()], tx).unwrap();
+
+        std::thread::sleep(Duration::from_millis(50));
+        std::fs::write(nested.join("default.yaml"), "name: default\n").unwrap();
+
+        let event = rx.recv_timeout(Duration::from_secs(2)).expect("event received");
+        match event {
+            FsEvent::ClaudeHome { path } => {
+                assert!(path.contains("profiles"));
+                assert!(path.ends_with("default.yaml"));
+            }
+            other => panic!("expected ClaudeHome for nested write, got {other:?}"),
+        }
     }
 }

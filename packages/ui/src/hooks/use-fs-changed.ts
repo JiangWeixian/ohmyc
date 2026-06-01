@@ -11,7 +11,10 @@ interface FsEvent {
  * Query keys so views re-fetch automatically.
  *
  * No-ops when running outside Tauri (web dev loop) — the dynamic import
- * fails gracefully without crashing the hook.
+ * of the tauri-event bridge fails gracefully without crashing the hook.
+ * The bridge file is the only place that statically imports
+ * `@tauri-apps/api/event`, which keeps that dep out of the web/test
+ * bundles unless this hook actually runs in the Tauri build.
  */
 export function useFsChanged(): void {
   const qc = useQueryClient()
@@ -22,11 +25,9 @@ export function useFsChanged(): void {
 
     void (async () => {
       try {
-        const tauriEventModule = '@tauri-apps/api/event'
-        const mod = await import(/* webpackChunkName: "tauri-event" */ tauriEventModule) as Record<string, (...args: unknown[]) => Promise<unknown>>
-        const listen = mod.listen as (event: string, handler: (ev: { payload: FsEvent }) => void) => Promise<() => void>
-        const off = await listen('fs:changed', (ev) => {
-          if (ev.payload.kind === 'timeline_db') {
+        const { subscribe } = await import('../lib/tauri-event-bridge')
+        const off = await subscribe<FsEvent>('fs:changed', (payload) => {
+          if (payload.kind === 'timeline_db') {
             void qc.invalidateQueries({ queryKey: ['timeline'] })
           }
         })
@@ -36,7 +37,8 @@ export function useFsChanged(): void {
           unlisten = off
         }
       } catch {
-        // Not running inside Tauri — nothing to subscribe to.
+        // Not running inside Tauri (no @tauri-apps/api/event resolvable),
+        // or the bridge file failed to import — nothing to subscribe to.
       }
     })()
 
