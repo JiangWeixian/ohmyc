@@ -1,49 +1,106 @@
-// Verifies useAgents threads the SourceSwitcher selection into ?origins= and the React Query cache key.
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { renderHook, waitFor } from '@testing-library/react'
 import {
+  afterEach,
   beforeEach,
   describe,
   expect,
   it,
-  vi,
 } from 'vitest'
 
-import { REGISTERED_ORIGINS, useSources } from '../state/sources'
-import { useAgents } from './use-agents'
+import { useAgent, useAgents } from './use-agents'
+import { __setTransportForTests, resetTransportForTests } from '@/lib/transport'
+import { resetMock, setMockHandler } from '@/lib/transport/mock'
+import { useSources } from '@/state/sources'
 
-import type { ReactNode } from 'react'
-
-function makeWrapper() {
-  const client = new QueryClient({ defaultOptions: { queries: { retry: false } } })
-  return ({ children }: { children: ReactNode }) => (
+function wrapper() {
+  const client = new QueryClient({
+    defaultOptions: { queries: { retry: false } },
+  })
+  return ({ children }: { children: React.ReactNode }) => (
     <QueryClientProvider client={client}>{children}</QueryClientProvider>
   )
 }
 
-describe('useAgents origins query wiring', () => {
-  beforeEach(() => {
-    localStorage.clear()
-    useSources.setState({ selected: new Set(REGISTERED_ORIGINS) })
-    vi.restoreAllMocks()
+beforeEach(() => {
+  __setTransportForTests('mock')
+  useSources.setState({ selected: new Set(['claude', 'opencode']) })
+})
+
+afterEach(() => {
+  resetMock()
+  resetTransportForTests()
+})
+
+describe('useAgents', () => {
+  it('returns the agents array unwrapped from the response envelope', async () => {
+    setMockHandler('agents.list', async () => ({
+      agents: [{ id: 'a1', frontmatter: { name: 'a1', description: 'd' }, content: '', raw: '', filename: 'a1.md', source: 'local' }],
+    }))
+    const { result } = renderHook(() => useAgents(), { wrapper: wrapper() })
+    await waitFor(() => expect(result.current.isSuccess).toBe(true))
+    expect(result.current.data).toHaveLength(1)
+    expect(result.current.data?.[0].id).toBe('a1')
   })
 
-  it('omits ?origins= when all sources are selected', async () => {
-    const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValue(
-      Response.json({ agents: [] }, { status: 200 }),
-    )
-    renderHook(() => useAgents(), { wrapper: makeWrapper() })
-    await waitFor(() => expect(fetchSpy).toHaveBeenCalled())
-    expect(fetchSpy.mock.calls[0][0]).toBe('/api/agents')
+  it('does not pass origins when all sources are selected', async () => {
+    let captured: unknown = null
+    setMockHandler('agents.list', async (args) => {
+      captured = args
+      return { agents: [] }
+    })
+    renderHook(() => useAgents(), { wrapper: wrapper() })
+    await waitFor(() => {
+      expect(captured).not.toBeNull()
+    })
+    expect((captured as Record<string, unknown>).origins).toBeUndefined()
   })
 
-  it('appends sorted ?origins= when a subset is selected', async () => {
+  it('passes origins=claude when only claude is selected', async () => {
     useSources.setState({ selected: new Set(['claude']) })
-    const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValue(
-      Response.json({ agents: [] }, { status: 200 }),
+    let captured: unknown = null
+    setMockHandler('agents.list', async (args) => {
+      captured = args
+      return { agents: [] }
+    })
+    renderHook(() => useAgents(), { wrapper: wrapper() })
+    await waitFor(() => {
+      expect(captured).not.toBeNull()
+    })
+    expect((captured as { origins?: string }).origins).toBe('claude')
+  })
+})
+
+describe('useAgent', () => {
+  it('returns the agent unwrapped from the response envelope', async () => {
+    setMockHandler('agents.get', async () => ({
+      agent: { id: 'x', frontmatter: { name: 'x', description: 'd' }, content: '', raw: '', filename: 'x.md', source: 'local' },
+    }))
+    const { result } = renderHook(
+      () => useAgent({ name: 'x' }),
+      { wrapper: wrapper() },
     )
-    renderHook(() => useAgents(), { wrapper: makeWrapper() })
-    await waitFor(() => expect(fetchSpy).toHaveBeenCalled())
-    expect(fetchSpy.mock.calls[0][0]).toBe('/api/agents?origins=claude')
+    await waitFor(() => expect(result.current.isSuccess).toBe(true))
+    expect(result.current.data?.id).toBe('x')
+  })
+
+  it('forwards locator fields (source, pluginId, scope) as args', async () => {
+    let captured: unknown = null
+    setMockHandler('agents.get', async (args) => {
+      captured = args
+      return { agent: { id: 'x', frontmatter: { name: 'x', description: 'd' }, content: '', raw: '', filename: 'x.md', source: 'local' } }
+    })
+    renderHook(
+      () => useAgent({ name: 'x', source: 'plugin', pluginId: 'p1', scope: 'global' }),
+      { wrapper: wrapper() },
+    )
+    await waitFor(() => expect(captured).not.toBeNull())
+    expect(captured).toEqual({ name: 'x', source: 'plugin', pluginId: 'p1', scope: 'global' })
+  })
+
+  it('is disabled when no locator is provided', async () => {
+    const { result } = renderHook(() => useAgent(null), { wrapper: wrapper() })
+    expect(result.current.isLoading).toBe(false)
+    expect(result.current.isFetched).toBe(false)
   })
 })
