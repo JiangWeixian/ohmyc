@@ -7,6 +7,12 @@ const routes: Record<string, (args: Record<string, unknown>) => string> = {
   'timeline.projects': () => '/api/timeline/projects',
   'timeline.years': () => '/api/timeline/years',
   'timeline.status': () => '/api/timeline/status',
+  'agents.list': (a) => `/api/agents${a.origins ? `?${qs({ origins: a.origins })}` : ''}`,
+  'agents.get': (a) => `/api/agents/${encodeURIComponent(String(a.name ?? ''))}${detailQs(a)}`,
+  'skills.list': (a) => `/api/skills${a.origins ? `?${qs({ origins: a.origins })}` : ''}`,
+  'skills.get': (a) => `/api/skills/${encodeURIComponent(String(a.name ?? ''))}${detailQs(a)}`,
+  'commands.list': (a) => `/api/commands${a.origins ? `?${qs({ origins: a.origins })}` : ''}`,
+  'commands.get': (a) => `/api/commands/${encodeURIComponent(String(a.name ?? ''))}${detailQs(a)}`,
 }
 
 function qs(args: Record<string, unknown>): string {
@@ -18,6 +24,17 @@ function qs(args: Record<string, unknown>): string {
     out.set(k, String(v))
   }
   return out.toString()
+}
+
+function detailQs(args: Record<string, unknown>): string {
+  const subset: Record<string, unknown> = {}
+  for (const k of ['source', 'pluginId', 'scope']) {
+    if (args[k] !== undefined && args[k] !== null) {
+      subset[k] = args[k]
+    }
+  }
+  const out = qs(subset)
+  return out ? `?${out}` : ''
 }
 
 export const fetchTransport: Transport = async (wire, args) => {
