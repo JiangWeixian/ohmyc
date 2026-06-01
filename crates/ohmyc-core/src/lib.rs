@@ -3,6 +3,7 @@
 //! testable standalone.
 
 pub mod claude_home;
+pub mod components;
 pub mod error;
 pub mod timeline;
 pub mod watcher;
