@@ -21,6 +21,12 @@ fn main() {
             ohmyc_desktop_lib::api::timeline::timeline_projects,
             ohmyc_desktop_lib::api::timeline::timeline_years,
             ohmyc_desktop_lib::api::timeline::timeline_status,
+            ohmyc_desktop_lib::api::agents::agents_list,
+            ohmyc_desktop_lib::api::agents::agents_get,
+            ohmyc_desktop_lib::api::skills::skills_list,
+            ohmyc_desktop_lib::api::skills::skills_get,
+            ohmyc_desktop_lib::api::commands::commands_list,
+            ohmyc_desktop_lib::api::commands::commands_get,
         ])
         .setup(|app| {
             #[cfg(target_os = "macos")]
