@@ -9,18 +9,10 @@ use ohmyc_core::timeline::{
     self, EventsQuery, EventsResult, HeatmapPoint, HeatmapQuery, Metric, ProjectGroup,
     SessionDetail, TimelineStatus,
 };
-use serde::{Deserialize, Serialize};
+use serde::Serialize;
 
 fn db_path() -> Result<PathBuf, ApiError> {
     timeline::default_db_path()
-}
-
-#[derive(Deserialize)]
-pub struct HeatmapArgs {
-    pub from: i64,
-    pub to: i64,
-    pub metric: String,
-    pub project: Option<String>,
 }
 
 #[derive(Serialize)]
@@ -29,53 +21,50 @@ pub struct HeatmapResponse {
 }
 
 #[tauri::command]
-pub fn timeline_heatmap(args: HeatmapArgs) -> Result<HeatmapResponse, ApiError> {
+pub fn timeline_heatmap(
+    from: i64,
+    to: i64,
+    metric: String,
+    project: Option<String>,
+) -> Result<HeatmapResponse, ApiError> {
     let conn = timeline::open_db(&db_path()?)?;
     let data = timeline::heatmap(
         &conn,
         HeatmapQuery {
-            from: ms_to_date(args.from),
-            to: ms_to_date(args.to),
-            metric: Metric::parse(&args.metric)?,
-            project: args.project,
+            from: ms_to_date(from),
+            to: ms_to_date(to),
+            metric: Metric::parse(&metric)?,
+            project,
         },
     )?;
     Ok(HeatmapResponse { data })
 }
 
-#[derive(Deserialize)]
-pub struct EventsArgs {
-    pub from: Option<i64>,
-    pub to: Option<i64>,
-    pub project: Option<String>,
-    pub limit: Option<i64>,
-    pub cursor: Option<String>,
-}
-
 #[tauri::command]
-pub fn timeline_events(args: EventsArgs) -> Result<EventsResult, ApiError> {
+pub fn timeline_events(
+    from: Option<i64>,
+    to: Option<i64>,
+    project: Option<String>,
+    limit: Option<i64>,
+    cursor: Option<String>,
+) -> Result<EventsResult, ApiError> {
     let conn = timeline::open_db(&db_path()?)?;
     timeline::events(
         &conn,
         EventsQuery {
-            from: args.from.map(ms_to_date),
-            to: args.to.map(ms_to_date),
-            project: args.project,
-            limit: args.limit,
-            cursor: args.cursor,
+            from: from.map(ms_to_date),
+            to: to.map(ms_to_date),
+            project,
+            limit,
+            cursor,
         },
     )
 }
 
-#[derive(Deserialize)]
-pub struct SessionArgs {
-    pub id: String,
-}
-
 #[tauri::command]
-pub fn timeline_session(args: SessionArgs) -> Result<Option<SessionDetail>, ApiError> {
+pub fn timeline_session(id: String) -> Result<Option<SessionDetail>, ApiError> {
     let conn = timeline::open_db(&db_path()?)?;
-    timeline::session(&conn, &args.id)
+    timeline::session(&conn, &id)
 }
 
 #[derive(Serialize)]
