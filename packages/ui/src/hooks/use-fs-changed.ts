@@ -29,6 +29,19 @@ export function useFsChanged(): void {
         const off = await subscribe<FsEvent>('fs:changed', (payload) => {
           if (payload.kind === 'timeline_db') {
             void qc.invalidateQueries({ queryKey: ['timeline'] })
+            return
+          }
+          if (payload.kind === 'claude_home') {
+            const path = payload.path
+            if (path.includes('/agents/')) {
+              void qc.invalidateQueries({ queryKey: ['agents'] })
+            }
+            if (path.includes('/skills/')) {
+              void qc.invalidateQueries({ queryKey: ['skills'] })
+            }
+            if (path.includes('/commands/')) {
+              void qc.invalidateQueries({ queryKey: ['commands'] })
+            }
           }
         })
         if (cancelled) {
