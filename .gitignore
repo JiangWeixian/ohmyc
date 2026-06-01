@@ -49,6 +49,8 @@ log/
 # Coverage
 coverage/
 
+# Rust build artifacts
+target/
+
 # Worktrees
 .worktrees/
-packages/desktop/src-tauri/target/
