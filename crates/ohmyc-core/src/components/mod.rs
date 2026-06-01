@@ -30,6 +30,23 @@ pub enum Scope {
     Global,
 }
 
+use std::path::PathBuf;
+
+use crate::claude_home;
+use crate::error::ApiError;
+
+pub fn agents_dir() -> Result<PathBuf, ApiError> {
+    Ok(claude_home::resolve()?.join("agents"))
+}
+
+pub fn skills_dir() -> Result<PathBuf, ApiError> {
+    Ok(claude_home::resolve()?.join("skills"))
+}
+
+pub fn commands_dir() -> Result<PathBuf, ApiError> {
+    Ok(claude_home::resolve()?.join("commands"))
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -48,6 +65,24 @@ mod tests {
         assert!(!is_safe_name("../etc/passwd"));
         assert!(!is_safe_name("a/b"));
         assert!(!is_safe_name("with space"));
+    }
+
+    use std::sync::Mutex;
+
+    static ENV_LOCK: Mutex<()> = Mutex::new(());
+
+    #[test]
+    fn component_dirs_compose_under_claude_home() {
+        let _lock = ENV_LOCK.lock().unwrap();
+        let prev = std::env::var("OHMYC_CLAUDE_HOME").ok();
+        std::env::set_var("OHMYC_CLAUDE_HOME", "/tmp/fake-home");
+        assert_eq!(agents_dir().unwrap(), PathBuf::from("/tmp/fake-home/agents"));
+        assert_eq!(skills_dir().unwrap(), PathBuf::from("/tmp/fake-home/skills"));
+        assert_eq!(commands_dir().unwrap(), PathBuf::from("/tmp/fake-home/commands"));
+        match prev {
+            Some(v) => std::env::set_var("OHMYC_CLAUDE_HOME", v),
+            None => std::env::remove_var("OHMYC_CLAUDE_HOME"),
+        }
     }
 
     #[test]
