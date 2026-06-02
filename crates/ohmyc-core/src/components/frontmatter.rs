@@ -8,9 +8,27 @@ pub fn parse(raw: &str) -> Result<(Value, String), ApiError> {
     let matter = Matter::<YAML>::new();
     let parsed = matter.parse(raw);
     let frontmatter = match parsed.data {
-        Some(pod) => pod
-            .deserialize::<Value>()
-            .map_err(|e| ApiError::Parse(format!("frontmatter: {e}")))?,
+        Some(pod) => {
+            let value = pod
+                .deserialize::<Value>()
+                .map_err(|e| ApiError::Parse(format!("frontmatter: {e}")))?;
+            // gray_matter is lenient — malformed YAML between `---` delimiters
+            // can deserialize to `Null`. Every caller assumes the frontmatter
+            // is a JSON object (uses `.get("name")` etc.), so reject here so
+            // the failure is loud at the boundary instead of silently treating
+            // every field as missing.
+            if value.is_null() {
+                return Err(ApiError::Parse(
+                    "frontmatter: empty or unparseable YAML between --- delimiters".to_string(),
+                ));
+            }
+            if !value.is_object() {
+                return Err(ApiError::Parse(format!(
+                    "frontmatter: expected YAML mapping, got {value}"
+                )));
+            }
+            value
+        }
         None => Value::Object(serde_json::Map::new()),
     };
     Ok((frontmatter, parsed.content.trim().to_string()))
@@ -48,10 +66,14 @@ mod tests {
 
     #[test]
     fn errors_on_malformed_yaml() {
-        let raw = "---\nkey:\n  - a\n - b\n---\nbody\n";
-        let result = parse(raw);
-        if let Err(ApiError::Parse(msg)) = &result {
-            assert!(msg.contains("frontmatter"));
+        // Unterminated double-quoted scalar — YAML grammar requires the
+        // closing quote, so gray_matter's underlying yaml-rust parser
+        // rejects this with a scanner error.
+        let raw = "---\nname: \"unterminated\n---\nbody\n";
+        let err = parse(raw).expect_err("expected Err for unterminated quote");
+        match err {
+            ApiError::Parse(msg) => assert!(msg.contains("frontmatter"), "got: {msg}"),
+            other => panic!("expected ApiError::Parse, got {other:?}"),
         }
     }
 }

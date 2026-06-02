@@ -47,6 +47,18 @@ pub fn commands_dir() -> Result<PathBuf, ApiError> {
     Ok(claude_home::resolve()?.join("commands"))
 }
 
+/// Read a Markdown file, treating "file vanished between listing and read"
+/// (NotFound) as a benign skip (Ok(None)) and surfacing every other I/O
+/// failure (permission denied, transient FS error, etc.) as ApiError::Io.
+/// Centralizes the policy so the three reader modules agree.
+pub fn read_md_or_skip(path: &std::path::Path) -> Result<Option<String>, ApiError> {
+    match std::fs::read_to_string(path) {
+        Ok(s) => Ok(Some(s)),
+        Err(e) if e.kind() == std::io::ErrorKind::NotFound => Ok(None),
+        Err(e) => Err(ApiError::Io(format!("read {}: {e}", path.display()))),
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

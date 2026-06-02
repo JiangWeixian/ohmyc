@@ -4,7 +4,7 @@ use serde::Serialize;
 use serde_json::Value;
 
 use super::frontmatter;
-use super::{is_safe_name, ComponentSource, Origin, Scope};
+use super::{is_safe_name, read_md_or_skip, ComponentSource, Origin, Scope};
 use crate::error::ApiError;
 
 #[derive(Debug, Clone, Serialize)]
@@ -35,9 +35,9 @@ pub fn list(dir: &Path) -> Result<Vec<Agent>, ApiError> {
             Some(f) => f.to_string(),
             None => continue,
         };
-        let raw = match std::fs::read_to_string(&path) {
-            Ok(s) => s,
-            Err(_) => continue,
+        let raw = match read_md_or_skip(&path)? {
+            Some(s) => s,
+            None => continue,
         };
         if let Some(agent) = parse_agent(&filename, &raw)? {
             out.push(agent);
@@ -53,9 +53,8 @@ pub fn get(dir: &Path, name: &str) -> Result<Option<Agent>, ApiError> {
     }
     let filename = format!("{name}.md");
     let path: PathBuf = dir.join(&filename);
-    let raw = match std::fs::read_to_string(&path) {
-        Ok(s) => s,
-        Err(_) => return Ok(None),
+    let Some(raw) = read_md_or_skip(&path)? else {
+        return Ok(None);
     };
     parse_agent(&filename, &raw)
 }

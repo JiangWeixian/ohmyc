@@ -4,7 +4,7 @@ use serde::Serialize;
 use serde_json::Value;
 
 use super::frontmatter;
-use super::{is_safe_name, ComponentSource, Origin, Scope};
+use super::{is_safe_name, read_md_or_skip, ComponentSource, Origin, Scope};
 use crate::error::ApiError;
 
 const SKILL_FILE: &str = "SKILL.md";
@@ -39,9 +39,9 @@ pub fn list(dir: &Path) -> Result<Vec<Skill>, ApiError> {
             None => continue,
         };
         let skill_path = path.join(SKILL_FILE);
-        let raw = match std::fs::read_to_string(&skill_path) {
-            Ok(s) => s,
-            Err(_) => continue,
+        let raw = match read_md_or_skip(&skill_path)? {
+            Some(s) => s,
+            None => continue,
         };
         if let Some(skill) = parse_skill(&dir_name, &raw)? {
             out.push(skill);
@@ -56,9 +56,8 @@ pub fn get(dir: &Path, name: &str) -> Result<Option<Skill>, ApiError> {
         return Ok(None);
     }
     let skill_path: PathBuf = dir.join(name).join(SKILL_FILE);
-    let raw = match std::fs::read_to_string(&skill_path) {
-        Ok(s) => s,
-        Err(_) => return Ok(None),
+    let Some(raw) = read_md_or_skip(&skill_path)? else {
+        return Ok(None);
     };
     parse_skill(name, &raw)
 }
