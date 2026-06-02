@@ -254,17 +254,29 @@ commands which share shape). Slice steps:
 3. **Agents + Skills + Commands** — bundled (same shape: list, get). Lights up
    the read-only Explorer surfaces (`/explore/agents`, `/explore/skills`,
    `/explore/commands`) inside the desktop main window.
-4. **Configs + Settings + Store** — bundled (config-like). Reads + a few writes;
-   first slice where the `transport/fetch.ts` URL table needs methods/body so
-   the seam shape lands on a smaller, lower-risk surface.
-5. **Plugins + Marketplaces** — completes Explorer (`/explore/plugins`). Main
+4. **Configs + Settings** — `use-settings.ts` (1 read + 1 write of
+   `~/.claude/settings.json`) plus `use-configs.ts` (3 read-only endpoints:
+   `mcp`, `hooks`, `lsp`, minimal-port scope-cut consistent with slice 3 —
+   plugin/project merge deferred to slice 6). First slice with mutating
+   endpoints (POST/PUT) so the `transport/fetch.ts` URL table grows to return
+   `{ url, method, body }` instead of a bare URL. Settings is the simplest
+   write target (one JSON blob), so the seam shape lands on the lowest-risk
+   surface.
+5. **Store CRUD** — `use-store.ts` migration: 21 hooks across 4 entity types
+   (agents, skills, commands, model-configs) × 5 ops (list, get, create,
+   update, delete) plus bulk import. Exercises the write seam at scale and
+   lands the "Used by N profiles" reference-check logic that Profiles
+   (slice 7) depends on for safe-delete confirmation. Was bundled with
+   slice 4 in earlier drafts; split out because the store alone is larger
+   than slice 3's entire scope.
+6. **Plugins + Marketplaces** — completes Explorer (`/explore/plugins`). Main
    window is fully read-functional by the end of this slice.
-6. **Profiles** — list/get/create/update/delete/activate/deactivate/preflight.
+7. **Profiles** — list/get/create/update/delete/activate/deactivate/preflight.
    Largest surface and biggest risk; pulled last so the transport seam (incl.
-   write-endpoint patterns from slice 4), the watcher, the error shape, and the
-   per-slice migration cadence are all battle-tested before the killer flow
-   moves over.
-7. **Cleanup** — delete `packages/cli/src/server`, `serve`, `launcher`,
+   write-endpoint patterns from slices 4-5), the watcher, the error shape,
+   and the per-slice migration cadence are all battle-tested before the
+   killer flow moves over.
+8. **Cleanup** — delete `packages/cli/src/server`, `serve`, `launcher`,
    `migrate-home`; delete `transport/fetch.ts`; trim `packages/cli` to only the
    `dashboard` command; delete `pnpm dev` from `packages/ui` (or repurpose to a
    static fixture dev mode).
@@ -345,6 +357,7 @@ slice ships and the TS reader is gone.
 | 11 | `fs:changed` Tauri event + React Query invalidation | Mirrors existing live-update semantics; debounced 250ms |
 | 12 | Tray menu gains "Open OhMyC" | Discoverability for users who close the popover |
 | 13 | Profiles slice moves to last (slice 6, just before cleanup) | Profiles is the killer flow and the highest-risk surface; pulling it last means the transport seam, write-endpoint shape (from Configs/Settings/Store in slice 4), watcher, error shape, and migration cadence are all battle-tested before the killer flow moves over. Explorer reads light up by slice 3; Settings by slice 4; Plugins by slice 5 — main window is fully read-functional before Profiles even starts |
+| 14 | Slice 4 splits into 4 (Configs+Settings) and 5 (Store CRUD); Plugins/Profiles/Cleanup renumber to 6/7/8 | Original spec underestimated Store complexity: 21 CRUD hooks across 4 entity types is bigger than slice 3's entire scope, contradicting the spec's "each slice produces working testable software on its own" invariant. Settings becomes the simplest write target to land the `{ url, method, body }` URL-table shape; Store CRUD then exercises the same shape at scale and adds the "Used by N profiles" reference logic that Profiles needs. Other slices unchanged structurally — only numbering shifts |
 
 ## Open questions for review
 
