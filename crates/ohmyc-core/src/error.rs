@@ -23,6 +23,9 @@ pub enum ApiError {
     #[error("conflict: {0}")]
     Conflict(String),
 
+    #[error("validation error: {0}")]
+    Validation(String),
+
     #[error("internal error: {0}")]
     Internal(String),
 }
@@ -62,6 +65,14 @@ mod tests {
             ApiError::Io(msg) => assert!(msg.contains("no such file")),
             _ => panic!("expected ApiError::Io"),
         }
+    }
+
+    #[test]
+    fn validation_serializes_with_code_and_string_detail() {
+        let err = ApiError::Validation("content must be a JSON object".to_string());
+        let json = serde_json::to_value(&err).unwrap();
+        assert_eq!(json["code"], "Validation");
+        assert_eq!(json["detail"], "content must be a JSON object");
     }
 
     #[test]
