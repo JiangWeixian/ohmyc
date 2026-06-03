@@ -1,6 +1,5 @@
 pub mod agents;
 pub mod commands;
-pub mod configs;
 pub mod settings;
 pub mod skills;
 pub mod timeline;
