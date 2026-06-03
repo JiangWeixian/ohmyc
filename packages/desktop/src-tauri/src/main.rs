@@ -27,6 +27,11 @@ fn main() {
             ohmyc_desktop_lib::api::skills::skills_get,
             ohmyc_desktop_lib::api::commands::commands_list,
             ohmyc_desktop_lib::api::commands::commands_get,
+            ohmyc_desktop_lib::api::settings::settings_get,
+            ohmyc_desktop_lib::api::settings::settings_set,
+            ohmyc_desktop_lib::api::configs::configs_mcp,
+            ohmyc_desktop_lib::api::configs::configs_hooks,
+            ohmyc_desktop_lib::api::configs::configs_lsp,
         ])
         .setup(|app| {
             #[cfg(target_os = "macos")]
