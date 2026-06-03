@@ -91,4 +91,53 @@ describe('transport seam', () => {
       globalThis.fetch = orig
     }
   })
+
+  it('fetch transport sends POST with JSON body for settings.set', async () => {
+    const seen: Array<{ url: string; init?: RequestInit }> = []
+    const orig = globalThis.fetch
+    globalThis.fetch = (async (url: string, init?: RequestInit) => {
+      seen.push({ url, init })
+      return new Response(JSON.stringify({ success: true, path: '/x' }), {
+        status: 200,
+        headers: { 'content-type': 'application/json' },
+      })
+    }) as typeof fetch
+    try {
+      const { fetchTransport } = await import('./fetch')
+      await fetchTransport('settings.set', { content: { model: 'sonnet' } })
+      expect(seen).toHaveLength(1)
+      expect(seen[0].url).toBe('/api/settings')
+      expect(seen[0].init?.method).toBe('POST')
+      const body = JSON.parse(String(seen[0].init?.body ?? ''))
+      expect(body).toEqual({ content: { model: 'sonnet' } })
+      expect((seen[0].init?.headers as Record<string, string>)['Content-Type']).toBe('application/json')
+    }
+    finally {
+      globalThis.fetch = orig
+    }
+  })
+
+  it('fetch transport sends GET for settings.get with optional project query', async () => {
+    const calls: string[] = []
+    const orig = globalThis.fetch
+    globalThis.fetch = (async (url: string) => {
+      calls.push(url)
+      return new Response(JSON.stringify({ exists: false, content: null, path: '/x' }), {
+        status: 200,
+        headers: { 'content-type': 'application/json' },
+      })
+    }) as typeof fetch
+    try {
+      const { fetchTransport } = await import('./fetch')
+      await fetchTransport('settings.get', {})
+      await fetchTransport('settings.get', { project: '/my/project' })
+      expect(calls).toEqual([
+        '/api/settings',
+        '/api/settings?project=%2Fmy%2Fproject',
+      ])
+    }
+    finally {
+      globalThis.fetch = orig
+    }
+  })
 })
