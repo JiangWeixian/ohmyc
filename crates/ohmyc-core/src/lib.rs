@@ -4,6 +4,7 @@
 
 pub mod claude_home;
 pub mod components;
+pub mod configs;
 pub mod error;
 pub mod settings;
 pub mod timeline;
