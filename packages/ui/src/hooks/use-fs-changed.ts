@@ -42,6 +42,14 @@ export function useFsChanged(): void {
             if (path.includes('/commands/')) {
               void qc.invalidateQueries({ queryKey: ['commands'] })
             }
+            if (path.endsWith('/settings.json')) {
+              void qc.invalidateQueries({ queryKey: ['settings'] })
+              void qc.invalidateQueries({ queryKey: ['hooks'] })
+              void qc.invalidateQueries({ queryKey: ['lsp'] })
+            }
+            if (path.endsWith('/.mcp.json')) {
+              void qc.invalidateQueries({ queryKey: ['mcp'] })
+            }
           }
         })
         if (cancelled) {

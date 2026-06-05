@@ -1,14 +1,8 @@
 // React Query hooks for MCP servers, hooks, and LSP server configuration queries.
+// Backend transport is selected at build time via packages/ui/src/lib/transport.ts.
 import { useQuery } from '@tanstack/react-query'
 
-/** Generic JSON fetch helper with error handling. */
-async function fetchJson<Type>(url: string): Promise<Type> {
-  const res = await fetch(url)
-  if (!res.ok) {
-    throw new Error(`Failed to fetch ${url}`)
-  }
-  return res.json()
-}
+import { request } from '@/lib/transport'
 
 /** A single MCP or LSP server entry after merging all sources. */
 export interface ConfigEntry {
@@ -29,29 +23,26 @@ export interface HookEntry {
   pluginId?: string
 }
 
-/** Query hook for MCP servers merged from local, plugin, and project sources. */
 export function useMcpServers() {
   return useQuery({
     queryKey: ['mcp'],
-    queryFn: () => fetchJson<{ mcpServers: ConfigEntry[] }>('/api/mcp'),
+    queryFn: () => request<{ mcpServers: ConfigEntry[] }>('configs.mcp', {}),
     select: data => data.mcpServers,
   })
 }
 
-/** Query hook for hooks merged from local, plugin, and project sources. */
 export function useHooks() {
   return useQuery({
     queryKey: ['hooks'],
-    queryFn: () => fetchJson<{ hooks: HookEntry[] }>('/api/hooks'),
+    queryFn: () => request<{ hooks: HookEntry[] }>('configs.hooks', {}),
     select: data => data.hooks,
   })
 }
 
-/** Query hook for LSP servers merged from local, plugin, and project sources. */
 export function useLspServers() {
   return useQuery({
     queryKey: ['lsp'],
-    queryFn: () => fetchJson<{ lspServers: ConfigEntry[] }>('/api/lsp'),
+    queryFn: () => request<{ lspServers: ConfigEntry[] }>('configs.lsp', {}),
     select: data => data.lspServers,
   })
 }
