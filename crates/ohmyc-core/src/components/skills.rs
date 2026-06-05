@@ -92,6 +92,74 @@ fn parse_skill(dir_name: &str, raw: &str) -> Result<Option<Skill>, ApiError> {
     }))
 }
 
+pub fn create(dir: &Path, frontmatter: &Value, content: &str) -> Result<Skill, ApiError> {
+    let name = frontmatter
+        .get("name")
+        .and_then(|v| v.as_str())
+        .ok_or_else(|| ApiError::InvalidInput("frontmatter.name is required".to_string()))?;
+    if !is_safe_name(name) {
+        return Err(ApiError::InvalidInput(format!(
+            "skill name '{name}' must match [a-zA-Z0-9_-]"
+        )));
+    }
+    let skill_dir = dir.join(name);
+    if skill_dir.exists() {
+        return Err(ApiError::Conflict(format!("skill '{name}' already exists")));
+    }
+    std::fs::create_dir_all(&skill_dir)
+        .map_err(|e| ApiError::Io(format!("mkdir {}: {e}", skill_dir.display())))?;
+    let raw = frontmatter::stringify(frontmatter, content)?;
+    let file_path = skill_dir.join(SKILL_FILE);
+    std::fs::write(&file_path, &raw)
+        .map_err(|e| ApiError::Io(format!("write {}: {e}", file_path.display())))?;
+    parse_skill(name, &raw)?
+        .ok_or_else(|| ApiError::Internal("parse_skill returned None after create".to_string()))
+}
+
+pub fn update(
+    dir: &Path,
+    name: &str,
+    frontmatter_changes: Option<&Value>,
+    new_content: Option<&str>,
+) -> Result<Option<Skill>, ApiError> {
+    if !is_safe_name(name) {
+        return Ok(None);
+    }
+    let Some(existing) = get(dir, name)? else {
+        return Ok(None);
+    };
+    let mut merged = existing.frontmatter.clone();
+    if let Some(changes) = frontmatter_changes {
+        if let (Some(merged_obj), Some(changes_obj)) = (merged.as_object_mut(), changes.as_object())
+        {
+            for (k, v) in changes_obj {
+                merged_obj.insert(k.clone(), v.clone());
+            }
+        }
+    }
+    let body = new_content.unwrap_or(&existing.content);
+    let raw = frontmatter::stringify(&merged, body)?;
+    let file_path = dir.join(name).join(SKILL_FILE);
+    std::fs::write(&file_path, &raw)
+        .map_err(|e| ApiError::Io(format!("write {}: {e}", file_path.display())))?;
+    parse_skill(name, &raw)
+}
+
+pub fn delete(dir: &Path, name: &str) -> Result<bool, ApiError> {
+    if !is_safe_name(name) {
+        return Ok(false);
+    }
+    let skill_dir = dir.join(name);
+    match std::fs::remove_dir_all(&skill_dir) {
+        Ok(()) => Ok(true),
+        Err(e) if e.kind() == std::io::ErrorKind::NotFound => Ok(false),
+        Err(e) => Err(ApiError::Io(format!(
+            "remove {}: {e}",
+            skill_dir.display()
+        ))),
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -150,5 +218,69 @@ mod tests {
         assert!(get(dir.path(), "../bad").unwrap().is_none());
         assert!(get(dir.path(), "nonexistent").unwrap().is_none());
         assert!(get(dir.path(), "empty-dir").unwrap().is_none());
+    }
+
+    #[test]
+    fn create_creates_skill_dir_with_skill_md() {
+        let dir = tempfile::tempdir().unwrap();
+        let front = serde_json::json!({"name": "alpha", "description": "first"});
+        let skill = create(dir.path(), &front, "body").unwrap();
+        assert_eq!(skill.id, "alpha");
+        assert_eq!(skill.dir_name, "alpha");
+        assert!(dir.path().join("alpha").join("SKILL.md").exists());
+    }
+
+    #[test]
+    fn create_errors_with_conflict_when_dir_exists() {
+        let dir = tempfile::tempdir().unwrap();
+        let front = serde_json::json!({"name": "dup", "description": "d"});
+        create(dir.path(), &front, "x").unwrap();
+        let err = create(dir.path(), &front, "y").unwrap_err();
+        assert!(matches!(err, ApiError::Conflict(_)));
+    }
+
+    #[test]
+    fn create_rejects_invalid_name() {
+        let dir = tempfile::tempdir().unwrap();
+        let front = serde_json::json!({"name": "../bad", "description": "d"});
+        let err = create(dir.path(), &front, "x").unwrap_err();
+        assert!(matches!(err, ApiError::InvalidInput(_)));
+    }
+
+    #[test]
+    fn update_writes_new_skill_md_preserving_dir() {
+        let dir = tempfile::tempdir().unwrap();
+        let front = serde_json::json!({"name": "a", "description": "old"});
+        create(dir.path(), &front, "old body").unwrap();
+        let partial = serde_json::json!({"description": "new"});
+        let updated = update(dir.path(), "a", Some(&partial), Some("new body"))
+            .unwrap()
+            .expect("skill updated");
+        assert_eq!(updated.frontmatter["description"], "new");
+        assert_eq!(updated.content, "new body");
+        assert!(dir.path().join("a").join("SKILL.md").exists());
+    }
+
+    #[test]
+    fn update_returns_none_when_dir_missing() {
+        let dir = tempfile::tempdir().unwrap();
+        assert!(update(dir.path(), "missing", None, None).unwrap().is_none());
+    }
+
+    #[test]
+    fn delete_removes_entire_skill_dir() {
+        let dir = tempfile::tempdir().unwrap();
+        let front = serde_json::json!({"name": "x", "description": "d"});
+        create(dir.path(), &front, "body").unwrap();
+        std::fs::write(dir.path().join("x").join("extra.txt"), "noise").unwrap();
+        assert!(delete(dir.path(), "x").unwrap());
+        assert!(!dir.path().join("x").exists());
+    }
+
+    #[test]
+    fn delete_returns_false_when_missing_or_invalid_name() {
+        let dir = tempfile::tempdir().unwrap();
+        assert!(!delete(dir.path(), "missing").unwrap());
+        assert!(!delete(dir.path(), "../bad").unwrap());
     }
 }
