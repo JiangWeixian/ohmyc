@@ -50,6 +50,18 @@ export function useFsChanged(): void {
             if (path.endsWith('/.mcp.json')) {
               void qc.invalidateQueries({ queryKey: ['mcp'] })
             }
+            if (path.includes('/store/agents/')) {
+              void qc.invalidateQueries({ queryKey: ['store', 'agents'] })
+            }
+            if (path.includes('/store/skills/')) {
+              void qc.invalidateQueries({ queryKey: ['store', 'skills'] })
+            }
+            if (path.includes('/store/commands/')) {
+              void qc.invalidateQueries({ queryKey: ['store', 'commands'] })
+            }
+            if (path.includes('/store/model-configs/')) {
+              void qc.invalidateQueries({ queryKey: ['store', 'model-configs'] })
+            }
           }
         })
         if (cancelled) {
