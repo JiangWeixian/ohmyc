@@ -100,6 +100,12 @@ fn read_json_or_none(path: &std::path::Path) -> Result<Option<Value>, ApiError> 
         Ok(raw) => match serde_json::from_str::<Value>(&raw) {
             Ok(v) => Ok(Some(v)),
             Err(e) => {
+                // TODO(logging): eprintln! goes nowhere when Tauri detaches
+                // from the terminal on macOS/Windows production launches —
+                // a user with a corrupt config file silently sees an empty
+                // list. Migrate to `tracing::warn!` once we add a logging
+                // crate (likely slice 5 when Store CRUD adds more write
+                // surfaces that benefit from structured diagnostics).
                 eprintln!("configs: malformed JSON in {}: {e}", path.display());
                 Ok(None)
             }

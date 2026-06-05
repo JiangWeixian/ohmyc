@@ -19,5 +19,4 @@ gray_matter = { version = "0.2", default-features = false, features = ["yaml"] }
 tempfile = { workspace = true }
 
 [dev-dependencies]
-tempfile = { workspace = true }
 rstest = { workspace = true }
