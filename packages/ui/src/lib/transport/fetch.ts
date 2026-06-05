@@ -36,6 +36,55 @@ const routes: Record<string, RouteBuilder> = {
   'configs.mcp': () => '/api/mcp',
   'configs.hooks': () => '/api/hooks',
   'configs.lsp': () => '/api/lsp',
+
+  'store.agents.list': () => '/api/store/agents',
+  'store.agents.get': a => `/api/store/agents/${encodeURIComponent(String(a.name ?? ''))}`,
+  'store.agents.create': a => ({ url: '/api/store/agents', method: 'POST', body: a.body }),
+  'store.agents.update': a => ({
+    url: `/api/store/agents/${encodeURIComponent(String(a.name ?? ''))}`,
+    method: 'PUT',
+    body: a.body,
+  }),
+  'store.agents.delete': a => ({
+    url: `/api/store/agents/${encodeURIComponent(String(a.name ?? ''))}${a.force ? '?force=true' : ''}`,
+    method: 'DELETE',
+  }),
+  'store.skills.list': () => '/api/store/skills',
+  'store.skills.get': a => `/api/store/skills/${encodeURIComponent(String(a.name ?? ''))}`,
+  'store.skills.create': a => ({ url: '/api/store/skills', method: 'POST', body: a.body }),
+  'store.skills.update': a => ({
+    url: `/api/store/skills/${encodeURIComponent(String(a.name ?? ''))}`,
+    method: 'PUT',
+    body: a.body,
+  }),
+  'store.skills.delete': a => ({
+    url: `/api/store/skills/${encodeURIComponent(String(a.name ?? ''))}${a.force ? '?force=true' : ''}`,
+    method: 'DELETE',
+  }),
+  'store.commands.list': () => '/api/store/commands',
+  'store.commands.get': a => `/api/store/commands/${encodeURIComponent(String(a.name ?? ''))}`,
+  'store.commands.create': a => ({ url: '/api/store/commands', method: 'POST', body: a.body }),
+  'store.commands.update': a => ({
+    url: `/api/store/commands/${encodeURIComponent(String(a.name ?? ''))}`,
+    method: 'PUT',
+    body: a.body,
+  }),
+  'store.commands.delete': a => ({
+    url: `/api/store/commands/${encodeURIComponent(String(a.name ?? ''))}${a.force ? '?force=true' : ''}`,
+    method: 'DELETE',
+  }),
+  'store.model_configs.list': () => '/api/store/model-configs',
+  'store.model_configs.get': a => `/api/store/model-configs/${encodeURIComponent(String(a.name ?? ''))}`,
+  'store.model_configs.create': a => ({ url: '/api/store/model-configs', method: 'POST', body: a.body }),
+  'store.model_configs.update': a => ({
+    url: `/api/store/model-configs/${encodeURIComponent(String(a.name ?? ''))}`,
+    method: 'PUT',
+    body: a.body,
+  }),
+  'store.model_configs.delete': a => ({
+    url: `/api/store/model-configs/${encodeURIComponent(String(a.name ?? ''))}${a.force ? '?force=true' : ''}`,
+    method: 'DELETE',
+  }),
 }
 
 function qs(args: Record<string, unknown>): string {

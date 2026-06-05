@@ -140,4 +140,63 @@ describe('transport seam', () => {
       globalThis.fetch = orig
     }
   })
+
+  it('fetch transport sends DELETE for store.agents.delete', async () => {
+    const seen: Array<{ url: string; init?: RequestInit }> = []
+    const orig = globalThis.fetch
+    globalThis.fetch = (async (url: string, init?: RequestInit) => {
+      seen.push({ url, init })
+      return new Response(JSON.stringify({ success: true }), { status: 200 })
+    }) as typeof fetch
+    try {
+      const { fetchTransport } = await import('./fetch')
+      await fetchTransport('store.agents.delete', { name: 'alpha' })
+      expect(seen).toHaveLength(1)
+      expect(seen[0].url).toBe('/api/store/agents/alpha')
+      expect(seen[0].init?.method).toBe('DELETE')
+    }
+    finally {
+      globalThis.fetch = orig
+    }
+  })
+
+  it('fetch transport appends ?force=true on store.agents.delete with force', async () => {
+    const seen: string[] = []
+    const orig = globalThis.fetch
+    globalThis.fetch = (async (url: string) => {
+      seen.push(url)
+      return new Response(JSON.stringify({ success: true }), { status: 200 })
+    }) as typeof fetch
+    try {
+      const { fetchTransport } = await import('./fetch')
+      await fetchTransport('store.agents.delete', { name: 'alpha', force: true })
+      expect(seen[0]).toBe('/api/store/agents/alpha?force=true')
+    }
+    finally {
+      globalThis.fetch = orig
+    }
+  })
+
+  it('fetch transport sends PUT with body for store.agents.update', async () => {
+    const seen: Array<{ url: string; init?: RequestInit }> = []
+    const orig = globalThis.fetch
+    globalThis.fetch = (async (url: string, init?: RequestInit) => {
+      seen.push({ url, init })
+      return new Response(JSON.stringify({ agent: { id: 'a' } }), { status: 200 })
+    }) as typeof fetch
+    try {
+      const { fetchTransport } = await import('./fetch')
+      await fetchTransport('store.agents.update', {
+        name: 'alpha',
+        body: { frontmatter: { description: 'new' } },
+      })
+      expect(seen[0].url).toBe('/api/store/agents/alpha')
+      expect(seen[0].init?.method).toBe('PUT')
+      const body = JSON.parse(String(seen[0].init?.body ?? ''))
+      expect(body).toEqual({ frontmatter: { description: 'new' } })
+    }
+    finally {
+      globalThis.fetch = orig
+    }
+  })
 })
