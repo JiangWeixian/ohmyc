@@ -34,6 +34,19 @@ pub fn parse(raw: &str) -> Result<(Value, String), ApiError> {
     Ok((frontmatter, parsed.content.trim().to_string()))
 }
 
+pub fn stringify(frontmatter: &Value, content: &str) -> Result<String, ApiError> {
+    if !frontmatter.is_object() {
+        return Err(ApiError::Validation(
+            "frontmatter must be a JSON object".to_string(),
+        ));
+    }
+    let yaml = serde_yaml::to_string(frontmatter)
+        .map_err(|e| ApiError::Internal(format!("serialize yaml: {e}")))?;
+    let trimmed = yaml.trim_start_matches("---\n").trim_end();
+    let body = content.trim_end();
+    Ok(format!("---\n{trimmed}\n---\n{body}\n"))
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -75,5 +88,35 @@ mod tests {
             ApiError::Parse(msg) => assert!(msg.contains("frontmatter"), "got: {msg}"),
             other => panic!("expected ApiError::Parse, got {other:?}"),
         }
+    }
+
+    #[test]
+    fn stringify_writes_yaml_frontmatter_and_body() {
+        let front = serde_json::json!({"name": "a", "description": "d"});
+        let raw = stringify(&front, "Hello world").unwrap();
+        assert!(raw.starts_with("---\n"));
+        assert!(raw.contains("name: a"));
+        assert!(raw.contains("description: d"));
+        assert!(raw.ends_with("Hello world\n"));
+        // Roundtrip
+        let (parsed_front, body) = parse(&raw).unwrap();
+        assert_eq!(parsed_front["name"], "a");
+        assert_eq!(parsed_front["description"], "d");
+        assert_eq!(body, "Hello world");
+    }
+
+    #[test]
+    fn stringify_rejects_non_object_frontmatter() {
+        let err = stringify(&serde_json::json!([1, 2]), "x").unwrap_err();
+        assert!(matches!(err, ApiError::Validation(_)));
+    }
+
+    #[test]
+    fn stringify_preserves_arbitrary_yaml_typed_values() {
+        let front = serde_json::json!({"name": "x", "description": "y", "tools": ["A", "B"], "maxTurns": 5});
+        let raw = stringify(&front, "body").unwrap();
+        let (back, _) = parse(&raw).unwrap();
+        assert_eq!(back["tools"], serde_json::json!(["A", "B"]));
+        assert_eq!(back["maxTurns"], 5);
     }
 }
