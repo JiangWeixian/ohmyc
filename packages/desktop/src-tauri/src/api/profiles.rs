@@ -4,6 +4,8 @@
 
 use ohmyc_core::claude_home;
 use ohmyc_core::error::ApiError;
+use ohmyc_core::profiles::activation;
+use ohmyc_core::profiles::lock::LockGuard;
 use ohmyc_core::profiles::{crud, preflight};
 use ohmyc_core::store;
 use serde::Serialize;
@@ -80,6 +82,42 @@ pub fn profiles_preflight(name: String) -> Result<preflight::PreflightResult, Ap
     preflight::preflight(&profiles_dir, &store_dir, &settings_path, &name)
 }
 
+#[derive(Serialize)]
+pub struct ActivateResponse {
+    pub success: bool,
+    pub warnings: Vec<String>,
+}
+
+#[tauri::command]
+pub fn profiles_activate(name: String) -> Result<ActivateResponse, ApiError> {
+    let base_dir = store::base_dir()?;
+    let profiles_dir = store::store_profiles_dir()?;
+    let store_dir = store::store_dir()?;
+    let plugins_dir = claude_home::plugins_dir()?;
+    let claude_settings = claude_home::settings_path()?;
+    let _guard = LockGuard::try_acquire(&profiles_dir)?;
+    let warnings = activation::activate(
+        &base_dir,
+        &profiles_dir,
+        &store_dir,
+        &plugins_dir,
+        &claude_settings,
+        &name,
+    )?;
+    Ok(ActivateResponse { success: true, warnings })
+}
+
+#[tauri::command]
+pub fn profiles_deactivate(_name: String) -> Result<DeleteOk, ApiError> {
+    let base_dir = store::base_dir()?;
+    let profiles_dir = store::store_profiles_dir()?;
+    let plugins_dir = claude_home::plugins_dir()?;
+    let claude_settings = claude_home::settings_path()?;
+    let _guard = LockGuard::try_acquire(&profiles_dir)?;
+    activation::deactivate(&base_dir, &profiles_dir, &plugins_dir, &claude_settings)?;
+    Ok(DeleteOk { success: true })
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -110,5 +148,31 @@ mod tests {
             None => std::env::remove_var("OHMYC_HOME"),
         }
         assert!(matches!(r.unwrap_err(), ApiError::NotFound { .. }));
+    }
+
+    #[test]
+    fn profiles_activate_returns_not_found_for_missing_profile() {
+        let tmp = tempfile::tempdir().unwrap();
+        let prev = std::env::var("OHMYC_HOME").ok();
+        std::env::set_var("OHMYC_HOME", tmp.path());
+        let r = profiles_activate("ghost".to_string());
+        match prev {
+            Some(v) => std::env::set_var("OHMYC_HOME", v),
+            None => std::env::remove_var("OHMYC_HOME"),
+        }
+        assert!(r.is_err());
+    }
+
+    #[test]
+    fn profiles_deactivate_is_no_op_when_no_active_profile() {
+        let tmp = tempfile::tempdir().unwrap();
+        let prev = std::env::var("OHMYC_HOME").ok();
+        std::env::set_var("OHMYC_HOME", tmp.path());
+        let r = profiles_deactivate("any-name".to_string());
+        match prev {
+            Some(v) => std::env::set_var("OHMYC_HOME", v),
+            None => std::env::remove_var("OHMYC_HOME"),
+        }
+        assert!(r.is_ok());
     }
 }
