@@ -50,6 +50,25 @@ export function useFsChanged(): void {
             if (path.endsWith('/.mcp.json')) {
               void qc.invalidateQueries({ queryKey: ['mcp'] })
             }
+            // Dormant matchers — the watcher's default_watch_paths does NOT
+            // include <base>/store/ today, so these branches will not fire in
+            // production. React Query's onSuccess in the store mutations
+            // (use-store.ts) handles invalidation after local writes. These
+            // matchers exist so that when slice 8 broadens the watcher to
+            // <base>/store/, external writes (e.g. another OhMyC instance,
+            // CLI import) trigger refetches without touching this file again.
+            if (path.includes('/store/agents/')) {
+              void qc.invalidateQueries({ queryKey: ['store', 'agents'] })
+            }
+            if (path.includes('/store/skills/')) {
+              void qc.invalidateQueries({ queryKey: ['store', 'skills'] })
+            }
+            if (path.includes('/store/commands/')) {
+              void qc.invalidateQueries({ queryKey: ['store', 'commands'] })
+            }
+            if (path.includes('/store/model-configs/')) {
+              void qc.invalidateQueries({ queryKey: ['store', 'model-configs'] })
+            }
           }
         })
         if (cancelled) {

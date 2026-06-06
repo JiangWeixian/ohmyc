@@ -80,6 +80,90 @@ fn parse_agent(filename: &str, raw: &str) -> Result<Option<Agent>, ApiError> {
     }))
 }
 
+pub fn create(dir: &Path, frontmatter: &Value, content: &str) -> Result<Agent, ApiError> {
+    let name = frontmatter
+        .get("name")
+        .and_then(|v| v.as_str())
+        .ok_or_else(|| ApiError::InvalidInput("frontmatter.name is required".to_string()))?;
+    if !is_safe_name(name) {
+        return Err(ApiError::InvalidInput(format!(
+            "agent name '{name}' must match [a-zA-Z0-9_-]"
+        )));
+    }
+    std::fs::create_dir_all(dir)
+        .map_err(|e| ApiError::Io(format!("mkdir {}: {e}", dir.display())))?;
+    let filename = format!("{name}.md");
+    let path: PathBuf = dir.join(&filename);
+    if path.exists() {
+        return Err(ApiError::Conflict(format!("agent '{name}' already exists")));
+    }
+    let raw = frontmatter::stringify(frontmatter, content)?;
+    std::fs::write(&path, &raw)
+        .map_err(|e| ApiError::Io(format!("write {}: {e}", path.display())))?;
+    Ok(Agent {
+        id: name.to_string(),
+        frontmatter: frontmatter.clone(),
+        content: content.trim().to_string(),
+        raw,
+        filename,
+        source: ComponentSource::Local,
+        scope: Scope::Global,
+        origins: vec![Origin::Claude],
+        badges: Vec::new(),
+    })
+}
+
+pub fn update(
+    dir: &Path,
+    name: &str,
+    frontmatter_changes: Option<&Value>,
+    new_content: Option<&str>,
+) -> Result<Option<Agent>, ApiError> {
+    if !is_safe_name(name) {
+        return Ok(None);
+    }
+    let Some(existing) = get(dir, name)? else {
+        return Ok(None);
+    };
+    let mut merged = existing.frontmatter.clone();
+    if let Some(changes) = frontmatter_changes {
+        if let (Some(merged_obj), Some(changes_obj)) = (merged.as_object_mut(), changes.as_object())
+        {
+            for (k, v) in changes_obj {
+                merged_obj.insert(k.clone(), v.clone());
+            }
+        }
+    }
+    let body = new_content.unwrap_or(&existing.content);
+    let raw = frontmatter::stringify(&merged, body)?;
+    let path = dir.join(format!("{name}.md"));
+    std::fs::write(&path, &raw)
+        .map_err(|e| ApiError::Io(format!("write {}: {e}", path.display())))?;
+    Ok(Some(Agent {
+        id: name.to_string(),
+        frontmatter: merged,
+        content: body.trim().to_string(),
+        raw,
+        filename: format!("{name}.md"),
+        source: ComponentSource::Local,
+        scope: Scope::Global,
+        origins: vec![Origin::Claude],
+        badges: Vec::new(),
+    }))
+}
+
+pub fn delete(dir: &Path, name: &str) -> Result<bool, ApiError> {
+    if !is_safe_name(name) {
+        return Ok(false);
+    }
+    let path = dir.join(format!("{name}.md"));
+    match std::fs::remove_file(&path) {
+        Ok(()) => Ok(true),
+        Err(e) if e.kind() == std::io::ErrorKind::NotFound => Ok(false),
+        Err(e) => Err(ApiError::Io(format!("remove {}: {e}", path.display()))),
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -157,5 +241,89 @@ mod tests {
     fn get_returns_none_when_required_fields_missing() {
         let dir = seeded_dir();
         assert!(get(dir.path(), "orphan").unwrap().is_none());
+    }
+
+    #[test]
+    fn create_writes_new_file_and_returns_agent() {
+        let dir = tempfile::tempdir().unwrap();
+        let front = serde_json::json!({"name": "alpha", "description": "first"});
+        let agent = create(dir.path(), &front, "body").unwrap();
+        assert_eq!(agent.id, "alpha");
+        assert_eq!(agent.filename, "alpha.md");
+        assert!(dir.path().join("alpha.md").exists());
+        let r = get(dir.path(), "alpha").unwrap().unwrap();
+        assert_eq!(r.frontmatter["description"], "first");
+    }
+
+    #[test]
+    fn create_rejects_invalid_name() {
+        let dir = tempfile::tempdir().unwrap();
+        let front = serde_json::json!({"name": "../bad", "description": "d"});
+        let err = create(dir.path(), &front, "x").unwrap_err();
+        assert!(matches!(err, ApiError::InvalidInput(_)));
+    }
+
+    #[test]
+    fn create_errors_with_conflict_when_exists() {
+        let dir = tempfile::tempdir().unwrap();
+        let front = serde_json::json!({"name": "dup", "description": "d"});
+        create(dir.path(), &front, "x").unwrap();
+        let err = create(dir.path(), &front, "y").unwrap_err();
+        assert!(matches!(err, ApiError::Conflict(_)));
+    }
+
+    #[test]
+    fn create_creates_parent_directory_if_missing() {
+        let dir = tempfile::tempdir().unwrap();
+        let nested = dir.path().join("does-not-exist-yet");
+        let front = serde_json::json!({"name": "x", "description": "d"});
+        create(&nested, &front, "body").unwrap();
+        assert!(nested.join("x.md").exists());
+    }
+
+    #[test]
+    fn update_merges_frontmatter_and_replaces_content() {
+        let dir = tempfile::tempdir().unwrap();
+        let front = serde_json::json!({"name": "a", "description": "old", "model": "sonnet"});
+        create(dir.path(), &front, "old body").unwrap();
+
+        let partial = Some(serde_json::json!({"description": "new"}));
+        let new_content = Some("new body".to_string());
+        let updated = update(dir.path(), "a", partial.as_ref(), new_content.as_deref())
+            .unwrap()
+            .expect("agent updated");
+        assert_eq!(updated.frontmatter["description"], "new");
+        assert_eq!(updated.frontmatter["model"], "sonnet");
+        assert_eq!(updated.content, "new body");
+    }
+
+    #[test]
+    fn update_returns_none_when_missing() {
+        let dir = tempfile::tempdir().unwrap();
+        let r = update(dir.path(), "missing", None, None).unwrap();
+        assert!(r.is_none());
+    }
+
+    #[test]
+    fn update_rejects_invalid_name() {
+        let dir = tempfile::tempdir().unwrap();
+        let r = update(dir.path(), "../bad", None, None).unwrap();
+        assert!(r.is_none());
+    }
+
+    #[test]
+    fn delete_removes_file_and_returns_true() {
+        let dir = tempfile::tempdir().unwrap();
+        let front = serde_json::json!({"name": "x", "description": "d"});
+        create(dir.path(), &front, "body").unwrap();
+        assert!(delete(dir.path(), "x").unwrap());
+        assert!(!dir.path().join("x.md").exists());
+    }
+
+    #[test]
+    fn delete_returns_false_when_missing_or_invalid_name() {
+        let dir = tempfile::tempdir().unwrap();
+        assert!(!delete(dir.path(), "missing").unwrap());
+        assert!(!delete(dir.path(), "../bad").unwrap());
     }
 }

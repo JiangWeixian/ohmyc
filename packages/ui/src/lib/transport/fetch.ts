@@ -36,6 +36,55 @@ const routes: Record<string, RouteBuilder> = {
   'configs.mcp': () => '/api/mcp',
   'configs.hooks': () => '/api/hooks',
   'configs.lsp': () => '/api/lsp',
+
+  'store.agents.list': () => '/api/store/agents',
+  'store.agents.get': a => `/api/store/agents/${encodeURIComponent(String(a.name ?? ''))}`,
+  'store.agents.create': a => ({ url: '/api/store/agents', method: 'POST', body: a.body }),
+  'store.agents.update': a => ({
+    url: `/api/store/agents/${encodeURIComponent(String(a.name ?? ''))}`,
+    method: 'PUT',
+    body: a.body,
+  }),
+  'store.agents.delete': a => ({
+    url: `/api/store/agents/${encodeURIComponent(String(a.name ?? ''))}${a.force ? '?force=true' : ''}`,
+    method: 'DELETE',
+  }),
+  'store.skills.list': () => '/api/store/skills',
+  'store.skills.get': a => `/api/store/skills/${encodeURIComponent(String(a.name ?? ''))}`,
+  'store.skills.create': a => ({ url: '/api/store/skills', method: 'POST', body: a.body }),
+  'store.skills.update': a => ({
+    url: `/api/store/skills/${encodeURIComponent(String(a.name ?? ''))}`,
+    method: 'PUT',
+    body: a.body,
+  }),
+  'store.skills.delete': a => ({
+    url: `/api/store/skills/${encodeURIComponent(String(a.name ?? ''))}${a.force ? '?force=true' : ''}`,
+    method: 'DELETE',
+  }),
+  'store.commands.list': () => '/api/store/commands',
+  'store.commands.get': a => `/api/store/commands/${encodeURIComponent(String(a.name ?? ''))}`,
+  'store.commands.create': a => ({ url: '/api/store/commands', method: 'POST', body: a.body }),
+  'store.commands.update': a => ({
+    url: `/api/store/commands/${encodeURIComponent(String(a.name ?? ''))}`,
+    method: 'PUT',
+    body: a.body,
+  }),
+  'store.commands.delete': a => ({
+    url: `/api/store/commands/${encodeURIComponent(String(a.name ?? ''))}${a.force ? '?force=true' : ''}`,
+    method: 'DELETE',
+  }),
+  'store.model_configs.list': () => '/api/store/model-configs',
+  'store.model_configs.get': a => `/api/store/model-configs/${encodeURIComponent(String(a.name ?? ''))}`,
+  'store.model_configs.create': a => ({ url: '/api/store/model-configs', method: 'POST', body: a.body }),
+  'store.model_configs.update': a => ({
+    url: `/api/store/model-configs/${encodeURIComponent(String(a.name ?? ''))}`,
+    method: 'PUT',
+    body: a.body,
+  }),
+  'store.model_configs.delete': a => ({
+    url: `/api/store/model-configs/${encodeURIComponent(String(a.name ?? ''))}${a.force ? '?force=true' : ''}`,
+    method: 'DELETE',
+  }),
 }
 
 function qs(args: Record<string, unknown>): string {
@@ -92,8 +141,33 @@ export const fetchTransport: Transport = async (wire, args) => {
 
   const res = await fetch(url, init)
   if (!res.ok) {
-    const body = await res.text().catch(() => '')
-    throw { code: res.status === 404 ? 'NotFound' : 'Internal', message: body || res.statusText }
+    // Try to surface a structured body (e.g. { error, referencedBy } from
+    // the TS server's safe-delete conflict). Fall back to text if parsing
+    // fails. Surface the parsed object as `data` so UI consumers reading
+    // `error.data.referencedBy` still work; map common statuses to
+    // ApiError codes.
+    const text = await res.text().catch(() => '')
+    let data: unknown
+    try {
+      data = text ? JSON.parse(text) : undefined
+    }
+    catch {
+      data = undefined
+    }
+    let code: string
+    if (res.status === 404) {
+      code = 'NotFound'
+    }
+    else if (res.status === 409) {
+      code = (data && typeof data === 'object' && 'referencedBy' in (data as object)) ? 'ReferencedBy' : 'Conflict'
+    }
+    else {
+      code = 'Internal'
+    }
+    const message = (data && typeof data === 'object' && 'error' in (data as object))
+      ? String((data as { error: unknown }).error)
+      : (text || res.statusText)
+    throw { code, message, data }
   }
   const text = await res.text()
   if (!text) {

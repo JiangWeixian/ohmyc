@@ -3,6 +3,7 @@ pub mod commands;
 pub mod configs;
 pub mod settings;
 pub mod skills;
+pub mod store;
 pub mod timeline;
 
 /// The frontend Source Switcher may pass `origins` as either a comma-separated

@@ -23,6 +23,17 @@ pub enum ApiError {
     #[error("conflict: {0}")]
     Conflict(String),
 
+    /// Structured Conflict for safe-delete: lists profile names that
+    /// reference the component. UI reads `detail.referencedBy` to render
+    /// the confirmation dialog and offer force-delete.
+    #[error("{kind} '{name}' is referenced by {} profile(s)", profiles.len())]
+    ReferencedBy {
+        kind: &'static str,
+        name: String,
+        #[serde(rename = "referencedBy")]
+        profiles: Vec<String>,
+    },
+
     #[error("validation error: {0}")]
     Validation(String),
 
@@ -79,5 +90,19 @@ mod tests {
     fn display_includes_variant_specific_message() {
         let err = ApiError::Conflict("already active".to_string());
         assert_eq!(format!("{err}"), "conflict: already active");
+    }
+
+    #[test]
+    fn referenced_by_serializes_with_structured_detail() {
+        let err = ApiError::ReferencedBy {
+            kind: "agent",
+            name: "alpha".to_string(),
+            profiles: vec!["dev".to_string(), "prod".to_string()],
+        };
+        let json = serde_json::to_value(&err).unwrap();
+        assert_eq!(json["code"], "ReferencedBy");
+        assert_eq!(json["detail"]["kind"], "agent");
+        assert_eq!(json["detail"]["name"], "alpha");
+        assert_eq!(json["detail"]["referencedBy"], serde_json::json!(["dev", "prod"]));
     }
 }
