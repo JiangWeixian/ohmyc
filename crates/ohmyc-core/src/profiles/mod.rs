@@ -6,6 +6,7 @@
 //! preview activation side-effects.
 
 pub mod crud;
+pub mod lock;
 pub mod preflight;
 
 use std::path::PathBuf;
