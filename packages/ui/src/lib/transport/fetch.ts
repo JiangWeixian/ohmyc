@@ -41,6 +41,19 @@ const routes: Record<string, RouteBuilder> = {
   'plugins.get': a => `/api/plugins/${encodeURIComponent(String(a.id ?? ''))}`,
   'marketplaces.list': () => '/api/marketplaces',
   'marketplaces.get': a => `/api/marketplaces/${encodeURIComponent(String(a.id ?? ''))}`,
+  'profiles.list': () => '/api/profiles',
+  'profiles.get': a => `/api/profiles/${encodeURIComponent(String(a.name ?? ''))}`,
+  'profiles.create': a => ({ url: '/api/profiles', method: 'POST', body: a.body }),
+  'profiles.update': a => ({
+    url: `/api/profiles/${encodeURIComponent(String(a.name ?? ''))}`,
+    method: 'PUT',
+    body: a.body,
+  }),
+  'profiles.delete': a => ({
+    url: `/api/profiles/${encodeURIComponent(String(a.name ?? ''))}`,
+    method: 'DELETE',
+  }),
+  'profiles.preflight': a => `/api/profiles/${encodeURIComponent(String(a.name ?? ''))}/preflight`,
 
   'store.agents.list': () => '/api/store/agents',
   'store.agents.get': a => `/api/store/agents/${encodeURIComponent(String(a.name ?? ''))}`,

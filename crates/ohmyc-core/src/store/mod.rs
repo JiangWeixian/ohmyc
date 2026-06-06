@@ -12,6 +12,8 @@ use std::path::PathBuf;
 
 use crate::error::ApiError;
 
+pub use provenance::ComponentKind;
+
 const ENV_HOME: &str = "OHMYC_HOME";
 
 /// Resolve `$OHMYC_HOME` (default `~/.config/ohmyc/`). Mirrors
@@ -55,10 +57,70 @@ pub fn provenance_index_path() -> Result<PathBuf, ApiError> {
     Ok(store_dir()?.join(".metadata").join("imports.json"))
 }
 
+pub fn component_exists(
+    store_dir: &std::path::Path,
+    kind: provenance::ComponentKind,
+    name: &str,
+) -> bool {
+    if name.is_empty()
+        || name.contains("..")
+        || name.contains('/')
+        || name.contains('\\')
+    {
+        return false;
+    }
+    let path = match kind {
+        provenance::ComponentKind::Agents => store_dir.join("agents").join(format!("{name}.md")),
+        provenance::ComponentKind::Commands => store_dir.join("commands").join(format!("{name}.md")),
+        provenance::ComponentKind::Skills => store_dir.join("skills").join(name),
+        provenance::ComponentKind::ModelConfigs => return false,
+    };
+    path.exists()
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
     use std::sync::Mutex;
+    use crate::store::ComponentKind;
+
+    fn write(p: &std::path::Path, body: &str) {
+        if let Some(parent) = p.parent() {
+            std::fs::create_dir_all(parent).unwrap();
+        }
+        std::fs::write(p, body).unwrap();
+    }
+
+    #[test]
+    fn store_component_exists_agents_md_file() {
+        let store = tempfile::tempdir().unwrap();
+        write(&store.path().join("agents/reviewer.md"), "x");
+        assert!(component_exists(store.path(), ComponentKind::Agents, "reviewer"));
+        assert!(!component_exists(store.path(), ComponentKind::Agents, "missing"));
+    }
+
+    #[test]
+    fn store_component_exists_commands_md_file() {
+        let store = tempfile::tempdir().unwrap();
+        write(&store.path().join("commands/push.md"), "x");
+        assert!(component_exists(store.path(), ComponentKind::Commands, "push"));
+        assert!(!component_exists(store.path(), ComponentKind::Commands, "missing"));
+    }
+
+    #[test]
+    fn store_component_exists_skills_dir_with_skill_md() {
+        let store = tempfile::tempdir().unwrap();
+        std::fs::create_dir_all(store.path().join("skills/deploy")).unwrap();
+        assert!(component_exists(store.path(), ComponentKind::Skills, "deploy"));
+        assert!(!component_exists(store.path(), ComponentKind::Skills, "missing"));
+    }
+
+    #[test]
+    fn store_component_exists_rejects_unsafe_names() {
+        let store = tempfile::tempdir().unwrap();
+        write(&store.path().join("agents/ok.md"), "x");
+        assert!(!component_exists(store.path(), ComponentKind::Agents, "../escape"));
+    }
 
     static ENV_LOCK: Mutex<()> = Mutex::new(());
 

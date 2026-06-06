@@ -200,6 +200,26 @@ describe('transport seam', () => {
     }
   })
 
+  it('fetch transport routes profiles.delete with DELETE method and path-param', async () => {
+    const calls: { url: string, method?: string }[] = []
+    const orig = globalThis.fetch
+    globalThis.fetch = (async (url: string, init?: RequestInit) => {
+      calls.push({ url, method: init?.method })
+      return new Response(JSON.stringify({ success: true }), {
+        status: 200,
+        headers: { 'content-type': 'application/json' },
+      })
+    }) as typeof fetch
+    try {
+      const { fetchTransport } = await import('./fetch')
+      await fetchTransport('profiles.delete', { name: 'dev' })
+      expect(calls).toEqual([{ url: '/api/profiles/dev', method: 'DELETE' }])
+    }
+    finally {
+      globalThis.fetch = orig
+    }
+  })
+
   it('fetch transport routes plugins.get via the id path-param table', async () => {
     const calls: string[] = []
     const orig = globalThis.fetch

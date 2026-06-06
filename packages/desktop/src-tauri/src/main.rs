@@ -56,6 +56,12 @@ fn main() {
             ohmyc_desktop_lib::api::plugins::plugins_get,
             ohmyc_desktop_lib::api::plugins::marketplaces_list,
             ohmyc_desktop_lib::api::plugins::marketplaces_get,
+            ohmyc_desktop_lib::api::profiles::profiles_list,
+            ohmyc_desktop_lib::api::profiles::profiles_get,
+            ohmyc_desktop_lib::api::profiles::profiles_create,
+            ohmyc_desktop_lib::api::profiles::profiles_update,
+            ohmyc_desktop_lib::api::profiles::profiles_delete,
+            ohmyc_desktop_lib::api::profiles::profiles_preflight,
         ])
         .setup(|app| {
             #[cfg(target_os = "macos")]
