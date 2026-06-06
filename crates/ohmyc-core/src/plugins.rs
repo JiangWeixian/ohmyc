@@ -266,6 +266,66 @@ fn read_json_or_none(path: &Path) -> Result<Option<Value>, ApiError> {
     Ok(serde_json::from_str::<Value>(&raw).ok())
 }
 
+pub fn list_plugins(
+    plugins_dir: &Path,
+    settings_path: &Path,
+) -> Result<Vec<InstalledPlugin>, ApiError> {
+    let registry_path = plugins_dir.join("installed_plugins.json");
+    let raw = match std::fs::read_to_string(&registry_path) {
+        Ok(s) => s,
+        Err(e) if e.kind() == std::io::ErrorKind::NotFound => return Ok(Vec::new()),
+        Err(e) => return Err(ApiError::Io(format!("read {}: {e}", registry_path.display()))),
+    };
+    let parsed: Value = match serde_json::from_str(&raw) {
+        Ok(v) => v,
+        Err(_) => return Ok(Vec::new()),
+    };
+    let Some(plugins_obj) = parsed.get("plugins").and_then(|v| v.as_object()) else {
+        return Ok(Vec::new());
+    };
+    let enabled_map = read_enabled_plugins_from(settings_path)?;
+    let mut out: Vec<InstalledPlugin> = Vec::with_capacity(plugins_obj.len());
+    for (id, installs_value) in plugins_obj {
+        let (name, marketplace) = split_id(id);
+        let installs: Vec<PluginInstall> =
+            serde_json::from_value(installs_value.clone()).unwrap_or_default();
+        let (manifest, components) = match installs.first() {
+            Some(first) if !first.install_path.is_empty() => {
+                let install_path = PathBuf::from(&first.install_path);
+                (load_manifest(&install_path)?, scan_components(&install_path)?)
+            }
+            _ => (None, PluginComponentSummary::empty()),
+        };
+        out.push(InstalledPlugin {
+            id: id.clone(),
+            name: name.to_string(),
+            marketplace: marketplace.to_string(),
+            enabled: enabled_map.get(id).copied().unwrap_or(false),
+            installs,
+            manifest,
+            components,
+        });
+    }
+    out.sort_by(|a, b| a.name.cmp(&b.name));
+    Ok(out)
+}
+
+pub fn get_plugin(
+    plugins_dir: &Path,
+    settings_path: &Path,
+    id: &str,
+) -> Result<Option<InstalledPlugin>, ApiError> {
+    let all = list_plugins(plugins_dir, settings_path)?;
+    Ok(all.into_iter().find(|p| p.id == id))
+}
+
+fn split_id(id: &str) -> (&str, &str) {
+    match id.find('@') {
+        Some(i) => (&id[..i], &id[i + 1..]),
+        None => (id, ""),
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -485,5 +545,139 @@ mod tests {
         let c = scan_components(&bogus).unwrap();
         assert!(c.agents.is_empty());
         assert!(c.hooks.is_none());
+    }
+
+    fn write_installed_plugins(dir: &Path, body: Value) {
+        write_file(&dir.join("installed_plugins.json"), &body.to_string());
+    }
+
+    #[test]
+    fn list_plugins_returns_empty_when_no_file() {
+        let dir = tempfile::tempdir().unwrap();
+        let p = list_plugins(dir.path(), &dir.path().join("missing-settings.json")).unwrap();
+        assert!(p.is_empty());
+    }
+
+    #[test]
+    fn list_plugins_returns_empty_for_empty_plugins_object() {
+        let dir = tempfile::tempdir().unwrap();
+        write_installed_plugins(dir.path(), serde_json::json!({"version": 2, "plugins": {}}));
+        let p = list_plugins(dir.path(), &dir.path().join("missing-settings.json")).unwrap();
+        assert!(p.is_empty());
+    }
+
+    #[test]
+    fn list_plugins_parses_id_into_name_and_marketplace() {
+        let dir = tempfile::tempdir().unwrap();
+        write_installed_plugins(
+            dir.path(),
+            serde_json::json!({
+                "version": 2,
+                "plugins": {
+                    "gitlab@tmates-plugins": [{
+                        "version": "0.0.1",
+                        "installedAt": "2026-02-04",
+                        "lastUpdated": "2026-02-04",
+                        "installPath": "/tmp/nonexistent-install",
+                        "scope": "user"
+                    }]
+                }
+            }),
+        );
+        let plugins = list_plugins(dir.path(), &dir.path().join("missing-settings.json")).unwrap();
+        assert_eq!(plugins.len(), 1);
+        assert_eq!(plugins[0].id, "gitlab@tmates-plugins");
+        assert_eq!(plugins[0].name, "gitlab");
+        assert_eq!(plugins[0].marketplace, "tmates-plugins");
+        assert!(!plugins[0].enabled);
+        assert!(plugins[0].manifest.is_none());
+    }
+
+    #[test]
+    fn list_plugins_marks_enabled_from_settings() {
+        let dir = tempfile::tempdir().unwrap();
+        let settings = dir.path().join("settings.json");
+        std::fs::write(&settings, r#"{"enabledPlugins":{"gitlab@m":true}}"#).unwrap();
+        write_installed_plugins(
+            dir.path(),
+            serde_json::json!({
+                "version": 2,
+                "plugins": {
+                    "gitlab@m": [{"version":"1","installedAt":"","lastUpdated":"","installPath":"/x","scope":"user"}],
+                    "other@m":  [{"version":"1","installedAt":"","lastUpdated":"","installPath":"/x","scope":"user"}]
+                }
+            }),
+        );
+        let plugins = list_plugins(dir.path(), &settings).unwrap();
+        let by_name: BTreeMap<_, _> = plugins.iter().map(|p| (p.name.clone(), p.enabled)).collect();
+        assert_eq!(by_name.get("gitlab"), Some(&true));
+        assert_eq!(by_name.get("other"), Some(&false));
+    }
+
+    #[test]
+    fn list_plugins_walks_install_dir_for_manifest_and_components() {
+        let dir = tempfile::tempdir().unwrap();
+        let install = dir.path().join("install/full");
+        write_file(&install.join("plugin.json"), r#"{"name":"full","description":"x"}"#);
+        write_file(&install.join("agents/reviewer.md"), "x");
+        write_file(&install.join("commands/cp.md"), "x");
+        let install_path_str = install.to_string_lossy().to_string();
+        write_installed_plugins(
+            dir.path(),
+            serde_json::json!({
+                "version": 2,
+                "plugins": {
+                    "full@m": [{
+                        "version": "1.0.0",
+                        "installedAt": "2026-01-01",
+                        "lastUpdated": "2026-01-01",
+                        "installPath": install_path_str,
+                        "scope": "user"
+                    }]
+                }
+            }),
+        );
+        let plugins = list_plugins(dir.path(), &dir.path().join("missing-settings.json")).unwrap();
+        assert_eq!(plugins.len(), 1);
+        let p = &plugins[0];
+        assert_eq!(p.manifest.as_ref().and_then(|m| m.name.as_deref()), Some("full"));
+        assert_eq!(p.components.agents, vec!["reviewer".to_string()]);
+        assert_eq!(p.components.commands, vec!["cp".to_string()]);
+    }
+
+    #[test]
+    fn list_plugins_sorts_by_name() {
+        let dir = tempfile::tempdir().unwrap();
+        write_installed_plugins(
+            dir.path(),
+            serde_json::json!({
+                "version": 2,
+                "plugins": {
+                    "zebra@m": [{"version":"1","installedAt":"","lastUpdated":"","installPath":"","scope":"user"}],
+                    "alpha@m": [{"version":"1","installedAt":"","lastUpdated":"","installPath":"","scope":"user"}]
+                }
+            }),
+        );
+        let plugins = list_plugins(dir.path(), &dir.path().join("missing-settings.json")).unwrap();
+        assert_eq!(plugins[0].name, "alpha");
+        assert_eq!(plugins[1].name, "zebra");
+    }
+
+    #[test]
+    fn get_plugin_returns_by_id_or_none() {
+        let dir = tempfile::tempdir().unwrap();
+        write_installed_plugins(
+            dir.path(),
+            serde_json::json!({
+                "version": 2,
+                "plugins": {
+                    "test@market": [{"version":"1","installedAt":"","lastUpdated":"","installPath":"","scope":"user"}]
+                }
+            }),
+        );
+        let settings = dir.path().join("missing-settings.json");
+        let found = get_plugin(dir.path(), &settings, "test@market").unwrap().unwrap();
+        assert_eq!(found.name, "test");
+        assert!(get_plugin(dir.path(), &settings, "nope").unwrap().is_none());
     }
 }
