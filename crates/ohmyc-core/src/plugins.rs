@@ -201,6 +201,71 @@ fn read_manifest_or_none(path: &Path) -> Result<Option<PluginManifest>, ApiError
     }
 }
 
+pub fn scan_components(install_path: &Path) -> Result<PluginComponentSummary, ApiError> {
+    let mut out = PluginComponentSummary::empty();
+    out.agents = list_md_basenames(&install_path.join("agents"))?;
+    out.commands = list_md_basenames(&install_path.join("commands"))?;
+    out.skills = list_skill_dirs(&install_path.join("skills"))?;
+    out.hooks = read_json_or_none(&install_path.join("hooks").join("hooks.json"))?;
+    out.mcp_servers = read_json_or_none(&install_path.join(".mcp.json"))?;
+    out.lsp_servers = read_json_or_none(&install_path.join(".lsp.json"))?;
+    Ok(out)
+}
+
+fn list_md_basenames(dir: &Path) -> Result<Vec<String>, ApiError> {
+    let entries = match std::fs::read_dir(dir) {
+        Ok(it) => it,
+        Err(e) if e.kind() == std::io::ErrorKind::NotFound => return Ok(Vec::new()),
+        Err(e) => return Err(ApiError::Io(format!("read_dir {}: {e}", dir.display()))),
+    };
+    let mut out = Vec::new();
+    for entry in entries {
+        let entry = entry.map_err(ApiError::from)?;
+        let path = entry.path();
+        if path.extension().and_then(|s| s.to_str()) != Some("md") {
+            continue;
+        }
+        if let Some(stem) = path.file_stem().and_then(|s| s.to_str()) {
+            out.push(stem.to_string());
+        }
+    }
+    out.sort();
+    Ok(out)
+}
+
+fn list_skill_dirs(dir: &Path) -> Result<Vec<String>, ApiError> {
+    let entries = match std::fs::read_dir(dir) {
+        Ok(it) => it,
+        Err(e) if e.kind() == std::io::ErrorKind::NotFound => return Ok(Vec::new()),
+        Err(e) => return Err(ApiError::Io(format!("read_dir {}: {e}", dir.display()))),
+    };
+    let mut out = Vec::new();
+    for entry in entries {
+        let entry = entry.map_err(ApiError::from)?;
+        let path = entry.path();
+        if !path.is_dir() {
+            continue;
+        }
+        if !path.join("SKILL.md").exists() {
+            continue;
+        }
+        if let Some(name) = path.file_name().and_then(|s| s.to_str()) {
+            out.push(name.to_string());
+        }
+    }
+    out.sort();
+    Ok(out)
+}
+
+fn read_json_or_none(path: &Path) -> Result<Option<Value>, ApiError> {
+    let raw = match std::fs::read_to_string(path) {
+        Ok(s) => s,
+        Err(e) if e.kind() == std::io::ErrorKind::NotFound => return Ok(None),
+        Err(e) => return Err(ApiError::Io(format!("read {}: {e}", path.display()))),
+    };
+    Ok(serde_json::from_str::<Value>(&raw).ok())
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -356,5 +421,69 @@ mod tests {
         .unwrap();
         let m = load_manifest(dir.path()).unwrap().unwrap();
         assert_eq!(m.name.as_deref(), Some("root"));
+    }
+
+    fn write_file(p: &Path, contents: &str) {
+        if let Some(parent) = p.parent() {
+            std::fs::create_dir_all(parent).unwrap();
+        }
+        std::fs::write(p, contents).unwrap();
+    }
+
+    #[test]
+    fn scan_components_empty_dir_returns_empty_summary() {
+        let dir = tempfile::tempdir().unwrap();
+        let c = scan_components(dir.path()).unwrap();
+        assert!(c.agents.is_empty());
+        assert!(c.skills.is_empty());
+        assert!(c.commands.is_empty());
+        assert!(c.hooks.is_none());
+        assert!(c.mcp_servers.is_none());
+        assert!(c.lsp_servers.is_none());
+    }
+
+    #[test]
+    fn scan_components_lists_agents_and_commands_sorted() {
+        let dir = tempfile::tempdir().unwrap();
+        write_file(&dir.path().join("agents/reviewer.md"), "---\nname: reviewer\n---\nx");
+        write_file(&dir.path().join("agents/debugger.md"), "---\nname: debugger\n---\nx");
+        write_file(&dir.path().join("commands/commit-push.md"), "x");
+        write_file(&dir.path().join("commands/notes.txt"), "x");
+        let c = scan_components(dir.path()).unwrap();
+        assert_eq!(c.agents, vec!["debugger".to_string(), "reviewer".to_string()]);
+        assert_eq!(c.commands, vec!["commit-push".to_string()]);
+    }
+
+    #[test]
+    fn scan_components_lists_skills_only_when_skill_md_present() {
+        let dir = tempfile::tempdir().unwrap();
+        write_file(&dir.path().join("skills/deploy-skill/SKILL.md"), "x");
+        std::fs::create_dir_all(dir.path().join("skills/empty-dir")).unwrap();
+        let c = scan_components(dir.path()).unwrap();
+        assert_eq!(c.skills, vec!["deploy-skill".to_string()]);
+    }
+
+    #[test]
+    fn scan_components_passes_through_hooks_mcp_lsp_json() {
+        let dir = tempfile::tempdir().unwrap();
+        let hooks = r#"{"hooks":{"PostToolUse":[{"matcher":"Write","hooks":[{"type":"command","command":"echo"}]}]}}"#;
+        let mcp = r#"{"mcpServers":{"db":{"command":"node","args":["s.js"]}}}"#;
+        let lsp = r#"{"python":{"command":"pyright"}}"#;
+        write_file(&dir.path().join("hooks/hooks.json"), hooks);
+        write_file(&dir.path().join(".mcp.json"), mcp);
+        write_file(&dir.path().join(".lsp.json"), lsp);
+        let c = scan_components(dir.path()).unwrap();
+        assert_eq!(c.hooks, Some(serde_json::from_str::<Value>(hooks).unwrap()));
+        assert_eq!(c.mcp_servers, Some(serde_json::from_str::<Value>(mcp).unwrap()));
+        assert_eq!(c.lsp_servers, Some(serde_json::from_str::<Value>(lsp).unwrap()));
+    }
+
+    #[test]
+    fn scan_components_returns_empty_when_install_path_missing() {
+        let dir = tempfile::tempdir().unwrap();
+        let bogus = dir.path().join("does-not-exist");
+        let c = scan_components(&bogus).unwrap();
+        assert!(c.agents.is_empty());
+        assert!(c.hooks.is_none());
     }
 }
