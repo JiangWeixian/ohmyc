@@ -22,28 +22,6 @@ interface ProfileEnvelope {
   profile: Profile
 }
 
-/** Activation hooks deferred to the follow-up "Profiles Activation"
- *  slice. Until then, these two stay on raw fetch() — same pattern as
- *  slice 5 left useStoreImport on legacy fetch. The transactional
- *  activation logic (lock, undo stack, symlinks, plugin-marketplace
- *  registration) is genuinely 2x slice 5's surface and gets its own
- *  focused slice + review. */
-async function activateProfile(name: string): Promise<{ warnings: string[] }> {
-  const res = await fetch(`/api/profiles/${encodeURIComponent(name)}/activate`, { method: 'POST' })
-  if (!res.ok) {
-    const error = await res.json()
-    throw new Error(error.error || 'Failed to activate')
-  }
-  return res.json()
-}
-
-async function deactivateProfile(name: string): Promise<void> {
-  const res = await fetch(`/api/profiles/${encodeURIComponent(name)}/deactivate`, { method: 'POST' })
-  if (!res.ok) {
-    throw new Error('Failed to deactivate')
-  }
-}
-
 // --- Preflight types (server-side shape) ---
 
 export interface ModelConfigEnvChange {
@@ -120,12 +98,13 @@ export function useDeleteProfile() {
   })
 }
 
-// --- Mutation hooks (activation — deferred slice) ---
+// --- Mutation hooks (activation) ---
 
 export function useActivateProfile() {
   const qc = useQueryClient()
   return useMutation({
-    mutationFn: activateProfile,
+    mutationFn: (name: string) =>
+      request<{ success: boolean; warnings: string[] }>('profiles.activate', { name }),
     onSuccess: () => qc.invalidateQueries({ queryKey: ['profiles'] }),
   })
 }
@@ -133,7 +112,8 @@ export function useActivateProfile() {
 export function useDeactivateProfile() {
   const qc = useQueryClient()
   return useMutation({
-    mutationFn: deactivateProfile,
+    mutationFn: (name: string) =>
+      request<{ success: boolean }>('profiles.deactivate', { name }),
     onSuccess: () => qc.invalidateQueries({ queryKey: ['profiles'] }),
   })
 }
