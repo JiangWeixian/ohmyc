@@ -2423,6 +2423,7 @@ dependencies = [
  "serde_json",
  "tauri",
  "tauri-build",
+ "tempfile",
  "window-vibrancy 0.5.3",
 ]
 

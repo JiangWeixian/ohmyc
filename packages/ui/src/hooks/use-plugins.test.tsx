@@ -9,7 +9,11 @@ import {
 } from 'vitest'
 
 import { useMarketplaces, usePlugins } from './use-plugins'
-import { __setTransportForTests, resetTransportForTests } from '@/lib/transport'
+import {
+  __setTransportForTests,
+  request,
+  resetTransportForTests,
+} from '@/lib/transport'
 import { resetMock, setMockHandler } from '@/lib/transport/mock'
 
 function wrapper() {
@@ -115,5 +119,47 @@ describe('useMarketplaces', () => {
     const { result } = renderHook(() => useMarketplaces(), { wrapper: wrapper() })
     await waitFor(() => expect(result.current.isSuccess).toBe(true))
     expect(result.current.data).toEqual([])
+  })
+})
+
+// Wire contract for get-by-id routes. No UI hook calls plugins.get or
+// marketplaces.get today, but the Tauri commands are registered and slice 7
+// (profiles) is the likely first consumer. Asserting the envelope shape +
+// NotFound error shape here keeps the wire contract honest before a hook
+// lands — and prevents the slice-5-style regression where test mocks
+// drifted from the real wire.
+describe('get-by-id wire contract (slice 7 prereq)', () => {
+  it('plugins.get returns the { plugin } envelope shape', async () => {
+    let capturedArgs: unknown = null
+    setMockHandler('plugins.get', async (args) => {
+      capturedArgs = args
+      return {
+        plugin: {
+          id: 'gitlab@m',
+          name: 'gitlab',
+          marketplace: 'm',
+          enabled: false,
+          installs: [],
+        },
+      }
+    })
+    const result = await request<{ plugin: { id: string } }>('plugins.get', { id: 'gitlab@m' })
+    expect(capturedArgs).toEqual({ id: 'gitlab@m' })
+    expect(result.plugin.id).toBe('gitlab@m')
+  })
+
+  it('marketplaces.get rejects with NotFound shape when missing', async () => {
+    // Real ApiError::NotFound serializes as { code, detail: { kind, name } }.
+    // Mirror that here so slice 7 can rely on the same error shape.
+    setMockHandler('marketplaces.get', async () => {
+      throw Object.assign(new Error('marketplace not found'), {
+        code: 'NotFound',
+        detail: { kind: 'marketplace', name: 'nope' },
+      })
+    })
+    await expect(request('marketplaces.get', { id: 'nope' })).rejects.toMatchObject({
+      code: 'NotFound',
+      detail: { kind: 'marketplace', name: 'nope' },
+    })
   })
 })
