@@ -2,7 +2,7 @@
 //! across Tasks 5-9: helpers first (deep merge, env injection), then
 //! forward path, then undo stack, then auto-restore-previous.
 
-use std::path::Path;
+use std::path::{Path, PathBuf};
 
 use serde_json::{json, Map, Value};
 
@@ -10,6 +10,43 @@ use crate::error::ApiError;
 
 use super::{crud, marketplace, preflight};
 use super::symlink as sym;
+
+#[derive(Debug)]
+enum UndoAction {
+    RemoveFile(PathBuf),
+    RemoveDir(PathBuf),
+    RestoreFile(PathBuf, Vec<u8>),
+    RestoreInstalled(Value),
+    RestoreKnown(Value),
+    RestoreSettings(Vec<u8>),
+}
+
+impl UndoAction {
+    fn run(&self, plugins_dir: &Path, claude_settings_path: &Path) {
+        let _ = match self {
+            UndoAction::RemoveFile(p) => std::fs::remove_file(p).map(|_| ()),
+            UndoAction::RemoveDir(p) => std::fs::remove_dir_all(p).map(|_| ()),
+            UndoAction::RestoreFile(p, contents) => std::fs::write(p, contents).map(|_| ()),
+            UndoAction::RestoreInstalled(v) => {
+                marketplace::write_installed_plugins(plugins_dir, v).map(|_| ()).map_err(io_passthrough)
+            }
+            UndoAction::RestoreKnown(v) => {
+                marketplace::write_known_marketplaces(plugins_dir, v).map(|_| ()).map_err(io_passthrough)
+            }
+            UndoAction::RestoreSettings(bytes) => std::fs::write(claude_settings_path, bytes).map(|_| ()),
+        };
+    }
+}
+
+fn io_passthrough(e: ApiError) -> std::io::Error {
+    std::io::Error::new(std::io::ErrorKind::Other, format!("{e:?}"))
+}
+
+fn rollback(actions: &[UndoAction], plugins_dir: &Path, claude_settings_path: &Path) {
+    for action in actions.iter().rev() {
+        action.run(plugins_dir, claude_settings_path);
+    }
+}
 
 /// Recursive merge: object → object recurses, arrays/primitives in
 /// `source` overwrite `target`. Mirrors TS `deepMerge` exactly.
@@ -126,6 +163,33 @@ pub(crate) fn activate_forward(
     claude_settings_path: &Path,
     name: &str,
 ) -> Result<Vec<String>, ApiError> {
+    let mut undo: Vec<UndoAction> = Vec::new();
+
+    let result = activate_inner(
+        base_dir,
+        profiles_dir,
+        store_dir,
+        plugins_dir,
+        claude_settings_path,
+        name,
+        &mut undo,
+    );
+
+    if result.is_err() {
+        rollback(&undo, plugins_dir, claude_settings_path);
+    }
+    result
+}
+
+fn activate_inner(
+    base_dir: &Path,
+    profiles_dir: &Path,
+    store_dir: &Path,
+    plugins_dir: &Path,
+    claude_settings_path: &Path,
+    name: &str,
+    undo: &mut Vec<UndoAction>,
+) -> Result<Vec<String>, ApiError> {
     let pre = preflight::preflight(profiles_dir, store_dir, claude_settings_path, name)?;
     if !pre.can_activate {
         return Err(ApiError::ActivationBlocked { missing: pre.missing });
@@ -141,34 +205,40 @@ pub(crate) fn activate_forward(
         deactivate_internal(base_dir, profiles_dir, plugins_dir, claude_settings_path, prev)?;
     }
 
-    let current_settings_raw = std::fs::read_to_string(claude_settings_path).unwrap_or_else(|_| "{}".to_string());
-    let current_settings: Value = serde_json::from_str(&current_settings_raw).unwrap_or_else(|_| json!({}));
+    let current_settings_bytes = std::fs::read(claude_settings_path).unwrap_or_else(|_| b"{}".to_vec());
+    let current_settings: Value = serde_json::from_slice(&current_settings_bytes).unwrap_or_else(|_| json!({}));
     let backup_path = base_dir.join(format!("settings.backup.{name}.json"));
     std::fs::write(&backup_path, serde_json::to_string_pretty(&current_settings).unwrap())
         .map_err(|e| ApiError::Io(format!("write backup {}: {e}", backup_path.display())))?;
+    undo.push(UndoAction::RemoveFile(backup_path.clone()));
 
     let profile_dir = profiles_dir.join(name);
     std::fs::create_dir_all(&profile_dir)
         .map_err(|e| ApiError::Io(format!("mkdir {}: {e}", profile_dir.display())))?;
 
     let absolute = profile_dir.canonicalize().unwrap_or(profile_dir.clone());
-    std::fs::write(profiles_dir.join(".active"), absolute.to_string_lossy().to_string())
+    let active_path = profiles_dir.join(".active");
+    std::fs::write(&active_path, absolute.to_string_lossy().to_string())
         .map_err(|e| ApiError::Io(format!("write .active: {e}")))?;
+    undo.push(UndoAction::RemoveFile(active_path));
 
     for agent in &profile.agents {
         let source = store_dir.join("agents").join(format!("{agent}.md"));
         let dest = profile_dir.join("agents").join(format!("{agent}.md"));
         sym::create_symlink(&source, &dest)?;
+        undo.push(UndoAction::RemoveFile(dest));
     }
     for skill in &profile.skills {
         let source = store_dir.join("skills").join(skill);
         let dest = profile_dir.join("skills").join(skill);
         sym::create_symlink(&source, &dest)?;
+        undo.push(UndoAction::RemoveFile(dest));
     }
     for cmd in &profile.commands {
         let source = store_dir.join("commands").join(format!("{cmd}.md"));
         let dest = profile_dir.join("commands").join(format!("{cmd}.md"));
         sym::create_symlink(&source, &dest)?;
+        undo.push(UndoAction::RemoveFile(dest));
     }
 
     let plugin_dir = profile_dir.join(".claude-plugin");
@@ -185,6 +255,7 @@ pub(crate) fn activate_forward(
         serde_json::to_string_pretty(&plugin_json).unwrap(),
     )
     .map_err(|e| ApiError::Io(format!("write plugin.json: {e}")))?;
+    undo.push(UndoAction::RemoveDir(plugin_dir));
 
     if let Some(hooks) = profile.hooks.as_ref() {
         let hooks_dir = profile_dir.join("hooks");
@@ -196,23 +267,22 @@ pub(crate) fn activate_forward(
             serde_json::to_string_pretty(&body).unwrap(),
         )
         .map_err(|e| ApiError::Io(format!("write hooks.json: {e}")))?;
+        undo.push(UndoAction::RemoveDir(hooks_dir));
     }
 
     if let Some(mcp) = profile.mcp_servers.as_ref() {
         let body = json!({ "mcpServers": mcp });
-        std::fs::write(
-            profile_dir.join(".mcp.json"),
-            serde_json::to_string_pretty(&body).unwrap(),
-        )
-        .map_err(|e| ApiError::Io(format!("write .mcp.json: {e}")))?;
+        let path = profile_dir.join(".mcp.json");
+        std::fs::write(&path, serde_json::to_string_pretty(&body).unwrap())
+            .map_err(|e| ApiError::Io(format!("write .mcp.json: {e}")))?;
+        undo.push(UndoAction::RemoveFile(path));
     }
 
     if let Some(lsp) = profile.lsp_servers.as_ref() {
-        std::fs::write(
-            profile_dir.join(".lsp.json"),
-            serde_json::to_string_pretty(lsp).unwrap(),
-        )
-        .map_err(|e| ApiError::Io(format!("write .lsp.json: {e}")))?;
+        let path = profile_dir.join(".lsp.json");
+        std::fs::write(&path, serde_json::to_string_pretty(lsp).unwrap())
+            .map_err(|e| ApiError::Io(format!("write .lsp.json: {e}")))?;
+        undo.push(UndoAction::RemoveFile(path));
     }
 
     let mut merged = current_settings.clone();
@@ -255,24 +325,24 @@ pub(crate) fn activate_forward(
         serde_json::to_string_pretty(&merged).unwrap(),
     )
     .map_err(|e| ApiError::Io(format!("write settings: {e}")))?;
+    undo.push(UndoAction::RestoreSettings(current_settings_bytes));
 
     let listing = crud::list(profiles_dir)?;
     let summaries: Vec<(String, String)> = listing
         .profiles
         .iter()
-        .map(|p| {
-            (
-                p.name.clone(),
-                p.description.clone().unwrap_or_else(|| p.name.clone()),
-            )
-        })
+        .map(|p| (p.name.clone(), p.description.clone().unwrap_or_else(|| p.name.clone())))
         .collect();
     marketplace::write_marketplace_json(base_dir, &summaries)?;
+    undo.push(UndoAction::RemoveDir(base_dir.join(".claude-plugin")));
 
     let now = current_iso8601();
-    marketplace::register_known_marketplace(plugins_dir, base_dir, &now)?;
+    let known_snapshot = marketplace::register_known_marketplace(plugins_dir, base_dir, &now)?;
+    undo.push(UndoAction::RestoreKnown(known_snapshot.0));
 
+    let installed_snapshot = marketplace::read_installed_plugins(plugins_dir);
     marketplace::register_profile_plugin(plugins_dir, name, &profile_dir, &now)?;
+    undo.push(UndoAction::RestoreInstalled(installed_snapshot));
 
     Ok(pre.settings_warnings)
 }
@@ -592,5 +662,30 @@ mod tests {
         assert!(!f.profiles_dir.join("first/agents/reviewer.md").exists());
         let marker = std::fs::read_to_string(f.profiles_dir.join(".active")).unwrap();
         assert!(marker.trim().ends_with("/profiles/second") || marker.trim().ends_with(r"\profiles\second"));
+    }
+
+    #[test]
+    fn rollback_when_symlink_creation_fails_clears_active_marker() {
+        let f = fresh();
+        crud::create(
+            &f.profiles_dir,
+            &json!({"name": "dev", "lspServers": {"ts": {}}}),
+        )
+        .unwrap();
+        std::fs::create_dir_all(f.profiles_dir.join("dev/.lsp.json")).unwrap();
+        let result = activate_forward(
+            &f.base,
+            &f.profiles_dir,
+            &f.store_dir,
+            &f.plugins_dir,
+            &f.claude_settings,
+            "dev",
+        );
+        assert!(result.is_err());
+        assert!(!f.profiles_dir.join(".active").exists());
+        assert!(!f.base.join("settings.backup.dev.json").exists());
+        let raw = std::fs::read_to_string(&f.claude_settings).unwrap();
+        assert!(raw.contains("\"model\""));
+        assert!(!raw.contains("profile-dev@ohmyc-profiles"));
     }
 }
