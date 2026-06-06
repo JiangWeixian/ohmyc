@@ -181,6 +181,26 @@ pub fn read_enabled_plugins_from(settings_path: &Path) -> Result<BTreeMap<String
     Ok(out)
 }
 
+pub fn load_manifest(install_path: &Path) -> Result<Option<PluginManifest>, ApiError> {
+    let primary = install_path.join("plugin.json");
+    if let Some(m) = read_manifest_or_none(&primary)? {
+        return Ok(Some(m));
+    }
+    let fallback = install_path.join(".claude-plugin").join("plugin.json");
+    read_manifest_or_none(&fallback)
+}
+
+fn read_manifest_or_none(path: &Path) -> Result<Option<PluginManifest>, ApiError> {
+    match std::fs::read_to_string(path) {
+        Ok(raw) => match serde_json::from_str::<PluginManifest>(&raw) {
+            Ok(m) => Ok(Some(m)),
+            Err(_) => Ok(None),
+        },
+        Err(e) if e.kind() == std::io::ErrorKind::NotFound => Ok(None),
+        Err(e) => Err(ApiError::Io(format!("read {}: {e}", path.display()))),
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -290,5 +310,51 @@ mod tests {
         let settings = dir.path().join("settings.json");
         std::fs::write(&settings, "not json {").unwrap();
         assert!(read_enabled_plugins_from(&settings).unwrap().is_empty());
+    }
+
+    #[test]
+    fn load_manifest_returns_none_when_no_files() {
+        let dir = tempfile::tempdir().unwrap();
+        assert!(load_manifest(dir.path()).unwrap().is_none());
+    }
+
+    #[test]
+    fn load_manifest_reads_root_plugin_json() {
+        let dir = tempfile::tempdir().unwrap();
+        std::fs::write(
+            dir.path().join("plugin.json"),
+            r#"{"name":"my","version":"1.0.0","description":"d"}"#,
+        )
+        .unwrap();
+        let m = load_manifest(dir.path()).unwrap().unwrap();
+        assert_eq!(m.name.as_deref(), Some("my"));
+        assert_eq!(m.description.as_deref(), Some("d"));
+    }
+
+    #[test]
+    fn load_manifest_falls_back_to_dot_claude_plugin() {
+        let dir = tempfile::tempdir().unwrap();
+        std::fs::create_dir_all(dir.path().join(".claude-plugin")).unwrap();
+        std::fs::write(
+            dir.path().join(".claude-plugin").join("plugin.json"),
+            r#"{"name":"nested"}"#,
+        )
+        .unwrap();
+        let m = load_manifest(dir.path()).unwrap().unwrap();
+        assert_eq!(m.name.as_deref(), Some("nested"));
+    }
+
+    #[test]
+    fn load_manifest_prefers_root_over_dot_dir() {
+        let dir = tempfile::tempdir().unwrap();
+        std::fs::create_dir_all(dir.path().join(".claude-plugin")).unwrap();
+        std::fs::write(dir.path().join("plugin.json"), r#"{"name":"root"}"#).unwrap();
+        std::fs::write(
+            dir.path().join(".claude-plugin").join("plugin.json"),
+            r#"{"name":"nested"}"#,
+        )
+        .unwrap();
+        let m = load_manifest(dir.path()).unwrap().unwrap();
+        assert_eq!(m.name.as_deref(), Some("root"));
     }
 }
