@@ -37,6 +37,11 @@ const routes: Record<string, RouteBuilder> = {
   'configs.hooks': () => '/api/hooks',
   'configs.lsp': () => '/api/lsp',
 
+  'plugins.list': () => '/api/plugins',
+  'plugins.get': a => `/api/plugins/${encodeURIComponent(String(a.id ?? ''))}`,
+  'marketplaces.list': () => '/api/marketplaces',
+  'marketplaces.get': a => `/api/marketplaces/${encodeURIComponent(String(a.id ?? ''))}`,
+
   'store.agents.list': () => '/api/store/agents',
   'store.agents.get': a => `/api/store/agents/${encodeURIComponent(String(a.name ?? ''))}`,
   'store.agents.create': a => ({ url: '/api/store/agents', method: 'POST', body: a.body }),

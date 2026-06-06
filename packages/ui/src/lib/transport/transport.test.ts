@@ -199,4 +199,24 @@ describe('transport seam', () => {
       globalThis.fetch = orig
     }
   })
+
+  it('fetch transport routes plugins.get via the id path-param table', async () => {
+    const calls: string[] = []
+    const orig = globalThis.fetch
+    globalThis.fetch = (async (url: string) => {
+      calls.push(url)
+      return new Response(JSON.stringify({ plugin: { id: 'gitlab@m' } }), {
+        status: 200,
+        headers: { 'content-type': 'application/json' },
+      })
+    }) as typeof fetch
+    try {
+      const { fetchTransport } = await import('./fetch')
+      await fetchTransport('plugins.get', { id: 'gitlab@m' })
+      expect(calls).toEqual(['/api/plugins/gitlab%40m'])
+    }
+    finally {
+      globalThis.fetch = orig
+    }
+  })
 })
