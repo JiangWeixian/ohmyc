@@ -239,4 +239,32 @@ describe('transport seam', () => {
       globalThis.fetch = orig
     }
   })
+
+  it('fetch transport routes profiles.activate with POST + empty body', async () => {
+    const calls: { url: string, method?: string, body?: string }[] = []
+    const orig = globalThis.fetch
+    globalThis.fetch = (async (url: string, init?: RequestInit) => {
+      calls.push({
+        url,
+        method: init?.method,
+        body: init?.body as string | undefined,
+      })
+      return new Response(JSON.stringify({ success: true, warnings: [] }), {
+        status: 200,
+        headers: { 'content-type': 'application/json' },
+      })
+    }) as typeof fetch
+    try {
+      const { fetchTransport } = await import('./fetch')
+      await fetchTransport('profiles.activate', { name: 'dev' })
+      expect(calls).toEqual([{
+        url: '/api/profiles/dev/activate',
+        method: 'POST',
+        body: '{}',
+      }])
+    }
+    finally {
+      globalThis.fetch = orig
+    }
+  })
 })
