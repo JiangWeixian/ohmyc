@@ -347,6 +347,57 @@ fn activate_inner(
     Ok(pre.settings_warnings)
 }
 
+pub fn activate(
+    base_dir: &Path,
+    profiles_dir: &Path,
+    store_dir: &Path,
+    plugins_dir: &Path,
+    claude_settings_path: &Path,
+    name: &str,
+) -> Result<Vec<String>, ApiError> {
+    let previous = crud::read_active_profile_name(profiles_dir)?;
+    let outcome = activate_forward(
+        base_dir,
+        profiles_dir,
+        store_dir,
+        plugins_dir,
+        claude_settings_path,
+        name,
+    );
+    match outcome {
+        Ok(warnings) => Ok(warnings),
+        Err(err) => {
+            if !matches!(err, ApiError::ActivationBlocked { .. }) {
+                if let Some(prev) = previous {
+                    if prev != name {
+                        let _ = activate_forward(
+                            base_dir,
+                            profiles_dir,
+                            store_dir,
+                            plugins_dir,
+                            claude_settings_path,
+                            &prev,
+                        );
+                    }
+                }
+            }
+            Err(err)
+        }
+    }
+}
+
+pub fn deactivate(
+    base_dir: &Path,
+    profiles_dir: &Path,
+    plugins_dir: &Path,
+    claude_settings_path: &Path,
+) -> Result<(), ApiError> {
+    let Some(active) = crud::read_active_profile_name(profiles_dir)? else {
+        return Ok(());
+    };
+    deactivate_internal(base_dir, profiles_dir, plugins_dir, claude_settings_path, &active)
+}
+
 fn current_iso8601() -> String {
     chrono::Utc::now().format("%Y-%m-%dT%H:%M:%SZ").to_string()
 }
@@ -687,5 +738,52 @@ mod tests {
         let raw = std::fs::read_to_string(&f.claude_settings).unwrap();
         assert!(raw.contains("\"model\""));
         assert!(!raw.contains("profile-dev@ohmyc-profiles"));
+    }
+
+    #[test]
+    fn auto_restore_previous_when_switching_fails_non_blocked() {
+        let f = fresh();
+        write(&f.store_dir.join("agents/reviewer.md"), "x");
+        crud::create(
+            &f.profiles_dir,
+            &json!({"name": "profile-a", "agents": ["reviewer"]}),
+        )
+        .unwrap();
+        crud::create(
+            &f.profiles_dir,
+            &json!({"name": "profile-b", "lspServers": {"ts": {}}}),
+        )
+        .unwrap();
+        activate(&f.base, &f.profiles_dir, &f.store_dir, &f.plugins_dir, &f.claude_settings, "profile-a")
+            .unwrap();
+        std::fs::create_dir_all(f.profiles_dir.join("profile-b/.lsp.json")).unwrap();
+        let result = activate(&f.base, &f.profiles_dir, &f.store_dir, &f.plugins_dir, &f.claude_settings, "profile-b");
+        assert!(result.is_err());
+        let active = crud::read_active_profile_name(&f.profiles_dir).unwrap();
+        assert_eq!(active.as_deref(), Some("profile-a"));
+        assert!(f.profiles_dir.join("profile-a/agents/reviewer.md").exists());
+    }
+
+    #[test]
+    fn auto_restore_does_not_fire_when_failure_is_activation_blocked() {
+        let f = fresh();
+        write(&f.store_dir.join("agents/reviewer.md"), "x");
+        crud::create(
+            &f.profiles_dir,
+            &json!({"name": "profile-a", "agents": ["reviewer"]}),
+        )
+        .unwrap();
+        crud::create(
+            &f.profiles_dir,
+            &json!({"name": "profile-b", "agents": ["ghost"]}),
+        )
+        .unwrap();
+        activate(&f.base, &f.profiles_dir, &f.store_dir, &f.plugins_dir, &f.claude_settings, "profile-a")
+            .unwrap();
+        let err = activate(&f.base, &f.profiles_dir, &f.store_dir, &f.plugins_dir, &f.claude_settings, "profile-b")
+            .unwrap_err();
+        assert!(matches!(err, ApiError::ActivationBlocked { .. }));
+        let active = crud::read_active_profile_name(&f.profiles_dir).unwrap();
+        assert_eq!(active.as_deref(), Some("profile-a"));
     }
 }
