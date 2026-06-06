@@ -134,10 +134,7 @@ pub fn store_agents_delete(name: String, force: Option<bool>) -> Result<DeleteOk
         let profiles_dir = store::store_profiles_dir()?;
         let refs = references::referencing_profiles(&profiles_dir, ComponentKind::Agents, &name)?;
         if !refs.is_empty() {
-            return Err(ApiError::Conflict(format!(
-                "agent '{name}' is referenced by profiles: {}",
-                refs.join(", ")
-            )));
+            return Err(ApiError::ReferencedBy { kind: "agent", name, profiles: refs });
         }
     }
     let dir = store::store_agents_dir()?;
@@ -199,10 +196,7 @@ pub fn store_skills_delete(name: String, force: Option<bool>) -> Result<DeleteOk
         let profiles_dir = store::store_profiles_dir()?;
         let refs = references::referencing_profiles(&profiles_dir, ComponentKind::Skills, &name)?;
         if !refs.is_empty() {
-            return Err(ApiError::Conflict(format!(
-                "skill '{name}' is referenced by profiles: {}",
-                refs.join(", ")
-            )));
+            return Err(ApiError::ReferencedBy { kind: "skill", name, profiles: refs });
         }
     }
     let dir = store::store_skills_dir()?;
@@ -264,10 +258,7 @@ pub fn store_commands_delete(name: String, force: Option<bool>) -> Result<Delete
         let profiles_dir = store::store_profiles_dir()?;
         let refs = references::referencing_profiles(&profiles_dir, ComponentKind::Commands, &name)?;
         if !refs.is_empty() {
-            return Err(ApiError::Conflict(format!(
-                "command '{name}' is referenced by profiles: {}",
-                refs.join(", ")
-            )));
+            return Err(ApiError::ReferencedBy { kind: "command", name, profiles: refs });
         }
     }
     let dir = store::store_commands_dir()?;
@@ -326,10 +317,7 @@ pub fn store_model_configs_delete(name: String, force: Option<bool>) -> Result<D
         let profiles_dir = store::store_profiles_dir()?;
         let refs = references::referencing_profiles(&profiles_dir, ComponentKind::ModelConfigs, &name)?;
         if !refs.is_empty() {
-            return Err(ApiError::Conflict(format!(
-                "model-config '{name}' is referenced by profiles: {}",
-                refs.join(", ")
-            )));
+            return Err(ApiError::ReferencedBy { kind: "model-config", name, profiles: refs });
         }
     }
     let dir = store::store_model_configs_dir()?;

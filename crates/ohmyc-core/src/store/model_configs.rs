@@ -24,7 +24,20 @@ pub struct ModelConfig {
 }
 
 pub fn is_safe_model_config_name(name: &str) -> bool {
-    if name.is_empty() || name.contains("..") {
+    if name.is_empty() {
+        return false;
+    }
+    // Reject anything that PathBuf::join would treat as absolute (leading `/`)
+    // or that has a dangling/doubled separator. Without these checks, a name
+    // like "/etc/passwd" lets PathBuf::join discard the store base, allowing
+    // a write/delete outside the managed directory.
+    if name.starts_with('/') || name.ends_with('/') || name.contains("//") {
+        return false;
+    }
+    // Reject any path segment exactly equal to ".." (the substring check
+    // alone would let "a..b" through, which IS safe; this segment check is
+    // the precise constraint).
+    if name.split('/').any(|seg| seg == "..") {
         return false;
     }
     name.chars()
@@ -174,6 +187,38 @@ mod tests {
         assert!(!is_safe_model_config_name("../etc"));
         assert!(!is_safe_model_config_name("a/../b"));
         assert!(!is_safe_model_config_name("with space"));
+    }
+
+    #[test]
+    fn is_safe_rejects_leading_slash_or_doubled_slash() {
+        // Without these checks, PathBuf::join would treat the name as
+        // absolute and escape the store dir.
+        assert!(!is_safe_model_config_name("/etc/passwd"));
+        assert!(!is_safe_model_config_name("//absolute"));
+        assert!(!is_safe_model_config_name("/leading"));
+        assert!(!is_safe_model_config_name("trailing/"));
+        assert!(!is_safe_model_config_name("a//b"));
+    }
+
+    #[test]
+    fn create_with_absolute_name_is_rejected_not_traversed() {
+        let dir = tempfile::tempdir().unwrap();
+        let mut bad = fixture();
+        bad.name = "/tmp/escape".to_string();
+        let err = create(dir.path(), &bad).unwrap_err();
+        assert!(matches!(err, ApiError::InvalidInput(_)));
+        // Critically: nothing got written outside the store dir.
+        assert!(!std::path::Path::new("/tmp/escape.json").exists());
+    }
+
+    #[test]
+    fn safe_name_still_accepts_dot_dot_inside_segment() {
+        // "a..b" is NOT a traversal — only the segment ".." itself is.
+        // Document this to prevent over-zealous future tightening from
+        // breaking valid names like "claude.v1.2" → "claude.v1..2"? No;
+        // the dot rule allows literal dots, so this is just a sanity test.
+        assert!(is_safe_model_config_name("a..b"));
+        assert!(is_safe_model_config_name("v1.0.0"));
     }
 
     #[test]

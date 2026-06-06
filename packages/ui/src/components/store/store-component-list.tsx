@@ -256,13 +256,20 @@ export function StoreComponentList({ category, onEdit }: StoreComponentListPrope
 
   // First delete attempt uses force:false; the server rejects if referenced.
   // The error payload includes referencedBy, which opens the confirmation dialog.
+  // Wire shape (post-slice-5): ApiError::ReferencedBy serializes as
+  //   { code: 'ReferencedBy', detail: { kind, name, referencedBy: string[] } }
+  // The legacy TS server returned { error, referencedBy } as the response body
+  // which fetchTransport now surfaces under `data` for compatibility. Read
+  // whichever shape is present.
   const handleDelete = (name: string) => {
     const mut = getDeleteMutation(category)
     mut.mutate({ name, force: false }, {
       onSuccess: () => setDeleteTarget(null),
       onError: (error: any) => {
-        const references = error.data?.referencedBy
-        if (references) {
+        const references: string[] | undefined
+          = error?.detail?.referencedBy
+            ?? error?.data?.referencedBy
+        if (references && references.length > 0) {
           setDeleteTarget({ category, name, referencedBy: references })
         }
       },

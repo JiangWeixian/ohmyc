@@ -141,8 +141,33 @@ export const fetchTransport: Transport = async (wire, args) => {
 
   const res = await fetch(url, init)
   if (!res.ok) {
-    const body = await res.text().catch(() => '')
-    throw { code: res.status === 404 ? 'NotFound' : 'Internal', message: body || res.statusText }
+    // Try to surface a structured body (e.g. { error, referencedBy } from
+    // the TS server's safe-delete conflict). Fall back to text if parsing
+    // fails. Surface the parsed object as `data` so UI consumers reading
+    // `error.data.referencedBy` still work; map common statuses to
+    // ApiError codes.
+    const text = await res.text().catch(() => '')
+    let data: unknown
+    try {
+      data = text ? JSON.parse(text) : undefined
+    }
+    catch {
+      data = undefined
+    }
+    let code: string
+    if (res.status === 404) {
+      code = 'NotFound'
+    }
+    else if (res.status === 409) {
+      code = (data && typeof data === 'object' && 'referencedBy' in (data as object)) ? 'ReferencedBy' : 'Conflict'
+    }
+    else {
+      code = 'Internal'
+    }
+    const message = (data && typeof data === 'object' && 'error' in (data as object))
+      ? String((data as { error: unknown }).error)
+      : (text || res.statusText)
+    throw { code, message, data }
   }
   const text = await res.text()
   if (!text) {
