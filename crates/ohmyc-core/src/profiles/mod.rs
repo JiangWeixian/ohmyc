@@ -8,6 +8,7 @@
 pub mod crud;
 pub mod lock;
 pub mod preflight;
+pub mod symlink;
 
 use std::path::PathBuf;
 
