@@ -77,7 +77,6 @@ fn compute_settings_warnings(
             warnings.push(format!("Settings key '{key}' would be overwritten"));
         }
     }
-    warnings.sort();
     warnings
 }
 
