@@ -7,6 +7,7 @@
 
 pub mod crud;
 pub mod lock;
+pub mod marketplace;
 pub mod preflight;
 pub mod symlink;
 
