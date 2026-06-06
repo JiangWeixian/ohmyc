@@ -157,6 +157,30 @@ pub fn get_marketplace(plugins_dir: &Path, id: &str) -> Result<Option<Marketplac
     Ok(all.into_iter().find(|m| m.id == id))
 }
 
+/// Read `enabledPlugins: { [id]: bool }` from one settings file. Missing
+/// file, missing field, or malformed JSON → empty map.
+pub fn read_enabled_plugins_from(settings_path: &Path) -> Result<BTreeMap<String, bool>, ApiError> {
+    let raw = match std::fs::read_to_string(settings_path) {
+        Ok(s) => s,
+        Err(e) if e.kind() == std::io::ErrorKind::NotFound => return Ok(BTreeMap::new()),
+        Err(e) => return Err(ApiError::Io(format!("read {}: {e}", settings_path.display()))),
+    };
+    let json: Value = match serde_json::from_str(&raw) {
+        Ok(v) => v,
+        Err(_) => return Ok(BTreeMap::new()),
+    };
+    let Some(map) = json.get("enabledPlugins").and_then(|v| v.as_object()) else {
+        return Ok(BTreeMap::new());
+    };
+    let mut out = BTreeMap::new();
+    for (k, v) in map {
+        if let Some(b) = v.as_bool() {
+            out.insert(k.clone(), b);
+        }
+    }
+    Ok(out)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -229,5 +253,42 @@ mod tests {
         let found = get_marketplace(dir.path(), "test").unwrap().unwrap();
         assert_eq!(found.source.url.as_deref(), Some("https://test.com"));
         assert!(get_marketplace(dir.path(), "nope").unwrap().is_none());
+    }
+
+    #[test]
+    fn read_enabled_plugins_from_returns_empty_when_no_file() {
+        let dir = tempfile::tempdir().unwrap();
+        let map = read_enabled_plugins_from(&dir.path().join("settings.json")).unwrap();
+        assert!(map.is_empty());
+    }
+
+    #[test]
+    fn read_enabled_plugins_from_returns_empty_when_no_field() {
+        let dir = tempfile::tempdir().unwrap();
+        let settings = dir.path().join("settings.json");
+        std::fs::write(&settings, r#"{"other":"thing"}"#).unwrap();
+        assert!(read_enabled_plugins_from(&settings).unwrap().is_empty());
+    }
+
+    #[test]
+    fn read_enabled_plugins_from_parses_map() {
+        let dir = tempfile::tempdir().unwrap();
+        let settings = dir.path().join("settings.json");
+        std::fs::write(
+            &settings,
+            r#"{"enabledPlugins":{"gitlab@m":true,"other@m":false}}"#,
+        )
+        .unwrap();
+        let map = read_enabled_plugins_from(&settings).unwrap();
+        assert_eq!(map.get("gitlab@m"), Some(&true));
+        assert_eq!(map.get("other@m"), Some(&false));
+    }
+
+    #[test]
+    fn read_enabled_plugins_from_tolerates_corrupt_json() {
+        let dir = tempfile::tempdir().unwrap();
+        let settings = dir.path().join("settings.json");
+        std::fs::write(&settings, "not json {").unwrap();
+        assert!(read_enabled_plugins_from(&settings).unwrap().is_empty());
     }
 }
