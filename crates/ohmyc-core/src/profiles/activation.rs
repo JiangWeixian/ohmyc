@@ -8,7 +8,8 @@ use serde_json::{json, Map, Value};
 
 use crate::error::ApiError;
 
-use super::marketplace;
+use super::{crud, marketplace, preflight};
+use super::symlink as sym;
 
 /// Recursive merge: object → object recurses, arrays/primitives in
 /// `source` overwrite `target`. Mirrors TS `deepMerge` exactly.
@@ -115,6 +116,169 @@ pub fn deactivate_internal(
     let _ = std::fs::remove_file(profiles_dir.join(".active"));
 
     Ok(())
+}
+
+pub(crate) fn activate_forward(
+    base_dir: &Path,
+    profiles_dir: &Path,
+    store_dir: &Path,
+    plugins_dir: &Path,
+    claude_settings_path: &Path,
+    name: &str,
+) -> Result<Vec<String>, ApiError> {
+    let pre = preflight::preflight(profiles_dir, store_dir, claude_settings_path, name)?;
+    if !pre.can_activate {
+        return Err(ApiError::ActivationBlocked { missing: pre.missing });
+    }
+
+    let Some(profile) = crud::get(profiles_dir, name)? else {
+        return Err(ApiError::NotFound { kind: "profile", name: name.to_string() });
+    };
+
+    let previous_active = crud::read_active_profile_name(profiles_dir)?;
+
+    if let Some(prev) = previous_active.as_deref() {
+        deactivate_internal(base_dir, profiles_dir, plugins_dir, claude_settings_path, prev)?;
+    }
+
+    let current_settings_raw = std::fs::read_to_string(claude_settings_path).unwrap_or_else(|_| "{}".to_string());
+    let current_settings: Value = serde_json::from_str(&current_settings_raw).unwrap_or_else(|_| json!({}));
+    let backup_path = base_dir.join(format!("settings.backup.{name}.json"));
+    std::fs::write(&backup_path, serde_json::to_string_pretty(&current_settings).unwrap())
+        .map_err(|e| ApiError::Io(format!("write backup {}: {e}", backup_path.display())))?;
+
+    let profile_dir = profiles_dir.join(name);
+    std::fs::create_dir_all(&profile_dir)
+        .map_err(|e| ApiError::Io(format!("mkdir {}: {e}", profile_dir.display())))?;
+
+    let absolute = profile_dir.canonicalize().unwrap_or(profile_dir.clone());
+    std::fs::write(profiles_dir.join(".active"), absolute.to_string_lossy().to_string())
+        .map_err(|e| ApiError::Io(format!("write .active: {e}")))?;
+
+    for agent in &profile.agents {
+        let source = store_dir.join("agents").join(format!("{agent}.md"));
+        let dest = profile_dir.join("agents").join(format!("{agent}.md"));
+        sym::create_symlink(&source, &dest)?;
+    }
+    for skill in &profile.skills {
+        let source = store_dir.join("skills").join(skill);
+        let dest = profile_dir.join("skills").join(skill);
+        sym::create_symlink(&source, &dest)?;
+    }
+    for cmd in &profile.commands {
+        let source = store_dir.join("commands").join(format!("{cmd}.md"));
+        let dest = profile_dir.join("commands").join(format!("{cmd}.md"));
+        sym::create_symlink(&source, &dest)?;
+    }
+
+    let plugin_dir = profile_dir.join(".claude-plugin");
+    std::fs::create_dir_all(&plugin_dir)
+        .map_err(|e| ApiError::Io(format!("mkdir {}: {e}", plugin_dir.display())))?;
+    let description = profile.description.clone().unwrap_or_else(|| name.to_string());
+    let plugin_json = json!({
+        "name": format!("profile-{name}"),
+        "version": "1.0.0",
+        "description": format!("OhMyC profile: {description}"),
+    });
+    std::fs::write(
+        plugin_dir.join("plugin.json"),
+        serde_json::to_string_pretty(&plugin_json).unwrap(),
+    )
+    .map_err(|e| ApiError::Io(format!("write plugin.json: {e}")))?;
+
+    if let Some(hooks) = profile.hooks.as_ref() {
+        let hooks_dir = profile_dir.join("hooks");
+        std::fs::create_dir_all(&hooks_dir)
+            .map_err(|e| ApiError::Io(format!("mkdir {}: {e}", hooks_dir.display())))?;
+        let body = json!({ "hooks": hooks });
+        std::fs::write(
+            hooks_dir.join("hooks.json"),
+            serde_json::to_string_pretty(&body).unwrap(),
+        )
+        .map_err(|e| ApiError::Io(format!("write hooks.json: {e}")))?;
+    }
+
+    if let Some(mcp) = profile.mcp_servers.as_ref() {
+        let body = json!({ "mcpServers": mcp });
+        std::fs::write(
+            profile_dir.join(".mcp.json"),
+            serde_json::to_string_pretty(&body).unwrap(),
+        )
+        .map_err(|e| ApiError::Io(format!("write .mcp.json: {e}")))?;
+    }
+
+    if let Some(lsp) = profile.lsp_servers.as_ref() {
+        std::fs::write(
+            profile_dir.join(".lsp.json"),
+            serde_json::to_string_pretty(lsp).unwrap(),
+        )
+        .map_err(|e| ApiError::Io(format!("write .lsp.json: {e}")))?;
+    }
+
+    let mut merged = current_settings.clone();
+    if let Some(ps) = profile.settings.as_ref() {
+        merged = deep_merge(&merged, &Value::Object(ps.clone()));
+    }
+    if let Some(mc_name) = profile.model_config.as_deref() {
+        if let Some(mc) = crate::store::model_configs::get(&store_dir.join("model-configs"), mc_name)? {
+            let model = if mc.model_name.is_empty() { None } else { Some(mc.model_name.as_str()) };
+            let env = build_env_vars(&mc.api_key, &mc.base_url, model);
+            let existing_env = merged
+                .get("env")
+                .and_then(|v| v.as_object())
+                .cloned()
+                .unwrap_or_default();
+            let mut combined = existing_env;
+            for (k, v) in env {
+                combined.insert(k, v);
+            }
+            merged.as_object_mut().unwrap().insert("env".to_string(), Value::Object(combined));
+        }
+    }
+    let mut enabled = merged
+        .get("enabledPlugins")
+        .and_then(|v| v.as_object())
+        .cloned()
+        .unwrap_or_default();
+    for plugin_id in &profile.plugins {
+        enabled.insert(plugin_id.clone(), Value::Bool(true));
+    }
+    enabled.insert(marketplace::plugin_id(name), Value::Bool(true));
+    merged.as_object_mut().unwrap().insert("enabledPlugins".to_string(), Value::Object(enabled));
+
+    if let Some(parent) = claude_settings_path.parent() {
+        std::fs::create_dir_all(parent)
+            .map_err(|e| ApiError::Io(format!("mkdir {}: {e}", parent.display())))?;
+    }
+    std::fs::write(
+        claude_settings_path,
+        serde_json::to_string_pretty(&merged).unwrap(),
+    )
+    .map_err(|e| ApiError::Io(format!("write settings: {e}")))?;
+
+    let listing = crud::list(profiles_dir)?;
+    let summaries: Vec<(String, String)> = listing
+        .profiles
+        .iter()
+        .map(|p| {
+            (
+                p.name.clone(),
+                p.description.clone().unwrap_or_else(|| p.name.clone()),
+            )
+        })
+        .collect();
+    marketplace::write_marketplace_json(base_dir, &summaries)?;
+
+    let now = current_iso8601();
+    marketplace::register_known_marketplace(plugins_dir, base_dir, &now)?;
+
+    marketplace::register_profile_plugin(plugins_dir, name, &profile_dir, &now)?;
+
+    Ok(pre.settings_warnings)
+}
+
+fn current_iso8601() -> String {
+    chrono::Utc::now().format("%Y-%m-%dT%H:%M:%SZ").to_string()
 }
 
 #[cfg(test)]
@@ -253,5 +417,180 @@ mod tests {
         let settings: Value = serde_json::from_str(&std::fs::read_to_string(&f.claude_settings).unwrap()).unwrap();
         assert_eq!(settings["model"], "generic");
         assert!(!f.base.join("settings.backup.json").exists());
+    }
+
+    struct ActivateFixture {
+        _root: tempfile::TempDir,
+        base: PathBuf,
+        profiles_dir: PathBuf,
+        store_dir: PathBuf,
+        plugins_dir: PathBuf,
+        claude_settings: PathBuf,
+    }
+
+    fn fresh() -> ActivateFixture {
+        let root = tempfile::tempdir().unwrap();
+        let base = root.path().to_path_buf();
+        let profiles_dir = base.join("profiles");
+        let store_dir = base.join("store");
+        let plugins_dir = base.join("claude-plugins");
+        let claude_settings = base.join("claude-settings.json");
+        std::fs::create_dir_all(store_dir.join("agents")).unwrap();
+        std::fs::create_dir_all(store_dir.join("skills")).unwrap();
+        std::fs::create_dir_all(store_dir.join("commands")).unwrap();
+        std::fs::create_dir_all(store_dir.join("model-configs")).unwrap();
+        std::fs::create_dir_all(&profiles_dir).unwrap();
+        write(&claude_settings, r#"{"model":"sonnet"}"#);
+        ActivateFixture { _root: root, base, profiles_dir, store_dir, plugins_dir, claude_settings }
+    }
+
+    #[test]
+    fn activate_writes_active_marker_with_absolute_path() {
+        let f = fresh();
+        write(&f.store_dir.join("agents/reviewer.md"), "x");
+        crud::create(
+            &f.profiles_dir,
+            &json!({"name": "dev", "agents": ["reviewer"]}),
+        )
+        .unwrap();
+        activate_forward(&f.base, &f.profiles_dir, &f.store_dir, &f.plugins_dir, &f.claude_settings, "dev")
+            .unwrap();
+        let marker = std::fs::read_to_string(f.profiles_dir.join(".active")).unwrap();
+        let marker = marker.trim();
+        assert!(std::path::Path::new(marker).is_absolute());
+        assert!(marker.ends_with("/profiles/dev") || marker.ends_with(r"\profiles\dev"));
+    }
+
+    #[test]
+    fn activate_creates_symlinks_for_referenced_components() {
+        let f = fresh();
+        write(&f.store_dir.join("agents/reviewer.md"), "x");
+        write(&f.store_dir.join("commands/push.md"), "x");
+        std::fs::create_dir_all(f.store_dir.join("skills/deploy")).unwrap();
+        crud::create(
+            &f.profiles_dir,
+            &json!({
+                "name": "dev",
+                "agents": ["reviewer"],
+                "skills": ["deploy"],
+                "commands": ["push"],
+            }),
+        )
+        .unwrap();
+        activate_forward(&f.base, &f.profiles_dir, &f.store_dir, &f.plugins_dir, &f.claude_settings, "dev")
+            .unwrap();
+        let pd = f.profiles_dir.join("dev");
+        assert!(pd.join("agents/reviewer.md").symlink_metadata().unwrap().file_type().is_symlink());
+        assert!(pd.join("skills/deploy").symlink_metadata().unwrap().file_type().is_symlink());
+        assert!(pd.join("commands/push.md").symlink_metadata().unwrap().file_type().is_symlink());
+    }
+
+    #[test]
+    fn activate_writes_plugin_files_when_profile_has_them() {
+        let f = fresh();
+        crud::create(
+            &f.profiles_dir,
+            &json!({
+                "name": "dev",
+                "hooks": { "PreToolUse": [] },
+                "mcpServers": { "db": { "command": "node" } },
+                "lspServers": { "ts": { "command": "tsc" } },
+            }),
+        )
+        .unwrap();
+        activate_forward(&f.base, &f.profiles_dir, &f.store_dir, &f.plugins_dir, &f.claude_settings, "dev")
+            .unwrap();
+        let pd = f.profiles_dir.join("dev");
+        assert!(pd.join(".claude-plugin/plugin.json").exists());
+        assert!(pd.join("hooks/hooks.json").exists());
+        assert!(pd.join(".mcp.json").exists());
+        assert!(pd.join(".lsp.json").exists());
+    }
+
+    #[test]
+    fn activate_deep_merges_settings_and_sets_enabled_plugins() {
+        let f = fresh();
+        write(&f.claude_settings, r#"{"model":"sonnet","env":{"X":"keep"}}"#);
+        crud::create(
+            &f.profiles_dir,
+            &json!({
+                "name": "dev",
+                "settings": {"effort": "high", "env": {"Y": "new"}},
+                "plugins": ["gitlab@market"],
+            }),
+        )
+        .unwrap();
+        activate_forward(&f.base, &f.profiles_dir, &f.store_dir, &f.plugins_dir, &f.claude_settings, "dev")
+            .unwrap();
+        let v: Value = serde_json::from_str(&std::fs::read_to_string(&f.claude_settings).unwrap()).unwrap();
+        assert_eq!(v["model"], "sonnet");
+        assert_eq!(v["effort"], "high");
+        assert_eq!(v["env"]["X"], "keep");
+        assert_eq!(v["env"]["Y"], "new");
+        assert_eq!(v["enabledPlugins"]["gitlab@market"], true);
+        assert_eq!(v["enabledPlugins"]["profile-dev@ohmyc-profiles"], true);
+    }
+
+    #[test]
+    fn activate_injects_model_config_env_vars_when_present() {
+        let f = fresh();
+        write(
+            &f.store_dir.join("model-configs/anthropic.json"),
+            r#"{"name":"anthropic","apiKey":"sk-x","baseUrl":"https://api","modelName":"claude-sonnet-4","provider":""}"#,
+        );
+        crud::create(
+            &f.profiles_dir,
+            &json!({"name": "dev", "modelConfig": "anthropic"}),
+        )
+        .unwrap();
+        activate_forward(&f.base, &f.profiles_dir, &f.store_dir, &f.plugins_dir, &f.claude_settings, "dev")
+            .unwrap();
+        let v: Value = serde_json::from_str(&std::fs::read_to_string(&f.claude_settings).unwrap()).unwrap();
+        assert_eq!(v["env"]["ANTHROPIC_AUTH_TOKEN"], "sk-x");
+        assert_eq!(v["env"]["ANTHROPIC_BASE_URL"], "https://api");
+        assert_eq!(v["env"]["ANTHROPIC_MODEL"], "claude-sonnet-4");
+    }
+
+    #[test]
+    fn activate_writes_marketplace_and_registers_plugin() {
+        let f = fresh();
+        crud::create(&f.profiles_dir, &json!({"name": "dev", "description": "Dev"})).unwrap();
+        activate_forward(&f.base, &f.profiles_dir, &f.store_dir, &f.plugins_dir, &f.claude_settings, "dev")
+            .unwrap();
+        assert!(f.base.join(".claude-plugin/marketplace.json").exists());
+        let installed = marketplace::read_installed_plugins(&f.plugins_dir);
+        assert!(installed["plugins"]["profile-dev@ohmyc-profiles"].is_array());
+        let known = marketplace::read_known_marketplaces(&f.plugins_dir);
+        assert_eq!(known["ohmyc-profiles"]["source"]["source"], "directory");
+    }
+
+    #[test]
+    fn activate_returns_activation_blocked_when_components_missing() {
+        let f = fresh();
+        crud::create(&f.profiles_dir, &json!({"name": "dev", "agents": ["ghost"]})).unwrap();
+        let err = activate_forward(&f.base, &f.profiles_dir, &f.store_dir, &f.plugins_dir, &f.claude_settings, "dev")
+            .unwrap_err();
+        match err {
+            ApiError::ActivationBlocked { missing } => {
+                assert_eq!(missing, vec!["agent:ghost".to_string()]);
+            }
+            other => panic!("expected ActivationBlocked, got {other:?}"),
+        }
+    }
+
+    #[test]
+    fn activate_deactivates_previous_profile_before_activating_new() {
+        let f = fresh();
+        write(&f.store_dir.join("agents/reviewer.md"), "x");
+        crud::create(&f.profiles_dir, &json!({"name": "first", "agents": ["reviewer"]})).unwrap();
+        crud::create(&f.profiles_dir, &json!({"name": "second"})).unwrap();
+        activate_forward(&f.base, &f.profiles_dir, &f.store_dir, &f.plugins_dir, &f.claude_settings, "first")
+            .unwrap();
+        assert!(f.profiles_dir.join("first/agents/reviewer.md").exists());
+        activate_forward(&f.base, &f.profiles_dir, &f.store_dir, &f.plugins_dir, &f.claude_settings, "second")
+            .unwrap();
+        assert!(!f.profiles_dir.join("first/agents/reviewer.md").exists());
+        let marker = std::fs::read_to_string(f.profiles_dir.join(".active")).unwrap();
+        assert!(marker.trim().ends_with("/profiles/second") || marker.trim().ends_with(r"\profiles\second"));
     }
 }
