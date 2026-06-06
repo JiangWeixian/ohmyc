@@ -1,6 +1,8 @@
 // React Query hooks for installed plugins and marketplace listing.
 import { useQuery } from '@tanstack/react-query'
 
+import { request } from '../lib/transport'
+
 import type {
   InstalledPlugin,
   Marketplace,
@@ -42,32 +44,24 @@ function normalizePlugin(plugin: InstalledPlugin): PluginInventoryItem {
   }
 }
 
-/** Fetches and normalizes the full list of installed plugins. */
-async function fetchPlugins(): Promise<PluginInventoryItem[]> {
-  const response = await fetch('/api/plugins')
-  if (!response.ok) {
-    throw new Error('Failed to fetch plugins')
-  }
-  const data = (await response.json()) as { plugins?: InstalledPlugin[] }
-  return Array.isArray(data.plugins) ? data.plugins.map(plugin => normalizePlugin(plugin)) : []
-}
-
-/** Fetches available plugin marketplaces. */
-async function fetchMarketplaces(): Promise<Marketplace[]> {
-  const response = await fetch('/api/marketplaces')
-  if (!response.ok) {
-    throw new Error('Failed to fetch marketplaces')
-  }
-  const data = await response.json()
-  return data.marketplaces
-}
-
 /** Query hook for listing installed plugins with normalized component counts. */
 export function usePlugins() {
-  return useQuery({ queryKey: ['plugins'], queryFn: fetchPlugins })
+  return useQuery({
+    queryKey: ['plugins'],
+    queryFn: async () => {
+      const data = await request<{ plugins?: InstalledPlugin[] }>('plugins.list', {})
+      return Array.isArray(data.plugins) ? data.plugins.map(plugin => normalizePlugin(plugin)) : []
+    },
+  })
 }
 
 /** Query hook for listing available plugin marketplaces. */
 export function useMarketplaces() {
-  return useQuery({ queryKey: ['marketplaces'], queryFn: fetchMarketplaces })
+  return useQuery({
+    queryKey: ['marketplaces'],
+    queryFn: async () => {
+      const data = await request<{ marketplaces?: Marketplace[] }>('marketplaces.list', {})
+      return Array.isArray(data.marketplaces) ? data.marketplaces : []
+    },
+  })
 }

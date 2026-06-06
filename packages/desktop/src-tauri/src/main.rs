@@ -52,6 +52,10 @@ fn main() {
             ohmyc_desktop_lib::api::store::store_model_configs_create,
             ohmyc_desktop_lib::api::store::store_model_configs_update,
             ohmyc_desktop_lib::api::store::store_model_configs_delete,
+            ohmyc_desktop_lib::api::plugins::plugins_list,
+            ohmyc_desktop_lib::api::plugins::plugins_get,
+            ohmyc_desktop_lib::api::plugins::marketplaces_list,
+            ohmyc_desktop_lib::api::plugins::marketplaces_get,
         ])
         .setup(|app| {
             #[cfg(target_os = "macos")]

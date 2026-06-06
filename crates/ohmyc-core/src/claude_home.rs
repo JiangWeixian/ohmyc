@@ -31,6 +31,18 @@ pub fn join<P: AsRef<Path>>(rel: P) -> Result<PathBuf, ApiError> {
     Ok(resolve()?.join(rel))
 }
 
+/// `<claude_home>/plugins/` — where Claude Code stores `installed_plugins.json`
+/// and `known_marketplaces.json`.
+pub fn plugins_dir() -> Result<PathBuf, ApiError> {
+    Ok(resolve()?.join("plugins"))
+}
+
+/// `<claude_home>/settings.json` — global Claude Code settings. Source of
+/// the `enabledPlugins` map.
+pub fn settings_path() -> Result<PathBuf, ApiError> {
+    Ok(resolve()?.join("settings.json"))
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -81,6 +93,22 @@ mod tests {
         with_env(ENV_OVERRIDE, Some("/tmp/fake-claude"), || {
             let path = join("profiles/default.yaml").unwrap();
             assert_eq!(path, PathBuf::from("/tmp/fake-claude/profiles/default.yaml"));
+        });
+    }
+
+    #[test]
+    fn plugins_dir_resolves_under_claude_home() {
+        with_env(ENV_OVERRIDE, Some("/tmp/fake-claude"), || {
+            let path = plugins_dir().unwrap();
+            assert_eq!(path, PathBuf::from("/tmp/fake-claude/plugins"));
+        });
+    }
+
+    #[test]
+    fn settings_path_resolves_under_claude_home() {
+        with_env(ENV_OVERRIDE, Some("/tmp/fake-claude"), || {
+            let path = settings_path().unwrap();
+            assert_eq!(path, PathBuf::from("/tmp/fake-claude/settings.json"));
         });
     }
 }

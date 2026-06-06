@@ -46,9 +46,16 @@ export function useFsChanged(): void {
               void qc.invalidateQueries({ queryKey: ['settings'] })
               void qc.invalidateQueries({ queryKey: ['hooks'] })
               void qc.invalidateQueries({ queryKey: ['lsp'] })
+              void qc.invalidateQueries({ queryKey: ['plugins'] })
             }
             if (path.endsWith('/.mcp.json')) {
               void qc.invalidateQueries({ queryKey: ['mcp'] })
+            }
+            if (path.endsWith('/installed_plugins.json')) {
+              void qc.invalidateQueries({ queryKey: ['plugins'] })
+            }
+            if (path.endsWith('/known_marketplaces.json')) {
+              void qc.invalidateQueries({ queryKey: ['marketplaces'] })
             }
             // Dormant matchers — the watcher's default_watch_paths does NOT
             // include <base>/store/ today, so these branches will not fire in
