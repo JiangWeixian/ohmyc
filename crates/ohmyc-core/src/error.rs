@@ -34,6 +34,15 @@ pub enum ApiError {
         profiles: Vec<String>,
     },
 
+    /// Profile activation refused because the profile references store
+    /// components that are missing. Serializes as
+    /// `{ code: "ActivationBlocked", detail: { missing: [...] } }` so
+    /// the UI can render the missing-list in the activation dialog.
+    #[error("activation blocked: {} missing component(s)", missing.len())]
+    ActivationBlocked {
+        missing: Vec<String>,
+    },
+
     #[error("validation error: {0}")]
     Validation(String),
 
@@ -90,6 +99,16 @@ mod tests {
     fn display_includes_variant_specific_message() {
         let err = ApiError::Conflict("already active".to_string());
         assert_eq!(format!("{err}"), "conflict: already active");
+    }
+
+    #[test]
+    fn activation_blocked_serializes_with_missing_array() {
+        let err = ApiError::ActivationBlocked {
+            missing: vec!["agent:reviewer".to_string(), "skill:deploy".to_string()],
+        };
+        let json = serde_json::to_value(&err).unwrap();
+        assert_eq!(json["code"], "ActivationBlocked");
+        assert_eq!(json["detail"]["missing"], serde_json::json!(["agent:reviewer", "skill:deploy"]));
     }
 
     #[test]
