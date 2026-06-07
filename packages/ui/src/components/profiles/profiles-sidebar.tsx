@@ -1,5 +1,5 @@
-// Left sidebar for the Profiles page. Lists activity timeline link,
-// user profiles with activate/compare hover actions, and component categories.
+// Left sidebar for the Profiles page. Lists user profiles with
+// activate/compare hover actions and component categories.
 
 import {
   Bot,
@@ -9,7 +9,6 @@ import {
   TerminalSquare,
   User,
 } from 'lucide-react'
-import { useNavigate } from 'react-router-dom'
 
 import {
   Tabs,
@@ -95,7 +94,6 @@ const COMPONENTS = [
  */
 export function ProfilesSidebar({ profiles, active, selection, onSelect, onCompare, onActivate, headerSlot }: ProfilesSidebarProperties) {
   const currentValue = getTabValue(selection)
-  const navigate = useNavigate()
 
   const handleValueChange = (value: string) => {
     const parsed = parseTabValue(value)
@@ -108,7 +106,7 @@ export function ProfilesSidebar({ profiles, active, selection, onSelect, onCompa
     <aside className="flex w-60 flex-col border-r border-[rgba(255,255,255,0.05)] bg-[var(--bg-panel)]">
       <SidebarHeader headerSlot={headerSlot} />
       <nav className="flex-1 overflow-y-auto px-3 py-3">
-        <div className="mb-2 pt-1 px-2 text-[11px] font-[510] tracking-[0.04em] uppercase text-[var(--text-tertiary)]">
+        <div className="mb-2 px-2 pt-1 text-[11px] font-[510] tracking-[0.04em] uppercase text-[var(--text-tertiary)]">
           My Profiles
         </div>
         <Tabs

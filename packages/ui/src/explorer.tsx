@@ -497,7 +497,6 @@ export function Explorer({ viewSwitcher }: ExplorerProperties) {
   return (
     <div className="flex h-full min-w-0 font-sans text-[var(--text-primary)]">
       <Sidebar
-        title="Explorer"
         sections={SECTIONS}
         activeSection={activeSection}
         onSectionChange={(id) => {
