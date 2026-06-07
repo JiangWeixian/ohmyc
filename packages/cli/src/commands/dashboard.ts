@@ -29,6 +29,11 @@ import type Database from 'better-sqlite3'
 // ------------------------------------------------------------------
 
 /** Returns the Claude Code plugins directory (respects AGENT_HOME env var). */
+function getPluginsDir(): string {
+  const base = process.env.AGENT_HOME ?? path.join(process.env.HOME ?? '~', '.claude')
+  return path.join(base, 'plugins')
+}
+
 /** Path to the `installed_plugins.json` registry file. */
 export function getInstalledPluginsPath(): string {
   return path.join(getPluginsDir(), 'installed_plugins.json')
