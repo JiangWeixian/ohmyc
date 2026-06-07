@@ -1,7 +1,6 @@
-// Page header — displays breadcrumb navigation, command palette trigger, and active profile chip.
+// Page header — displays breadcrumb navigation and command palette trigger.
 import { useLocation } from 'react-router-dom'
 
-import { ActiveProfileChip } from './active-profile-chip'
 import { CommandPaletteTrigger } from './command-palette-trigger'
 import { SourceSwitcher } from './source-switcher'
 import { cn } from '@/lib/utils'
@@ -9,47 +8,10 @@ import { cn } from '@/lib/utils'
 /** Derives breadcrumb labels from the current React Router pathname. */
 function useBreadcrumb(): { root: string; current: string } {
   const { pathname } = useLocation()
-  if (pathname.startsWith('/timeline')) {
-    return { root: 'Activity', current: 'Timeline' }
-  }
-  if (pathname.startsWith('/profiles/new')) {
-    return { root: 'Profiles', current: 'New profile' }
-  }
-  const profileComponents: Record<string, string> = {
-    agents: 'Agents',
-    skills: 'Skills',
-    commands: 'Commands',
-    'model-configs': 'Model Configs',
-  }
-  for (const [key, label] of Object.entries(profileComponents)) {
-    if (pathname.startsWith(`/profiles/${key}`)) {
-      // Check if it's an edit route like /profiles/agents/name/edit
-      const match = pathname.match(new RegExp(`^/profiles/${key}/(.+)/edit$`))
-      if (match) {
-        return { root: 'Profiles', current: `Edit ${match[1]}` }
-      }
-      // Check if it's a new route like /profiles/agents/edit
-      if (pathname === `/profiles/${key}/edit`) {
-        return { root: 'Profiles', current: `New ${label.slice(0, -1)}` }
-      }
-      return { root: 'Profiles', current: label }
-    }
-  }
-  if (pathname.startsWith('/profiles/')) {
-    const rest = pathname.slice('/profiles/'.length)
-    // Handle profile edit: /profiles/:name/edit
-    if (rest.endsWith('/edit')) {
-      const name = rest.slice(0, -5)
-      return { root: 'Profiles', current: `Edit ${name}` }
-    }
-    return { root: 'Profiles', current: rest || 'All profiles' }
-  }
-  if (pathname.startsWith('/profiles')) {
-    return { root: 'Profiles', current: 'All profiles' }
-  }
   if (pathname.startsWith('/explore/')) {
     const tab = pathname.slice('/explore/'.length)
     const labels: Record<string, string> = {
+      timeline: 'Timeline',
       agents: 'Agents',
       skills: 'Skills',
       commands: 'Commands',
@@ -64,14 +26,8 @@ function useBreadcrumb(): { root: string; current: string } {
   return { root: 'Explorer', current: '' }
 }
 
-/** Props for the {@link Header} component. */
-interface HeaderProps {
-  /** Optional callback to trigger profile comparison. */
-  onCompare?: () => void
-}
-
-/** Top navigation bar with breadcrumb, command palette trigger, and active profile chip. */
-export function Header({ onCompare }: HeaderProps) {
+/** Top navigation bar with breadcrumb, command palette trigger, and source switcher. */
+export function Header() {
   const breadcrumb = useBreadcrumb()
   const { pathname } = useLocation()
   const showSourceSwitcher = pathname.startsWith('/explore/')
@@ -95,7 +51,6 @@ export function Header({ onCompare }: HeaderProps) {
       <div className="flex items-center gap-3">
         {showSourceSwitcher && <SourceSwitcher />}
         <CommandPaletteTrigger />
-        <ActiveProfileChip onCompare={onCompare} />
       </div>
     </header>
   )

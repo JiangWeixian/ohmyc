@@ -1,7 +1,6 @@
 // Sidebar navigation — Activity link + vertical explorer section tabs.
 import { Activity, LayoutGrid } from 'lucide-react'
 import React from 'react'
-import { useNavigate } from 'react-router-dom'
 
 import {
   Tabs,
@@ -56,7 +55,6 @@ export function Sidebar({
   onSectionChange,
   headerSlot,
 }: SidebarProperties) {
-  const navigate = useNavigate()
   return (
     <aside className="flex w-60 flex-col border-r border-[rgba(255,255,255,0.05)] bg-[var(--bg-panel)]">
       <SidebarHeader headerSlot={headerSlot} />
@@ -66,10 +64,15 @@ export function Sidebar({
         </div>
         <button
           type="button"
-          onClick={() => navigate('/timeline')}
-          className="flex w-full items-center gap-2.5 rounded-md px-3 py-2 text-left text-[13px] font-[510] text-[var(--text-secondary)] transition-colors duration-150 hover:bg-[rgba(255,255,255,0.03)] hover:text-[var(--text-primary)]"
+          onClick={() => onSectionChange('timeline')}
+          className={cn(
+            'flex w-full items-center gap-2.5 rounded-md px-3 py-2 text-left text-[13px] font-[510] transition-colors duration-150',
+            activeSection === 'timeline'
+              ? 'bg-[rgba(255,255,255,0.08)] text-[var(--text-primary)]'
+              : 'text-[var(--text-secondary)] hover:bg-[rgba(255,255,255,0.03)] hover:text-[var(--text-primary)]',
+          )}
         >
-          <span className="shrink-0 text-[var(--text-tertiary)]">
+          <span className={cn('shrink-0', activeSection === 'timeline' ? 'text-[var(--text-primary)]' : 'text-[var(--text-tertiary)]')}>
             <Activity size={16} />
           </span>
           <span>Timeline</span>
