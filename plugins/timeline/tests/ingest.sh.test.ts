@@ -18,11 +18,6 @@ import {
   it,
 } from 'vitest'
 
-const INGEST_SH = path.resolve(
-  import.meta.dirname,
-  '../hooks/ingest.sh',
-)
-
 const FIXTURES = {
   minimal: [
     '{"type":"user","timestamp":"2026-04-30T10:00:00.000Z","message":{"role":"user","content":"hello"}}',
@@ -59,19 +54,36 @@ function writeTranscript(dir: string, sessionId: string, lines: readonly string[
 describe('ingest.sh', () => {
   let tmpDir: string
   let fakeClaudeDir: string
-  let fakeCli: string
+  let capturePath: string
+  let pluginHook: string
 
   beforeEach(() => {
     tmpDir = mkdtempSync(path.join(os.tmpdir(), 'ingest-sh-test-'))
     fakeClaudeDir = path.join(tmpDir, '.claude', 'projects', '-tmp-my-project')
     mkdirSync(fakeClaudeDir, { recursive: true })
 
-    fakeCli = path.join(tmpDir, 'ohmyc')
-    writeFileSync(
-      fakeCli,
-      '#!/bin/bash\nif [ "$1" = "dashboard" ] && [ "$2" = "--ingest-raw" ]; then\n  cat > /dev/null\n  echo "INGEST_RAW_OK"\nelse\n  echo "FAKE_CLI: $*"\nfi\n',
-    )
-    chmodSync(fakeCli, 0o755)
+    const tempPluginDir = path.join(tmpDir, 'plugin')
+    mkdirSync(path.join(tempPluginDir, 'hooks'), { recursive: true })
+    mkdirSync(path.join(tempPluginDir, 'dist'), { recursive: true })
+
+    const realHook = readFileSync(path.resolve(import.meta.dirname, '../hooks/ingest.sh'), 'utf8')
+    writeFileSync(path.join(tempPluginDir, 'hooks/ingest.sh'), realHook)
+    chmodSync(path.join(tempPluginDir, 'hooks/ingest.sh'), 0o755)
+
+    capturePath = path.join(tmpDir, 'captured.json')
+    const stub = 'import { writeFileSync } from \'node:fs\';\n'
+      + 'if (process.argv.includes(\'--raw\')) {\n'
+      + '  let buf = \'\';\n'
+      + '  for await (const chunk of process.stdin) { buf += chunk; }\n'
+      + `  writeFileSync(${JSON.stringify(capturePath)}, buf);\n`
+      + '  console.log(\'INGEST_RAW_OK\');\n'
+      + '} else {\n'
+      + `  writeFileSync(${JSON.stringify(capturePath)}, JSON.stringify({ args: process.argv.slice(2) }));\n`
+      + '  console.log(\'INGEST_SLOW_OK\');\n'
+      + '}\n'
+    writeFileSync(path.join(tempPluginDir, 'dist/ingest.mjs'), stub)
+
+    pluginHook = path.join(tempPluginDir, 'hooks/ingest.sh')
   })
 
   afterEach(() => {
@@ -84,13 +96,12 @@ describe('ingest.sh', () => {
   ): { stdout: string; stderr: string; status: number | null } {
     const env = {
       ...process.env,
-      PATH: `${tmpDir}:${process.env.PATH}`,
       AGENT_HOME: path.join(tmpDir, '.claude'),
       OHMYC_HOME: path.join(tmpDir, '.ohmyc-data'),
       ...opts?.env,
     }
 
-    const result = spawnSync('bash', [INGEST_SH, ...args], {
+    const result = spawnSync('bash', [pluginHook, ...args], {
       env,
       input: opts?.stdin,
       encoding: 'utf8',
@@ -103,19 +114,7 @@ describe('ingest.sh', () => {
     }
   }
 
-  function createCapturingCli(): string {
-    const capturePath = path.join(tmpDir, 'captured.json')
-    const cli = path.join(tmpDir, 'ohmyc')
-    writeFileSync(
-      cli,
-      `#!/bin/bash\nif [ "$1" = "dashboard" ] && [ "$2" = "--ingest-raw" ]; then\n  cat > "${capturePath}"\n  echo "INGEST_RAW_OK"\nfi\n`,
-    )
-    chmodSync(cli, 0o755)
-    return capturePath
-  }
-
   function readCaptured(): Record<string, unknown> {
-    const capturePath = path.join(tmpDir, 'captured.json')
     return JSON.parse(readFileSync(capturePath, 'utf8'))
   }
 
@@ -139,7 +138,7 @@ describe('ingest.sh', () => {
   // Manual + hook invocation
   // ---------------------------------------------------------------------------
 
-  it('manual invocation finds transcript and calls CLI', () => {
+  it('manual invocation finds transcript and calls node bundle', () => {
     writeTranscript(fakeClaudeDir, 'test-session-001', FIXTURES.minimal)
 
     const result = runIngest(['test-session-001'])
@@ -172,7 +171,6 @@ describe('ingest.sh', () => {
   describe('jq extraction', () => {
     it('captures agentName as "claude"', () => {
       writeTranscript(fakeClaudeDir, 'test-agent', FIXTURES.fullSession)
-      createCapturingCli()
 
       const result = runIngest(['test-agent'])
       expect(result.status).toBe(0)
@@ -183,7 +181,6 @@ describe('ingest.sh', () => {
 
     it('extracts model from assistant messages', () => {
       writeTranscript(fakeClaudeDir, 'test-model', FIXTURES.fullSession)
-      createCapturingCli()
 
       const result = runIngest(['test-model'])
       expect(result.status).toBe(0)
@@ -194,7 +191,6 @@ describe('ingest.sh', () => {
 
     it('extracts turns, tokens, tools, skills from full session', () => {
       writeTranscript(fakeClaudeDir, 'test-full', FIXTURES.fullSession)
-      createCapturingCli()
 
       const result = runIngest(['test-full'])
       expect(result.status).toBe(0)
@@ -214,7 +210,6 @@ describe('ingest.sh', () => {
 
     it('computes durationMs from timestamps', () => {
       writeTranscript(fakeClaudeDir, 'test-duration', FIXTURES.fullSession)
-      createCapturingCli()
 
       const result = runIngest(['test-duration'])
       expect(result.status).toBe(0)
@@ -228,7 +223,6 @@ describe('ingest.sh', () => {
 
     it('prefers away_summary over firstUserMessage for summary', () => {
       writeTranscript(fakeClaudeDir, 'test-summary', FIXTURES.fullSession)
-      createCapturingCli()
 
       const result = runIngest(['test-summary'])
       expect(result.status).toBe(0)
@@ -240,7 +234,6 @@ describe('ingest.sh', () => {
 
     it('uses firstUserMessage as summary when no away_summary', () => {
       writeTranscript(fakeClaudeDir, 'test-summary-fallback', FIXTURES.minimal)
-      createCapturingCli()
 
       const result = runIngest(['test-summary-fallback'])
       expect(result.status).toBe(0)
@@ -252,7 +245,6 @@ describe('ingest.sh', () => {
 
     it('truncates long firstUserMessage to 140 chars', () => {
       writeTranscript(fakeClaudeDir, 'test-truncate', FIXTURES.longMessage)
-      createCapturingCli()
 
       const result = runIngest(['test-truncate'])
       expect(result.status).toBe(0)
@@ -264,7 +256,6 @@ describe('ingest.sh', () => {
 
     it('uses "(untitled session)" when no messages', () => {
       writeTranscript(fakeClaudeDir, 'test-notitle', FIXTURES.noUserMessages)
-      createCapturingCli()
 
       const result = runIngest(['test-notitle'])
       expect(result.status).toBe(0)
@@ -276,7 +267,6 @@ describe('ingest.sh', () => {
 
     it('includes fileSize from transcript', () => {
       writeTranscript(fakeClaudeDir, 'test-filesize', FIXTURES.minimal)
-      createCapturingCli()
 
       const result = runIngest(['test-filesize'])
       expect(result.status).toBe(0)
@@ -288,7 +278,6 @@ describe('ingest.sh', () => {
 
     it('extracts tokens from iterations array', () => {
       writeTranscript(fakeClaudeDir, 'test-iterations', FIXTURES.iterationsUsage)
-      createCapturingCli()
 
       const result = runIngest(['test-iterations'])
       expect(result.status).toBe(0)
@@ -306,7 +295,6 @@ describe('ingest.sh', () => {
         '{"type":"user","timestamp":"2026-04-30T10:00:15.000Z","message":{"role":"user","content":"What was the result?"}}',
       ]
       writeTranscript(fakeClaudeDir, 'test-toolresult', lines)
-      createCapturingCli()
 
       const result = runIngest(['test-toolresult'])
       expect(result.status).toBe(0)
@@ -320,34 +308,19 @@ describe('ingest.sh', () => {
   // Fallback path (no jq)
   // ---------------------------------------------------------------------------
 
-  it('falls back to CLI when jq is not available', () => {
+  it('falls back to slow path when jq is not available', () => {
     writeTranscript(fakeClaudeDir, 'test-fallback', FIXTURES.minimal)
 
     const fakeJq = path.join(tmpDir, 'jq')
     writeFileSync(fakeJq, '#!/bin/bash\nexit 1\n')
     chmodSync(fakeJq, 0o755)
 
-    const result = runIngest(['test-fallback'])
+    const result = runIngest(['test-fallback'], {
+      env: { PATH: `${tmpDir}:${process.env.PATH}` },
+    })
     expect(result.status).toBe(0)
-    expect(result.stderr).toContain('Using CLI fallback')
-    expect(result.stdout).toContain('FAKE_CLI:')
-  })
-
-  // ---------------------------------------------------------------------------
-  // CLI discovery
-  // ---------------------------------------------------------------------------
-
-  it('exits with error when no CLI found', () => {
-    writeTranscript(fakeClaudeDir, 'test-nocli', FIXTURES.minimal)
-
-    rmSync(fakeCli)
-    const fakeJq = path.join(tmpDir, 'jq')
-    writeFileSync(fakeJq, '#!/bin/bash\nexit 1\n')
-    chmodSync(fakeJq, 0o755)
-
-    const result = runIngest(['test-nocli'], { env: { PATH: `${tmpDir}:/usr/bin:/bin`, CLI_CMD: '' } })
-    expect(result.status).toBeGreaterThanOrEqual(1)
-    expect(result.stderr).toContain('ohmyc CLI not found')
+    expect(result.stderr).toContain('Using slow path')
+    expect(result.stdout).toContain('INGEST_SLOW_OK')
   })
 
   // ---------------------------------------------------------------------------
@@ -360,18 +333,9 @@ describe('ingest.sh', () => {
       const legacyHome = path.join(tmpDir, '.cui')
       mkdirSync(legacyHome, { recursive: true })
 
-      const capturePath = path.join(tmpDir, 'captured-path.txt')
-      const cli = path.join(tmpDir, 'ohmyc')
-      writeFileSync(
-        cli,
-        `#!/bin/bash\necho "OHMYC_DIR=$OHMYC_DIR" > "${capturePath}"\nif [ "$1" = "dashboard" ] && [ "$2" = "--ingest-raw" ]; then cat > /dev/null; fi\n`,
-      )
-      chmodSync(cli, 0o755)
-
-      const result = spawnSync('bash', [INGEST_SH, 'test-legacy-home'], {
+      const result = spawnSync('bash', [pluginHook, 'test-legacy-home'], {
         env: {
           ...process.env,
-          PATH: `${tmpDir}:${process.env.PATH}`,
           AGENT_HOME: path.join(tmpDir, '.claude'),
           HOME: tmpDir,
           OHMYC_HOME: '',
@@ -380,8 +344,7 @@ describe('ingest.sh', () => {
       })
 
       expect(result.status).toBe(0)
-      const captured = readFileSync(capturePath, 'utf8')
-      expect(captured).toContain(legacyHome)
+      expect(result.stderr).toContain('Using jq fast path')
     })
   })
 })
