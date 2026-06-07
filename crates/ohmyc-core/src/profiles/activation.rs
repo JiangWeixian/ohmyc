@@ -15,31 +15,37 @@ use super::symlink as sym;
 enum UndoAction {
     RemoveFile(PathBuf),
     RemoveDir(PathBuf),
-    RestoreFile(PathBuf, Vec<u8>),
     RestoreInstalled(Value),
     RestoreKnown(Value),
-    RestoreSettings(Vec<u8>),
+    /// `Some(bytes)` → restore the pre-write file contents.
+    /// `None` → settings.json didn't exist pre-activation; remove the
+    /// file so rollback doesn't leave an orphan empty-object behind.
+    RestoreSettings(Option<Vec<u8>>),
 }
 
 impl UndoAction {
     fn run(&self, plugins_dir: &Path, claude_settings_path: &Path) {
-        let _ = match self {
-            UndoAction::RemoveFile(p) => std::fs::remove_file(p).map(|_| ()),
-            UndoAction::RemoveDir(p) => std::fs::remove_dir_all(p).map(|_| ()),
-            UndoAction::RestoreFile(p, contents) => std::fs::write(p, contents).map(|_| ()),
+        match self {
+            UndoAction::RemoveFile(p) => {
+                let _ = std::fs::remove_file(p);
+            }
+            UndoAction::RemoveDir(p) => {
+                let _ = std::fs::remove_dir_all(p);
+            }
             UndoAction::RestoreInstalled(v) => {
-                marketplace::write_installed_plugins(plugins_dir, v).map(|_| ()).map_err(io_passthrough)
+                let _ = marketplace::write_installed_plugins(plugins_dir, v);
             }
             UndoAction::RestoreKnown(v) => {
-                marketplace::write_known_marketplaces(plugins_dir, v).map(|_| ()).map_err(io_passthrough)
+                let _ = marketplace::write_known_marketplaces(plugins_dir, v);
             }
-            UndoAction::RestoreSettings(bytes) => std::fs::write(claude_settings_path, bytes).map(|_| ()),
-        };
+            UndoAction::RestoreSettings(Some(bytes)) => {
+                let _ = std::fs::write(claude_settings_path, bytes);
+            }
+            UndoAction::RestoreSettings(None) => {
+                let _ = std::fs::remove_file(claude_settings_path);
+            }
+        }
     }
-}
-
-fn io_passthrough(e: ApiError) -> std::io::Error {
-    std::io::Error::new(std::io::ErrorKind::Other, format!("{e:?}"))
 }
 
 fn rollback(actions: &[UndoAction], plugins_dir: &Path, claude_settings_path: &Path) {
@@ -126,20 +132,16 @@ pub fn deactivate_internal(
 
     let profile_dir = profiles_dir.join(active_name);
 
+    // Match TS `rm(path, { force: true })`: remove each entry as a file
+    // (works for both files and symlinks on Unix — including symlinks
+    // pointing at directories). We intentionally do NOT recurse into
+    // real subdirectories: activation only ever creates symlinks here,
+    // so a real dir would be a user artifact we should leave alone.
     for sub in ["agents", "skills", "commands"] {
         let sub_dir = profile_dir.join(sub);
         let Ok(entries) = std::fs::read_dir(&sub_dir) else { continue };
         for entry in entries.flatten() {
-            let path = entry.path();
-            let is_symlink = path
-                .symlink_metadata()
-                .map(|m| m.file_type().is_symlink())
-                .unwrap_or(false);
-            if is_symlink || path.is_file() {
-                let _ = std::fs::remove_file(&path);
-            } else if path.is_dir() {
-                let _ = std::fs::remove_dir_all(&path);
-            }
+            let _ = std::fs::remove_file(entry.path());
         }
     }
 
@@ -205,8 +207,14 @@ fn activate_inner(
         deactivate_internal(base_dir, profiles_dir, plugins_dir, claude_settings_path, prev)?;
     }
 
-    let current_settings_bytes = std::fs::read(claude_settings_path).unwrap_or_else(|_| b"{}".to_vec());
-    let current_settings: Value = serde_json::from_slice(&current_settings_bytes).unwrap_or_else(|_| json!({}));
+    // Capture pre-write state so rollback can restore-or-remove. None
+    // signals "file did not exist pre-activation" so RestoreSettings
+    // unlinks rather than materializing an orphan `{}`.
+    let pre_settings: Option<Vec<u8>> = std::fs::read(claude_settings_path).ok();
+    let current_settings: Value = pre_settings
+        .as_deref()
+        .and_then(|b| serde_json::from_slice(b).ok())
+        .unwrap_or_else(|| json!({}));
     let backup_path = base_dir.join(format!("settings.backup.{name}.json"));
     std::fs::write(&backup_path, serde_json::to_string_pretty(&current_settings).unwrap())
         .map_err(|e| ApiError::Io(format!("write backup {}: {e}", backup_path.display())))?;
@@ -325,7 +333,7 @@ fn activate_inner(
         serde_json::to_string_pretty(&merged).unwrap(),
     )
     .map_err(|e| ApiError::Io(format!("write settings: {e}")))?;
-    undo.push(UndoAction::RestoreSettings(current_settings_bytes));
+    undo.push(UndoAction::RestoreSettings(pre_settings));
 
     let listing = crud::list(profiles_dir)?;
     let summaries: Vec<(String, String)> = listing
@@ -476,9 +484,20 @@ mod tests {
             r#"{"model":"sonnet"}"#,
         );
         std::fs::create_dir_all(&profile_dir).unwrap();
-        write(&profile_dir.join("agents/reviewer.md"), "x");
-        write(&profile_dir.join("commands/push.md"), "x");
-        std::fs::create_dir_all(profile_dir.join("skills/deploy")).unwrap();
+        // Production activation creates symlinks here, not real files/dirs.
+        // Mirror that so deactivate_internal's `remove_file` path (matching
+        // TS `rm({force:true})`) cleans them up correctly. The symlink
+        // targets don't need to exist for the test — symlinks are typed by
+        // the inode itself, not the target.
+        std::fs::create_dir_all(profile_dir.join("agents")).unwrap();
+        std::fs::create_dir_all(profile_dir.join("commands")).unwrap();
+        std::fs::create_dir_all(profile_dir.join("skills")).unwrap();
+        #[cfg(unix)]
+        {
+            std::os::unix::fs::symlink("/dangling/store/agents/reviewer.md", profile_dir.join("agents/reviewer.md")).unwrap();
+            std::os::unix::fs::symlink("/dangling/store/commands/push.md", profile_dir.join("commands/push.md")).unwrap();
+            std::os::unix::fs::symlink("/dangling/store/skills/deploy", profile_dir.join("skills/deploy")).unwrap();
+        }
         write(&profile_dir.join(".claude-plugin/plugin.json"), "{}");
         write(&profile_dir.join("hooks/hooks.json"), "{}");
         write(&profile_dir.join(".mcp.json"), "{}");
@@ -716,7 +735,7 @@ mod tests {
     }
 
     #[test]
-    fn rollback_when_symlink_creation_fails_clears_active_marker() {
+    fn rollback_when_lsp_write_fails_clears_active_marker() {
         let f = fresh();
         crud::create(
             &f.profiles_dir,

@@ -33,7 +33,11 @@ pub fn read_installed_plugins(plugins_dir: &Path) -> Value {
 }
 
 fn normalize_installed(mut v: Value) -> Value {
-    let obj = v.as_object_mut().expect("expected object");
+    // Hand-edited registries (array, scalar, etc.) fall back to defaults
+    // rather than panicking — matches TS `readJson(...) ?? null` lenience.
+    let Some(obj) = v.as_object_mut() else {
+        return default_installed();
+    };
     if !obj.contains_key("version") {
         obj.insert("version".to_string(), json!(2));
     }

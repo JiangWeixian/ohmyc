@@ -121,58 +121,60 @@ pub fn profiles_deactivate(_name: String) -> Result<DeleteOk, ApiError> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use std::sync::Mutex;
 
-    #[test]
-    fn profiles_list_returns_empty_envelope_when_no_profiles() {
+    // Activation reads BOTH OHMYC_HOME (store/profiles) and
+    // OHMYC_CLAUDE_HOME (plugins_dir + settings_path). The CLAUDE_HOME
+    // var is also mutated by api/plugins.rs::tests, so we serialize all
+    // env access in this module to prevent cross-test bleed. The mutex
+    // is module-local — sibling modules with their own ENV_LOCK pattern
+    // (see crates/ohmyc-core/src/claude_home.rs) are independent.
+    static ENV_LOCK: Mutex<()> = Mutex::new(());
+
+    /// Override both env vars to the same tempdir for the duration of
+    /// `f`, then restore. Panics propagate through (poisoning the lock,
+    /// but `cargo test` aborts on poison anyway).
+    fn with_isolated_env<F: FnOnce(&std::path::Path) -> R, R>(f: F) -> R {
+        let _guard = ENV_LOCK.lock().unwrap();
         let tmp = tempfile::tempdir().unwrap();
-        let prev = std::env::var("OHMYC_HOME").ok();
+        let prev_home = std::env::var("OHMYC_HOME").ok();
+        let prev_claude = std::env::var("OHMYC_CLAUDE_HOME").ok();
         std::env::set_var("OHMYC_HOME", tmp.path());
-        let r = profiles_list();
-        match prev {
+        std::env::set_var("OHMYC_CLAUDE_HOME", tmp.path());
+        let result = f(tmp.path());
+        match prev_home {
             Some(v) => std::env::set_var("OHMYC_HOME", v),
             None => std::env::remove_var("OHMYC_HOME"),
         }
-        let resp = r.unwrap();
+        match prev_claude {
+            Some(v) => std::env::set_var("OHMYC_CLAUDE_HOME", v),
+            None => std::env::remove_var("OHMYC_CLAUDE_HOME"),
+        }
+        result
+    }
+
+    #[test]
+    fn profiles_list_returns_empty_envelope_when_no_profiles() {
+        let resp = with_isolated_env(|_| profiles_list()).unwrap();
         assert!(resp.profiles.is_empty());
         assert!(resp.active.is_none());
     }
 
     #[test]
     fn profiles_get_returns_not_found_for_missing_profile() {
-        let tmp = tempfile::tempdir().unwrap();
-        let prev = std::env::var("OHMYC_HOME").ok();
-        std::env::set_var("OHMYC_HOME", tmp.path());
-        let r = profiles_get("ghost".to_string());
-        match prev {
-            Some(v) => std::env::set_var("OHMYC_HOME", v),
-            None => std::env::remove_var("OHMYC_HOME"),
-        }
+        let r = with_isolated_env(|_| profiles_get("ghost".to_string()));
         assert!(matches!(r.unwrap_err(), ApiError::NotFound { .. }));
     }
 
     #[test]
-    fn profiles_activate_returns_not_found_for_missing_profile() {
-        let tmp = tempfile::tempdir().unwrap();
-        let prev = std::env::var("OHMYC_HOME").ok();
-        std::env::set_var("OHMYC_HOME", tmp.path());
-        let r = profiles_activate("ghost".to_string());
-        match prev {
-            Some(v) => std::env::set_var("OHMYC_HOME", v),
-            None => std::env::remove_var("OHMYC_HOME"),
-        }
+    fn profiles_activate_returns_error_for_missing_profile() {
+        let r = with_isolated_env(|_| profiles_activate("ghost".to_string()));
         assert!(r.is_err());
     }
 
     #[test]
     fn profiles_deactivate_is_no_op_when_no_active_profile() {
-        let tmp = tempfile::tempdir().unwrap();
-        let prev = std::env::var("OHMYC_HOME").ok();
-        std::env::set_var("OHMYC_HOME", tmp.path());
-        let r = profiles_deactivate("any-name".to_string());
-        match prev {
-            Some(v) => std::env::set_var("OHMYC_HOME", v),
-            None => std::env::remove_var("OHMYC_HOME"),
-        }
+        let r = with_isolated_env(|_| profiles_deactivate("any-name".to_string()));
         assert!(r.is_ok());
     }
 }
