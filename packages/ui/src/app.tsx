@@ -16,17 +16,12 @@ import {
   Navigate,
   Route,
   Routes,
-  useLocation,
   useNavigate,
 } from 'react-router-dom'
 import { Toaster } from 'sonner'
 
-import { Header } from './components/header'
 import { MenubarPage } from './components/menubar/menubar-page'
-import { ProfilesSidebar } from './components/profiles/profiles-sidebar'
-import { TimelineView } from './components/timeline/timeline-view'
 import { CommandPalette, CommandPaletteProvider } from './components/ui/command-palette'
-import { type ViewId, ViewSwitcher } from './components/view-switcher'
 import { Explorer } from './explorer'
 import { useAgents } from './hooks/use-agents'
 import { useCommands } from './hooks/use-commands'
@@ -187,63 +182,18 @@ function AppCommandPalette() {
   )
 }
 
-/** Renders the timeline view with the profiles sidebar and view switcher. */
-function TimelineRoute({ viewSwitcher }: { viewSwitcher: React.ReactNode }) {
-  const navigate = useNavigate()
-  const { data } = useProfiles()
-  const profiles = data?.profiles ?? []
-  const active = data?.active ?? null
-
-  return (
-    <div className="flex h-full min-w-0">
-      <ProfilesSidebar
-        profiles={profiles}
-        active={active}
-        selection={null}
-        timelineActive
-        onSelect={(sel) => {
-          if (sel.type === 'new-profile') {
-            navigate('/profiles/new')
-          } else if (sel.type === 'components') {
-            navigate(`/profiles/${sel.category}`)
-          } else {
-            navigate(`/profiles/${sel.name}`)
-          }
-        }}
-        headerSlot={viewSwitcher}
-      />
-      <main className="relative flex min-w-0 flex-1 flex-col overflow-hidden bg-[var(--bg-marketing)]">
-        <Header />
-        <div className="flex-1 overflow-y-auto">
-          <TimelineView />
-        </div>
-      </main>
-    </div>
-  )
-}
-
 /** Main layout with route configuration and global keyboard shortcuts. */
 function AppLayout() {
-  const location = useLocation()
-  const navigate = useNavigate()
-
-  const active: ViewId = location.pathname.startsWith('/profiles') ? 'profiles' : 'agent-home'
-
-  const handleChange = (id: ViewId) => {
-    navigate(id === 'profiles' ? '/profiles' : '/explore')
-  }
-
   useGlobalKeyboardShortcuts()
 
   return (
     <div className="h-dvh overflow-hidden bg-[var(--surface-base)] text-[var(--text-primary)]">
       <Routes>
-        <Route path="/timeline" element={<TimelineRoute viewSwitcher={<ViewSwitcher active={active} onChange={handleChange} />} />} />
-        <Route path="/profiles/*" element={<ProfilesView viewSwitcher={<ViewSwitcher active={active} onChange={handleChange} />} />} />
-        <Route path="/explore/:tab" element={<Explorer viewSwitcher={<ViewSwitcher active={active} onChange={handleChange} />} />} />
-        <Route path="/explore" element={<Navigate to="/explore/agents" replace />} />
+        <Route path="/profiles/*" element={<ProfilesView viewSwitcher={null} />} />
+        <Route path="/explore/:tab" element={<Explorer viewSwitcher={null} />} />
+        <Route path="/explore" element={<Navigate to="/explore/timeline" replace />} />
         <Route path="/menubar" element={<MenubarPage />} />
-        <Route path="*" element={<Navigate to="/profiles" replace />} />
+        <Route path="*" element={<Navigate to="/explore/timeline" replace />} />
       </Routes>
     </div>
   )
