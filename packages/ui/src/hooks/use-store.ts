@@ -15,8 +15,6 @@ import type {
   CreateSkillBody,
   ModelConfig,
   Skill,
-  StoreImportRequest,
-  StoreImportResult,
   UpdateAgentBody,
   UpdateCommandBody,
   UpdateModelConfigBody,
@@ -202,39 +200,4 @@ export function useDeleteStoreModelConfig() {
       qc.invalidateQueries({ queryKey: ['profiles'] })
     },
   })
-}
-
-// ---- Import (deferred — uses legacy fetch) ----
-async function legacyFetch<ResponseType>(url: string, method: string, body?: unknown): Promise<ResponseType> {
-  const res = await fetch(url, {
-    method,
-    headers: body ? { 'Content-Type': 'application/json' } : undefined,
-    body: body ? JSON.stringify(body) : undefined,
-  })
-  if (!res.ok) {
-    const error = await res.json().catch(() => ({ error: 'Request failed' }))
-    throw Object.assign(new Error(error.error || 'Request failed'), { data: error })
-  }
-  return res.json()
-}
-
-export function useStoreImport() {
-  const qc = useQueryClient()
-  const mutation = useMutation({
-    mutationFn: (req: StoreImportRequest) =>
-      legacyFetch<StoreImportResult>('/api/store/import', 'POST', req),
-    onSuccess: (_result, request) => {
-      if (!request.dryRun) {
-        void qc.refetchQueries({ queryKey: ['store'] })
-      }
-    },
-  })
-
-  return {
-    ...mutation,
-    previewImport: (sourceDir: string) =>
-      mutation.mutateAsync({ sourceDir, dryRun: true, overwrite: false }),
-    applyImport: (sourceDir: string, overwrite = false) =>
-      mutation.mutateAsync({ sourceDir, dryRun: false, overwrite }),
-  }
 }

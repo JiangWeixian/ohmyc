@@ -74,13 +74,17 @@ pub fn default_watch_paths() -> Result<Vec<PathBuf>, ApiError> {
         ApiError::Internal("db path has no parent".to_string())
     })?;
     let claude_home = crate::claude_home::resolve()?;
-    Ok(vec![db_dir, claude_home])
+    let ohmyc_base = crate::store::base_dir()?;
+    Ok(vec![db_dir, claude_home, ohmyc_base])
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
     use std::sync::mpsc::{channel, Receiver};
+    use std::sync::Mutex;
+
+    static ENV_LOCK: Mutex<()> = Mutex::new(());
 
     #[test]
     fn fs_event_serializes_with_tag_and_path() {
@@ -141,5 +145,28 @@ mod tests {
             }
             other => panic!("expected ClaudeHome for nested write, got {other:?}"),
         }
+    }
+
+    #[test]
+    fn default_watch_paths_includes_ohmyc_home_base() {
+        let _lock = ENV_LOCK.lock().unwrap();
+        let prev_db = std::env::var("OHMYC_TIMELINE_DB").ok();
+        let prev_home = std::env::var("OHMYC_HOME").ok();
+        std::env::set_var("OHMYC_TIMELINE_DB", "/tmp/test-db/timeline.db");
+        std::env::set_var("OHMYC_HOME", "/tmp/test-ohmyc-home");
+        let paths = default_watch_paths().unwrap();
+        match prev_db {
+            Some(v) => std::env::set_var("OHMYC_TIMELINE_DB", v),
+            None => std::env::remove_var("OHMYC_TIMELINE_DB"),
+        }
+        match prev_home {
+            Some(v) => std::env::set_var("OHMYC_HOME", v),
+            None => std::env::remove_var("OHMYC_HOME"),
+        }
+        let path_strings: Vec<String> = paths
+            .iter()
+            .map(|p| p.to_string_lossy().to_string())
+            .collect();
+        assert!(path_strings.iter().any(|p| p.contains("test-ohmyc-home")));
     }
 }

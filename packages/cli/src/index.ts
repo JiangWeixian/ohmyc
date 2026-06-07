@@ -1,8 +1,10 @@
 #!/usr/bin/env node
-// CLI entry point for OhMyC — defines all commands and delegates to the launcher or dashboard subcommands.
+// CLI entry point — only the `dashboard` subcommand remains. The OhMyC UI is
+// shipped exclusively as the Tauri desktop app; this binary exists to install
+// and maintain the Claude Code capture plugin that writes session data to
+// ~/.claude/db.sqlite.
 import { cac } from 'cac'
 
-import { printBanner } from './banner'
 import {
   runDoctor,
   runIngest,
@@ -10,48 +12,9 @@ import {
   runSync,
   runUninstall,
 } from './commands/dashboard.js'
-import { launchApp } from './launcher'
 import { logger } from './logger'
 
-/** Root CLI instance using the cac framework. */
 const cli = cac('ohmyc')
-
-cli
-  .command('start', 'Start the OhMyC server and open the browser')
-  .option('--port <port>', 'Port to listen on', { default: 3000 })
-  .option('--api-only', 'Start API server only, skip static file serving')
-  .option('--cwd <cwd>', 'Working directory for project discovery (default: current directory)')
-  .action(async (options) => {
-    const port = Number.parseInt(options.port, 10)
-    if (Number.isNaN(port) || port < 0 || port > 65_535) {
-      logger.error(`Invalid port: ${options.port}. Must be a number between 0 and 65535.`)
-      process.exit(1)
-    }
-    try {
-      await launchApp({ defaultPort: port, apiOnly: options.apiOnly, cwd: options.cwd })
-    } catch (error) {
-      logger.error(error instanceof Error ? error.message : String(error))
-      process.exit(1)
-    }
-  })
-
-// Default command: just running `ohmyc` starts the app
-cli
-  .command('[...args]', 'Start OhMyC (default)')
-  .option('--cwd <cwd>', 'Working directory for project discovery (default: current directory)')
-  .action(async (arguments_, options) => {
-    if (arguments_.length === 0) {
-      try {
-        await launchApp({ defaultPort: 3000, cwd: options.cwd })
-      } catch (error) {
-        logger.error(error instanceof Error ? error.message : String(error))
-        process.exit(1)
-      }
-    } else {
-      logger.error(`Unknown arguments: ${arguments_.join(' ')}. Did you mean 'ohmyc start'?`)
-      process.exit(1)
-    }
-  })
 
 cli
   .command('dashboard', 'Manage Timeline dashboard data and plugin')
@@ -91,6 +54,4 @@ cli
 
 cli.help()
 cli.version('0.1.0')
-
-printBanner()
 cli.parse()
