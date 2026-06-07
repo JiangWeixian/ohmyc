@@ -20,6 +20,7 @@ import { Header } from './components/header'
 import { SectionHeader } from './components/section-header'
 import { SettingsLayout } from './components/settings/settings-layout'
 import { Sidebar, type SidebarSection } from './components/sidebar'
+import { TimelineView } from './components/timeline/timeline-view'
 import {
   type ItemLocator,
   useAgent,
@@ -102,7 +103,7 @@ interface ExplorerProperties {
 export function Explorer({ viewSwitcher }: ExplorerProperties) {
   const { tab } = useParams<{ tab: string }>()
   const navigate = useNavigate()
-  const activeSection = tab && SECTIONS.some(s => s.id === tab) ? tab : 'agents'
+  const activeSection = tab === 'timeline' || (tab && SECTIONS.some(s => s.id === tab)) ? tab : 'timeline'
   const [selectedItem, setSelectedItem] = useState<ItemLocator | null>(null)
 
   // Data hooks
@@ -512,6 +513,7 @@ export function Explorer({ viewSwitcher }: ExplorerProperties) {
         {/* Content */}
         <div className="flex-1 overflow-y-auto">
           <div className="mx-auto w-full max-w-6xl p-10">
+            {activeSection === 'timeline' && <TimelineView />}
             {activeSection === 'agents' && renderEntityList('agents')}
             {activeSection === 'skills' && renderEntityList('skills')}
             {activeSection === 'commands' && renderEntityList('commands')}
