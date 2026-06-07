@@ -62,4 +62,54 @@ describe('dist/ingest.mjs (node entry)', () => {
     expect(row?.session_id).toBe('session-aaa')
     expect(row?.turns).toBe(1)
   })
+
+  it('ingests pre-parsed JSON from stdin via --raw', () => {
+    const parsed = {
+      sessionId: 'session-bbb',
+      project: 'demo',
+      agentName: 'claude',
+      startedAt: 1_714_478_400_000,
+      endedAt: 1_714_478_405_000,
+      durationMs: 5000,
+      turns: 1,
+      tokensInput: 5,
+      tokensOutput: 3,
+      tokensCached: 0,
+      summary: 'hello',
+      summarySource: 'first_message',
+      transcriptPath: '/dev/null',
+      fileSize: 0,
+      tools: [],
+      skills: [],
+      model: null,
+    }
+
+    const result = run(['--raw'], JSON.stringify(parsed))
+    expect(result.status).toBe(0)
+
+    const db = new Database(path.join(dbDir, 'timeline.db'), { readonly: true })
+    const row = db.prepare('SELECT session_id, project FROM sessions WHERE session_id = ?').get('session-bbb') as { session_id: string; project: string } | undefined
+    db.close()
+
+    expect(row?.session_id).toBe('session-bbb')
+    expect(row?.project).toBe('demo')
+  })
+
+  it('exits 1 when neither --raw nor required disk args are provided', () => {
+    const result = run([])
+    expect(result.status).toBe(1)
+    expect(result.stderr).toContain('--session-id and --transcript-path are required')
+  })
+
+  it('exits 1 when --raw receives empty stdin', () => {
+    const result = run(['--raw'], '')
+    expect(result.status).toBe(1)
+    expect(result.stderr).toContain('--raw expects JSON on stdin')
+  })
+
+  it('exits 1 when --raw receives invalid JSON', () => {
+    const result = run(['--raw'], 'not json')
+    expect(result.status).toBe(1)
+    expect(result.stderr).toContain('invalid JSON on stdin')
+  })
 })
