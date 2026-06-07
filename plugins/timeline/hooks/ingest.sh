@@ -116,6 +116,9 @@ if command -v jq >/dev/null 2>&1; then
   set -e
 
   if [ $JQ_STATUS -eq 0 ] && [ -n "$EXTRACTED" ] && [ "$EXTRACTED" != "null" ]; then
+    # `cmd && exit 0` — node failure short-circuits the &&; the chain becomes
+    # a conditional context so `set -e` does not exit. Control falls through
+    # to the log + slow path below. This is the desired behavior.
     echo "$EXTRACTED" | node "$INGEST_MJS" --raw && exit 0
     log_error "Fast path failed for $SESSION_ID, falling back to slow path"
   else
