@@ -3,7 +3,6 @@ import { execSync } from 'node:child_process'
 import {
   existsSync,
   mkdirSync,
-  readdirSync,
   readFileSync,
   writeFileSync,
 } from 'node:fs'
@@ -13,9 +12,7 @@ import { fileURLToPath } from 'node:url'
 import {
   backfillAll,
   closeDatabase,
-  getDefaultProjectsDir,
   getStatus,
-  ingestSession,
   openDatabase,
 } from '@ohmyc/timeline'
 
@@ -170,75 +167,6 @@ export async function runSync(): Promise<void> {
   } finally {
     closeDatabase(db)
   }
-}
-
-// ------------------------------------------------------------------
-// runIngest
-// ------------------------------------------------------------------
-
-/**
- * Ingests a single session transcript into the timeline database.
- * @param sessionId - The session UUID to ingest.
- * @param filePath - Optional explicit path to the JSONL transcript (defaults to auto-discovery under the projects directory).
- */
-export async function runIngest(sessionId: string, filePath?: string): Promise<void> {
-  let transcriptPath: string
-
-  if (filePath) {
-    transcriptPath = path.resolve(filePath)
-    if (!existsSync(transcriptPath)) {
-      throw new Error(`File not found: ${transcriptPath}`)
-    }
-  } else {
-    const projectsDir = getDefaultProjectsDir()
-    transcriptPath = path.join(projectsDir, `${sessionId}.jsonl`)
-    if (!existsSync(transcriptPath)) {
-      // Search recursively
-      const found = searchForTranscript(projectsDir, `${sessionId}.jsonl`)
-      if (!found) {
-        throw new Error(`Transcript not found for session ${sessionId} under ${projectsDir}`)
-      }
-      transcriptPath = found
-    }
-  }
-
-  const db = openDatabase()
-  try {
-    const result = ingestSession(db, sessionId, transcriptPath)
-    logger.info(`Ingested ${result.sessionId} (${result.project}): inserted=${result.sessionsInserted}, updated=${result.sessionsUpdated}`)
-  } finally {
-    closeDatabase(db)
-  }
-}
-
-/** Recursively searches `dir` for a file matching `filename`. Returns the first match or null. */
-function searchForTranscript(dir: string, filename: string): string | null {
-  const entries = readDirRecursive(dir)
-  for (const entry of entries) {
-    if (entry.endsWith(path.sep + filename)) {
-      return entry
-    }
-  }
-  return null
-}
-
-/** Recursively lists all files under `dir`, silently ignoring permission errors. */
-function readDirRecursive(dir: string): string[] {
-  const results: string[] = []
-  try {
-    const items = readdirSync(dir, { withFileTypes: true })
-    for (const item of items) {
-      const full = path.join(dir, item.name)
-      if (item.isDirectory()) {
-        results.push(...readDirRecursive(full))
-      } else {
-        results.push(full)
-      }
-    }
-  } catch {
-    // ignore permission errors and missing directories
-  }
-  return results
 }
 
 // ------------------------------------------------------------------
