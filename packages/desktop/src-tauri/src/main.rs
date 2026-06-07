@@ -62,6 +62,8 @@ fn main() {
             ohmyc_desktop_lib::api::profiles::profiles_update,
             ohmyc_desktop_lib::api::profiles::profiles_delete,
             ohmyc_desktop_lib::api::profiles::profiles_preflight,
+            ohmyc_desktop_lib::api::profiles::profiles_activate,
+            ohmyc_desktop_lib::api::profiles::profiles_deactivate,
         ])
         .setup(|app| {
             #[cfg(target_os = "macos")]

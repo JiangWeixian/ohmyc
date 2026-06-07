@@ -13,7 +13,9 @@ import {
 } from 'vitest'
 
 import {
+  useActivateProfile,
   useCreateProfile,
+  useDeactivateProfile,
   useDeleteProfile,
   usePreflight,
   useProfile,
@@ -193,5 +195,70 @@ describe('usePreflight', () => {
     await waitFor(() => expect(result.current.isSuccess).toBe(true))
     expect(result.current.data?.modelConfigChanges?.configName).toBe('anthropic')
     expect(result.current.data?.modelConfigChanges?.changes).toHaveLength(2)
+  })
+})
+
+describe('useActivateProfile + useDeactivateProfile', () => {
+  it('activate sends { name } and returns { success, warnings }', async () => {
+    let captured: unknown = null
+    setMockHandler('profiles.activate', async (args) => {
+      captured = args
+      return { success: true, warnings: ["Settings key 'effort' would be overwritten"] }
+    })
+    const { result } = renderHook(() => useActivateProfile(), { wrapper: wrapper() })
+    await act(async () => {
+      result.current.mutate('dev')
+    })
+    await waitFor(() => expect(result.current.isSuccess).toBe(true))
+    expect(captured).toEqual({ name: 'dev' })
+    expect(result.current.data?.warnings).toHaveLength(1)
+  })
+
+  it('activate surfaces ActivationBlocked with missing-components list', async () => {
+    setMockHandler('profiles.activate', async () => {
+      throw Object.assign(new Error('activation blocked'), {
+        code: 'ActivationBlocked',
+        detail: { missing: ['agent:reviewer', 'skill:deploy'] },
+      })
+    })
+    const { result } = renderHook(() => useActivateProfile(), { wrapper: wrapper() })
+    await act(async () => {
+      result.current.mutate('dev')
+    })
+    await waitFor(() => expect(result.current.isError).toBe(true))
+    const err = result.current.error as { code?: string; detail?: { missing?: string[] } }
+    expect(err.code).toBe('ActivationBlocked')
+    expect(err.detail?.missing).toEqual(['agent:reviewer', 'skill:deploy'])
+  })
+
+  it('activate surfaces lock-held Conflict', async () => {
+    setMockHandler('profiles.activate', async () => {
+      throw Object.assign(new Error('lock held'), {
+        code: 'Conflict',
+        detail: 'Another activation is in progress. Wait a moment and try again.',
+      })
+    })
+    const { result } = renderHook(() => useActivateProfile(), { wrapper: wrapper() })
+    await act(async () => {
+      result.current.mutate('dev')
+    })
+    await waitFor(() => expect(result.current.isError).toBe(true))
+    const err = result.current.error as { code?: string; detail?: string }
+    expect(err.code).toBe('Conflict')
+    expect(err.detail).toContain('Another activation is in progress')
+  })
+
+  it('deactivate sends { name } and returns { success: true }', async () => {
+    let captured: unknown = null
+    setMockHandler('profiles.deactivate', async (args) => {
+      captured = args
+      return { success: true }
+    })
+    const { result } = renderHook(() => useDeactivateProfile(), { wrapper: wrapper() })
+    await act(async () => {
+      result.current.mutate('dev')
+    })
+    await waitFor(() => expect(result.current.isSuccess).toBe(true))
+    expect(captured).toEqual({ name: 'dev' })
   })
 })

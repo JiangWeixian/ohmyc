@@ -54,6 +54,16 @@ const routes: Record<string, RouteBuilder> = {
     method: 'DELETE',
   }),
   'profiles.preflight': a => `/api/profiles/${encodeURIComponent(String(a.name ?? ''))}/preflight`,
+  'profiles.activate': a => ({
+    url: `/api/profiles/${encodeURIComponent(String(a.name ?? ''))}/activate`,
+    method: 'POST',
+    body: {},
+  }),
+  'profiles.deactivate': a => ({
+    url: `/api/profiles/${encodeURIComponent(String(a.name ?? ''))}/deactivate`,
+    method: 'POST',
+    body: {},
+  }),
 
   'store.agents.list': () => '/api/store/agents',
   'store.agents.get': a => `/api/store/agents/${encodeURIComponent(String(a.name ?? ''))}`,
@@ -173,11 +183,16 @@ export const fetchTransport: Transport = async (wire, args) => {
       data = undefined
     }
     let code: string
+    let detail: unknown = data
     if (res.status === 404) {
       code = 'NotFound'
     }
     else if (res.status === 409) {
       code = (data && typeof data === 'object' && 'referencedBy' in (data as object)) ? 'ReferencedBy' : 'Conflict'
+    }
+    else if (res.status === 422 && data && typeof data === 'object' && 'missing' in (data as object)) {
+      code = 'ActivationBlocked'
+      detail = { missing: (data as { missing: unknown }).missing }
     }
     else {
       code = 'Internal'
@@ -185,7 +200,7 @@ export const fetchTransport: Transport = async (wire, args) => {
     const message = (data && typeof data === 'object' && 'error' in (data as object))
       ? String((data as { error: unknown }).error)
       : (text || res.statusText)
-    throw { code, message, data }
+    throw { code, message, detail, data }
   }
   const text = await res.text()
   if (!text) {

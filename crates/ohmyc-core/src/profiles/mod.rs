@@ -5,8 +5,12 @@
 //! read + light writes + the dry-run preflight that the UI uses to
 //! preview activation side-effects.
 
+pub mod activation;
 pub mod crud;
+pub mod lock;
+pub mod marketplace;
 pub mod preflight;
+pub mod symlink;
 
 use std::path::PathBuf;
 
