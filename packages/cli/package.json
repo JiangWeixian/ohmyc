@@ -11,7 +11,7 @@
   },
   "scripts": {
     "build": "rimraf dist && tsup",
-    "start": "node dist/index.mjs dashboard",
+    "start": "node dist/index.mjs --help",
     "test": "vitest run",
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",

@@ -251,21 +251,16 @@ export function StoreComponentList({ category, onEdit }: StoreComponentListPrope
     return deleteModelConfigMut
   }
 
-  // First delete attempt uses force:false; the server rejects if referenced.
-  // The error payload includes referencedBy, which opens the confirmation dialog.
-  // Wire shape (post-slice-5): ApiError::ReferencedBy serializes as
+  // First delete attempt uses force:false; the backend rejects if referenced
+  // and surfaces the referencing profile list in the error so the UI can open
+  // a confirmation dialog. ApiError::ReferencedBy serializes as
   //   { code: 'ReferencedBy', detail: { kind, name, referencedBy: string[] } }
-  // The legacy TS server returned { error, referencedBy } as the response body
-  // which fetchTransport now surfaces under `data` for compatibility. Read
-  // whichever shape is present.
   const handleDelete = (name: string) => {
     const mut = getDeleteMutation(category)
     mut.mutate({ name, force: false }, {
       onSuccess: () => setDeleteTarget(null),
       onError: (error: any) => {
-        const references: string[] | undefined
-          = error?.detail?.referencedBy
-            ?? error?.data?.referencedBy
+        const references: string[] | undefined = error?.detail?.referencedBy
         if (references && references.length > 0) {
           setDeleteTarget({ category, name, referencedBy: references })
         }
