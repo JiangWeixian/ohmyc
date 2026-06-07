@@ -9,16 +9,23 @@
   ],
   "main": "dist/index.js",
   "scripts": {
-    "build": "bun build opencode.ts --outfile dist/index.js --target bun --external bun:sqlite --external @opencode-ai/plugin",
+    "build": "bun build opencode.ts --outfile dist/index.js --target bun --external bun:sqlite --external @opencode-ai/plugin && tsup",
     "test": "vitest run",
     "test:coverage": "vitest run --coverage"
   },
   "peerDependencies": {
     "@opencode-ai/plugin": "^1.14.31"
   },
+  "dependencies": {
+    "@ohmyc/timeline": "workspace:*",
+    "better-sqlite3": "^11.5.0",
+    "cac": "^6.7.14"
+  },
   "devDependencies": {
     "@opencode-ai/plugin": "^1.14.31",
+    "@types/better-sqlite3": "^7.6.12",
     "@vitest/coverage-v8": "^3.2.4",
+    "tsup": "^8.0.2",
     "vitest": "^3.2.4"
   }
 }
