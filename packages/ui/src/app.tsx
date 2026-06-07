@@ -2,11 +2,6 @@
 import {
   Activity,
   Bot,
-  Check,
-  Copy,
-  FolderOpen,
-  GitCompare,
-  Pencil,
   Search,
   Settings,
   Sparkles,
@@ -26,73 +21,18 @@ import { Explorer } from './explorer'
 import { useAgents } from './hooks/use-agents'
 import { useCommands } from './hooks/use-commands'
 import { useGlobalKeyboardShortcuts } from './hooks/use-keyboard-shortcuts'
-import { useActivateProfile, useProfiles } from './hooks/use-profiles'
 import { useSkills } from './hooks/use-skills'
 import { ProfilesView } from './profiles-view'
 
-/** Command palette content — exposes profile actions, navigation, and entity search. */
+/** Command palette content — exposes navigation and entity search. */
 function AppCommandPalette() {
   const navigate = useNavigate()
-  const { data } = useProfiles()
-  const profiles = data?.profiles ?? []
-  const active = data?.active
-  const activeProfile = profiles.find(p => p.name === active)
-  const activate = useActivateProfile()
 
   const { data: agents } = useAgents()
   const { data: skills } = useSkills()
   const { data: commands } = useCommands()
 
-  // First 3 profiles receive ⌘1-3 shortcuts; beyond that keyboard real estate runs out.
-  const profileCommands = profiles
-    .filter(p => p.name !== active)
-    .map((p, i) => ({
-      id: `activate-${p.name}`,
-      label: `Activate ${p.name}`,
-      shortcut: i < 3 ? `⌘${i + 1}` : undefined,
-      icon: <Check size={14} />,
-      category: 'Profile',
-      action: () => activate.mutate(p.name),
-    }))
-
-  const compareCommands = profiles
-    .filter(p => p.name !== active)
-    .map(p => ({
-      id: `compare-${p.name}`,
-      label: `Compare ${p.name} with ${active ?? 'active'}`,
-      icon: <GitCompare size={14} />,
-      category: 'Profile',
-      action: () => navigate(`/profiles?compare=${encodeURIComponent(p.name)}`),
-    }))
-
-  const activeProfileCommands = activeProfile
-    ? [
-        {
-          id: 'edit-active',
-          label: `Edit ${activeProfile.name}`,
-          icon: <Pencil size={14} />,
-          category: 'Profile' as const,
-          action: () => navigate(`/profiles/${activeProfile.name}`),
-        },
-        {
-          id: 'duplicate-active',
-          label: `Duplicate ${activeProfile.name}`,
-          icon: <Copy size={14} />,
-          category: 'Profile' as const,
-          action: () => navigate(`/profiles/new?from=${encodeURIComponent(activeProfile.name)}`),
-        },
-      ]
-    : []
-
   const goToCommands = [
-    {
-      id: 'goto-profiles',
-      label: 'Profiles',
-      shortcut: 'g p',
-      icon: <FolderOpen size={14} />,
-      category: 'Go to',
-      action: () => navigate('/profiles'),
-    },
     {
       id: 'goto-agents',
       label: 'Agents',
@@ -123,7 +63,7 @@ function AppCommandPalette() {
       shortcut: 'g t',
       icon: <Activity size={14} />,
       category: 'Go to',
-      action: () => navigate('/timeline'),
+      action: () => navigate('/explore/timeline'),
     },
     {
       id: 'goto-settings',
@@ -134,8 +74,6 @@ function AppCommandPalette() {
     },
   ]
 
-  // Entity search lands on the section list rather than a detail view because
-  // the detail panel requires selection state that doesn't exist in the URL yet.
   const searchCommands = [
     ...(agents ?? [])
       .filter(a => a.frontmatter.name)
@@ -167,9 +105,6 @@ function AppCommandPalette() {
   ]
 
   const allCommands = [
-    ...profileCommands,
-    ...activeProfileCommands,
-    ...compareCommands,
     ...goToCommands,
     ...searchCommands,
   ]
