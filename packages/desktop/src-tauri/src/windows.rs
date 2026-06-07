@@ -5,6 +5,8 @@
 //! the only auto-built window at launch.
 
 use tauri::{Manager, WebviewUrl, WebviewWindowBuilder};
+#[cfg(target_os = "macos")]
+use tauri::TitleBarStyle;
 
 pub const MAIN_LABEL: &str = "main";
 const DEFAULT_WIDTH: f64 = 1200.0;
@@ -12,6 +14,12 @@ const DEFAULT_HEIGHT: f64 = 800.0;
 
 /// Show the main window. Builds it on first call; brings it to front on
 /// subsequent calls.
+///
+/// macOS: the title bar is replaced with an `Overlay` style so the
+/// content extends to the top edge while the traffic lights remain
+/// visible (the modern macOS app pattern — Linear, Raycast, Arc).
+/// The sidebar headers compensate with extra top padding so the
+/// LayoutGrid icon doesn't sit under the traffic light cluster.
 #[tauri::command]
 pub fn open_main_window(app: tauri::AppHandle) -> Result<(), String> {
     if let Some(existing) = app.get_webview_window(MAIN_LABEL) {
@@ -20,15 +28,22 @@ pub fn open_main_window(app: tauri::AppHandle) -> Result<(), String> {
         return Ok(());
     }
 
-    WebviewWindowBuilder::new(&app, MAIN_LABEL, WebviewUrl::App("index.html".into()))
+    let mut builder = WebviewWindowBuilder::new(&app, MAIN_LABEL, WebviewUrl::App("index.html".into()))
         .title("OhMyC")
         .inner_size(DEFAULT_WIDTH, DEFAULT_HEIGHT)
         .min_inner_size(800.0, 600.0)
         .resizable(true)
         .decorations(true)
-        .visible(true)
-        .build()
-        .map_err(|e| e.to_string())?;
+        .visible(true);
+
+    #[cfg(target_os = "macos")]
+    {
+        builder = builder
+            .title_bar_style(TitleBarStyle::Overlay)
+            .hidden_title(true);
+    }
+
+    builder.build().map_err(|e| e.to_string())?;
 
     Ok(())
 }

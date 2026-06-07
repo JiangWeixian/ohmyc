@@ -38,7 +38,10 @@ interface ProfilesSidebarProperties {
 
 function SidebarHeader({ headerSlot }: { headerSlot?: React.ReactNode }) {
   return (
-    <div className="border-b border-[rgba(255,255,255,0.05)] px-4 pb-4 pt-5">
+    // pt-10 clears the macOS traffic-light cluster — see sidebar.tsx
+    // SidebarHeader for the rationale (Tauri uses TitleBarStyle::Overlay
+    // on macOS, the LayoutGrid icon must sit below the traffic lights).
+    <div className="border-b border-[rgba(255,255,255,0.05)] px-4 pb-4 pt-10">
       <div className="mb-5 flex items-center gap-3">
         <div className="flex size-10 shrink-0 items-center justify-center rounded-[10px] border border-[rgba(255,255,255,0.08)] bg-[rgba(255,255,255,0.02)]">
           <LayoutGrid size={18} className="text-[var(--text-secondary)]" />
