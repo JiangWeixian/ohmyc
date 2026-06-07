@@ -1,6 +1,5 @@
 // Store component list — browsable, searchable category view with import/edit/delete.
 import {
-  Download,
   Edit2,
   Loader2,
   Plus,
@@ -22,7 +21,6 @@ import {
 } from '../../hooks/use-store'
 import { maskApiKey } from '../../utils/mask-api-key'
 import { DeleteConfirmDialog } from './delete-confirm-dialog'
-import { ImportComponentsDialog } from './import-components-dialog'
 import { cn } from '@/lib/utils'
 
 // ═══════════ Constants & Helpers ═══════════
@@ -124,7 +122,6 @@ interface StoreComponentListProperties {
  */
 export function StoreComponentList({ category, onEdit }: StoreComponentListProperties) {
   const [deleteTarget, setDeleteTarget] = useState<{ category: Category; name: string; referencedBy: string[] } | null>(null)
-  const [showImportDialog, setShowImportDialog] = useState(false)
   const [search, setSearch] = useState('')
 
   const agentsQ = useStoreAgents()
@@ -322,20 +319,6 @@ export function StoreComponentList({ category, onEdit }: StoreComponentListPrope
         </div>
         <button
           type="button"
-          onClick={() => setShowImportDialog(true)}
-          className={cn(
-            'flex h-9 items-center gap-1.5 rounded-md px-3',
-            'border border-[rgba(255,255,255,0.08)] bg-[rgba(255,255,255,0.02)]',
-            'text-[13px] font-[510] text-[var(--text-secondary)]',
-            'hover:bg-[rgba(255,255,255,0.04)] hover:text-[var(--text-primary)] hover:border-[rgba(255,255,255,0.14)]',
-            'transition-colors duration-150',
-          )}
-        >
-          <Download size={14} />
-          Import
-        </button>
-        <button
-          type="button"
           onClick={() => onEdit?.(category)}
           className={cn(
             'flex h-9 items-center gap-1.5 rounded-md px-3',
@@ -383,23 +366,24 @@ export function StoreComponentList({ category, onEdit }: StoreComponentListPrope
                 {search ? `No ${labels.plural} match "${search}"` : `No ${labels.plural} in your store yet`}
               </h2>
               {!search && (
-                <>
-                  <p className="mt-2 text-[13px] text-[var(--text-tertiary)]">
-                    Import {labels.plural} from an existing Claude-compatible directory to start building a canonical local store.
-                  </p>
-                  <button
-                    type="button"
-                    onClick={() => setShowImportDialog(true)}
-                    className={cn(
-                      'mt-4 inline-flex h-9 items-center gap-1.5 rounded-md px-3',
-                      'bg-[var(--text-primary)] text-[var(--bg-marketing)]',
-                      'text-[13px] font-[510]',
-                      'hover:bg-[var(--text-secondary)] transition-colors duration-150',
-                    )}
-                  >
-                    Import components
-                  </button>
-                </>
+                  <>
+                    <p className="mt-2 text-[13px] text-[var(--text-tertiary)]">
+                      No {labels.plural} yet. Create your first one to start building a canonical local store.
+                    </p>
+                    <button
+                      type="button"
+                      onClick={() => onEdit?.(category)}
+                      className={cn(
+                        'mt-4 inline-flex h-9 items-center gap-1.5 rounded-md px-3',
+                        'border border-[rgba(255,255,255,0.08)] bg-[rgba(255,255,255,0.02)]',
+                        'text-[13px] font-[510] text-[var(--text-secondary)]',
+                        'hover:bg-[rgba(255,255,255,0.04)] hover:text-[var(--text-primary)] hover:border-[rgba(255,255,255,0.14)]',
+                        'transition-colors duration-150',
+                      )}
+                    >
+                      Create {labels.singular}
+                    </button>
+                  </>
               )}
             </div>
               )
@@ -511,10 +495,6 @@ export function StoreComponentList({ category, onEdit }: StoreComponentListPrope
         />
       )}
 
-      {/* Import Dialog */}
-      {showImportDialog && (
-        <ImportComponentsDialog onClose={() => setShowImportDialog(false)} />
-      )}
     </div>
   )
 }
