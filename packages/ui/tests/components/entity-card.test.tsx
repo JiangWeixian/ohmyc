@@ -6,7 +6,7 @@ import {
   it,
 } from 'vitest'
 
-import { EntityCard } from './entity-card'
+import { EntityCard } from '@/components/entity-card'
 
 describe('EntityCard', () => {
   it('renders origin chip from origins prop', () => {

@@ -5,7 +5,7 @@ import {
   it,
 } from 'vitest'
 
-import { REGISTERED_ORIGINS, useSources } from './sources'
+import { REGISTERED_ORIGINS, useSources } from '@/state/sources'
 
 describe('useSources', () => {
   beforeEach(() => {

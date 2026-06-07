@@ -7,8 +7,8 @@ import {
   it,
 } from 'vitest'
 
-import { REGISTERED_ORIGINS, useSources } from '../state/sources'
-import { SourceSwitcher } from './source-switcher'
+import { SourceSwitcher } from '@/components/source-switcher'
+import { REGISTERED_ORIGINS, useSources } from '@/state/sources'
 
 describe('SourceSwitcher', () => {
   beforeEach(() => {

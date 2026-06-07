@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it } from 'vitest'
 
-import { resetMock, setMockHandler } from './mock'
-import { __setTransportForTests, request, resetTransportForTests } from '../transport'
+import { resetMock, setMockHandler } from '@/lib/transport/mock'
+import { __setTransportForTests, request, resetTransportForTests } from '@/lib/transport'
 
 describe('transport seam', () => {
   afterEach(() => {

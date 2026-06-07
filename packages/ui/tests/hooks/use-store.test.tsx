@@ -21,7 +21,7 @@ import {
   useStoreModelConfigs,
   useStoreSkills,
   useUpdateStoreAgent,
-} from './use-store'
+} from '@/hooks/use-store'
 import { __setTransportForTests, resetTransportForTests } from '@/lib/transport'
 import { resetMock, setMockHandler } from '@/lib/transport/mock'
 

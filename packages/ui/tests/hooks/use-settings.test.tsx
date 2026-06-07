@@ -1,5 +1,9 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { act, renderHook, waitFor } from '@testing-library/react'
+import {
+  act,
+  renderHook,
+  waitFor,
+} from '@testing-library/react'
 import {
   afterEach,
   beforeEach,
@@ -8,11 +12,8 @@ import {
   it,
 } from 'vitest'
 
-import { useSettings } from './use-settings'
-import {
-  __setTransportForTests,
-  resetTransportForTests,
-} from '@/lib/transport'
+import { useSettings } from '@/hooks/use-settings'
+import { __setTransportForTests, resetTransportForTests } from '@/lib/transport'
 import { resetMock, setMockHandler } from '@/lib/transport/mock'
 
 function wrapper() {

@@ -8,7 +8,7 @@ import {
   it,
 } from 'vitest'
 
-import { useMarketplaces, usePlugins } from './use-plugins'
+import { useMarketplaces, usePlugins } from '@/hooks/use-plugins'
 import {
   __setTransportForTests,
   request,

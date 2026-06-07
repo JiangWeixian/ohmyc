@@ -8,7 +8,7 @@ import {
   it,
 } from 'vitest'
 
-import { useAgent, useAgents } from './use-agents'
+import { useAgent, useAgents } from '@/hooks/use-agents'
 import { __setTransportForTests, resetTransportForTests } from '@/lib/transport'
 import { resetMock, setMockHandler } from '@/lib/transport/mock'
 import { useSources } from '@/state/sources'

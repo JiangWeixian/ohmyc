@@ -11,7 +11,7 @@ import {
   vi,
 } from 'vitest'
 
-import { ViewSwitch } from './view-switch'
+import { ViewSwitch } from '@/components/menubar/view-switch'
 
 describe('ViewSwitch', () => {
   it('renders both view buttons', () => {
