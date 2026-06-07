@@ -2,10 +2,8 @@
 // user profiles with activate/compare hover actions, and component categories.
 
 import {
-  Activity,
   Bot,
   LayoutGrid,
-  Plus,
   Settings,
   Sparkles,
   TerminalSquare,
@@ -37,7 +35,6 @@ interface ProfilesSidebarProperties {
   onCompare?: (profileName: string) => void
   onActivate?: (profileName: string) => void
   headerSlot?: React.ReactNode
-  timelineActive?: boolean
 }
 
 function SidebarHeader({ headerSlot }: { headerSlot?: React.ReactNode }) {
@@ -92,11 +89,11 @@ const COMPONENTS = [
 ] as const
 
 /**
- * Sidebar navigation with three groups: Activity (timeline), My Profiles
- * (with inline activate/compare actions), and Components (store categories).
- * Selection state is managed externally via SidebarSelection.
+ * Sidebar navigation with two groups: My Profiles (with inline activate/compare
+ * actions) and Components (store categories). Selection state is managed
+ * externally via SidebarSelection.
  */
-export function ProfilesSidebar({ profiles, active, selection, onSelect, onCompare, onActivate, headerSlot, timelineActive }: ProfilesSidebarProperties) {
+export function ProfilesSidebar({ profiles, active, selection, onSelect, onCompare, onActivate, headerSlot }: ProfilesSidebarProperties) {
   const currentValue = getTabValue(selection)
   const navigate = useNavigate()
 
@@ -111,26 +108,7 @@ export function ProfilesSidebar({ profiles, active, selection, onSelect, onCompa
     <aside className="flex w-60 flex-col border-r border-[rgba(255,255,255,0.05)] bg-[var(--bg-panel)]">
       <SidebarHeader headerSlot={headerSlot} />
       <nav className="flex-1 overflow-y-auto px-3 py-3">
-        <div className="mb-2 px-2 pt-1 text-[11px] font-[510] tracking-[0.04em] uppercase text-[var(--text-tertiary)]">
-          Activity
-        </div>
-        <button
-          type="button"
-          onClick={() => navigate('/timeline')}
-          className={cn(
-            'mb-2 flex w-full items-center gap-2.5 rounded-md px-3 py-2 text-left text-[13px] font-[510] transition-colors duration-150',
-            timelineActive
-              ? 'bg-[rgba(255,255,255,0.08)] text-[var(--text-primary)]'
-              : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[rgba(255,255,255,0.03)]',
-          )}
-        >
-          <span className={cn('shrink-0', timelineActive ? 'text-[var(--text-primary)]' : 'text-[var(--text-tertiary)]')}>
-            <Activity size={16} />
-          </span>
-          <span>Timeline</span>
-        </button>
-
-        <div className="mb-2 mt-5 px-2 text-[11px] font-[510] tracking-[0.04em] uppercase text-[var(--text-tertiary)]">
+        <div className="mb-2 pt-1 px-2 text-[11px] font-[510] tracking-[0.04em] uppercase text-[var(--text-tertiary)]">
           My Profiles
         </div>
         <Tabs
@@ -197,21 +175,6 @@ export function ProfilesSidebar({ profiles, active, selection, onSelect, onCompa
                 </TabsTrigger>
               )
             })}
-
-            <TabsTrigger
-              value="new-profile"
-              className={cn(
-                'relative mb-0.5 w-full flex items-center justify-start gap-2.5 rounded-md px-3 py-2 text-left text-[13px] font-[510] transition-colors duration-150',
-                currentValue === 'new-profile'
-                  ? 'bg-[rgba(255,255,255,0.08)] text-[var(--text-primary)]'
-                  : 'text-[var(--text-tertiary)] hover:text-[var(--text-primary)] hover:bg-[rgba(255,255,255,0.03)]',
-              )}
-            >
-              <span className={cn('relative z-10 shrink-0', currentValue === 'new-profile' ? 'text-[var(--text-primary)]' : 'text-[var(--text-tertiary)]')}>
-                <Plus size={16} />
-              </span>
-              <span className="relative z-10">New Profile</span>
-            </TabsTrigger>
           </TabsList>
         </Tabs>
 
