@@ -27,8 +27,6 @@ export default defineConfig({
     include: [
       'tests/**/*.test.ts',
       'tests/**/*.test.tsx',
-      'src/**/*.test.ts',
-      'src/**/*.test.tsx',
     ],
     coverage: {
       provider: 'v8',

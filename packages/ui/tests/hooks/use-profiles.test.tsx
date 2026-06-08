@@ -21,7 +21,7 @@ import {
   useProfile,
   useProfiles,
   useUpdateProfile,
-} from './use-profiles'
+} from '@/hooks/use-profiles'
 import { __setTransportForTests, resetTransportForTests } from '@/lib/transport'
 import { resetMock, setMockHandler } from '@/lib/transport/mock'
 

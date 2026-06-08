@@ -11,7 +11,9 @@ Collects session data (turns, tokens, tools, skills) from both **Claude Code** a
 
 ## Claude Code Setup
 
-The Claude Code plugin uses a `Stop` hook that fires when a session ends. The hook script reads the transcript JSONL file and ingests it into the timeline database via the CLI.
+The Claude Code plugin uses a `Stop` hook that fires when a session ends. The hook script (`hooks/ingest.sh`) parses the transcript with `jq` and writes to the timeline database by invoking the bundled node entry at `dist/ingest.mjs` — no external CLI binary required on PATH. Slow path: when `jq` is unavailable, `dist/ingest.mjs` parses the JSONL itself.
+
+**Runtime requirement:** `node` on PATH. The plugin ships `better-sqlite3` as a runtime dependency (native binding installed via prebuilt binaries during `npm install`).
 
 ## OpenCode Setup
 

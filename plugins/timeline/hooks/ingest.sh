@@ -1,9 +1,7 @@
 #!/bin/bash
-# OhMyC Timeline Stop Hook
-# Extracts session data from transcript and ingests into $OHMYC_HOME/timeline.db (defaults to ~/.config/ohmyc/timeline.db)
-#
-# Usage: Triggered by Claude Code's Stop hook automatically.
-#        Can also be called manually with session ID as argument.
+# OhMyC Timeline Stop Hook — ingests Claude Code session transcripts.
+# Calls the bundled node entry at $CLAUDE_PLUGIN_ROOT/dist/ingest.mjs.
+# No external CLI binary required.
 
 set -euo pipefail
 
@@ -13,6 +11,7 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PLUGIN_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
+INGEST_MJS="$PLUGIN_DIR/dist/ingest.mjs"
 
 if [ -n "${OHMYC_HOME:-}" ]; then
   OHMYC_DIR="$OHMYC_HOME"
@@ -23,20 +22,24 @@ elif [ -d "$HOME/.cui" ]; then
 else
   OHMYC_DIR="$HOME/.config/ohmyc"
 fi
-export OHMYC_DIR
-DB_PATH="$OHMYC_DIR/timeline.db"
+export OHMYC_HOME="$OHMYC_DIR"
+
+log_error() { echo "[timeline] $1" >&2; }
+log_info()  { echo "[timeline] $1" >&2; }
 
 # ---------------------------------------------------------------------------
-# Helper functions
+# Resolve node
 # ---------------------------------------------------------------------------
 
-log_error() {
-  echo "[timeline] $1" >&2
-}
+if ! command -v node >/dev/null 2>&1; then
+  log_error "node not found on PATH. Cannot ingest session."
+  exit 0
+fi
 
-log_info() {
-  echo "[timeline] $1" >&2
-}
+if [ ! -f "$INGEST_MJS" ]; then
+  log_error "ingest bundle not found at $INGEST_MJS (did you run \`pnpm --filter @ohmyc/timeline-plugin build\`?)"
+  exit 0
+fi
 
 # ---------------------------------------------------------------------------
 # Determine transcript path
@@ -44,7 +47,6 @@ log_info() {
 
 if [ -n "${1:-}" ]; then
   SESSION_ID="$1"
-
   CLAUDE_HOME="${AGENT_HOME:-$HOME/.claude}"
   TRANSCRIPT_PATH=$(find "$CLAUDE_HOME/projects" -name "${SESSION_ID}.jsonl" -print -quit 2>/dev/null || true)
 
@@ -67,47 +69,14 @@ fi
 FILE_SIZE=$(stat -f%z "$TRANSCRIPT_PATH" 2>/dev/null || stat -c%s "$TRANSCRIPT_PATH" 2>/dev/null || echo 0)
 
 # ---------------------------------------------------------------------------
-# Find ohmyc CLI (for fallback and --ingest-raw); also accepts the legacy `cui` name.
-# ---------------------------------------------------------------------------
-
-if [ "${CLI_CMD+isset}" = "isset" ]; then
-  :
-elif command -v ohmyc >/dev/null 2>&1; then
-  CLI_CMD="ohmyc"
-elif command -v cui >/dev/null 2>&1 && cui --help 2>&1 | grep -q "dashboard"; then
-  CLI_CMD="cui"
-else
-  REPO_ROOT="$(cd "$PLUGIN_DIR/../.." && pwd)"
-  if [ -f "$REPO_ROOT/packages/cli/dist/index.mjs" ]; then
-    CLI_CMD="node $REPO_ROOT/packages/cli/dist/index.mjs"
-  elif [ -f "$REPO_ROOT/dist/index.mjs" ]; then
-    CLI_CMD="node $REPO_ROOT/dist/index.mjs"
-  fi
-fi
-
-# ---------------------------------------------------------------------------
-# Fast path: jq preprocessing + Node.js direct write
-#
-# Extracts all ParsedSessionData fields in one jq pass, matching the
-# field order and logic from @ohmyc/timeline's parseTranscript().
-# Pipes the result to the CLI's --ingest-raw mode which writes directly
-# to the database without re-parsing the transcript.
+# Fast path: jq preprocessing → node --raw via stdin
 # ---------------------------------------------------------------------------
 
 if command -v jq >/dev/null 2>&1; then
   log_info "Using jq fast path for session $SESSION_ID"
 
-  # The jq expression mirrors parseTranscript() in ingest.ts exactly:
-  #   - Timestamps converted from ISO 8601 to epoch ms
-  #   - Turns = user messages with string content (not tool_result arrays)
-  #   - Tokens from assistant .message.usage (handles iterations array)
-  #   - Cache tokens = cache_read + cache_creation (from last iteration only)
-  #   - Model from last assistant message's .message.model
-  #   - Summary prefers away_summary, then first user message (truncated 140)
-  #   - agentName is always "claude" for hook-sourced sessions
   set +e
   EXTRACTED=$(jq -s '
-    # Pre-compute values shared across fields
     ($transcriptPath | split("/") | .[] | select(. == "projects") as $marker |
       ($transcriptPath | split("/") | index($marker)) as $idx |
       ($transcriptPath | split("/")[($idx + 1):][0]) as $encoded |
@@ -146,29 +115,20 @@ if command -v jq >/dev/null 2>&1; then
   JQ_STATUS=$?
   set -e
 
-  if [ $JQ_STATUS -ne 0 ] || [ -z "$EXTRACTED" ] || [ "$EXTRACTED" = "null" ]; then
-    log_error "jq extraction failed for $SESSION_ID, falling back to CLI"
+  if [ $JQ_STATUS -eq 0 ] && [ -n "$EXTRACTED" ] && [ "$EXTRACTED" != "null" ]; then
+    # `cmd && exit 0` — node failure short-circuits the &&; the chain becomes
+    # a conditional context so `set -e` does not exit. Control falls through
+    # to the log + slow path below. This is the desired behavior.
+    echo "$EXTRACTED" | node "$INGEST_MJS" --raw && exit 0
+    log_error "Fast path failed for $SESSION_ID, falling back to slow path"
   else
-    # Write pre-parsed JSON directly to the database via the CLI.
-    # Falls back to full re-parse if CLI lacks --ingest-raw.
-    if [ -n "$CLI_CMD" ]; then
-      echo "$EXTRACTED" | $CLI_CMD dashboard --ingest-raw 2>/dev/null && exit 0
-    fi
-
-    # Fallback: re-ingest via CLI full parse
-    $CLI_CMD dashboard --ingest --session "$SESSION_ID" --file "$TRANSCRIPT_PATH"
-    exit 0
+    log_error "jq extraction failed for $SESSION_ID, falling back to slow path"
   fi
 fi
 
 # ---------------------------------------------------------------------------
-# Fallback: CLI does full JSONL parsing in Node.js
+# Slow path: node parses JSONL itself
 # ---------------------------------------------------------------------------
 
-if [ -n "$CLI_CMD" ]; then
-  log_info "Using CLI fallback for session $SESSION_ID"
-  $CLI_CMD dashboard --ingest --session "$SESSION_ID" --file "$TRANSCRIPT_PATH"
-else
-  log_error "ohmyc CLI not found. Cannot ingest session $SESSION_ID."
-  exit 1
-fi
+log_info "Using slow path for session $SESSION_ID"
+node "$INGEST_MJS" --session-id "$SESSION_ID" --transcript-path "$TRANSCRIPT_PATH"

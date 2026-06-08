@@ -14,7 +14,7 @@ import {
   vi,
 } from 'vitest'
 
-import { MenubarPage } from './menubar-page'
+import { MenubarPage } from '@/components/menubar/menubar-page'
 
 import type { ReactNode } from 'react'
 

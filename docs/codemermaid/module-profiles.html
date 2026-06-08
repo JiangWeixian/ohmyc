@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>profiles — ohmyc-core</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+<script src="beautiful-mermaid.bundle.js"></script>
+</head>
+<body>
+<header class="topbar"><a class="back-link" href="index.html">← ohmyc-core</a></header>
+<main class="container">
+  <section class="hero">
+    <div class="eyebrow">ohmyc-core · module</div>
+    <h1>profiles</h1>
+    <p class="learning-promise">Understand the crate's most complex module — profile JSON CRUD, transactional activation with undo-stack rollback, preflight dry-runs, RAII file locking, and symlink management.</p>
+  </section>
+  <nav class="toc">
+    <div class="toc-label">On this page</div>
+    <ol class="toc-list">
+      <li><a class="toc-item" href="#unit-0"><span class="toc-num">1</span>The Profile struct and CRUD<span class="toc-kind">concept</span></a></li>
+      <li><a class="toc-item" href="#unit-1"><span class="toc-num">2</span>Profile data shape<span class="toc-kind">code-walk</span></a></li>
+      <li><a class="toc-item" href="#unit-2"><span class="toc-num">3</span>Transactional activation<span class="toc-kind">concept</span></a></li>
+      <li><a class="toc-item" href="#unit-3"><span class="toc-num">4</span>The undo stack<span class="toc-kind">code-walk</span></a></li>
+      <li><a class="toc-item" href="#unit-4"><span class="toc-num">5</span>File-level compensating transactions<span class="toc-kind">whoa</span></a></li>
+      <li><a class="toc-item" href="#unit-5"><span class="toc-num">6</span>Preflight: the dry-run preview<span class="toc-kind">concept</span></a></li>
+      <li><a class="toc-item" href="#unit-6"><span class="toc-num">7</span>RAII file locking<span class="toc-kind">concept</span></a></li>
+      <li><a class="toc-item" href="#unit-7"><span class="toc-num">8</span>Activation state machine<span class="toc-kind">diagram</span></a></li>
+      <li><a class="toc-item" href="#unit-8"><span class="toc-num">9</span>Check your understanding<span class="toc-kind">quiz</span></a></li>
+      <li><a class="toc-item" href="#unit-9"><span class="toc-num">10</span>Key takeaways<span class="toc-kind">takeaway</span></a></li>
+    </ol>
+  </nav>
+
+  <section class="unit unit-concept" id="unit-0">
+    <span class="unit-kind">concept</span>
+    <h2>The Profile struct and CRUD</h2>
+    <p>A profile is a JSON file at <code>$OHMYC_HOME/profiles/&lt;name&gt;/profile.json</code>. It declares which agents, skills, commands, and plugins the profile uses, plus optional model config, hooks, MCP servers, LSP servers, and settings overrides. The <code>crud</code> submodule provides pure file I/O: list, get, create, update, delete. No symlinks, no settings mutation — those belong to activation.</p>
+    <p>The active profile is tracked in <code>$OHMYC_HOME/profiles/.active</code> — a plain text file containing the profile name. When a profile is activated, the name is written to this file. The <code>read_active_profile_name</code> function handles both relative names and absolute paths (from legacy formats).</p>
+  </section>
+
+  <section class="unit unit-codewalk" id="unit-1">
+    <span class="unit-kind">code-walk</span>
+    <h2>Profile data shape</h2>
+    <div class="codewalk-split">
+      <div class="codewalk-head">
+        <span class="codewalk-file">crates/ohmyc-core/src/profiles/crud.rs</span>
+        <span class="file-actions">
+          <span class="editor-menu" data-editor-menu data-editor="cursor">
+            <button class="file-action-select editor-menu-trigger" type="button" aria-haspopup="listbox" aria-expanded="false" data-editor-trigger><span data-editor-current>Cursor</span><span class="gg-chevron-down" aria-hidden="true"></span></button>
+            <span class="editor-menu-list" role="listbox" hidden data-editor-list>
+              <button class="editor-menu-item" type="button" role="option" aria-selected="true" data-editor-option="cursor">Cursor</button>
+              <button class="editor-menu-item" type="button" role="option" aria-selected="false" data-editor-option="vscode">VS Code</button>
+            </span>
+          </span>
+          <button class="file-action" type="button" data-copy-path="crates/ohmyc-core/src/profiles/crud.rs:14">Copy path</button>
+        </span>
+      </div>
+      <div class="codewalk-split-body">
+        <pre class="code-block"><span class="line" data-line="1"><span class="ln">1</span><span class="code-text">#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]</span></span><span class="line" data-line="2"><span class="ln">2</span><span class="code-text">#[serde(rename_all = "camelCase")]</span></span><span class="line" data-line="3"><span class="ln">3</span><span class="code-text">pub struct Profile {</span></span><span class="line" data-line="4"><span class="ln">4</span><span class="code-text">    pub name: String,</span></span><span class="line" data-line="5"><span class="ln">5</span><span class="code-text">    #[serde(default, skip_serializing_if = "Option::is_none")]</span></span><span class="line" data-line="6"><span class="ln">6</span><span class="code-text">    pub description: Option&lt;String&gt;,</span></span><span class="line" data-line="7"><span class="ln">7</span><span class="code-text">    #[serde(default)]</span></span><span class="line" data-line="8"><span class="ln">8</span><span class="code-text">    pub agents: Vec&lt;String&gt;,</span></span><span class="line" data-line="9"><span class="ln">9</span><span class="code-text">    #[serde(default)]</span></span><span class="line" data-line="10"><span class="ln">10</span><span class="code-text">    pub skills: Vec&lt;String&gt;,</span></span><span class="line" data-line="11"><span class="ln">11</span><span class="code-text">    #[serde(default)]</span></span><span class="line" data-line="12"><span class="ln">12</span><span class="code-text">    pub commands: Vec&lt;String&gt;,</span></span><span class="line" data-line="13"><span class="ln">13</span><span class="code-text">    #[serde(default)]</span></span><span class="line" data-line="14"><span class="ln">14</span><span class="code-text">    pub plugins: Vec&lt;String&gt;,</span></span><span class="line" data-line="15"><span class="ln">15</span><span class="code-text">    #[serde(default, skip_serializing_if = "Option::is_none")]</span></span><span class="line" data-line="16"><span class="ln">16</span><span class="code-text">    pub model_config: Option&lt;String&gt;,</span></span><span class="line" data-line="17"><span class="ln">17</span><span class="code-text">    #[serde(default, skip_serializing_if = "Option::is_none")]</span></span><span class="line" data-line="18"><span class="ln">18</span><span class="code-text">    pub hooks: Option&lt;Value&gt;,</span></span><span class="line" data-line="19"><span class="ln">19</span><span class="code-text">    #[serde(default, skip_serializing_if = "Option::is_none")]</span></span><span class="line" data-line="20"><span class="ln">20</span><span class="code-text">    pub mcp_servers: Option&lt;Value&gt;,</span></span><span class="line" data-line="21"><span class="ln">21</span><span class="code-text">    #[serde(default, skip_serializing_if = "Option::is_none")]</span></span><span class="line" data-line="22"><span class="ln">22</span><span class="code-text">    pub lsp_servers: Option&lt;Value&gt;,</span></span><span class="line" data-line="23"><span class="ln">23</span><span class="code-text">    #[serde(default, skip_serializing_if = "Option::is_none")]</span></span><span class="line" data-line="24"><span class="ln">24</span><span class="code-text">    pub settings: Option&lt;Map&lt;String, Value&gt;&gt;,</span></span><span class="line" data-line="25"><span class="ln">25</span><span class="code-text">}</span></span></pre>
+        <div class="codewalk-annotations">
+          <div class="codewalk-annotation" data-note-lines="2"><span class="annotation-line">L2</span><p><code>camelCase</code> serialization matches the TypeScript frontend's property names. The struct field <code>model_config</code> serializes as <code>"modelConfig"</code> in JSON.</p></div>
+          <div class="codewalk-annotation" data-note-lines="8,10,12,14"><span class="annotation-line">L8–14</span><p>Component lists use <code>#[serde(default)]</code> — missing fields deserialize as empty vectors. This allows partial profile JSON that only declares some component types.</p></div>
+          <div class="codewalk-annotation" data-note-lines="24"><span class="annotation-line">L24</span><p>Settings overrides — a map that gets deep-merged into Claude Code's <code>settings.json</code> during activation. This is how profiles configure Claude Code behavior without directly editing the settings file.</p></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="unit unit-concept" id="unit-2">
+    <span class="unit-kind">concept</span>
+    <h2>Transactional activation</h2>
+    <p>Profile activation is the most complex operation in the crate. The <code>activation.rs</code> file is ~800 lines. The process: read the profile JSON, resolve all component references, symlink agents/skills/commands into <code>~/.claude</code>, merge plugin lists, deep-merge settings, inject environment variables for model configs, and write the active marker. Every mutation is recorded on an undo stack. If any step fails, <code>rollback()</code> replays all previous mutations in reverse.</p>
+  </section>
+
+  <section class="unit unit-codewalk" id="unit-3">
+    <span class="unit-kind">code-walk</span>
+    <h2>The undo stack</h2>
+    <div class="codewalk-split">
+      <div class="codewalk-head">
+        <span class="codewalk-file">crates/ohmyc-core/src/profiles/activation.rs</span>
+        <span class="file-actions">
+          <span class="editor-menu" data-editor-menu data-editor="cursor">
+            <button class="file-action-select editor-menu-trigger" type="button" aria-haspopup="listbox" aria-expanded="false" data-editor-trigger><span data-editor-current>Cursor</span><span class="gg-chevron-down" aria-hidden="true"></span></button>
+            <span class="editor-menu-list" role="listbox" hidden data-editor-list>
+              <button class="editor-menu-item" type="button" role="option" aria-selected="true" data-editor-option="cursor">Cursor</button>
+              <button class="editor-menu-item" type="button" role="option" aria-selected="false" data-editor-option="vscode">VS Code</button>
+            </span>
+          </span>
+          <button class="file-action" type="button" data-copy-path="crates/ohmyc-core/src/profiles/activation.rs:14">Copy path</button>
+        </span>
+      </div>
+      <div class="codewalk-split-body">
+        <pre class="code-block"><span class="line" data-line="1"><span class="ln">1</span><span class="code-text">enum UndoAction {</span></span><span class="line" data-line="2"><span class="ln">2</span><span class="code-text">    RemoveFile(PathBuf),</span></span><span class="line" data-line="3"><span class="ln">3</span><span class="code-text">    RemoveDir(PathBuf),</span></span><span class="line" data-line="4"><span class="ln">4</span><span class="code-text">    RestoreInstalled(Value),</span></span><span class="line" data-line="5"><span class="ln">5</span><span class="code-text">    RestoreKnown(Value),</span></span><span class="line line-hl" data-line="6"><span class="ln">6</span><span class="code-text">    RestoreSettings(Option&lt;Vec&lt;u8&gt;&gt;),</span></span><span class="line" data-line="7"><span class="ln">7</span><span class="code-text">}</span></span><span class="line" data-line="8"><span class="ln">8</span><span class="code-text"></span></span><span class="line line-hl" data-line="9"><span class="ln">9</span><span class="code-text">fn rollback(actions: &amp;[UndoAction], plugins_dir: &amp;Path, claude_settings_path: &amp;Path) {</span></span><span class="line line-hl" data-line="10"><span class="ln">10</span><span class="code-text">    for action in actions.iter().rev() {</span></span><span class="line" data-line="11"><span class="ln">11</span><span class="code-text">        action.run(plugins_dir, claude_settings_path);</span></span><span class="line" data-line="12"><span class="ln">12</span><span class="code-text">    }</span></span><span class="line" data-line="13"><span class="ln">13</span><span class="code-text">}</span></span></pre>
+        <div class="codewalk-annotations">
+          <div class="codewalk-annotation" data-note-lines="6"><span class="annotation-line">L6</span><p><code>RestoreSettings(Option&lt;Vec&lt;u8&gt;&gt;)</code> captures the pre-activation state: <code>Some(bytes)</code> if settings.json existed, <code>None</code> if it didn't. On rollback, <code>Some</code> restores the file, <code>None</code> removes it — preventing an empty orphan file.</p></div>
+          <div class="codewalk-annotation" data-note-lines="9,10"><span class="annotation-line">L9–10</span><p><code>.rev()</code> — reverse iteration is the key to compensating transactions. If the activation completed steps 1-5 and failed on step 6, rollback undoes step 5, then 4, then 3, then 2, then 1.</p></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="unit unit-whoa" id="unit-4" data-angle="code">
+    <div class="whoa-label">whoa · code</div>
+    <h2>Saga-pattern transactions for plain filesystem operations</h2>
+    <p>The activation engine implements the saga pattern at the filesystem level. Each step records a compensating action, and on failure, the compensating actions run in reverse. This is the same pattern used in distributed systems for multi-service transactions, but here it's applied to a single machine's filesystem. The reason: Claude Code reads its config as flat files, so there's no database to provide ACID guarantees. The undo stack is the only way to guarantee atomicity.</p>
+    <div class="whoa-evidence">
+      <span>activation.rs ~800 lines</span>
+      <span>UndoAction enum</span>
+      <span>rollback() reverse replay</span>
+      <span>10+ mutation steps per activation</span>
+    </div>
+  </section>
+
+  <section class="unit unit-concept" id="unit-5">
+    <span class="unit-kind">concept</span>
+    <h2>Preflight: the dry-run preview</h2>
+    <p>Before activation, the UI calls <code>preflight::check()</code> to get a preview of what will happen. The preflight module simulates the activation without writing anything: it checks which components are missing, whether settings will conflict, and what environment variables will change. The result is a structured report the UI renders as a confirmation dialog.</p>
+    <p>Preflight is read-only — it never touches the filesystem. This separation (check first, then activate) is the same pattern as <code>terraform plan</code> before <code>terraform apply</code>.</p>
+  </section>
+
+  <section class="unit unit-concept" id="unit-6">
+    <span class="unit-kind">concept</span>
+    <h2>RAII file locking</h2>
+    <p>The <code>lock.rs</code> submodule provides a RAII <code>LockGuard</code> using <code>fs2::FileExt</code> for cross-process exclusive locking. When activation starts, it acquires a lock file to prevent concurrent activations from corrupting state. The lock is released automatically when the <code>LockGuard</code> is dropped — even if the activation panics.</p>
+  </section>
+
+  <section class="unit unit-diagram" id="unit-7">
+    <span class="unit-kind">diagram</span>
+    <h2>Activation state machine</h2>
+    <figure class="figure">
+      <button class="zoom-btn" data-zoom-trigger>Zoom</button>
+      <div class="figure-diagram"><pre class="mermaid">stateDiagram-v2
+  [*] --> Idle
+  Idle --> Preflight: preflight check
+  Preflight --> Blocked: missing components
+  Preflight --> AcquireLock: all components present
+  AcquireLock --> Activating: lock acquired
+  Activating --> Rollback: any step fails
+  Activating --> Committed: all steps succeed
+  Rollback --> Idle: undo complete
+  Committed --> [*]</pre></div>
+      <figcaption>Profile activation state machine. <strong>Preflight</strong> is the dry-run check. If components are missing, it blocks with details. Otherwise, the engine acquires a file lock and performs mutations. On failure, <strong>Rollback</strong> undoes all completed steps via the undo stack.</figcaption>
+    </figure>
+  </section>
+
+  <section class="unit unit-quiz" id="unit-8">
+    <span class="unit-kind">quiz</span>
+    <h2>Check your understanding</h2>
+    <div class="quiz">
+      <div class="quiz-question">Why does <code>RestoreSettings</code> use <code>Option&lt;Vec&lt;u8&gt;&gt;</code> instead of just <code>Vec&lt;u8&gt;</code>?</div>
+      <div class="quiz-options">
+        <div class="quiz-option" data-correct="false"><span class="quiz-option-letter">A</span><span>To support restoring either JSON or binary content</span></div>
+        <div class="quiz-option" data-correct="false"><span class="quiz-option-letter">B</span><span>To reduce memory usage when the file is empty</span></div>
+        <div class="quiz-option" data-correct="true"><span class="quiz-option-letter">C</span><span><code>None</code> means settings.json didn't exist before activation — on rollback, the file should be removed, not overwritten with empty bytes</span></div>
+        <div class="quiz-option" data-correct="false"><span class="quiz-option-letter">D</span><span>To distinguish between the file existing and being empty</span></div>
+      </div>
+      <div class="quiz-explanation"><strong>Correct: C</strong> — If <code>settings.json</code> didn't exist before activation, the rollback should remove the file (not leave an empty JSON object). <code>None</code> captures "file didn't exist" and triggers removal on rollback. <code>Some(bytes)</code> captures the previous content for restoration. <strong>A</strong> is wrong (it's always JSON). <strong>B</strong> is wrong (not about memory). <strong>D</strong> is close but the distinction is existence, not emptiness.</div>
+    </div>
+  </section>
+
+  <section class="unit unit-takeaway" id="unit-9">
+    <div class="unit-takeaway">
+      <span class="unit-kind">takeaway</span>
+      <p>The profiles module is the crate's transaction engine. The <code>Profile</code> struct declares what a profile wants. The CRUD layer manages profile JSON files. The activation engine performs multi-file mutations with an undo stack that replays in reverse on failure — the saga pattern applied to plain filesystem operations. Preflight provides dry-run previews. RAII file locking prevents concurrent activations. Together, these components make it safe for OhMyC to write into <code>~/.claude</code> — a directory it doesn't own.</p>
+    </div>
+  </section>
+
+  <footer class="page-footer">
+    <a class="next-link" href="module-plugins.html">plugins →</a>
+    <p class="recap">Next: the plugins module — reading installed plugins and merging enabled state from settings.</p>
+  </footer>
+</main>
+<div class="zoom-overlay" hidden>
+  <div class="zoom-stage"></div>
+  <div class="zoom-controls">
+    <button data-zoom-out aria-label="Zoom out" title="Zoom out"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14"/></svg></button>
+    <span class="zoom-level" data-zoom-level>100%</span>
+    <button data-zoom-reset aria-label="Reset zoom" title="Reset zoom"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 12a9 9 0 1 0 3-6.7"/><path d="M3 4v6h6"/></svg></button>
+    <button data-zoom-in aria-label="Zoom in" title="Zoom in"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14"/><path d="M5 12h14"/></svg></button>
+    <button data-zoom-close aria-label="Close zoom" title="Close zoom"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg></button>
+  </div>
+</div>
+<script src="mermaid-bridge.js"></script>
+<script src="runtime.js"></script>
+</body>
+</html>

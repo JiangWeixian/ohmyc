@@ -7,7 +7,7 @@ import {
   vi,
 } from 'vitest'
 
-import { DualLineChart } from './dual-line-chart'
+import { DualLineChart } from '@/components/menubar/dual-line-chart'
 
 import type { HeatmapPoint } from '@/hooks/use-timeline'
 

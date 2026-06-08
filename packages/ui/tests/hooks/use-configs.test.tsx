@@ -12,7 +12,7 @@ import {
   useHooks,
   useLspServers,
   useMcpServers,
-} from './use-configs'
+} from '@/hooks/use-configs'
 import { __setTransportForTests, resetTransportForTests } from '@/lib/transport'
 import { resetMock, setMockHandler } from '@/lib/transport/mock'
 

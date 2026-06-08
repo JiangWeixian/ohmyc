@@ -8,7 +8,7 @@ import {
   vi,
 } from 'vitest'
 
-import { RecentHeatmap } from './recent-heatmap'
+import { RecentHeatmap } from '@/components/menubar/recent-heatmap'
 
 // Fix "today" so the component's rolling-16-week start date is deterministic.
 // Component computes: start = today - (16*7 - 1) days = today - 111 days.
