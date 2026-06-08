@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Build-Up Walkthrough — ohmyc-core</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+<script src="beautiful-mermaid.bundle.js"></script>
+</head>
+<body>
+<header class="topbar">
+  <a class="back-link" href="index.html">← ohmyc-core</a>
+</header>
+
+<main class="container">
+  <section class="hero">
+    <div class="eyebrow">ohmyc-core</div>
+    <h1>Build-Up Walkthrough</h1>
+    <p class="learning-promise">Reconstruct the system from the smallest useful behavior — resolving a single directory path — and watch each new capability emerge until the complete crate stands.</p>
+    <ul class="prereqs">
+      <li>Architecture Overview</li>
+    </ul>
+  </section>
+
+  <nav class="toc">
+    <div class="toc-label">On this page</div>
+    <ol class="toc-list">
+      <li><a class="toc-item" href="#unit-0"><span class="toc-num">1</span>Capability 1: Know where files live<span class="toc-kind">concept</span></a></li>
+      <li><a class="toc-item" href="#unit-1"><span class="toc-num">2</span>The resolve function<span class="toc-kind">code-walk</span></a></li>
+      <li><a class="toc-item" href="#unit-2"><span class="toc-num">3</span>Capability 2: Read structured content from disk<span class="toc-kind">concept</span></a></li>
+      <li><a class="toc-item" href="#unit-3"><span class="toc-num">4</span>YAML frontmatter parsing<span class="toc-kind">code-walk</span></a></li>
+      <li><a class="toc-item" href="#unit-4"><span class="toc-num">5</span>Capability 3: Safely delete with reference checks<span class="toc-kind">concept</span></a></li>
+      <li><a class="toc-item" href="#unit-5"><span class="toc-num">6</span>Reference scanning<span class="toc-kind">code-walk</span></a></li>
+      <li><a class="toc-item" href="#unit-6"><span class="toc-num">7</span>Capability 4: Activate a profile transactionally<span class="toc-kind">concept</span></a></li>
+      <li><a class="toc-item" href="#unit-7"><span class="toc-num">8</span>Undo stack in action<span class="toc-kind">code-walk</span></a></li>
+      <li><a class="toc-item" href="#unit-8"><span class="toc-num">9</span>The transactional activation engine<span class="toc-kind">whoa</span></a></li>
+      <li><a class="toc-item" href="#unit-9"><span class="toc-num">10</span>Capability 5: Query the timeline<span class="toc-kind">concept</span></a></li>
+      <li><a class="toc-item" href="#unit-10"><span class="toc-num">11</span>Check your understanding<span class="toc-kind">quiz</span></a></li>
+      <li><a class="toc-item" href="#unit-11"><span class="toc-num">12</span>From path to complete system<span class="toc-kind">takeaway</span></a></li>
+    </ol>
+  </nav>
+
+  <section class="unit unit-concept" id="unit-0">
+    <span class="unit-kind">concept</span>
+    <h2>Capability 1: Know where files live</h2>
+    <p>Before the system can read, write, or watch anything, it needs to answer one question: <em>where are the files?</em> That's the entire job of the Path Resolution layer. <code>claude_home::resolve()</code> returns <code>~/.claude</code> (or the env override), and <code>store::base_dir()</code> returns <code>$OHMYC_HOME</code>. Everything else in the crate is built on top of these two functions.</p>
+    <p>The move is simple but intentional — by making path resolution a function instead of a hardcoded constant, every consumer becomes testable with temp directories. Every test in the crate sets <code>OHMYC_CLAUDE_HOME</code> or <code>OHMYC_HOME</code> to a temp path, runs the code under test, and restores the env var on cleanup.</p>
+  </section>
+
+  <section class="unit unit-codewalk" id="unit-1">
+    <span class="unit-kind">code-walk</span>
+    <h2>The resolve function</h2>
+    <div class="codewalk-split">
+      <div class="codewalk-head">
+        <span class="codewalk-file">crates/ohmyc-core/src/claude_home.rs</span>
+        <span class="file-actions">
+          <span class="editor-menu" data-editor-menu data-editor="cursor">
+            <button class="file-action-select editor-menu-trigger" type="button" aria-haspopup="listbox" aria-expanded="false" data-editor-trigger>
+              <span data-editor-current>Cursor</span>
+              <span class="gg-chevron-down" aria-hidden="true"></span>
+            </button>
+            <span class="editor-menu-list" role="listbox" hidden data-editor-list>
+              <button class="editor-menu-item" type="button" role="option" aria-selected="true" data-editor-option="cursor">Cursor</button>
+              <button class="editor-menu-item" type="button" role="option" aria-selected="false" data-editor-option="vscode">VS Code</button>
+            </span>
+          </span>
+          <button class="file-action" type="button" data-copy-path="crates/ohmyc-core/src/claude_home.rs:18">Copy path</button>
+        </span>
+      </div>
+      <div class="codewalk-split-body">
+        <pre class="code-block"><span class="line" data-line="1"><span class="ln">1</span><span class="code-text">pub fn resolve() -&gt; Result&lt;PathBuf, ApiError&gt; {</span></span><span class="line" data-line="2"><span class="ln">2</span><span class="code-text">    if let Ok(override_path) = std::env::var(ENV_OVERRIDE) {</span></span><span class="line" data-line="3"><span class="ln">3</span><span class="code-text">        if !override_path.is_empty() {</span></span><span class="line" data-line="4"><span class="ln">4</span><span class="code-text">            return Ok(PathBuf::from(override_path));</span></span><span class="line" data-line="5"><span class="ln">5</span><span class="code-text">        }</span></span><span class="line" data-line="6"><span class="ln">6</span><span class="code-text">    }</span></span><span class="line" data-line="7"><span class="ln">7</span><span class="code-text">    let home = dirs::home_dir()</span></span><span class="line" data-line="8"><span class="ln">8</span><span class="code-text">        .ok_or_else(|| ApiError::Internal("could not determine home dir".to_string()))?;</span></span><span class="line" data-line="9"><span class="ln">9</span><span class="code-text">    Ok(home.join(".claude"))</span></span><span class="line" data-line="10"><span class="ln">10</span><span class="code-text">}</span></span></pre>
+        <div class="codewalk-annotations">
+          <div class="codewalk-annotation" data-note-lines="2,3"><span class="annotation-line">L2–3</span><p>Env var check first — if <code>OHMYC_CLAUDE_HOME</code> is set and non-empty, it wins. This is the testability escape hatch: every unit test sets this to a temp directory.</p></div>
+          <div class="codewalk-annotation" data-note-lines="3"><span class="annotation-line">L3</span><p>The empty-string guard matters — an env var set to <code>""</code> should not override the default. Without this check, <code>OHMYC_CLAUDE_HOME=""</code> would resolve to the current directory.</p></div>
+          <div class="codewalk-annotation" data-note-lines="7,8"><span class="annotation-line">L7–8</span><p>Fallback: use the <code>dirs</code> crate to find <code>$HOME</code>, then append <code>.claude</code>. The <code>ok_or_else</code> converts <code>None</code> into <code>ApiError::Internal</code> — rare but possible on systems without a home directory configured.</p></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="unit unit-concept" id="unit-2">
+    <span class="unit-kind">concept</span>
+    <h2>Capability 2: Read structured content from disk</h2>
+    <p>With paths resolved, the next capability is <strong>parsing files into structured Rust types</strong>. The <code>components</code> module reads <code>.md</code> files from <code>~/.claude/{agents,skills,commands}/</code> and returns typed structs like <code>Agent</code>, <code>Skill</code>, and <code>Command</code>. Each of these has a <code>frontmatter</code> field (parsed YAML) and a <code>content</code> field (the body after the <code>---</code> delimiter).</p>
+    <p>The interesting design choice: files without the required <code>name</code> and <code>description</code> fields are silently skipped, not errored. That's because <code>~/.claude/agents/</code> might contain README files, templates, or other non-agent markdown. The readers filter rather than reject — the caller gets only valid components.</p>
+    <p>Similarly, <code>settings</code> reads <code>settings.json</code> with a three-way result: file exists with valid JSON, file missing (returns <code>exists: false</code>), or file malformed (returns <code>ApiError::Parse</code>). Missing is not an error — it's the "no settings yet" state.</p>
+  </section>
+
+  <section class="unit unit-codewalk" id="unit-3">
+    <span class="unit-kind">code-walk</span>
+    <h2>YAML frontmatter parsing</h2>
+    <div class="codewalk-split">
+      <div class="codewalk-head">
+        <span class="codewalk-file">crates/ohmyc-core/src/components/frontmatter.rs</span>
+        <span class="file-actions">
+          <span class="editor-menu" data-editor-menu data-editor="cursor">
+            <button class="file-action-select editor-menu-trigger" type="button" aria-haspopup="listbox" aria-expanded="false" data-editor-trigger>
+              <span data-editor-current>Cursor</span>
+              <span class="gg-chevron-down" aria-hidden="true"></span>
+            </button>
+            <span class="editor-menu-list" role="listbox" hidden data-editor-list>
+              <button class="editor-menu-item" type="button" role="option" aria-selected="true" data-editor-option="cursor">Cursor</button>
+              <button class="editor-menu-item" type="button" role="option" aria-selected="false" data-editor-option="vscode">VS Code</button>
+            </span>
+          </span>
+          <button class="file-action" type="button" data-copy-path="crates/ohmyc-core/src/components/frontmatter.rs:7">Copy path</button>
+        </span>
+      </div>
+      <div class="codewalk-split-body">
+        <pre class="code-block"><span class="line" data-line="1"><span class="ln">1</span><span class="code-text">pub fn parse(raw: &amp;str) -&gt; Result&lt;(Value, String), ApiError&gt; {</span></span><span class="line" data-line="2"><span class="ln">2</span><span class="code-text">    let matter = Matter::&lt;YAML&gt;::new();</span></span><span class="line" data-line="3"><span class="ln">3</span><span class="code-text">    let parsed = matter.parse(raw);</span></span><span class="line" data-line="4"><span class="ln">4</span><span class="code-text">    let frontmatter = match parsed.data {</span></span><span class="line" data-line="5"><span class="ln">5</span><span class="code-text">        Some(pod) =&gt; {</span></span><span class="line" data-line="6"><span class="ln">6</span><span class="code-text">            let value = pod</span></span><span class="line" data-line="7"><span class="ln">7</span><span class="code-text">                .deserialize::&lt;Value&gt;()</span></span><span class="line line-hl" data-line="8"><span class="ln">8</span><span class="code-text">                .map_err(|e| ApiError::Parse(format!("frontmatter: {e}")))?;</span></span><span class="line line-hl" data-line="9"><span class="ln">9</span><span class="code-text">            if value.is_null() {</span></span><span class="line line-hl" data-line="10"><span class="ln">10</span><span class="code-text">                return Err(ApiError::Parse(</span></span><span class="line line-hl" data-line="11"><span class="ln">11</span><span class="code-text">                    "frontmatter: empty or unparseable YAML between --- delimiters".to_string(),</span></span><span class="line line-hl" data-line="12"><span class="ln">12</span><span class="code-text">                ));</span></span><span class="line" data-line="13"><span class="ln">13</span><span class="code-text">            }</span></span><span class="line" data-line="14"><span class="ln">14</span><span class="code-text">            if !value.is_object() {</span></span><span class="line" data-line="15"><span class="ln">15</span><span class="code-text">                return Err(ApiError::Parse(format!(</span></span><span class="line" data-line="16"><span class="ln">16</span><span class="code-text">                    "frontmatter: expected YAML mapping, got {value}"</span></span><span class="line" data-line="17"><span class="ln">17</span><span class="code-text">                )));</span></span><span class="line" data-line="18"><span class="ln">18</span><span class="code-text">            }</span></span><span class="line" data-line="19"><span class="ln">19</span><span class="code-text">            value</span></span><span class="line" data-line="20"><span class="ln">20</span><span class="code-text">        }</span></span><span class="line" data-line="21"><span class="ln">21</span><span class="code-text">        None =&gt; Value::Object(serde_json::Map::new()),</span></span><span class="line" data-line="22"><span class="ln">22</span><span class="code-text">    };</span></span><span class="line" data-line="23"><span class="ln">23</span><span class="code-text">    Ok((frontmatter, parsed.content.trim().to_string()))</span></span><span class="line" data-line="24"><span class="ln">24</span><span class="code-text">}</span></span></pre>
+        <div class="codewalk-annotations">
+          <div class="codewalk-annotation" data-note-lines="8"><span class="annotation-line">L8</span><p>gray_matter is lenient — malformed YAML can deserialize without error but produce <code>Null</code>. This boundary check catches that case so callers never see a null frontmatter.</p></div>
+          <div class="codewalk-annotation" data-note-lines="9,10,11,12"><span class="annotation-line">L9–12</span><p>Null rejection: the "loud at the boundary" pattern. If YAML between <code>---</code> delimiters is empty or unparseable, this fails immediately rather than letting every downstream <code>.get("name")</code> silently return <code>None</code>.</p></div>
+          <div class="codewalk-annotation" data-note-lines="21"><span class="annotation-line">L21</span><p>No frontmatter at all? That's fine — return an empty JSON object. A markdown file without YAML frontmatter is still valid content; it just has no metadata fields.</p></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="unit unit-concept" id="unit-4">
+    <span class="unit-kind">concept</span>
+    <h2>Capability 3: Safely delete with reference checks</h2>
+    <p>Once components can be listed and profiles can reference them, a new problem appears: <strong>what happens when you delete a component that a profile depends on?</strong> The answer is the <code>store/references</code> module. Before any delete, the system scans every profile's <code>profile.json</code> for references to the target component. If any profile lists it, the delete is blocked with a <code>ReferencedBy</code> error that includes the list of dependent profiles.</p>
+    <p>This is the "safe-delete gate" pattern — it prevents data corruption by checking the dependency graph before a destructive operation. The UI reads the <code>referencedBy</code> array from the error response to show the user which profiles would break, and offers a force-delete option that bypasses the check.</p>
+  </section>
+
+  <section class="unit unit-codewalk" id="unit-5">
+    <span class="unit-kind">code-walk</span>
+    <h2>Reference scanning</h2>
+    <div class="codewalk-split">
+      <div class="codewalk-head">
+        <span class="codewalk-file">crates/ohmyc-core/src/store/references.rs</span>
+        <span class="file-actions">
+          <span class="editor-menu" data-editor-menu data-editor="cursor">
+            <button class="file-action-select editor-menu-trigger" type="button" aria-haspopup="listbox" aria-expanded="false" data-editor-trigger>
+              <span data-editor-current>Cursor</span>
+              <span class="gg-chevron-down" aria-hidden="true"></span>
+            </button>
+            <span class="editor-menu-list" role="listbox" hidden data-editor-list>
+              <button class="editor-menu-item" type="button" role="option" aria-selected="true" data-editor-option="cursor">Cursor</button>
+              <button class="editor-menu-item" type="button" role="option" aria-selected="false" data-editor-option="vscode">VS Code</button>
+            </span>
+          </span>
+          <button class="file-action" type="button" data-copy-path="crates/ohmyc-core/src/store/references.rs:20">Copy path</button>
+        </span>
+      </div>
+      <div class="codewalk-split-body">
+        <pre class="code-block"><span class="line" data-line="1"><span class="ln">1</span><span class="code-text">pub fn referencing_profiles(</span></span><span class="line" data-line="2"><span class="ln">2</span><span class="code-text">    profiles_dir: &amp;Path,</span></span><span class="line" data-line="3"><span class="ln">3</span><span class="code-text">    kind: ComponentKind,</span></span><span class="line" data-line="4"><span class="ln">4</span><span class="code-text">    component_name: &amp;str,</span></span><span class="line" data-line="5"><span class="ln">5</span><span class="code-text">) -&gt; Result&lt;Vec&lt;String&gt;, ApiError&gt; {</span></span><span class="line line-hl" data-line="6"><span class="ln">6</span><span class="code-text">    if !profiles_dir.exists() {</span></span><span class="line line-hl" data-line="7"><span class="ln">7</span><span class="code-text">        return Ok(Vec::new());</span></span><span class="line" data-line="8"><span class="ln">8</span><span class="code-text">    }</span></span><span class="line" data-line="9"><span class="ln">9</span><span class="code-text">    let mut out: Vec&lt;String&gt; = Vec::new();</span></span><span class="line" data-line="10"><span class="ln">10</span><span class="code-text">    for entry in std::fs::read_dir(profiles_dir).map_err(ApiError::from)? {</span></span><span class="line" data-line="11"><span class="ln">11</span><span class="code-text">        let entry = entry.map_err(ApiError::from)?;</span></span><span class="line" data-line="12"><span class="ln">12</span><span class="code-text">        let p = entry.path();</span></span><span class="line line-hl" data-line="13"><span class="ln">13</span><span class="code-text">        if !p.is_dir() { continue; }</span></span><span class="line" data-line="14"><span class="ln">14</span><span class="code-text">        let dir_name = match p.file_name().and_then(|s| s.to_str()) {</span></span><span class="line line-hl" data-line="15"><span class="ln">15</span><span class="code-text">            Some(s) if !s.starts_with('.') =&gt; s.to_string(),</span></span><span class="line" data-line="16"><span class="ln">16</span><span class="code-text">            _ =&gt; continue,</span></span><span class="line" data-line="17"><span class="ln">17</span><span class="code-text">        };</span></span><span class="line" data-line="18"><span class="ln">18</span><span class="code-text">        let profile_path = p.join("profile.json");</span></span><span class="line" data-line="19"><span class="ln">19</span><span class="code-text">        let raw = match std::fs::read_to_string(&amp;profile_path) {</span></span><span class="line line-hl" data-line="20"><span class="ln">20</span><span class="code-text">            Ok(s) =&gt; s,</span></span><span class="line line-hl" data-line="21"><span class="ln">21</span><span class="code-text">            Err(e) if e.kind() == std::io::ErrorKind::NotFound =&gt; continue,</span></span><span class="line line-hl" data-line="22"><span class="ln">22</span><span class="code-text">            Err(_) =&gt; continue,</span></span><span class="line" data-line="23"><span class="ln">23</span><span class="code-text">        };</span></span><span class="line" data-line="24"><span class="ln">24</span><span class="code-text">        let profile: Value = match serde_json::from_str(&amp;raw) {</span></span><span class="line line-hl" data-line="25"><span class="ln">25</span><span class="code-text">            Ok(v) =&gt; v,</span></span><span class="line line-hl" data-line="26"><span class="ln">26</span><span class="code-text">            Err(_) =&gt; continue,</span></span><span class="line" data-line="27"><span class="ln">27</span><span class="code-text">        };</span></span><span class="line" data-line="28"><span class="ln">28</span><span class="code-text">        // ...match check and push to out...</span></span><span class="line" data-line="29"><span class="ln">29</span><span class="code-text">    }</span></span><span class="line" data-line="30"><span class="ln">30</span><span class="code-text">    out.sort();</span></span><span class="line" data-line="31"><span class="ln">31</span><span class="code-text">    Ok(out)</span></span><span class="line" data-line="32"><span class="ln">32</span><span class="code-text">}</span></span></pre>
+        <div class="codewalk-annotations">
+          <div class="codewalk-annotation" data-note-lines="6,7"><span class="annotation-line">L6–7</span><p>Missing profiles directory is not an error — it means no profiles exist, so no references can exist. Early return with an empty vec keeps the caller's logic simple.</p></div>
+          <div class="codewalk-annotation" data-note-lines="13"><span class="annotation-line">L13</span><p>Only scan directories — regular files in the profiles dir are not profiles. Each profile is a subdirectory containing <code>profile.json</code>.</p></div>
+          <div class="codewalk-annotation" data-note-lines="15"><span class="annotation-line">L15</span><p>Skip dot-prefixed directories (like <code>.active</code>). These are internal state files, not profile directories.</p></div>
+          <div class="codewalk-annotation" data-note-lines="20,21,22"><span class="annotation-line">L20–22</span><p>Defensive reads: NotFound is benign (profile dir without a JSON file), and other read errors are also skipped. This keeps the scan resilient — one corrupted profile doesn't block the reference check for all others.</p></div>
+          <div class="codewalk-annotation" data-note-lines="25,26"><span class="annotation-line">L25–26</span><p>Malformed JSON? Skip it. The scan is tolerant because its job is to find references, not validate profiles. A profile that can't parse can't reference anything meaningful.</p></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="unit unit-concept" id="unit-6">
+    <span class="unit-kind">concept</span>
+    <h2>Capability 4: Activate a profile transactionally</h2>
+    <p>Now the system has paths, readers, and safety checks. The next capability is the big one: <strong>activating a profile</strong>. This is where the profiles module reads a profile's JSON, resolves all its component references, symlinks agents/skills/commands into <code>~/.claude</code>, merges plugins and settings, injects environment variables for model configs, and writes the result — all as a <strong>single transaction</strong>.</p>
+    <p>If any step fails (a component is missing, a write fails, a symlink breaks), the <code>rollback()</code> function replays every completed mutation in reverse order. The undo stack tracks file removals, directory removals, plugin restores, and settings restores. This is file-level compensating transactions — the only option when you're orchestrating plain files on disk without a database.</p>
+  </section>
+
+  <section class="unit unit-codewalk" id="unit-7">
+    <span class="unit-kind">code-walk</span>
+    <h2>Undo stack in action</h2>
+    <div class="codewalk-split">
+      <div class="codewalk-head">
+        <span class="codewalk-file">crates/ohmyc-core/src/profiles/activation.rs</span>
+        <span class="file-actions">
+          <span class="editor-menu" data-editor-menu data-editor="cursor">
+            <button class="file-action-select editor-menu-trigger" type="button" aria-haspopup="listbox" aria-expanded="false" data-editor-trigger>
+              <span data-editor-current>Cursor</span>
+              <span class="gg-chevron-down" aria-hidden="true"></span>
+            </button>
+            <span class="editor-menu-list" role="listbox" hidden data-editor-list>
+              <button class="editor-menu-item" type="button" role="option" aria-selected="true" data-editor-option="cursor">Cursor</button>
+              <button class="editor-menu-item" type="button" role="option" aria-selected="false" data-editor-option="vscode">VS Code</button>
+            </span>
+          </span>
+          <button class="file-action" type="button" data-copy-path="crates/ohmyc-core/src/profiles/activation.rs:14">Copy path</button>
+        </span>
+      </div>
+      <div class="codewalk-split-body">
+        <pre class="code-block"><span class="line" data-line="1"><span class="ln">1</span><span class="code-text">#[derive(Debug)]</span></span><span class="line" data-line="2"><span class="ln">2</span><span class="code-text">enum UndoAction {</span></span><span class="line line-hl" data-line="3"><span class="ln">3</span><span class="code-text">    RemoveFile(PathBuf),</span></span><span class="line" data-line="4"><span class="ln">4</span><span class="code-text">    RemoveDir(PathBuf),</span></span><span class="line line-hl" data-line="5"><span class="ln">5</span><span class="code-text">    RestoreInstalled(Value),</span></span><span class="line" data-line="6"><span class="ln">6</span><span class="code-text">    RestoreKnown(Value),</span></span><span class="line line-hl" data-line="7"><span class="ln">7</span><span class="code-text">    RestoreSettings(Option&lt;Vec&lt;u8&gt;&gt;),</span></span><span class="line" data-line="8"><span class="ln">8</span><span class="code-text">}</span></span><span class="line" data-line="9"><span class="ln">9</span><span class="code-text"></span></span><span class="line" data-line="10"><span class="ln">10</span><span class="code-text">fn rollback(actions: &amp;[UndoAction], plugins_dir: &amp;Path, claude_settings_path: &amp;Path) {</span></span><span class="line line-hl" data-line="11"><span class="ln">11</span><span class="code-text">    for action in actions.iter().rev() {</span></span><span class="line" data-line="12"><span class="ln">12</span><span class="code-text">        action.run(plugins_dir, claude_settings_path);</span></span><span class="line" data-line="13"><span class="ln">13</span><span class="code-text">    }</span></span><span class="line" data-line="14"><span class="ln">14</span><span class="code-text">}</span></span></pre>
+        <div class="codewalk-annotations">
+          <div class="codewalk-annotation" data-note-lines="3"><span class="annotation-line">L3</span><p><code>RemoveFile</code> — recorded after every file creation (symlink, plugin JSON write). On rollback, this removes the file that was just created.</p></div>
+          <div class="codewalk-annotation" data-note-lines="5"><span class="annotation-line">L5</span><p><code>RestoreInstalled</code> — captures the <em>previous</em> content of <code>installed_plugins.json</code> before activation overwrites it. On rollback, it writes the old content back.</p></div>
+          <div class="codewalk-annotation" data-note-lines="7"><span class="annotation-line">L7</span><p><code>RestoreSettings</code> — captures <code>Option&lt;Vec&lt;u8&gt;&gt;</code>: <code>Some(bytes)</code> means settings.json existed before and should be restored; <code>None</code> means it didn't exist and should be removed on rollback.</p></div>
+          <div class="codewalk-annotation" data-note-lines="11"><span class="annotation-line">L11</span><p>The key move: <code>.rev()</code> — play actions in reverse order. If step 5 fails, undo steps 4, 3, 2, 1 in that order. This mirrors database transaction rollback semantics but at the filesystem level.</p></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="unit unit-whoa" id="unit-8" data-angle="architecture">
+    <div class="whoa-label">whoa · architecture</div>
+    <h2>File-level compensating transactions instead of a database</h2>
+    <p>Most apps would put profiles and component references in a database and use ACID transactions for activation. ohmyc-core can't — it's managing <code>~/.claude</code>, a directory tree owned by a different application (Claude Code). The only way to configure Claude Code is to write files into its directory structure. So the transaction engine uses compensating actions — record every mutation, reverse on failure. This is the saga pattern applied to plain filesystem operations. It's more complex than a database transaction, but it's the only correct approach when you don't own the storage format.</p>
+    <div class="whoa-evidence">
+      <span>profiles/activation.rs</span>
+      <span>UndoAction enum</span>
+      <span>rollback() reverse iteration</span>
+      <span>~600 lines of transaction logic</span>
+    </div>
+  </section>
+
+  <section class="unit unit-concept" id="unit-9">
+    <span class="unit-kind">concept</span>
+    <h2>Capability 5: Query the timeline</h2>
+    <p>The final capability is <strong>reading data from Claude Code's SQLite database</strong>. The <code>timeline</code> module queries <code>~/.claude/timeline.db</code> for session events, project statistics, heatmaps, and status information. It's a read-only module — it never writes to the database.</p>
+    <p>This is where the crate crosses from file I/O into structured querying. SQLite provides its own transaction guarantees, so the timeline module doesn't need the undo-stack pattern. It opens a connection, executes parameterized queries, and returns typed results.</p>
+    <p>Together with the <code>watcher</code> module (which emits <code>FsEvent::TimelineDb</code> when the database file changes), the timeline queries enable the UI to show real-time session history without polling.</p>
+  </section>
+
+  <section class="unit unit-quiz" id="unit-10">
+    <span class="unit-kind">quiz</span>
+    <h2>Check your understanding</h2>
+    <div class="quiz">
+      <div class="quiz-question">Why does the activation engine use compensating actions (undo stack) instead of a database transaction?</div>
+      <div class="quiz-options">
+        <div class="quiz-option" data-correct="false"><span class="quiz-option-letter">A</span><span>Because SQLite is not available in the crate's dependency tree</span></div>
+        <div class="quiz-option" data-correct="false"><span class="quiz-option-letter">B</span><span>Because file I/O is faster than database writes</span></div>
+        <div class="quiz-option" data-correct="true"><span class="quiz-option-letter">C</span><span>Because the activation writes files into a directory owned by another application, and the only way to configure that application is via files on disk</span></div>
+        <div class="quiz-option" data-correct="false"><span class="quiz-option-letter">D</span><span>Because the crate avoids external dependencies for isolation</span></div>
+      </div>
+      <div class="quiz-explanation"><strong>Correct: C</strong> — Claude Code reads its config from <code>~/.claude</code> as flat files. OhMyC can't inject a database into that workflow — it must write actual files (symlinks, JSON, YAML) into the directory tree. The undo stack is a saga-pattern adaptation of transactions to filesystem operations. <strong>A</strong> is wrong because SQLite <em>is</em> used (for timeline queries). <strong>B</strong> is wrong — performance isn't the concern, correctness is. <strong>D</strong> is wrong — the crate has many external dependencies (rusqlite, serde, notify).</div>
+    </div>
+  </section>
+
+  <section class="unit unit-takeaway" id="unit-11">
+    <div class="unit-takeaway">
+      <span class="unit-kind">takeaway</span>
+      <p>The system grows from a single path resolver into a complete filesystem management engine in five capability increments: path resolution, structured file reading, safe-delete reference checking, transactional profile activation, and SQLite timeline querying. Each capability builds on the ones below it, and the undo-stack transaction engine is the architectural peak — it's what makes it safe for OhMyC to write into a directory tree owned by another application. The watcher module adds real-time reactivity, completing the picture.</p>
+    </div>
+  </section>
+
+  <footer class="page-footer">
+    <a class="next-link" href="data-flow.html">Data Flow →</a>
+    <p class="recap">The Build-Up showed how capabilities stack. Next, the Data Flow perspective traces exactly how data moves through each layer — from filesystem bytes to typed Rust structs.</p>
+  </footer>
+</main>
+
+<div class="zoom-overlay" hidden>
+  <div class="zoom-stage"></div>
+  <div class="zoom-controls">
+    <button data-zoom-out aria-label="Zoom out" title="Zoom out">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14"/></svg>
+    </button>
+    <span class="zoom-level" data-zoom-level>100%</span>
+    <button data-zoom-reset aria-label="Reset zoom" title="Reset zoom">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 12a9 9 0 1 0 3-6.7"/><path d="M3 4v6h6"/></svg>
+    </button>
+    <button data-zoom-in aria-label="Zoom in" title="Zoom in">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14"/><path d="M5 12h14"/></svg>
+    </button>
+    <button data-zoom-close aria-label="Close zoom" title="Close zoom">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+    </button>
+  </div>
+</div>
+
+<script src="mermaid-bridge.js"></script>
+<script src="runtime.js"></script>
+</body>
+</html>

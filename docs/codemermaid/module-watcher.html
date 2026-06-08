@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>watcher — ohmyc-core</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+<script src="beautiful-mermaid.bundle.js"></script>
+</head>
+<body>
+<header class="topbar"><a class="back-link" href="index.html">← ohmyc-core</a></header>
+<main class="container">
+  <section class="hero">
+    <div class="eyebrow">ohmyc-core · module</div>
+    <h1>watcher</h1>
+    <p class="learning-promise">Understand how the debounced filesystem watcher classifies change events and emits typed <code>FsEvent</code> variants for real-time UI updates.</p>
+  </section>
+  <nav class="toc">
+    <div class="toc-label">On this page</div>
+    <ol class="toc-list">
+      <li><a class="toc-item" href="#unit-0"><span class="toc-num">1</span>Typed filesystem events<span class="toc-kind">concept</span></a></li>
+      <li><a class="toc-item" href="#unit-1"><span class="toc-num">2</span>Path-based event classification<span class="toc-kind">code-walk</span></a></li>
+      <li><a class="toc-item" href="#unit-2"><span class="toc-num">3</span>Debounced 250ms window<span class="toc-kind">concept</span></a></li>
+      <li><a class="toc-item" href="#unit-3"><span class="toc-num">4</span>Lifecycle: keep the debouncer alive<span class="toc-kind">concept</span></a></li>
+      <li><a class="toc-item" href="#unit-4"><span class="toc-num">5</span>Check your understanding<span class="toc-kind">quiz</span></a></li>
+      <li><a class="toc-item" href="#unit-5"><span class="toc-num">6</span>Key takeaways<span class="toc-kind">takeaway</span></a></li>
+    </ol>
+  </nav>
+
+  <section class="unit unit-concept" id="unit-0">
+    <span class="unit-kind">concept</span>
+    <h2>Typed filesystem events</h2>
+    <p>The watcher emits two event types via the <code>FsEvent</code> enum: <code>TimelineDb</code> (the SQLite database changed) and <code>ClaudeHome</code> (a file in <code>~/.claude</code> changed). The Tauri layer receives these events and forwards them to the frontend as <code>fs:changed</code> messages, triggering UI refreshes.</p>
+    <p>The classification is simple but intentional: the frontend needs to know <em>what kind of data changed</em> — timeline data or config data — so it can refresh the right panel without querying everything.</p>
+  </section>
+
+  <section class="unit unit-codewalk" id="unit-1">
+    <span class="unit-kind">code-walk</span>
+    <h2>Path-based event classification</h2>
+    <div class="codewalk-split">
+      <div class="codewalk-head">
+        <span class="codewalk-file">crates/ohmyc-core/src/watcher.rs</span>
+        <span class="file-actions">
+          <span class="editor-menu" data-editor-menu data-editor="cursor">
+            <button class="file-action-select editor-menu-trigger" type="button" aria-haspopup="listbox" aria-expanded="false" data-editor-trigger><span data-editor-current>Cursor</span><span class="gg-chevron-down" aria-hidden="true"></span></button>
+            <span class="editor-menu-list" role="listbox" hidden data-editor-list>
+              <button class="editor-menu-item" type="button" role="option" aria-selected="true" data-editor-option="cursor">Cursor</button>
+              <button class="editor-menu-item" type="button" role="option" aria-selected="false" data-editor-option="vscode">VS Code</button>
+            </span>
+          </span>
+          <button class="file-action" type="button" data-copy-path="crates/ohmyc-core/src/watcher.rs:31">Copy path</button>
+        </span>
+      </div>
+      <div class="codewalk-split-body">
+        <pre class="code-block"><span class="line" data-line="1"><span class="ln">1</span><span class="code-text">let mut debouncer = new_debouncer(Duration::from_millis(250), move |res| {</span></span><span class="line" data-line="2"><span class="ln">2</span><span class="code-text">    let Ok(events) = res else { return };</span></span><span class="line line-hl" data-line="3"><span class="ln">3</span><span class="code-text">    for ev in events {</span></span><span class="line" data-line="4"><span class="ln">4</span><span class="code-text">        let p = &amp;ev.path;</span></span><span class="line" data-line="5"><span class="ln">5</span><span class="code-text">        let path = p.to_string_lossy().into_owned();</span></span><span class="line" data-line="6"><span class="ln">6</span><span class="code-text">        if !matches!(ev.kind, DebouncedEventKind::Any) {</span></span><span class="line" data-line="7"><span class="ln">7</span><span class="code-text">            continue;</span></span><span class="line line-hl" data-line="8"><span class="ln">8</span><span class="code-text">        }</span></span><span class="line line-hl" data-line="9"><span class="ln">9</span><span class="code-text">        let lower = path.to_lowercase();</span></span><span class="line line-hl" data-line="10"><span class="ln">10</span><span class="code-text">        let event = if lower.ends_with("timeline.db")</span></span><span class="line" data-line="11"><span class="ln">11</span><span class="code-text">            || lower.ends_with("timeline.db-wal")</span></span><span class="line" data-line="12"><span class="ln">12</span><span class="code-text">            || lower.ends_with("timeline.db-shm")</span></span><span class="line" data-line="13"><span class="ln">13</span><span class="code-text">        {</span></span><span class="line line-hl" data-line="14"><span class="ln">14</span><span class="code-text">            FsEvent::TimelineDb { path }</span></span><span class="line" data-line="15"><span class="ln">15</span><span class="code-text">        } else {</span></span><span class="line line-hl" data-line="16"><span class="ln">16</span><span class="code-text">            FsEvent::ClaudeHome { path }</span></span><span class="line" data-line="17"><span class="ln">17</span><span class="code-text">        };</span></span><span class="line" data-line="18"><span class="ln">18</span><span class="code-text">        let _ = tx.send(event);</span></span><span class="line" data-line="19"><span class="ln">19</span><span class="code-text">    }</span></span><span class="line" data-line="20"><span class="ln">20</span><span class="code-text">})</span></span></pre>
+        <div class="codewalk-annotations">
+          <div class="codewalk-annotation" data-note-lines="8"><span class="annotation-line">L8</span><p>Only process <code>DebouncedEventKind::Any</code> events — generic file changes. Other event kinds (create, delete, etc.) are filtered out to reduce noise.</p></div>
+          <div class="codewalk-annotation" data-note-lines="9"><span class="annotation-line">L9</span><p>Case-insensitive comparison (<code>to_lowercase()</code>) — the path might be <code>Timeline.DB</code> on case-insensitive filesystems (macOS).</p></div>
+          <div class="codewalk-annotation" data-note-lines="10,11,12"><span class="annotation-line">L10–12</span><p>Three suffixes: <code>.db</code> (main database), <code>.db-wal</code> (write-ahead log), <code>.db-shm</code> (shared memory). SQLite uses WAL mode, so changes appear in these auxiliary files too.</p></div>
+          <div class="codewalk-annotation" data-note-lines="14,16"><span class="annotation-line">L14, L16</span><p>Binary classification: timeline DB file → <code>TimelineDb</code>, everything else → <code>ClaudeHome</code>. Simple, but sufficient — the frontend only needs to know "should I refresh timeline data or config data?"</p></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="unit unit-concept" id="unit-2">
+    <span class="unit-kind">concept</span>
+    <h2>Debounced 250ms window</h2>
+    <p>The watcher uses <code>notify-debouncer-mini</code> with a 250ms debounce window. When a file changes, the debouncer waits 250ms for additional changes before emitting an event. This prevents burst events — a single file save might trigger multiple low-level notifications (write, flush, metadata update), and the debouncer collapses them into one event.</p>
+    <p>The 250ms value is a tradeoff: fast enough to feel responsive in the UI, slow enough to absorb filesystem noise.</p>
+  </section>
+
+  <section class="unit unit-concept" id="unit-3">
+    <span class="unit-kind">concept</span>
+    <h2>Lifecycle: keep the debouncer alive</h2>
+    <p>The <code>spawn()</code> function returns <code>Debouncer&lt;RecommendedWatcher&gt;</code> — the caller must keep this value alive. Dropping the debouncer stops the watcher thread. This is an RAII pattern: the debouncer's lifetime controls the watcher's lifetime. The Tauri layer stores the debouncer in application state to keep it alive for the entire app session.</p>
+    <p>Non-existent paths are skipped during setup — the watcher only registers paths that exist. This prevents errors when watching a directory that hasn't been created yet.</p>
+  </section>
+
+  <section class="unit unit-quiz" id="unit-4">
+    <span class="unit-kind">quiz</span>
+    <h2>Check your understanding</h2>
+    <div class="quiz">
+      <div class="quiz-question">Why does the watcher check for <code>.db-wal</code> and <code>.db-shm</code> suffixes in addition to <code>.db</code>?</div>
+      <div class="quiz-options">
+        <div class="quiz-option" data-correct="true"><span class="quiz-option-letter">A</span><span>SQLite in WAL mode writes to auxiliary files — the main <code>.db</code> file may not change during normal operations, so watching only it would miss most database updates</span></div>
+        <div class="quiz-option" data-correct="false"><span class="quiz-option-letter">B</span><span>They are backup files that indicate a database corruption</span></div>
+        <div class="quiz-option" data-correct="false"><span class="quiz-option-letter">C</span><span>The watcher needs to track all files in the directory, including temporary ones</span></div>
+        <div class="quiz-option" data-correct="false"><span class="quiz-option-letter">D</span><span>It's a fallback in case the main database file is locked</span></div>
+      </div>
+      <div class="quiz-explanation"><strong>Correct: A</strong> — SQLite's WAL (Write-Ahead Logging) mode writes changes to <code>.db-wal</code> and tracks shared memory in <code>.db-shm</code>. The main <code>.db</code> file is only updated during checkpointing. Without watching these auxiliary files, the watcher would miss most database writes. <strong>B</strong> is wrong (WAL files are normal, not corruption). <strong>C</strong> is wrong (the watcher only cares about these specific suffixes). <strong>D</strong> is wrong (not about locking).</div>
+    </div>
+  </section>
+
+  <section class="unit unit-takeaway" id="unit-5">
+    <div class="unit-takeaway">
+      <span class="unit-kind">takeaway</span>
+      <p>The watcher is the crate's real-time edge. It classifies filesystem events into two types — timeline database changes and config changes — using path suffix matching. The 250ms debounce window absorbs filesystem noise while staying responsive. The RAII lifecycle pattern means the caller controls the watcher's lifetime by holding the debouncer. Watching <code>.db-wal</code> and <code>.db-shm</code> files ensures SQLite WAL-mode writes are detected.</p>
+    </div>
+  </section>
+
+  <footer class="page-footer">
+    <a class="next-link" href="index.html">← Back to index</a>
+    <p class="recap">You've completed the module deep dives. Return to the index to explore other perspectives or revisit any module.</p>
+  </footer>
+</main>
+<div class="zoom-overlay" hidden>
+  <div class="zoom-stage"></div>
+  <div class="zoom-controls">
+    <button data-zoom-out aria-label="Zoom out" title="Zoom out"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14"/></svg></button>
+    <span class="zoom-level" data-zoom-level>100%</span>
+    <button data-zoom-reset aria-label="Reset zoom" title="Reset zoom"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 12a9 9 0 1 0 3-6.7"/><path d="M3 4v6h6"/></svg></button>
+    <button data-zoom-in aria-label="Zoom in" title="Zoom in"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14"/><path d="M5 12h14"/></svg></button>
+    <button data-zoom-close aria-label="Close zoom" title="Close zoom"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg></button>
+  </div>
+</div>
+<script src="mermaid-bridge.js"></script>
+<script src="runtime.js"></script>
+</body>
+</html>

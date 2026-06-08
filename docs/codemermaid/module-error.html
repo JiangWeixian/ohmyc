@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>error — ohmyc-core</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+<script src="beautiful-mermaid.bundle.js"></script>
+</head>
+<body>
+<header class="topbar">
+  <a class="back-link" href="index.html">← ohmyc-core</a>
+</header>
+
+<main class="container">
+  <section class="hero">
+    <div class="eyebrow">ohmyc-core · module</div>
+    <h1>error</h1>
+    <p class="learning-promise">Understand the canonical error type that every module in the crate depends on — a tagged enum that serializes to a stable JSON shape for the frontend.</p>
+  </section>
+
+  <nav class="toc">
+    <div class="toc-label">On this page</div>
+    <ol class="toc-list">
+      <li><a class="toc-item" href="#unit-0"><span class="toc-num">1</span>The ApiError enum<span class="toc-kind">concept</span></a></li>
+      <li><a class="toc-item" href="#unit-1"><span class="toc-num">2</span>The tagged serialization format<span class="toc-kind">code-walk</span></a></li>
+      <li><a class="toc-item" href="#unit-2"><span class="toc-num">3</span>Structured error variants<span class="toc-kind">concept</span></a></li>
+      <li><a class="toc-item" href="#unit-3"><span class="toc-num">4</span>Check your understanding<span class="toc-kind">quiz</span></a></li>
+      <li><a class="toc-item" href="#unit-4"><span class="toc-num">5</span>Key takeaways<span class="toc-kind">takeaway</span></a></li>
+    </ol>
+  </nav>
+
+  <section class="unit unit-concept" id="unit-0">
+    <span class="unit-kind">concept</span>
+    <h2>The ApiError enum</h2>
+    <p>Every module in ohmyc-core returns <code>Result&lt;T, ApiError&gt;</code>. It's a single, flat enum — not a trait object, not a wrapped <code>anyhow</code>. The reason: the frontend needs a <strong>stable JSON shape</strong> with a <code>code</code> tag (like <code>"NotFound"</code> or <code>"ActivationBlocked"</code>) and a <code>detail</code> payload. That's what <code>#[serde(tag = "code", content = "detail")]</code> gives us — each variant serializes as <code>{"code": "VariantName", "detail": ...}</code>.</p>
+    <p>The thiserror derive gives <code>Display</code> and <code>Error</code> impls for free, while serde handles the JSON wire format. Notice the tradeoff: this is not a general-purpose error type. It's an API contract between the Rust backend and the TypeScript frontend.</p>
+  </section>
+
+  <section class="unit unit-codewalk" id="unit-1">
+    <span class="unit-kind">code-walk</span>
+    <h2>The tagged serialization format</h2>
+    <div class="codewalk-split">
+      <div class="codewalk-head">
+        <span class="codewalk-file">crates/ohmyc-core/src/error.rs</span>
+        <span class="file-actions">
+          <span class="editor-menu" data-editor-menu data-editor="cursor">
+            <button class="file-action-select editor-menu-trigger" type="button" aria-haspopup="listbox" aria-expanded="false" data-editor-trigger>
+              <span data-editor-current>Cursor</span>
+              <span class="gg-chevron-down" aria-hidden="true"></span>
+            </button>
+            <span class="editor-menu-list" role="listbox" hidden data-editor-list>
+              <button class="editor-menu-item" type="button" role="option" aria-selected="true" data-editor-option="cursor">Cursor</button>
+              <button class="editor-menu-item" type="button" role="option" aria-selected="false" data-editor-option="vscode">VS Code</button>
+            </span>
+          </span>
+          <button class="file-action" type="button" data-copy-path="crates/ohmyc-core/src/error.rs:8">Copy path</button>
+        </span>
+      </div>
+      <div class="codewalk-split-body">
+        <pre class="code-block"><span class="line line-hl" data-line="1"><span class="ln">1</span><span class="code-text">#[derive(Debug, Error, Serialize)]</span></span><span class="line line-hl" data-line="2"><span class="ln">2</span><span class="code-text">#[serde(tag = "code", content = "detail")]</span></span><span class="line" data-line="3"><span class="ln">3</span><span class="code-text">pub enum ApiError {</span></span><span class="line" data-line="4"><span class="ln">4</span><span class="code-text">    #[error("not found: {kind} '{name}'")]</span></span><span class="line" data-line="5"><span class="ln">5</span><span class="code-text">    NotFound { kind: &amp;'static str, name: String },</span></span><span class="line" data-line="6"><span class="ln">6</span><span class="code-text"></span></span><span class="line" data-line="7"><span class="ln">7</span><span class="code-text">    #[error("invalid input: {0}")]</span></span><span class="line" data-line="8"><span class="code-text">    InvalidInput(String),</span></span><span class="line" data-line="9"><span class="ln">9</span><span class="code-text"></span></span><span class="line" data-line="10"><span class="ln">10</span><span class="code-text">    #[error("io error: {0}")]</span></span><span class="line" data-line="11"><span class="ln">11</span><span class="code-text">    Io(String),</span></span><span class="line" data-line="12"><span class="ln">12</span><span class="code-text"></span></span><span class="line" data-line="13"><span class="ln">13</span><span class="code-text">    #[error("conflict: {0}")]</span></span><span class="line" data-line="14"><span class="ln">14</span><span class="code-text">    Conflict(String),</span></span><span class="line" data-line="15"><span class="ln">15</span><span class="code-text"></span></span><span class="line line-hl" data-line="16"><span class="ln">16</span><span class="code-text">    #[error("{kind} '{name}' is referenced by {} profile(s)", profiles.len())]</span></span><span class="line" data-line="17"><span class="ln">17</span><span class="code-text">    ReferencedBy {</span></span><span class="line" data-line="18"><span class="ln">18</span><span class="code-text">        kind: &amp;'static str,</span></span><span class="line" data-line="19"><span class="ln">19</span><span class="code-text">        name: String,</span></span><span class="line line-hl" data-line="20"><span class="ln">20</span><span class="code-text">        #[serde(rename = "referencedBy")]</span></span><span class="line" data-line="21"><span class="ln">21</span><span class="code-text">        profiles: Vec&lt;String&gt;,</span></span><span class="line" data-line="22"><span class="ln">22</span><span class="code-text">    },</span></span><span class="line line-hl" data-line="23"><span class="ln">23</span><span class="code-text">    #[error("activation blocked: {} missing component(s)", missing.len())]</span></span><span class="line" data-line="24"><span class="ln">24</span><span class="code-text">    ActivationBlocked {</span></span><span class="line" data-line="25"><span class="ln">25</span><span class="code-text">        missing: Vec&lt;String&gt;,</span></span><span class="line" data-line="26"><span class="ln">26</span><span class="code-text">    },</span></span><span class="line" data-line="27"><span class="ln">27</span><span class="code-text">}</span></span></pre>
+        <div class="codewalk-annotations">
+          <div class="codewalk-annotation" data-note-lines="1,2"><span class="annotation-line">L1–2</span><p>Three derives: <code>Debug</code> for logging, <code>Error</code> (thiserror) for <code>Display</code> + <code>Error</code> trait, <code>Serialize</code> (serde) for JSON. The <code>#[serde(tag, content)]</code> attribute is the wire-format contract — every error becomes <code>{"code": "...", "detail": ...}</code>.</p></div>
+          <div class="codewalk-annotation" data-note-lines="16,20"><span class="annotation-line">L16–20</span><p><code>ReferencedBy</code> carries structured data — the list of profiles that reference the component. The <code>#[serde(rename)]</code> attribute ensures the JSON key is <code>"referencedBy"</code> (camelCase), matching the TypeScript frontend's expected shape.</p></div>
+          <div class="codewalk-annotation" data-note-lines="23,24,25,26"><span class="annotation-line">L23–26</span><p><code>ActivationBlocked</code> includes the list of missing components. The UI reads <code>detail.missing</code> to render the "these components are missing" dialog before activation.</p></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="unit unit-concept" id="unit-2">
+    <span class="unit-kind">concept</span>
+    <h2>Structured error variants</h2>
+    <p>Notice the pattern — the simple variants (<code>InvalidInput</code>, <code>Io</code>, <code>Conflict</code>) carry a single string, while the complex variants (<code>ReferencedBy</code>, <code>ActivationBlocked</code>) carry structured data. The simple ones are for logging and display; the complex ones are for UI interaction.</p>
+    <p><code>ReferencedBy</code> exists specifically for the safe-delete flow: when you try to delete a component, and the reference checker finds profiles that depend on it, the error includes those profile names so the UI can ask "are you sure?" instead of just saying "conflict." <code>ActivationBlocked</code> does the same for profile activation — it lists the missing components so the user knows what to install first.</p>
+    <p>The <code>From&lt;std::io::Error&gt;</code> impl converts any IO error into <code>ApiError::Io(message)</code>, keeping the ergonomics clean — modules can use <code>?</code> on IO results directly.</p>
+  </section>
+
+  <section class="unit unit-quiz" id="unit-3">
+    <span class="unit-kind">quiz</span>
+    <h2>Check your understanding</h2>
+    <div class="quiz">
+      <div class="quiz-question">Why does <code>ApiError</code> use <code>#[serde(tag = "code", content = "detail")]</code> instead of default enum serialization?</div>
+      <div class="quiz-options">
+        <div class="quiz-option" data-correct="false"><span class="quiz-option-letter">A</span><span>To reduce the size of the serialized JSON</span></div>
+        <div class="quiz-option" data-correct="true"><span class="quiz-option-letter">B</span><span>To produce a stable <code>{"code": "...", "detail": ...}</code> shape that the TypeScript frontend can pattern-match on</span></div>
+        <div class="quiz-option" data-correct="false"><span class="quiz-option-letter">C</span><span>To support deserializing errors back from JSON</span></div>
+        <div class="quiz-option" data-correct="false"><span class="quiz-option-letter">D</span><span>To enable error chaining with thiserror</span></div>
+      </div>
+      <div class="quiz-explanation"><strong>Correct: B</strong> — The tagged format gives the frontend a predictable shape: check <code>response.code</code> to determine the error type, read <code>response.detail</code> for context. <strong>A</strong> is wrong (tagged format is not smaller). <strong>C</strong> is wrong (the type only serializes, never deserializes). <strong>D</strong> is wrong (thiserror handles chaining separately).</div>
+    </div>
+  </section>
+
+  <section class="unit unit-takeaway" id="unit-4">
+    <div class="unit-takeaway">
+      <span class="unit-kind">takeaway</span>
+      <p><code>ApiError</code> is the crate's shared error vocabulary. It's not a general-purpose error type — it's a frontend API contract. The serde-tagged format gives a stable JSON wire shape. Simple variants carry strings; complex variants (<code>ReferencedBy</code>, <code>ActivationBlocked</code>) carry structured data that drives UI interaction. Once you understand this enum, every <code>Result&lt;T, ApiError&gt;</code> in the crate reads clearly.</p>
+    </div>
+  </section>
+
+  <footer class="page-footer">
+    <a class="next-link" href="module-claude-home.html">claude-home →</a>
+    <p class="recap">Next: see how the path resolution layer uses this error type to report missing home directories.</p>
+  </footer>
+</main>
+
+<div class="zoom-overlay" hidden>
+  <div class="zoom-stage"></div>
+  <div class="zoom-controls">
+    <button data-zoom-out aria-label="Zoom out" title="Zoom out"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14"/></svg></button>
+    <span class="zoom-level" data-zoom-level>100%</span>
+    <button data-zoom-reset aria-label="Reset zoom" title="Reset zoom"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 12a9 9 0 1 0 3-6.7"/><path d="M3 4v6h6"/></svg></button>
+    <button data-zoom-in aria-label="Zoom in" title="Zoom in"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14"/><path d="M5 12h14"/></svg></button>
+    <button data-zoom-close aria-label="Close zoom" title="Close zoom"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg></button>
+  </div>
+</div>
+
+<script src="mermaid-bridge.js"></script>
+<script src="runtime.js"></script>
+</body>
+</html>

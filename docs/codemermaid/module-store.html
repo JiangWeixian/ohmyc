@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>store — ohmyc-core</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+<script src="beautiful-mermaid.bundle.js"></script>
+</head>
+<body>
+<header class="topbar">
+  <a class="back-link" href="index.html">← ohmyc-core</a>
+</header>
+<main class="container">
+  <section class="hero">
+    <div class="eyebrow">ohmyc-core · module</div>
+    <h1>store</h1>
+    <p class="learning-promise">Understand OhMyC's own directory tree — where imported components, model configs, and provenance metadata live, and how the safe-delete gate prevents data corruption.</p>
+  </section>
+
+  <nav class="toc">
+    <div class="toc-label">On this page</div>
+    <ol class="toc-list">
+      <li><a class="toc-item" href="#unit-0"><span class="toc-num">1</span>Two directories, two responsibilities<span class="toc-kind">concept</span></a></li>
+      <li><a class="toc-item" href="#unit-1"><span class="toc-num">2</span>ComponentKind: the shared discriminant<span class="toc-kind">code-walk</span></a></li>
+      <li><a class="toc-item" href="#unit-2"><span class="toc-num">3</span>Path traversal guard<span class="toc-kind">code-walk</span></a></li>
+      <li><a class="toc-item" href="#unit-3"><span class="toc-num">4</span>Provenance: where did this come from?<span class="toc-kind">concept</span></a></li>
+      <li><a class="toc-item" href="#unit-4"><span class="toc-num">5</span>Reference checking: the safe-delete gate<span class="toc-kind">concept</span></a></li>
+      <li><a class="toc-item" href="#unit-5"><span class="toc-num">6</span>Model configs with slash-separated names<span class="toc-kind">concept</span></a></li>
+      <li><a class="toc-item" href="#unit-6"><span class="toc-num">7</span>Check your understanding<span class="toc-kind">quiz</span></a></li>
+      <li><a class="toc-item" href="#unit-7"><span class="toc-num">8</span>Key takeaways<span class="toc-kind">takeaway</span></a></li>
+    </ol>
+  </nav>
+
+  <section class="unit unit-concept" id="unit-0">
+    <span class="unit-kind">concept</span>
+    <h2>Two directories, two responsibilities</h2>
+    <p>The store module mirrors <code>claude_home</code> but for OhMyC's own data. <code>store::base_dir()</code> resolves <code>$OHMYC_HOME</code> (default <code>~/.config/ohmyc/</code>). Under that root, the store manages agents, skills, commands, model configs, and profiles. The submodules — <code>provenance</code>, <code>references</code>, <code>model_configs</code> — each own a specific concern.</p>
+    <p>The key insight: <code>~/.claude</code> is Claude Code's live config (read by Claude Code at runtime). <code>$OHMYC_HOME</code> is OhMyC's staging area (managed by OhMyC). The store module never writes to <code>~/.claude</code> — that only happens during profile activation in the <code>profiles</code> module.</p>
+  </section>
+
+  <section class="unit unit-codewalk" id="unit-1">
+    <span class="unit-kind">code-walk</span>
+    <h2>ComponentKind: the shared discriminant</h2>
+    <div class="codewalk-split">
+      <div class="codewalk-head">
+        <span class="codewalk-file">crates/ohmyc-core/src/store/provenance.rs</span>
+        <span class="file-actions">
+          <span class="editor-menu" data-editor-menu data-editor="cursor">
+            <button class="file-action-select editor-menu-trigger" type="button" aria-haspopup="listbox" aria-expanded="false" data-editor-trigger>
+              <span data-editor-current>Cursor</span>
+              <span class="gg-chevron-down" aria-hidden="true"></span>
+            </button>
+            <span class="editor-menu-list" role="listbox" hidden data-editor-list>
+              <button class="editor-menu-item" type="button" role="option" aria-selected="true" data-editor-option="cursor">Cursor</button>
+              <button class="editor-menu-item" type="button" role="option" aria-selected="false" data-editor-option="vscode">VS Code</button>
+            </span>
+          </span>
+          <button class="file-action" type="button" data-copy-path="crates/ohmyc-core/src/store/provenance.rs:15">Copy path</button>
+        </span>
+      </div>
+      <div class="codewalk-split-body">
+        <pre class="code-block"><span class="line" data-line="1"><span class="ln">1</span><span class="code-text">#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]</span></span><span class="line line-hl" data-line="2"><span class="ln">2</span><span class="code-text">#[serde(rename_all = "kebab-case")]</span></span><span class="line" data-line="3"><span class="ln">3</span><span class="code-text">pub enum ComponentKind {</span></span><span class="line" data-line="4"><span class="ln">4</span><span class="code-text">    Agents,</span></span><span class="line" data-line="5"><span class="ln">5</span><span class="code-text">    Skills,</span></span><span class="line" data-line="6"><span class="ln">6</span><span class="code-text">    Commands,</span></span><span class="line" data-line="7"><span class="ln">7</span><span class="code-text">    ModelConfigs,</span></span><span class="line" data-line="8"><span class="ln">8</span><span class="code-text">}</span></span><span class="line" data-line="9"><span class="ln">9</span><span class="code-text"></span></span><span class="line" data-line="10"><span class="ln">10</span><span class="code-text">impl ComponentKind {</span></span><span class="line" data-line="11"><span class="ln">11</span><span class="code-text">    pub fn dir_name(self) -&gt; &amp;'static str {</span></span><span class="line" data-line="12"><span class="ln">12</span><span class="code-text">        match self {</span></span><span class="line" data-line="13"><span class="ln">13</span><span class="code-text">            ComponentKind::Agents =&gt; "agents",</span></span><span class="line" data-line="14"><span class="ln">14</span><span class="code-text">            ComponentKind::Skills =&gt; "skills",</span></span><span class="line" data-line="15"><span class="ln">15</span><span class="code-text">            ComponentKind::Commands =&gt; "commands",</span></span><span class="line line-hl" data-line="16"><span class="ln">16</span><span class="code-text">            ComponentKind::ModelConfigs =&gt; "model-configs",</span></span><span class="line" data-line="17"><span class="ln">17</span><span class="code-text">        }</span></span><span class="line" data-line="18"><span class="ln">18</span><span class="code-text">    }</span></span><span class="line" data-line="19"><span class="ln">19</span><span class="code-text">}</span></span></pre>
+        <div class="codewalk-annotations">
+          <div class="codewalk-annotation" data-note-lines="2"><span class="annotation-line">L2</span><p><code>kebab-case</code> serialization ensures the enum round-trips as <code>"agents"</code>, <code>"model-configs"</code>, etc. — matching the TypeScript frontend's string literal types and the directory names on disk.</p></div>
+          <div class="codewalk-annotation" data-note-lines="16"><span class="annotation-line">L16</span><p><code>ModelConfigs</code> maps to <code>"model-configs"</code> — a hyphenated directory name. This is the only variant where the dir name differs from a simple lowercase of the variant name.</p></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="unit unit-codewalk" id="unit-2">
+    <span class="unit-kind">code-walk</span>
+    <h2>Path traversal guard</h2>
+    <div class="codewalk-split">
+      <div class="codewalk-head">
+        <span class="codewalk-file">crates/ohmyc-core/src/store/mod.rs</span>
+        <span class="file-actions">
+          <span class="editor-menu" data-editor-menu data-editor="cursor">
+            <button class="file-action-select editor-menu-trigger" type="button" aria-haspopup="listbox" aria-expanded="false" data-editor-trigger>
+              <span data-editor-current>Cursor</span>
+              <span class="gg-chevron-down" aria-hidden="true"></span>
+            </button>
+            <span class="editor-menu-list" role="listbox" hidden data-editor-list>
+              <button class="editor-menu-item" type="button" role="option" aria-selected="true" data-editor-option="cursor">Cursor</button>
+              <button class="editor-menu-item" type="button" role="option" aria-selected="false" data-editor-option="vscode">VS Code</button>
+            </span>
+          </span>
+          <button class="file-action" type="button" data-copy-path="crates/ohmyc-core/src/store/mod.rs:60">Copy path</button>
+        </span>
+      </div>
+      <div class="codewalk-split-body">
+        <pre class="code-block"><span class="line" data-line="1"><span class="ln">1</span><span class="code-text">pub fn component_exists(</span></span><span class="line" data-line="2"><span class="ln">2</span><span class="code-text">    store_dir: &amp;std::path::Path,</span></span><span class="line" data-line="3"><span class="ln">3</span><span class="code-text">    kind: provenance::ComponentKind,</span></span><span class="line" data-line="4"><span class="ln">4</span><span class="code-text">    name: &amp;str,</span></span><span class="line" data-line="5"><span class="ln">5</span><span class="code-text">) -&gt; bool {</span></span><span class="line line-hl" data-line="6"><span class="ln">6</span><span class="code-text">    if name.is_empty()</span></span><span class="line line-hl" data-line="7"><span class="ln">7</span><span class="code-text">        || name.contains("..")</span></span><span class="line line-hl" data-line="8"><span class="ln">8</span><span class="code-text">        || name.contains('/')</span></span><span class="line line-hl" data-line="9"><span class="ln">9</span><span class="code-text">        || name.contains('\\')</span></span><span class="line" data-line="10"><span class="ln">10</span><span class="code-text">    {</span></span><span class="line" data-line="11"><span class="ln">11</span><span class="code-text">        return false;</span></span><span class="line" data-line="12"><span class="ln">12</span><span class="code-text">    }</span></span><span class="line" data-line="13"><span class="ln">13</span><span class="code-text">    let path = match kind {</span></span><span class="line" data-line="14"><span class="ln">14</span><span class="code-text">        provenance::ComponentKind::Agents =&gt; store_dir.join("agents").join(format!("{name}.md")),</span></span><span class="line" data-line="15"><span class="ln">15</span><span class="code-text">        provenance::ComponentKind::Commands =&gt; store_dir.join("commands").join(format!("{name}.md")),</span></span><span class="line" data-line="16"><span class="ln">16</span><span class="code-text">        provenance::ComponentKind::Skills =&gt; store_dir.join("skills").join(name),</span></span><span class="line" data-line="17"><span class="ln">17</span><span class="code-text">        provenance::ComponentKind::ModelConfigs =&gt; return false,</span></span><span class="line" data-line="18"><span class="ln">18</span><span class="code-text">    };</span></span><span class="line" data-line="19"><span class="ln">19</span><span class="code-text">    path.exists()</span></span><span class="line" data-line="20"><span class="ln">20</span><span class="code-text">}</span></span></pre>
+        <div class="codewalk-annotations">
+          <div class="codewalk-annotation" data-note-lines="6,7,8,9"><span class="annotation-line">L6–9</span><p>Path traversal defense: reject empty names, <code>..</code>, forward slashes, and backslashes. Without this, a name like <code>../../../etc/passwd</code> would let <code>PathBuf::join</code> escape the store directory. This is a standard security guard for filesystem-based CRUD.</p></div>
+          <div class="codewalk-annotation" data-note-lines="17"><span class="annotation-line">L17</span><p><code>ModelConfigs</code> returns false here because model configs use their own existence check with different name rules (allowing slashes for provider-prefixed names like <code>anthropic/sonnet-4</code>).</p></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="unit unit-concept" id="unit-3">
+    <span class="unit-kind">concept</span>
+    <h2>Provenance: where did this come from?</h2>
+    <p>The <code>provenance</code> submodule reads <code>&lt;store&gt;/.metadata/imports.json</code> — an index that records where each component was imported from (<code>importPath</code>) and when (<code>importedAt</code>). When present, this metadata enriches the component's response to the frontend, showing "Imported from GitHub on 2026-03-15" in the UI.</p>
+    <p>The read is defensive: missing file returns an empty map, malformed JSON returns an empty map. The provenance index is optional — the system works fine without it, just without import metadata.</p>
+  </section>
+
+  <section class="unit unit-concept" id="unit-4">
+    <span class="unit-kind">concept</span>
+    <h2>Reference checking: the safe-delete gate</h2>
+    <p>The <code>references</code> submodule is the safe-delete gate covered in the Build-Up Walkthrough. Before deleting a component, <code>referencing_profiles()</code> scans every profile's JSON for references to the target. If any profile depends on it, the delete returns <code>ApiError::ReferencedBy</code> with the list of dependent profiles.</p>
+    <p>The implementation is straightforward directory scanning: iterate <code>&lt;profiles_dir&gt;/*//profile.json</code>, parse each JSON, check if the component name appears in the relevant array (agents, skills, commands) or string field (modelConfig). Skip dot-prefixed dirs, skip malformed JSON, skip missing files. The result is sorted alphabetically.</p>
+  </section>
+
+  <section class="unit unit-concept" id="unit-5">
+    <span class="unit-kind">concept</span>
+    <h2>Model configs with slash-separated names</h2>
+    <p>Model configs (<code>model_configs.rs</code>) are the exception to the "no slashes in names" rule. Names like <code>anthropic/sonnet-4</code> are allowed because they map to subdirectories: <code>store/model-configs/anthropic/sonnet-4.json</code>. The safety check is different — instead of rejecting all slashes, it rejects <code>..</code> path segments, leading/trailing slashes, and double slashes.</p>
+    <p>Each model config is a JSON file with <code>name</code>, <code>apiKey</code>, <code>baseUrl</code>, <code>modelName</code>, and <code>provider</code> fields. During profile activation, the activation engine reads these fields to inject environment variables into Claude Code's settings.</p>
+  </section>
+
+  <section class="unit unit-quiz" id="unit-6">
+    <span class="unit-kind">quiz</span>
+    <h2>Check your understanding</h2>
+    <div class="quiz">
+      <div class="quiz-question">Why does <code>component_exists</code> reject names containing <code>..</code> but <code>model_configs</code> allows names containing <code>/</code>?</div>
+      <div class="quiz-options">
+        <div class="quiz-option" data-correct="true"><span class="quiz-option-letter">A</span><span>Model configs use provider-prefixed names like <code>anthropic/sonnet-4</code> that map to subdirectories, while components use flat names that must not escape their directory</span></div>
+        <div class="quiz-option" data-correct="false"><span class="quiz-option-letter">B</span><span>Model configs are stored in a different filesystem location with different permissions</span></div>
+        <div class="quiz-option" data-correct="false"><span class="quiz-option-letter">C</span><span>Components are Markdown files while model configs are JSON, so the traversal risk is different</span></div>
+        <div class="quiz-option" data-correct="false"><span class="quiz-option-letter">D</span><span>It's a historical inconsistency that should be unified</span></div>
+      </div>
+      <div class="quiz-explanation"><strong>Correct: A</strong> — Model config names like <code>anthropic/sonnet-4</code> intentionally create a directory hierarchy under <code>model-configs/</code>. The security guard rejects <code>..</code> segments specifically, while allowing slashes for the provider prefix. Components use flat names (no slashes) because each is a single file in a flat directory. <strong>B</strong> is wrong (same filesystem). <strong>C</strong> is wrong (file format doesn't affect traversal risk). <strong>D</strong> is wrong (it's an intentional design difference).</div>
+    </div>
+  </section>
+
+  <section class="unit unit-takeaway" id="unit-7">
+    <div class="unit-takeaway">
+      <span class="unit-kind">takeaway</span>
+      <p>The store module is OhMyC's staging area. It mirrors <code>~/.claude</code> but is owned by OhMyC. The <code>ComponentKind</code> enum is the shared discriminant across listings, provenance, and references. The path-traversal guards prevent user-supplied names from escaping the store directory. The provenance index enriches component data with import metadata. The reference checker gates deletions to prevent breaking active profiles.</p>
+    </div>
+  </section>
+
+  <footer class="page-footer">
+    <a class="next-link" href="module-components.html">components →</a>
+    <p class="recap">Next: see how the components module reads and parses markdown files from <code>~/.claude</code>.</p>
+  </footer>
+</main>
+
+<div class="zoom-overlay" hidden>
+  <div class="zoom-stage"></div>
+  <div class="zoom-controls">
+    <button data-zoom-out aria-label="Zoom out" title="Zoom out"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14"/></svg></button>
+    <span class="zoom-level" data-zoom-level>100%</span>
+    <button data-zoom-reset aria-label="Reset zoom" title="Reset zoom"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 12a9 9 0 1 0 3-6.7"/><path d="M3 4v6h6"/></svg></button>
+    <button data-zoom-in aria-label="Zoom in" title="Zoom in"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14"/><path d="M5 12h14"/></svg></button>
+    <button data-zoom-close aria-label="Close zoom" title="Close zoom"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg></button>
+  </div>
+</div>
+<script src="mermaid-bridge.js"></script>
+<script src="runtime.js"></script>
+</body>
+</html>

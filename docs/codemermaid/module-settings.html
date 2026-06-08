@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>settings — ohmyc-core</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+<script src="beautiful-mermaid.bundle.js"></script>
+</head>
+<body>
+<header class="topbar"><a class="back-link" href="index.html">← ohmyc-core</a></header>
+<main class="container">
+  <section class="hero">
+    <div class="eyebrow">ohmyc-core · module</div>
+    <h1>settings</h1>
+    <p class="learning-promise">Understand the atomic read/write pattern for <code>~/.claude/settings.json</code> — temp-file + rename for single-file atomicity, and the three-way read result.</p>
+  </section>
+  <nav class="toc">
+    <div class="toc-label">On this page</div>
+    <ol class="toc-list">
+      <li><a class="toc-item" href="#unit-0"><span class="toc-num">1</span>Three-way read result<span class="toc-kind">concept</span></a></li>
+      <li><a class="toc-item" href="#unit-1"><span class="toc-num">2</span>Atomic write via temp-file + rename<span class="toc-kind">code-walk</span></a></li>
+      <li><a class="toc-item" href="#unit-2"><span class="toc-num">3</span>The "missing is not an error" pattern<span class="toc-kind">code</span></a></li>
+      <li><a class="toc-item" href="#unit-3"><span class="toc-num">4</span>Check your understanding<span class="toc-kind">quiz</span></a></li>
+      <li><a class="toc-item" href="#unit-4"><span class="toc-num">5</span>Key takeaways<span class="toc-kind">takeaway</span></a></li>
+    </ol>
+  </nav>
+
+  <section class="unit unit-concept" id="unit-0">
+    <span class="unit-kind">concept</span>
+    <h2>Three-way read result</h2>
+    <p>The <code>read()</code> function returns a <code>SettingsRead</code> struct with three fields: <code>path</code> (the resolved file path), <code>content</code> (parsed JSON or <code>None</code>), and <code>exists</code> (boolean). The three possible states are: file exists with valid JSON (<code>exists: true, content: Some(...)</code>), file missing (<code>exists: false, content: None</code>), or file malformed (<code>ApiError::Parse</code>).</p>
+    <p>Why not just return <code>Option&lt;Value&gt;</code>? Because the UI needs to distinguish "settings file doesn't exist yet" from "we couldn't read it." Missing means "show defaults"; parse error means "show an error message."</p>
+  </section>
+
+  <section class="unit unit-codewalk" id="unit-1">
+    <span class="unit-kind">code-walk</span>
+    <h2>Atomic write via temp-file + rename</h2>
+    <div class="codewalk-split">
+      <div class="codewalk-head">
+        <span class="codewalk-file">crates/ohmyc-core/src/settings.rs</span>
+        <span class="file-actions">
+          <span class="editor-menu" data-editor-menu data-editor="cursor">
+            <button class="file-action-select editor-menu-trigger" type="button" aria-haspopup="listbox" aria-expanded="false" data-editor-trigger><span data-editor-current>Cursor</span><span class="gg-chevron-down" aria-hidden="true"></span></button>
+            <span class="editor-menu-list" role="listbox" hidden data-editor-list>
+              <button class="editor-menu-item" type="button" role="option" aria-selected="true" data-editor-option="cursor">Cursor</button>
+              <button class="editor-menu-item" type="button" role="option" aria-selected="false" data-editor-option="vscode">VS Code</button>
+            </span>
+          </span>
+          <button class="file-action" type="button" data-copy-path="crates/ohmyc-core/src/settings.rs:61">Copy path</button>
+        </span>
+      </div>
+      <div class="codewalk-split-body">
+        <pre class="code-block"><span class="line" data-line="1"><span class="ln">1</span><span class="code-text">pub fn write(content: &amp;Value) -&gt; Result&lt;SettingsWrite, ApiError&gt; {</span></span><span class="line line-hl" data-line="2"><span class="ln">2</span><span class="code-text">    if !content.is_object() {</span></span><span class="line line-hl" data-line="3"><span class="ln">3</span><span class="code-text">        return Err(ApiError::Validation(</span></span><span class="line" data-line="4"><span class="ln">4</span><span class="code-text">            "content must be a JSON object".to_string(),</span></span><span class="line" data-line="5"><span class="ln">5</span><span class="code-text">        ));</span></span><span class="line" data-line="6"><span class="ln">6</span><span class="code-text">    }</span></span><span class="line" data-line="7"><span class="ln">7</span><span class="code-text">    let path = settings_path()?;</span></span><span class="line" data-line="8"><span class="ln">8</span><span class="code-text">    let dir = path.parent().ok_or_else(|| /* ... */)?;</span></span><span class="line" data-line="9"><span class="ln">9</span><span class="code-text">    std::fs::create_dir_all(dir)?;</span></span><span class="line line-hl" data-line="10"><span class="ln">10</span><span class="code-text">    let serialized = serde_json::to_string_pretty(content)?;</span></span><span class="line line-hl" data-line="11"><span class="ln">11</span><span class="code-text">    let mut tmp = tempfile::NamedTempFile::new_in(dir)?;</span></span><span class="line" data-line="12"><span class="ln">12</span><span class="code-text">    use std::io::Write;</span></span><span class="line line-hl" data-line="13"><span class="ln">13</span><span class="code-text">    tmp.write_all(serialized.as_bytes())?;</span></span><span class="line line-hl" data-line="14"><span class="ln">14</span><span class="code-text">    tmp.persist(&amp;path)?;</span></span><span class="line" data-line="15"><span class="ln">15</span><span class="code-text">    Ok(SettingsWrite { path: path_str, success: true })</span></span><span class="line" data-line="16"><span class="ln">16</span><span class="code-text">}</span></span></pre>
+        <div class="codewalk-annotations">
+          <div class="codewalk-annotation" data-note-lines="2,3"><span class="annotation-line">L2–3</span><p>Reject non-object content upfront. Settings must be a JSON object — arrays, strings, and null are all invalid. This matches the TypeScript server's validation.</p></div>
+          <div class="codewalk-annotation" data-note-lines="10"><span class="annotation-line">L10</span><p><code>to_string_pretty</code> — the file is human-readable JSON. Users may open <code>settings.json</code> in a text editor, so pretty-printing matters.</p></div>
+          <div class="codewalk-annotation" data-note-lines="11,13,14"><span class="annotation-line">L11–14</span><p>The atomic write pattern: create a temp file in the <em>same directory</em>, write content to it, then <code>persist()</code> (which calls <code>rename()</code>). Same-directory is important — <code>rename</code> only works atomically within the same filesystem.</p></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="unit unit-concept" id="unit-2">
+    <span class="unit-kind">concept</span>
+    <h2>The "missing is not an error" pattern</h2>
+    <p>The <code>read()</code> function treats <code>settings.json</code> not existing as valid state (<code>exists: false</code>). This is the same pattern used in <code>components</code> (missing directory → empty list) and <code>store/provenance</code> (missing index → empty map). The invariant: a missing config file is the "no configuration yet" state, not a system error.</p>
+  </section>
+
+  <section class="unit unit-quiz" id="unit-3">
+    <span class="unit-kind">quiz</span>
+    <h2>Check your understanding</h2>
+    <div class="quiz">
+      <div class="quiz-question">Why does the temp file need to be created in the same directory as the target file?</div>
+      <div class="quiz-options">
+        <div class="quiz-option" data-correct="false"><span class="quiz-option-letter">A</span><span>To avoid polluting the system temp directory</span></div>
+        <div class="quiz-option" data-correct="true"><span class="quiz-option-letter">B</span><span>Because <code>rename()</code> only works atomically within the same filesystem, and temp directories may be on different mounts</span></div>
+        <div class="quiz-option" data-correct="false"><span class="quiz-option-letter">C</span><span>To ensure correct file permissions on the temp file</span></div>
+        <div class="quiz-option" data-correct="false"><span class="quiz-option-letter">D</span><span>To make cleanup easier if the process crashes</span></div>
+      </div>
+      <div class="quiz-explanation"><strong>Correct: B</strong> — <code>rename(2)</code> fails with <code>EXDEV</code> if source and destination are on different filesystems. By creating the temp file in the same directory, we guarantee they're on the same filesystem and the rename is atomic. <strong>A</strong> is a minor benefit but not the reason. <strong>C</strong> is wrong (permissions follow the file, not the directory). <strong>D</strong> is wrong (NamedTempFile handles cleanup).</div>
+    </div>
+  </section>
+
+  <section class="unit unit-takeaway" id="unit-4">
+    <div class="unit-takeaway">
+      <span class="unit-kind">takeaway</span>
+      <p>The settings module provides atomic read/write for <code>settings.json</code>. The three-way read result distinguishes missing, valid, and malformed states. The write function uses temp-file + same-directory rename for single-file atomicity. The "missing is not an error" pattern is consistent across the crate — missing config is valid state, not a system failure.</p>
+    </div>
+  </section>
+
+  <footer class="page-footer">
+    <a class="next-link" href="module-configs.html">configs →</a>
+    <p class="recap">Next: the configs module — reading MCP servers, hooks, and LSP servers from settings.</p>
+  </footer>
+</main>
+<div class="zoom-overlay" hidden>
+  <div class="zoom-stage"></div>
+  <div class="zoom-controls">
+    <button data-zoom-out aria-label="Zoom out" title="Zoom out"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14"/></svg></button>
+    <span class="zoom-level" data-zoom-level>100%</span>
+    <button data-zoom-reset aria-label="Reset zoom" title="Reset zoom"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 12a9 9 0 1 0 3-6.7"/><path d="M3 4v6h6"/></svg></button>
+    <button data-zoom-in aria-label="Zoom in" title="Zoom in"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14"/><path d="M5 12h14"/></svg></button>
+    <button data-zoom-close aria-label="Close zoom" title="Close zoom"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg></button>
+  </div>
+</div>
+<script src="mermaid-bridge.js"></script>
+<script src="runtime.js"></script>
+</body>
+</html>
