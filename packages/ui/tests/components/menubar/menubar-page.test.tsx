@@ -104,15 +104,15 @@ describe('MenubarPage', () => {
     expect(container.querySelector('.recharts-wrapper')).not.toBeInTheDocument()
   })
 
-  it('renders the footer meta line with peak day for line view', async () => {
+  it('renders the footer with peak-day eyebrow and Open OhMyC link on one row', async () => {
     render(<MenubarPage />, { wrapper })
-    // Wait for data to load. The footer reads:
-    //   peak {DOW MMM D} · {peakTokens} · {peakSessions} sessions
-    // Mocked tokens peak at 10_000 on 2026-05-22 → "10k"; 3 sessions that day.
-    // Use a function matcher to target the full footer text (not the KPI "Peak" label).
+    // New footer: `peak {DOW MMM D}` (mono uppercase micro) on the left,
+    // Open OhMyC link on the right. Peak token value + session count moved
+    // into the KPI row (covered by the "three KPI cells" test).
     const footer = await screen.findByText(content => /^peak\s/.test(content))
-    expect(footer.textContent).toMatch(/10k/)
-    expect(footer.textContent).toMatch(/3 sessions/)
+    // Footer no longer carries the tokens or session-count strings:
+    expect(footer.textContent).not.toMatch(/sessions/i)
+    expect(footer.textContent).not.toMatch(/10k/)
   })
 
   it('renders an Open OhMyC button that invokes open_main_window then hide_popover', async () => {

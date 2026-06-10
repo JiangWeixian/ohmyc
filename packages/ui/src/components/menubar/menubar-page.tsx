@@ -68,13 +68,11 @@ export function MenubarPage() {
   const totalTokens = (tokensRecent.data ?? []).reduce((s, p) => s + p.value, 0)
   const totalSessions = (sessionsRecent.data ?? []).reduce((s, p) => s + p.value, 0)
 
-  // Footer meta: peak day across the same 16-week window.
+  // Footer: peak day only — peak token value and session count are now
+  // surfaced in the KPI row above.
   const peak = findPeak(tokensRecent.data ?? [])
-  const peakSessionCount = peak
-    ? (sessionsRecent.data ?? []).find(p => p.date === peak.date)?.value ?? 0
-    : 0
-  const footerMeta = peak
-    ? `peak ${shortDayLabel(peak.date)} · ${formatTokens(peak.value)} · ${peakSessionCount} sessions`
+  const peakMeta = peak
+    ? `peak ${shortDayLabel(peak.date)}`
     : 'no activity yet'
 
   return (
@@ -160,14 +158,14 @@ export function MenubarPage() {
         </div>
       </div>
 
-      <div
-        className="mt-2.5 pt-2 border-t border-[var(--border-default)] text-[11px] text-[var(--text-tertiary)]"
-        style={{ fontFamily: MONO }}
-      >
-        {footerMeta}
-      </div>
-
-      <div className="mt-2 flex justify-end">
+      {/* Footer — peak-day eyebrow + Open link on one row */}
+      <div className="mt-3.5 pt-3 border-t border-[var(--border-subtle)] flex items-center justify-between">
+        <span
+          className="text-[10px] font-medium uppercase tracking-[0.06em] text-[var(--text-quaternary)]"
+          style={{ fontFamily: MONO }}
+        >
+          {peakMeta}
+        </span>
         <button
           type="button"
           onClick={async () => {
