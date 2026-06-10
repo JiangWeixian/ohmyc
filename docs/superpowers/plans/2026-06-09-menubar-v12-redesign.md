@@ -8,7 +8,19 @@
 
 **Tech Stack:** React 18, TypeScript, TailwindCSS, Recharts (existing chart), Vitest + React Testing Library, Tauri 2 (popover window).
 
-**Spec:** [`~/.gstack/projects/JiangWeixian-claudeui/designs/menubar-chart-20260608/approved.json`](file:///Volumes/ORICO/Users/jiangwei/.gstack/projects/JiangWeixian-claudeui/designs/menubar-chart-20260608/approved.json) — final wireframe at `wireframe-v12-padding-24.html` in the same directory.
+**Spec:** [`~/.gstack/projects/JiangWeixian-claudeui/designs/menubar-chart-20260608/approved.json`](file:///Volumes/ORICO/Users/jiangwei/.gstack/projects/JiangWeixian-claudeui/designs/menubar-chart-20260608/approved.json)
+
+## Visual references
+
+Before touching code, open the wireframe HTML for the screen you're implementing. The HTML is the source of truth for spacing, type, color, and layout — DESIGN.md tokens are honored throughout. All paths absolute.
+
+| Wireframe | Why open it |
+|---|---|
+| [`wireframe-v12-padding-24.html`](file:///Volumes/ORICO/Users/jiangwei/.gstack/projects/JiangWeixian-claudeui/designs/menubar-chart-20260608/wireframe-v12-padding-24.html) | **Approved final.** Both line and heatmap modes side-by-side at 367×? with 24px horizontal padding. Reference for every task. |
+| [`wireframe-v7.html`](file:///Volumes/ORICO/Users/jiangwei/.gstack/projects/JiangWeixian-claudeui/designs/menubar-chart-20260608/wireframe-v7.html) | Earlier iteration — same `ACTIVITY` title and KPI layout, useful when you need to see the icon switch + ghost heatmap relationship in isolation (no padding-tweak distractions). |
+| [`wireframe-v6.html`](file:///Volumes/ORICO/Users/jiangwei/.gstack/projects/JiangWeixian-claudeui/designs/menubar-chart-20260608/wireframe-v6.html) | Reference for the type swap rationale (mono `ACTIVITY` title + mono hero numbers). Includes prose notes on why both moved to Berkeley Mono. |
+
+Open these in a browser (`open <path>` on macOS) and keep them in a second window while writing each task. The wireframes are deliberately rendered at popover scale so visual proportions match.
 
 ---
 
@@ -30,6 +42,8 @@
 
 **Files:**
 - Modify: `packages/desktop/src-tauri/tauri.conf.json:14-27`
+
+**Reference:** [`wireframe-v12-padding-24.html`](file:///Volumes/ORICO/Users/jiangwei/.gstack/projects/JiangWeixian-claudeui/designs/menubar-chart-20260608/wireframe-v12-padding-24.html) — note the popover's narrow horizontal footprint (367px) and the breathing room around the chart edges.
 
 - [ ] **Step 1: Open the file and update width + height**
 
@@ -72,6 +86,8 @@ git commit -m "chore(desktop): bump menubar popover to 367x340 for v12 layout"
 **Files:**
 - Modify: `packages/ui/src/components/menubar/menubar-page.tsx:89-105`
 - Test: `packages/ui/tests/components/menubar/menubar-page.test.tsx:72-83`
+
+**Reference:** [`wireframe-v12-padding-24.html`](file:///Volumes/ORICO/Users/jiangwei/.gstack/projects/JiangWeixian-claudeui/designs/menubar-chart-20260608/wireframe-v12-padding-24.html) (top-head row in both popovers) and [`wireframe-v6.html`](file:///Volumes/ORICO/Users/jiangwei/.gstack/projects/JiangWeixian-claudeui/designs/menubar-chart-20260608/wireframe-v6.html) for the prose rationale on why `ACTIVITY` moved to Berkeley Mono uppercase.
 
 - [ ] **Step 1: Update the existing test assertions first (they will fail)**
 
@@ -141,6 +157,8 @@ git commit -m "feat(menubar): replace 2-line stat header with ACTIVITY mono titl
 **Files:**
 - Modify: `packages/ui/src/components/menubar/menubar-page.tsx:107-115`
 
+**Reference:** [`wireframe-v12-padding-24.html`](file:///Volumes/ORICO/Users/jiangwei/.gstack/projects/JiangWeixian-claudeui/designs/menubar-chart-20260608/wireframe-v12-padding-24.html) — flip between the Line and Heatmap popovers and notice the line side has a subtle vertical gradient backdrop fading top→bottom (`rgba(255,255,255,0.02) → 0`) while the heatmap side has no backdrop at all.
+
 The gradient currently lives on the chart's container only if `DualLineChart` defines it (it doesn't — current spec called for a gradient on the LINE chart slot, not the heatmap). Move/add it on the slot wrapper so it's mode-aware.
 
 - [ ] **Step 1: Update the chart slot wrapper**
@@ -183,6 +201,8 @@ git commit -m "feat(menubar): gradient backdrop on chart slot in line mode only"
 **Files:**
 - Modify: `packages/ui/src/components/menubar/menubar-page.tsx` (after the chart slot, before the old footer)
 - Test: `packages/ui/tests/components/menubar/menubar-page.test.tsx` (add new test)
+
+**Reference:** [`wireframe-v12-padding-24.html`](file:///Volumes/ORICO/Users/jiangwei/.gstack/projects/JiangWeixian-claudeui/designs/menubar-chart-20260608/wireframe-v12-padding-24.html) — `.kpis` block sits below the chart slot in both popovers. Each cell: 22px mono number top, 10px mono uppercase label bottom, 1px `border-subtle` left rule between cells.
 
 - [ ] **Step 1: Write the failing test**
 
@@ -285,6 +305,8 @@ git commit -m "feat(menubar): add three-KPI row (Tokens / Sessions / Peak) under
 - Modify: `packages/ui/src/components/menubar/menubar-page.tsx:117-137` (the two existing footer divs)
 - Test: `packages/ui/tests/components/menubar/menubar-page.test.tsx` (update peak-meta test)
 
+**Reference:** [`wireframe-v12-padding-24.html`](file:///Volumes/ORICO/Users/jiangwei/.gstack/projects/JiangWeixian-claudeui/designs/menubar-chart-20260608/wireframe-v12-padding-24.html) — `.vb-foot` block at the bottom of both popovers: hairline rule above, `peak <date>` mono micro on the left, `Open OhMyC →` link on the right, both vertically centered.
+
 - [ ] **Step 1: Update the peak-meta test to match new format**
 
 In `packages/ui/tests/components/menubar/menubar-page.test.tsx`, locate the test starting `it('renders the footer meta line with peak day for line view', ...)` (lines 110–119) and replace its body:
@@ -371,6 +393,8 @@ git commit -m "feat(menubar): collapse footer into single row (peak meta + Open 
 **Files:**
 - Modify: `packages/ui/src/components/menubar/menubar-page.tsx:78-87` (root div className)
 
+**Reference:** [`wireframe-v12-padding-24.html`](file:///Volumes/ORICO/Users/jiangwei/.gstack/projects/JiangWeixian-claudeui/designs/menubar-chart-20260608/wireframe-v12-padding-24.html) — the breathing room between the chart's left edge and the popover's left rounded corner is the 24px to deliver.
+
 - [ ] **Step 1: Update the root div's className**
 
 In `packages/ui/src/components/menubar/menubar-page.tsx`, locate the root `<div>` (lines 78–87). Change the `p-[18px]` class to `py-[18px] px-6` (24px horizontal). Resulting opening tag:
@@ -405,6 +429,8 @@ git commit -m "feat(menubar): bump horizontal padding 18 → 24 to fit chart wid
 ## Task 7: Visual smoke test
 
 **Files:** (none — verification only)
+
+**Reference:** [`wireframe-v12-padding-24.html`](file:///Volumes/ORICO/Users/jiangwei/.gstack/projects/JiangWeixian-claudeui/designs/menubar-chart-20260608/wireframe-v12-padding-24.html) — keep this open in a browser next to the running app and compare side-by-side. The live popover should match the wireframe's proportions, spacing, and typography down to the pixel.
 
 - [ ] **Step 1: Run the full test suite for the UI package**
 
