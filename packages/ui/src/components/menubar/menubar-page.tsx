@@ -49,6 +49,8 @@ function shortDayLabel(iso: string): string {
   return `${dow[d.getUTCDay()]} ${mon[d.getUTCMonth()]} ${d.getUTCDate()}`
 }
 
+const MONO = '"Berkeley Mono", ui-monospace, SF Mono, Menlo, monospace'
+
 export function MenubarPage() {
   useFsChanged()
   const [view, setView] = useState<MenubarView>('line')
@@ -62,8 +64,9 @@ export function MenubarPage() {
   const tokensRecent = useTimelineHeatmapRange({ from: fourMonthAgoIso, to: todayIso, metric: 'tokens' })
   const sessionsRecent = useTimelineHeatmapRange({ from: fourMonthAgoIso, to: todayIso, metric: 'sessions' })
 
-  const headerTokens = (tokensRecent.data ?? []).reduce((s, p) => s + p.value, 0)
-  const headerSessions = (sessionsRecent.data ?? []).reduce((s, p) => s + p.value, 0)
+  // KPI row: 16-week totals across the same window.
+  const totalTokens = (tokensRecent.data ?? []).reduce((s, p) => s + p.value, 0)
+  const totalSessions = (sessionsRecent.data ?? []).reduce((s, p) => s + p.value, 0)
 
   // Footer meta: peak day across the same 16-week window.
   const peak = findPeak(tokensRecent.data ?? [])
@@ -88,7 +91,7 @@ export function MenubarPage() {
       <header className="flex items-center justify-between gap-3 mb-3">
         <span
           className="text-[12px] font-medium uppercase tracking-[0.08em] text-[var(--text-secondary)]"
-          style={{ fontFamily: '"Berkeley Mono", ui-monospace, SF Mono, Menlo, monospace' }}
+          style={{ fontFamily: MONO }}
         >
           Activity
         </span>
@@ -115,13 +118,13 @@ export function MenubarPage() {
         <div className="flex flex-1 flex-col gap-1 pr-3.5">
           <span
             className="text-[22px] font-medium tracking-[-0.5px] leading-none text-[var(--text-primary)] tabular-nums"
-            style={{ fontFamily: '"Berkeley Mono", ui-monospace, SF Mono, Menlo, monospace' }}
+            style={{ fontFamily: MONO }}
           >
-            {formatTokens(headerTokens)}
+            {formatTokens(totalTokens)}
           </span>
           <span
             className="text-[10px] font-medium uppercase tracking-[0.06em] text-[var(--text-quaternary)]"
-            style={{ fontFamily: '"Berkeley Mono", ui-monospace, SF Mono, Menlo, monospace' }}
+            style={{ fontFamily: MONO }}
           >
             Tokens
           </span>
@@ -129,13 +132,14 @@ export function MenubarPage() {
         <div className="flex flex-1 flex-col gap-1 pl-3.5 pr-3.5 border-l border-[var(--border-subtle)]">
           <span
             className="text-[22px] font-medium tracking-[-0.5px] leading-none text-[var(--text-primary)] tabular-nums"
-            style={{ fontFamily: '"Berkeley Mono", ui-monospace, SF Mono, Menlo, monospace' }}
+            style={{ fontFamily: MONO }}
           >
-            {headerSessions.toLocaleString()}
+            {/* exact count — unlike tokens, sessions are never compressed to k/M */}
+            {totalSessions.toLocaleString()}
           </span>
           <span
             className="text-[10px] font-medium uppercase tracking-[0.06em] text-[var(--text-quaternary)]"
-            style={{ fontFamily: '"Berkeley Mono", ui-monospace, SF Mono, Menlo, monospace' }}
+            style={{ fontFamily: MONO }}
           >
             Sessions
           </span>
@@ -143,13 +147,13 @@ export function MenubarPage() {
         <div className="flex flex-1 flex-col gap-1 pl-3.5 border-l border-[var(--border-subtle)]">
           <span
             className="text-[22px] font-medium tracking-[-0.5px] leading-none text-[var(--text-primary)] tabular-nums"
-            style={{ fontFamily: '"Berkeley Mono", ui-monospace, SF Mono, Menlo, monospace' }}
+            style={{ fontFamily: MONO }}
           >
             {peak ? formatTokens(peak.value) : '—'}
           </span>
           <span
             className="text-[10px] font-medium uppercase tracking-[0.06em] text-[var(--text-quaternary)]"
-            style={{ fontFamily: '"Berkeley Mono", ui-monospace, SF Mono, Menlo, monospace' }}
+            style={{ fontFamily: MONO }}
           >
             Peak
           </span>
@@ -158,7 +162,7 @@ export function MenubarPage() {
 
       <div
         className="mt-2.5 pt-2 border-t border-[var(--border-default)] text-[11px] text-[var(--text-tertiary)]"
-        style={{ fontFamily: '"Berkeley Mono", ui-monospace, SF Mono, Menlo, monospace' }}
+        style={{ fontFamily: MONO }}
       >
         {footerMeta}
       </div>
@@ -172,7 +176,7 @@ export function MenubarPage() {
             await invoke('hide_popover')
           }}
           className="text-[11px] text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors"
-          style={{ fontFamily: '"Berkeley Mono", ui-monospace, SF Mono, Menlo, monospace' }}
+          style={{ fontFamily: MONO }}
         >
           Open OhMyC →
         </button>
