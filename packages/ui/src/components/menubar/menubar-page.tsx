@@ -77,7 +77,7 @@ export function MenubarPage() {
 
   return (
     <div
-      className="min-h-dvh w-full p-[18px] text-[var(--text-primary)] overflow-hidden rounded-[12px]"
+      className="min-h-dvh w-full py-[18px] px-6 text-[var(--text-primary)] overflow-hidden rounded-[12px]"
       style={{
         // macOS NSVisualEffectView (HudWindow) is applied to the Tauri window
         // and provides the desktop-blur. Light dark tint sits on top to
