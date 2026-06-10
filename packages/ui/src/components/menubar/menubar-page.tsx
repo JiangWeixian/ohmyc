@@ -92,13 +92,18 @@ export function MenubarPage() {
         <ViewSwitch value={view} onChange={setView} />
       </header>
 
-      <div className="min-h-[168px]">
+      <div
+        className="min-h-[168px] overflow-hidden"
+        style={view === 'line'
+          ? { background: 'linear-gradient(180deg, rgba(255,255,255,0.02) 0%, rgba(255,255,255,0.0) 100%)' }
+          : undefined}
+      >
         {view === 'line'
           ? (
-          <DualLineChart tokens={tokensRecent.data ?? []} sessions={sessionsRecent.data ?? []} />
+              <DualLineChart tokens={tokensRecent.data ?? []} sessions={sessionsRecent.data ?? []} />
             )
           : (
-          <RecentHeatmap tokens={tokensRecent.data ?? []} sessions={sessionsRecent.data ?? []} />
+              <RecentHeatmap tokens={tokensRecent.data ?? []} sessions={sessionsRecent.data ?? []} />
             )}
       </div>
 
