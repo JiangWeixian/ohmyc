@@ -17,6 +17,9 @@ importers:
       '@opencode-ai/plugin':
         specifier: ^1.14.31
         version: 1.14.33
+      '@rollup/rollup-darwin-arm64':
+        specifier: ^4.61.1
+        version: 4.61.1
       '@types/node':
         specifier: ^20.12.7
         version: 20.19.39
@@ -2245,6 +2248,11 @@ packages:
 
   '@rollup/rollup-darwin-arm64@4.60.2':
     resolution: {integrity: sha512-UwRE7CGpvSVEQS8gUMBe1uADWjNnVgP3Iusyda1nSRwNDCsRjnGc7w6El6WLQsXmZTbLZx9cecegumcitNfpmA==}
+    cpu: [arm64]
+    os: [darwin]
+
+  '@rollup/rollup-darwin-arm64@4.61.1':
+    resolution: {integrity: sha512-0F1L/Z3Eqv8mT2n3dCpeO8GcTvHvVqkP5/t6DMsn0KzhYVcg+s7Ncl5DS8qjKYEeio6Az0Gt6nyBORay5qIlCA==}
     cpu: [arm64]
     os: [darwin]
 
@@ -9084,6 +9092,8 @@ snapshots:
 
   '@rollup/rollup-darwin-arm64@4.60.2':
     optional: true
+
+  '@rollup/rollup-darwin-arm64@4.61.1': {}
 
   '@rollup/rollup-darwin-x64@4.60.2':
     optional: true
