@@ -62,6 +62,9 @@ export function MenubarPage() {
   const tokensRecent = useTimelineHeatmapRange({ from: fourMonthAgoIso, to: todayIso, metric: 'tokens' })
   const sessionsRecent = useTimelineHeatmapRange({ from: fourMonthAgoIso, to: todayIso, metric: 'sessions' })
 
+  const headerTokens = (tokensRecent.data ?? []).reduce((s, p) => s + p.value, 0)
+  const headerSessions = (sessionsRecent.data ?? []).reduce((s, p) => s + p.value, 0)
+
   // Footer meta: peak day across the same 16-week window.
   const peak = findPeak(tokensRecent.data ?? [])
   const peakSessionCount = peak
@@ -105,6 +108,52 @@ export function MenubarPage() {
           : (
               <RecentHeatmap tokens={tokensRecent.data ?? []} sessions={sessionsRecent.data ?? []} />
             )}
+      </div>
+
+      {/* KPI row — three mono numbers with hairline dividers */}
+      <div className="flex mt-3.5">
+        <div className="flex flex-1 flex-col gap-1 pr-3.5">
+          <span
+            className="text-[22px] font-medium tracking-[-0.5px] leading-none text-[var(--text-primary)] tabular-nums"
+            style={{ fontFamily: '"Berkeley Mono", ui-monospace, SF Mono, Menlo, monospace' }}
+          >
+            {formatTokens(headerTokens)}
+          </span>
+          <span
+            className="text-[10px] font-medium uppercase tracking-[0.06em] text-[var(--text-quaternary)]"
+            style={{ fontFamily: '"Berkeley Mono", ui-monospace, SF Mono, Menlo, monospace' }}
+          >
+            Tokens
+          </span>
+        </div>
+        <div className="flex flex-1 flex-col gap-1 pl-3.5 pr-3.5 border-l border-[var(--border-subtle)]">
+          <span
+            className="text-[22px] font-medium tracking-[-0.5px] leading-none text-[var(--text-primary)] tabular-nums"
+            style={{ fontFamily: '"Berkeley Mono", ui-monospace, SF Mono, Menlo, monospace' }}
+          >
+            {headerSessions.toLocaleString()}
+          </span>
+          <span
+            className="text-[10px] font-medium uppercase tracking-[0.06em] text-[var(--text-quaternary)]"
+            style={{ fontFamily: '"Berkeley Mono", ui-monospace, SF Mono, Menlo, monospace' }}
+          >
+            Sessions
+          </span>
+        </div>
+        <div className="flex flex-1 flex-col gap-1 pl-3.5 border-l border-[var(--border-subtle)]">
+          <span
+            className="text-[22px] font-medium tracking-[-0.5px] leading-none text-[var(--text-primary)] tabular-nums"
+            style={{ fontFamily: '"Berkeley Mono", ui-monospace, SF Mono, Menlo, monospace' }}
+          >
+            {peak ? formatTokens(peak.value) : '—'}
+          </span>
+          <span
+            className="text-[10px] font-medium uppercase tracking-[0.06em] text-[var(--text-quaternary)]"
+            style={{ fontFamily: '"Berkeley Mono", ui-monospace, SF Mono, Menlo, monospace' }}
+          >
+            Peak
+          </span>
+        </div>
       </div>
 
       <div

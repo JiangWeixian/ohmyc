@@ -7,7 +7,9 @@ import {
 } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import {
+  afterEach,
   beforeAll,
+  beforeEach,
   describe,
   expect,
   it,
@@ -15,6 +17,8 @@ import {
 } from 'vitest'
 
 import { MenubarPage } from '@/components/menubar/menubar-page'
+import { __setTransportForTests, resetTransportForTests } from '@/lib/transport'
+import { resetMock, setMockHandler } from '@/lib/transport/mock'
 
 import type { ReactNode } from 'react'
 
@@ -22,32 +26,23 @@ vi.mock('@tauri-apps/api/core', () => ({
   invoke: vi.fn(async () => {}),
 }))
 
-function setupMockFetch() {
-  return vi.spyOn(globalThis, 'fetch').mockImplementation(async (input: RequestInfo | URL) => {
-    const u = typeof input === 'string' ? input : (input instanceof URL ? input.href : input.url)
-    if (u.includes('metric=tokens')) {
+function setupTimelineMock() {
+  setMockHandler('timeline.heatmap', async (args) => {
+    const { metric } = args as { metric: string }
+    if (metric === 'tokens') {
       return {
-        ok: true,
-        json: async () => ({
-          data: [
-            { date: '2026-05-22', value: 10_000 },
-            { date: '2026-05-21', value: 5000 },
-          ],
-        }),
-      } as Response
+        data: [
+          { date: '2026-05-22', value: 10_000 },
+          { date: '2026-05-21', value: 5000 },
+        ],
+      }
     }
-    if (u.includes('metric=sessions')) {
-      return {
-        ok: true,
-        json: async () => ({
-          data: [
-            { date: '2026-05-22', value: 3 },
-            { date: '2026-05-21', value: 2 },
-          ],
-        }),
-      } as Response
+    return {
+      data: [
+        { date: '2026-05-22', value: 3 },
+        { date: '2026-05-21', value: 2 },
+      ],
     }
-    return { ok: true, json: async () => ({ data: [] }) } as Response
   })
 }
 
@@ -68,9 +63,18 @@ beforeAll(() => {
   }
 })
 
+beforeEach(() => {
+  __setTransportForTests('mock')
+  setupTimelineMock()
+})
+
+afterEach(() => {
+  resetMock()
+  resetTransportForTests()
+})
+
 describe('MenubarPage', () => {
   it('renders the ACTIVITY mono title in the header', async () => {
-    setupMockFetch()
     render(<MenubarPage />, { wrapper })
     const title = await screen.findByText(/^Activity$/i)
     expect(title).toBeInTheDocument()
@@ -78,7 +82,6 @@ describe('MenubarPage', () => {
   })
 
   it('keeps the ACTIVITY title after switching to heatmap view', async () => {
-    setupMockFetch()
     render(<MenubarPage />, { wrapper })
     await screen.findByText(/^Activity$/i)
     const heatmapBtn = screen.getByRole('tab', { name: /heatmap view/i })
@@ -87,7 +90,6 @@ describe('MenubarPage', () => {
   })
 
   it('renders the DualLineChart in line view (Recharts wrapper present)', async () => {
-    setupMockFetch()
     const { container } = render(<MenubarPage />, { wrapper })
     // Activity is static JSX (renders before data); the waitFor below is what
     // actually gates on Recharts mounting once query data arrives.
@@ -96,7 +98,6 @@ describe('MenubarPage', () => {
   })
 
   it('does not render the Recharts wrapper in heatmap view', async () => {
-    setupMockFetch()
     const { container } = render(<MenubarPage />, { wrapper })
     await screen.findByText(/^Activity$/i)
     await userEvent.click(screen.getByRole('tab', { name: /heatmap view/i }))
@@ -104,12 +105,12 @@ describe('MenubarPage', () => {
   })
 
   it('renders the footer meta line with peak day for line view', async () => {
-    setupMockFetch()
     render(<MenubarPage />, { wrapper })
     // Wait for data to load. The footer reads:
     //   peak {DOW MMM D} · {peakTokens} · {peakSessions} sessions
     // Mocked tokens peak at 10_000 on 2026-05-22 → "10k"; 3 sessions that day.
-    const footer = await screen.findByText(/peak/i)
+    // Use a function matcher to target the full footer text (not the KPI "Peak" label).
+    const footer = await screen.findByText(content => /^peak\s/.test(content))
     expect(footer.textContent).toMatch(/10k/)
     expect(footer.textContent).toMatch(/3 sessions/)
   })
@@ -127,5 +128,25 @@ describe('MenubarPage', () => {
       const calls = (invoke as ReturnType<typeof vi.fn>).mock.calls.map(c => c[0])
       expect(calls).toEqual(['open_main_window', 'hide_popover'])
     })
+  })
+
+  it('renders the three KPI cells with mono labels and values', async () => {
+    render(<MenubarPage />, { wrapper })
+
+    // Tokens sum: 10000 + 5000 = 15000 → "15k"
+    expect(await screen.findByText(/^15k$/i)).toBeInTheDocument()
+    expect(await screen.findByText(/^Tokens$/i)).toBeInTheDocument()
+
+    // Sessions sum: 3 + 2 = 5
+    expect(await screen.findByText(/^5$/)).toBeInTheDocument()
+    expect(await screen.findByText(/^Sessions$/i)).toBeInTheDocument()
+
+    // Peak day token value: max(10000, 5000) = 10000 → "10k"
+    // The Recharts chart may also render "10k" as a tspan axis label; ensure
+    // at least one matching element is the KPI <span> (not an SVG tspan).
+    const peakValueEls = await screen.findAllByText(/^10k$/i)
+    const hasSpan = peakValueEls.some(el => el.tagName.toLowerCase() === 'span')
+    expect(hasSpan).toBe(true)
+    expect(await screen.findByText(/^Peak$/i)).toBeInTheDocument()
   })
 })
