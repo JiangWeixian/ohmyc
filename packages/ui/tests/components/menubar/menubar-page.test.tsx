@@ -69,40 +69,35 @@ beforeAll(() => {
 })
 
 describe('MenubarPage', () => {
-  it('renders in line view by default and shows the unified "Last 16 weeks" range', async () => {
+  it('renders the ACTIVITY mono title in the header', async () => {
     setupMockFetch()
     render(<MenubarPage />, { wrapper })
-    expect(await screen.findByText(/Last 16 weeks/i)).toBeInTheDocument()
+    const title = await screen.findByText(/^Activity$/i)
+    expect(title).toBeInTheDocument()
+    expect(title.tagName.toLowerCase()).toBe('span')
   })
 
-  it('renders header totals after data loads', async () => {
+  it('keeps the ACTIVITY title after switching to heatmap view', async () => {
     setupMockFetch()
     render(<MenubarPage />, { wrapper })
-    expect(await screen.findByText(/15k/i)).toBeInTheDocument()
-    expect(await screen.findByText(/tokens · 5 sessions/i)).toBeInTheDocument()
-  })
-
-  it('keeps the same "Last 16 weeks" range label after switching to heatmap view', async () => {
-    setupMockFetch()
-    render(<MenubarPage />, { wrapper })
-    await screen.findByText(/Last 16 weeks/i)
+    await screen.findByText(/^Activity$/i)
     const heatmapBtn = screen.getByRole('tab', { name: /heatmap view/i })
     await userEvent.click(heatmapBtn)
-    expect(await screen.findByText(/Last 16 weeks/i)).toBeInTheDocument()
+    expect(await screen.findByText(/^Activity$/i)).toBeInTheDocument()
   })
 
   it('renders the DualLineChart in line view (Recharts wrapper present)', async () => {
     setupMockFetch()
     const { container } = render(<MenubarPage />, { wrapper })
-    // Wait for data to load (tokens total appears once queries resolve)
-    expect(await screen.findByText(/15k/i)).toBeInTheDocument()
-    expect(container.querySelector('.recharts-wrapper')).toBeInTheDocument()
+    // Wait for data to load (Activity title appears once queries resolve)
+    await screen.findByText(/^Activity$/i)
+    await waitFor(() => expect(container.querySelector('.recharts-wrapper')).toBeInTheDocument())
   })
 
   it('does not render the Recharts wrapper in heatmap view', async () => {
     setupMockFetch()
     const { container } = render(<MenubarPage />, { wrapper })
-    await screen.findByText(/Last 16 weeks/i)
+    await screen.findByText(/^Activity$/i)
     await userEvent.click(screen.getByRole('tab', { name: /heatmap view/i }))
     expect(container.querySelector('.recharts-wrapper')).not.toBeInTheDocument()
   })

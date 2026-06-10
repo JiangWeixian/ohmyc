@@ -62,10 +62,6 @@ export function MenubarPage() {
   const tokensRecent = useTimelineHeatmapRange({ from: fourMonthAgoIso, to: todayIso, metric: 'tokens' })
   const sessionsRecent = useTimelineHeatmapRange({ from: fourMonthAgoIso, to: todayIso, metric: 'sessions' })
 
-  const headerTokens = (tokensRecent.data ?? []).reduce((s, p) => s + p.value, 0)
-  const headerSessions = (sessionsRecent.data ?? []).reduce((s, p) => s + p.value, 0)
-  const rangeLabel = 'Last 16 weeks'
-
   // Footer meta: peak day across the same 16-week window.
   const peak = findPeak(tokensRecent.data ?? [])
   const peakSessionCount = peak
@@ -86,21 +82,13 @@ export function MenubarPage() {
       }}
       data-menubar-page
     >
-      <header className="flex items-start justify-between gap-3 mb-3.5">
-        <div className="flex flex-col gap-[3px] min-w-0">
-          <div className="text-[13px] font-medium tracking-[-0.05px] whitespace-nowrap overflow-hidden text-ellipsis">
-            <span className="font-medium">{formatTokens(headerTokens)}</span>
-            <span className="ml-2 font-normal text-[var(--text-secondary)] tabular-nums">
-              tokens · {headerSessions.toLocaleString()} sessions
-            </span>
-          </div>
-          <span
-            className="text-[10px] font-medium uppercase tracking-wider text-[var(--text-quaternary)]"
-            style={{ fontFamily: '"Berkeley Mono", ui-monospace, SF Mono, Menlo, monospace' }}
-          >
-            {rangeLabel}
-          </span>
-        </div>
+      <header className="flex items-center justify-between gap-3 mb-3">
+        <span
+          className="text-[12px] font-medium uppercase tracking-[0.08em] text-[var(--text-secondary)]"
+          style={{ fontFamily: '"Berkeley Mono", ui-monospace, SF Mono, Menlo, monospace' }}
+        >
+          Activity
+        </span>
         <ViewSwitch value={view} onChange={setView} />
       </header>
 
