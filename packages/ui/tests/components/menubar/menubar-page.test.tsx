@@ -89,7 +89,8 @@ describe('MenubarPage', () => {
   it('renders the DualLineChart in line view (Recharts wrapper present)', async () => {
     setupMockFetch()
     const { container } = render(<MenubarPage />, { wrapper })
-    // Wait for data to load (Activity title appears once queries resolve)
+    // Activity is static JSX (renders before data); the waitFor below is what
+    // actually gates on Recharts mounting once query data arrives.
     await screen.findByText(/^Activity$/i)
     await waitFor(() => expect(container.querySelector('.recharts-wrapper')).toBeInTheDocument())
   })
