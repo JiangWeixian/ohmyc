@@ -482,7 +482,7 @@ export function Explorer({ viewSwitcher }: ExplorerProperties) {
   }
 
   const renderConfigSection = (
-    id: 'hooks' | 'lsp' | 'mcp',
+    _id: 'hooks' | 'lsp' | 'mcp',
     config: {
       title: string
       description: string
