@@ -130,6 +130,16 @@ describe('MenubarPage', () => {
     })
   })
 
+  it('renders zeroed KPIs and the no-activity footer when there is no data', async () => {
+    setMockHandler('timeline.heatmap', async () => ({ data: [] }))
+    render(<MenubarPage />, { wrapper })
+
+    expect(await screen.findByText(/^no activity yet$/i)).toBeInTheDocument()
+    // Peak cell falls back to an em dash; Tokens and Sessions sum to 0.
+    expect(screen.getByText('—')).toBeInTheDocument()
+    expect(screen.getAllByText(/^0$/).length).toBeGreaterThanOrEqual(2)
+  })
+
   it('renders the three KPI cells with mono labels and values', async () => {
     render(<MenubarPage />, { wrapper })
 

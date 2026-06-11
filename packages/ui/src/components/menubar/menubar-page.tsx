@@ -70,6 +70,8 @@ export function MenubarPage() {
 
   // Footer: peak day only — peak token value and session count are now
   // surfaced in the KPI row above.
+  // NOTE: peak is computed over the fetched range, which must stay equal to
+  // RecentHeatmap's self-derived 16-week window (it re-derives from today).
   const peak = findPeak(tokensRecent.data ?? [])
   const peakMeta = peak
     ? `peak ${shortDayLabel(peak.date)}`
