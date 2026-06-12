@@ -98,8 +98,10 @@ export function MenubarPage() {
         <ViewSwitch value={view} onChange={setView} />
       </header>
 
+      {/* No overflow-hidden here: the heatmap tooltip escapes the slot upward
+          for top-row cells. The gradient is a background and cannot overflow. */}
       <div
-        className="min-h-[168px] overflow-hidden"
+        className="min-h-[168px]"
         style={view === 'line'
           ? { background: 'linear-gradient(180deg, rgba(255,255,255,0.02) 0%, rgba(255,255,255,0.0) 100%)' }
           : undefined}

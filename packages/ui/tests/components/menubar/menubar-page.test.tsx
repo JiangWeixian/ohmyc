@@ -104,6 +104,31 @@ describe('MenubarPage', () => {
     expect(container.querySelector('.recharts-wrapper')).not.toBeInTheDocument()
   })
 
+  it('does not clip the heatmap hover tooltip inside the chart slot', async () => {
+    const { container } = render(<MenubarPage />, { wrapper })
+    await screen.findByText(/^Activity$/i)
+    await userEvent.click(screen.getByRole('tab', { name: /heatmap view/i }))
+
+    // Hover the first (top-left) cell — for top-row cells the tooltip extends
+    // ABOVE the heatmap wrap, overlapping the header region of the popover.
+    const cell = container.querySelector('[data-heat-cell]')
+    expect(cell).toBeInTheDocument()
+    fireEvent.mouseEnter(cell!)
+
+    const tooltipInner = await screen.findByText(/sessions ·/)
+    const tooltip = tooltipInner.parentElement!
+
+    // The tooltip must have an unclipped path up to the popover root: any
+    // intermediate ancestor with overflow-hidden (e.g. the chart slot) cuts
+    // it off at the slot's top edge. The popover root itself may clip — the
+    // header + padding above the chart provide enough headroom there.
+    let el = tooltip.parentElement
+    while (el && !Object.hasOwn(el.dataset, 'menubarPage')) {
+      expect(el.className).not.toMatch(/overflow-hidden/)
+      el = el.parentElement
+    }
+  })
+
   it('renders the footer with peak-day eyebrow and Open OhMyC link on one row', async () => {
     render(<MenubarPage />, { wrapper })
     // New footer: `peak {DOW MMM D}` (mono uppercase micro) on the left,
