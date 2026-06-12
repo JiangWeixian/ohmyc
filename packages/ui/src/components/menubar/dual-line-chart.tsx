@@ -10,7 +10,6 @@ import {
 import {
   Area,
   AreaChart,
-  CartesianGrid,
   XAxis,
   YAxis,
 } from 'recharts'
@@ -116,28 +115,13 @@ export function DualLineChart({ tokens, sessions }: DualLineChartProps) {
         <AreaChart
           accessibilityLayer
           data={chartData}
-          margin={{ left: 0, right: 8, top: 8, bottom: 0 }}
+          margin={{ left: 0, right: 0, top: 8, bottom: 0 }}
         >
-          <CartesianGrid
-            vertical={false}
-            stroke="var(--border-default)"
-            strokeDasharray="3 3"
-          />
-          <XAxis
-            dataKey="date"
-            tickLine={false}
-            axisLine={false}
-            tickMargin={6}
-            interval="preserveStartEnd"
-            tick={{ fontSize: 9, fill: 'var(--text-quaternary)' }}
-          />
-          <YAxis
-            tickLine={false}
-            axisLine={false}
-            width={36}
-            tickFormatter={formatTokens}
-            tick={{ fontSize: 9, fill: 'var(--text-quaternary)' }}
-          />
+          {/* Axes are hidden (kept for scale/domain only) and there is no grid:
+              the chart reads as a backing sparkline, not a framed plot. The KPI
+              row below carries the actual numbers. */}
+          <XAxis dataKey="date" hide />
+          <YAxis hide width={0} />
           <ChartTooltip
             cursor={{ stroke: 'var(--border-default)' }}
             content={<ChartTooltipContent />}
