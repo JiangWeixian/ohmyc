@@ -51,3 +51,25 @@ describe('Codex marketplace entry', () => {
     })
   })
 })
+
+describe('hook configuration compatibility', () => {
+  it('routes Claude Code Stop hook to ingest-claude.sh with CLAUDE_SESSION_ID', () => {
+    const pluginRoot = '$' + '{PLUGIN_ROOT:-$CLAUDE_PLUGIN_ROOT}'
+    const hooksJson = JSON.parse(
+      readFileSync(path.resolve(import.meta.dirname, '../../hooks/hooks.json'), 'utf8'),
+    ) as { hooks: { Stop: Array<{ hooks: Array<{ command: string }> }> } }
+
+    const command = hooksJson.hooks.Stop[0].hooks[0].command
+    expect(command).toBe(`${pluginRoot}/hooks/ingest-claude.sh $CLAUDE_SESSION_ID`)
+  })
+
+  it('routes Codex Stop hook to ingest-codex.sh without Claude arguments', () => {
+    const pluginRoot = '$' + '{PLUGIN_ROOT}'
+    const hooksJson = JSON.parse(
+      readFileSync(path.resolve(import.meta.dirname, '../../hooks.json'), 'utf8'),
+    ) as { hooks: { Stop: Array<{ hooks: Array<{ command: string }> }> } }
+
+    const command = hooksJson.hooks.Stop[0].hooks[0].command
+    expect(command).toBe(`${pluginRoot}/hooks/ingest-codex.sh`)
+  })
+})

@@ -6,7 +6,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "${PLUGIN_ROOT:-$CLAUDE_PLUGIN_ROOT}/hooks/ingest-claude.sh $CLAUDE_SESSION_ID"
+            "command": "${PLUGIN_ROOT}/hooks/ingest-codex.sh"
           }
         ]
       }
