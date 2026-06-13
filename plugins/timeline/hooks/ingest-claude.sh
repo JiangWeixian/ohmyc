@@ -1,6 +1,6 @@
 #!/bin/bash
-# OhMyC Timeline Stop Hook — ingests Claude Code session transcripts.
-# Calls the bundled node entry at $CLAUDE_PLUGIN_ROOT/dist/ingest.mjs.
+# OhMyC Timeline Claude Code Stop Hook — ingests Claude Code session transcripts.
+# Calls the bundled node entry at $PLUGIN_ROOT/dist/ingest.mjs or $CLAUDE_PLUGIN_ROOT/dist/ingest.mjs.
 # No external CLI binary required.
 
 set -euo pipefail
@@ -10,7 +10,7 @@ set -euo pipefail
 # ---------------------------------------------------------------------------
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-PLUGIN_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
+PLUGIN_DIR="${PLUGIN_ROOT:-${CLAUDE_PLUGIN_ROOT:-$(cd "$SCRIPT_DIR/.." && pwd)}}"
 INGEST_MJS="$PLUGIN_DIR/dist/ingest.mjs"
 
 if [ -n "${OHMYC_HOME:-}" ]; then
@@ -131,4 +131,4 @@ fi
 # ---------------------------------------------------------------------------
 
 log_info "Using slow path for session $SESSION_ID"
-node "$INGEST_MJS" --session-id "$SESSION_ID" --transcript-path "$TRANSCRIPT_PATH"
+node "$INGEST_MJS" --session-id "$SESSION_ID" --transcript-path "$TRANSCRIPT_PATH" --agent-name claude

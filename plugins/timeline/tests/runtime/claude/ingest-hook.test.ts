@@ -51,7 +51,7 @@ function writeTranscript(dir: string, sessionId: string, lines: readonly string[
   return filePath
 }
 
-describe('ingest.sh', () => {
+describe('ingest-claude.sh', () => {
   let tmpDir: string
   let fakeClaudeDir: string
   let capturePath: string
@@ -66,9 +66,9 @@ describe('ingest.sh', () => {
     mkdirSync(path.join(tempPluginDir, 'hooks'), { recursive: true })
     mkdirSync(path.join(tempPluginDir, 'dist'), { recursive: true })
 
-    const realHook = readFileSync(path.resolve(import.meta.dirname, '../../../hooks/ingest.sh'), 'utf8')
-    writeFileSync(path.join(tempPluginDir, 'hooks/ingest.sh'), realHook)
-    chmodSync(path.join(tempPluginDir, 'hooks/ingest.sh'), 0o755)
+    const realHook = readFileSync(path.resolve(import.meta.dirname, '../../../hooks/ingest-claude.sh'), 'utf8')
+    writeFileSync(path.join(tempPluginDir, 'hooks/ingest-claude.sh'), realHook)
+    chmodSync(path.join(tempPluginDir, 'hooks/ingest-claude.sh'), 0o755)
 
     capturePath = path.join(tmpDir, 'captured.json')
     const stub = 'import { writeFileSync } from \'node:fs\';\n'
@@ -83,7 +83,7 @@ describe('ingest.sh', () => {
       + '}\n'
     writeFileSync(path.join(tempPluginDir, 'dist/ingest.mjs'), stub)
 
-    pluginHook = path.join(tempPluginDir, 'hooks/ingest.sh')
+    pluginHook = path.join(tempPluginDir, 'hooks/ingest-claude.sh')
   })
 
   afterEach(() => {
@@ -321,6 +321,16 @@ describe('ingest.sh', () => {
     expect(result.status).toBe(0)
     expect(result.stderr).toContain('Using slow path')
     expect(result.stdout).toContain('INGEST_SLOW_OK')
+    expect(readCaptured()).toEqual({
+      args: [
+        '--session-id',
+        'test-fallback',
+        '--transcript-path',
+        path.join(fakeClaudeDir, 'test-fallback.jsonl'),
+        '--agent-name',
+        'claude',
+      ],
+    })
   })
 
   // ---------------------------------------------------------------------------
