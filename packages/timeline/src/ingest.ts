@@ -16,6 +16,12 @@ import type { SqliteDatabase } from './writer.js'
 
 export type { ParsedSessionData, IngestResult } from './schema.js'
 
+/** Options accepted by transcript parsing and ingest entry points. */
+export interface TranscriptParseOptions {
+  /** Agent that produced the transcript. Defaults to `claude` for historical Claude JSONL ingestion. */
+  agentName?: string | null
+}
+
 // ---------------------------------------------------------------------------
 // Parser — pure function, does not touch the database
 // ---------------------------------------------------------------------------
@@ -33,6 +39,7 @@ export type { ParsedSessionData, IngestResult } from './schema.js'
 export function parseTranscript(
   sessionId: string,
   transcriptPath: string,
+  options?: TranscriptParseOptions,
 ): ParsedSessionData {
   const fileStat = statSync(transcriptPath)
   const fileSize = fileStat.size
@@ -171,7 +178,7 @@ export function parseTranscript(
   return {
     sessionId,
     project,
-    agentName: 'claude', // Fixed for CLI-sourced transcripts; plugins override this
+    agentName: options?.agentName ?? 'claude',
     startedAt,
     endedAt,
     durationMs,
@@ -228,8 +235,9 @@ export function ingestSession(
   db: Database.Database,
   sessionId: string,
   transcriptPath: string,
+  options?: TranscriptParseOptions,
 ): IngestResult {
-  const data = parseTranscript(sessionId, transcriptPath)
+  const data = parseTranscript(sessionId, transcriptPath, options)
   return upsertSessionData(db, sessionId, data)
 }
 

@@ -25,6 +25,7 @@ describe('parseTranscript (Claude JSONL)', () => {
     const data = parseTranscript('test-session-001', transcriptPath)
 
     expect(data.sessionId).toBe('test-session-001')
+    expect(data.agentName).toBe('claude')
     expect(data.turns).toBe(2)
     expect(data.tokensInput).toBe(18)
     expect(data.tokensOutput).toBe(37)
@@ -32,6 +33,13 @@ describe('parseTranscript (Claude JSONL)', () => {
     expect(data.model).toBe('claude-sonnet-4')
     expect(data.summary).toBe('Helped user set up timeline feature in their project. Next: review the wireframe. (disable recaps in /config)')
     expect(data.summarySource).toBe('auto')
+  })
+
+  it('accepts an explicit agent name for shared writers', () => {
+    const transcriptPath = path.join(fixturesDir, 'simple-session.jsonl')
+    const data = parseTranscript('test-session-001', transcriptPath, { agentName: 'codex' })
+
+    expect(data.agentName).toBe('codex')
   })
 
   it('counts tool calls correctly', () => {

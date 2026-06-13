@@ -18,9 +18,16 @@ export type { OpenDatabaseOptions as DatabaseOptions } from './db.js'
 // Ingest
 // ------------------------------------------------------------------
 
-export { ingestSession } from './ingest.js'
+export {
+  ingestSession,
+  parseTranscript,
+  upsertSessionData,
+} from './ingest.js'
 
-export type { IngestResult } from './schema.js'
+export type {
+  IngestResult,
+  TranscriptParseOptions,
+} from './ingest.js'
 
 // ------------------------------------------------------------------
 // Writer

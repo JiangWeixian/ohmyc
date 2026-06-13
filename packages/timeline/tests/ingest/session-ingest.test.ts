@@ -80,6 +80,17 @@ describe('ingestSession', () => {
     expect(skills).toHaveLength(0)
   })
 
+  it('writes an explicit agent name when provided', () => {
+    const transcriptPath = path.join(fixturesDir, 'simple-session.jsonl')
+    ingestSession(db, 'test-session-codex', transcriptPath, { agentName: 'codex' })
+
+    const session = db
+      .prepare('SELECT agent_name FROM sessions WHERE session_id = ?')
+      .get('test-session-codex') as { agent_name: string }
+
+    expect(session.agent_name).toBe('codex')
+  })
+
   it('writes tool usage into session_tools table', () => {
     const transcriptPath = path.join(fixturesDir, 'session-with-tools.jsonl')
     ingestSession(db, 'test-session-tools', transcriptPath)
