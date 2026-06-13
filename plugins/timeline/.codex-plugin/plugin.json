@@ -1,6 +1,6 @@
 {
   "name": "timeline",
-  "version": "1.0.3",
+  "version": "1.0.4",
   "description": "Auto-collects Claude Code, OpenCode, and Codex session data for the OhMyC Timeline dashboard.",
   "author": {
     "name": "JiangWeixian",
