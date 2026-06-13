@@ -10,7 +10,7 @@
       "name": "timeline",
       "source": "./",
       "description": "Auto-collects Claude Code session data for Timeline dashboard",
-      "version": "1.0.4",
+      "version": "1.0.5",
       "author": {
         "name": "JiangWeixian"
       },

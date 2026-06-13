@@ -118,6 +118,34 @@ describe('ingest-codex.sh', () => {
     })
   })
 
+  it('uses Codex Desktop total_token_usage in jq fast path', () => {
+    const transcriptPath = writeTranscript(
+      path.join(tmpDir, '.codex', 'sessions', '2026', '06', '13'),
+      'codex-session-token-usage',
+      [
+        '{"timestamp":"2026-06-13T01:00:00.000Z","type":"session_meta","payload":{"id":"codex-session-token-usage","cwd":"/tmp/codex-project"}}',
+        '{"timestamp":"2026-06-13T01:00:01.000Z","type":"response_item","payload":{"type":"message","role":"user","content":[{"type":"input_text","text":"hello codex"}]}}',
+        '{"timestamp":"2026-06-13T01:00:02.000Z","type":"event_msg","payload":{"type":"token_count","info":{"total_token_usage":{"input_tokens":19368,"cached_input_tokens":4992,"output_tokens":176}}}}',
+        '{"timestamp":"2026-06-13T01:00:03.000Z","type":"event_msg","payload":{"type":"token_count","info":{"total_token_usage":{"input_tokens":40256,"cached_input_tokens":24320,"output_tokens":222,"reasoning_output_tokens":65,"total_tokens":40478},"last_token_usage":{"input_tokens":20888,"cached_input_tokens":19328,"output_tokens":46}}}}',
+      ],
+    )
+
+    const result = runCodexHook(JSON.stringify({
+      session_id: 'codex-session-token-usage',
+      transcript_path: transcriptPath,
+    }))
+
+    expect(result.status).toBe(0)
+    expect(result.stdout).toContain('INGEST_RAW_OK')
+    expect(readCaptured()).toMatchObject({
+      sessionId: 'codex-session-token-usage',
+      agentName: 'codex',
+      tokensInput: 40_256,
+      tokensOutput: 222,
+      tokensCached: 24_320,
+    })
+  })
+
   it('keeps jq fast path output equivalent to the Node parser shape', () => {
     const homeProject = path.join(tmpDir, 'codex-project')
     const transcriptPath = writeTranscript(

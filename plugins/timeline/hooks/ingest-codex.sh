@@ -90,6 +90,11 @@ if command -v jq >/dev/null 2>&1; then
       | (.payload.arguments | fromjson? | .cmd? // empty)
       | select(type == "string")
       | capture("(^|[\\s\"'\''])\\S*/skills/(?<name>[^/\\s\"'\'']+)/SKILL\\.md([\\s\"'\'']|$)").name;
+    def token_usage:
+      if (.total_token_usage | type) == "object" then .total_token_usage
+      elif (.input_tokens? != null or .output_tokens? != null or .cached_input_tokens? != null) then .
+      elif (.last_token_usage | type) == "object" then .last_token_usage
+      else {} end;
 
     (map(select(.timestamp) | .timestamp | timestamp_ms) | min // (now * 1000)) as $startedAt |
     (map(select(.timestamp) | .timestamp | timestamp_ms) | max // (now * 1000)) as $endedAt |
@@ -105,7 +110,9 @@ if command -v jq >/dev/null 2>&1; then
     (($userTexts | map(select(is_skill_injection) | capture("<name>(?<name>[^<]+)</name>").name)) +
       ([.[] | select(.type == "response_item" and .payload.type == "function_call") | command_skill_name])) as $skillNames |
     ($skillNames | unique) as $skills |
-    ([.[] | select(.type == "event_msg" and .payload.type == "token_count" and (.payload.info | type) == "object") | .payload.info] | last // {}) as $usage |
+    ([.[] | select(.type == "event_msg" and .payload.type == "token_count" and (.payload.info | type) == "object") | .payload.info | token_usage] | map(select(length > 0)) | last) as $eventUsage |
+    ([.[] | select(.type == "turn.completed" and (.usage | type) == "object") | .usage] | map(select(length > 0)) | last) as $turnUsage |
+    ($eventUsage // $turnUsage // {}) as $usage |
     {
       sessionId: $sessionId,
       project: (($turnProject // $sessionProject // "unknown") | display_project($HOME)),

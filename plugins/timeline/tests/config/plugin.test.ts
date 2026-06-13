@@ -14,7 +14,7 @@ describe('Codex plugin manifest', () => {
     const interfaceMeta = manifest.interface as Record<string, unknown>
 
     expect(manifest.name).toBe('timeline')
-    expect(manifest.version).toBe('1.0.4')
+    expect(manifest.version).toBe('1.0.5')
     expect(manifest.homepage).toBe('https://github.com/JiangWeixian/ohmyc/tree/main/plugins/timeline')
     expect(manifest.repository).toBe('https://github.com/JiangWeixian/ohmyc')
     expect(manifest).not.toHaveProperty('hooks')

@@ -240,6 +240,15 @@ function parseCodexTranscript(
       }
     }
 
+    if (parsed.type === 'turn.completed') {
+      const usage = extractCodexTokenUsage(parsed.usage)
+      if (usage) {
+        tokensInput = usage.input ?? tokensInput
+        tokensOutput = usage.output ?? tokensOutput
+        tokensCached = usage.cached ?? tokensCached
+      }
+    }
+
     const payload = parsed.payload as Record<string, unknown> | undefined
     if (!payload) {
       continue
@@ -259,11 +268,11 @@ function parseCodexTranscript(
     }
 
     if (parsed.type === 'event_msg' && payload.type === 'token_count') {
-      const info = payload.info as Record<string, unknown> | null | undefined
-      if (info) {
-        tokensInput = Number(info.input_tokens) || tokensInput
-        tokensOutput = Number(info.output_tokens) || tokensOutput
-        tokensCached = Number(info.cached_input_tokens) || tokensCached
+      const usage = extractCodexTokenUsage(payload.info)
+      if (usage) {
+        tokensInput = usage.input ?? tokensInput
+        tokensOutput = usage.output ?? tokensOutput
+        tokensCached = usage.cached ?? tokensCached
       }
     }
 
@@ -322,6 +331,61 @@ function parseCodexTranscript(
     skills: [...skills],
     model,
   }
+}
+
+interface CodexTokenUsage {
+  input?: number
+  output?: number
+  cached?: number
+}
+
+function extractCodexTokenUsage(value: unknown): CodexTokenUsage | null {
+  if (!isRecord(value)) {
+    return null
+  }
+
+  let candidate: Record<string, unknown> | null = null
+  if (isRecord(value.total_token_usage)) {
+    candidate = value.total_token_usage
+  } else if (hasCodexTokenFields(value)) {
+    candidate = value
+  } else if (isRecord(value.last_token_usage)) {
+    candidate = value.last_token_usage
+  }
+
+  if (!candidate) {
+    return null
+  }
+
+  const usage: CodexTokenUsage = {}
+  const input = numberValue(candidate.input_tokens)
+  const output = numberValue(candidate.output_tokens)
+  const cached = numberValue(candidate.cached_input_tokens)
+
+  if (input !== null) {
+    usage.input = input
+  }
+  if (output !== null) {
+    usage.output = output
+  }
+  if (cached !== null) {
+    usage.cached = cached
+  }
+
+  return Object.keys(usage).length > 0 ? usage : null
+}
+
+function hasCodexTokenFields(value: Record<string, unknown>): boolean {
+  return 'input_tokens' in value || 'output_tokens' in value || 'cached_input_tokens' in value
+}
+
+function numberValue(value: unknown): number | null {
+  const number = Number(value)
+  return Number.isFinite(number) ? number : null
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return Boolean(value) && typeof value === 'object' && !Array.isArray(value)
 }
 
 function extractCodexMessageText(content: unknown): string | null {
