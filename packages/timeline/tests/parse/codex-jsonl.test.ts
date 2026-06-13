@@ -19,7 +19,7 @@ describe('parseTranscript (Codex JSONL)', () => {
 
     expect(data.sessionId).toBe('019ebc25-b5ab-72a0-b391-0364d948be20')
     expect(data.agentName).toBe('codex')
-    expect(data.project).toBe('~/projects/claudeui')
+    expect(data.project).toBe('~/projects/ohmyc')
     expect(data.turns).toBe(1)
     expect(data.summary).toBe('把我 review timeline codex compat plan')
     expect(data.summarySource).toBe('first_message')

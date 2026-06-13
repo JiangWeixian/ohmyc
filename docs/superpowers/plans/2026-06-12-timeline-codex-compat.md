@@ -42,18 +42,18 @@ Create `plugins/timeline/.codex-plugin/plugin.json`:
 {
   "name": "timeline",
   "version": "1.0.0",
-  "description": "Auto-collects Claude Code, OpenCode, and Codex session data for ClaudeUI Timeline dashboard",
+  "description": "Auto-collects Claude Code, OpenCode, and Codex session data for OhMyC Timeline dashboard",
   "author": {
     "name": "JiangWeixian",
     "email": "jiangweixian1994@gmail.com"
   },
-  "homepage": "https://github.com/jiangweixian/claudeui/tree/main/plugins/timeline",
+  "homepage": "https://github.com/JiangWeixian/ohmyc/tree/main/plugins/timeline",
   "license": "MIT",
   "keywords": ["timeline", "analytics", "session-tracking"],
   "hooks": "./hooks/hooks.json",
   "interface": {
     "displayName": "OhMyC Timeline",
-    "shortDescription": "Session analytics for ClaudeUI",
+    "shortDescription": "Session analytics for OhMyC",
     "longDescription": "Collects session data (turns, tokens, tools, skills) from Claude Code, OpenCode, and Codex agents and writes it to the shared Timeline SQLite database.",
     "developerName": "JiangWeixian",
     "category": "Productivity",
@@ -514,7 +514,7 @@ Replace `plugins/timeline/.claude-plugin/plugin.json`:
 {
   "name": "timeline",
   "version": "1.0.0",
-  "description": "Auto-collects Claude Code, Codex, and OpenCode session data for ClaudeUI Timeline dashboard"
+  "description": "Auto-collects Claude Code, Codex, and OpenCode session data for OhMyC Timeline dashboard"
 }
 ```
 

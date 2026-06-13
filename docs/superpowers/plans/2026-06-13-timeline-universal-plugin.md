@@ -95,13 +95,13 @@ Expected: FAIL with an error that `plugins/timeline/.codex-plugin/plugin.json` d
 {
   "name": "timeline",
   "version": "1.0.0",
-  "description": "Auto-collects Claude Code, OpenCode, and Codex session data for the ClaudeUI Timeline dashboard.",
+  "description": "Auto-collects Claude Code, OpenCode, and Codex session data for the OhMyC Timeline dashboard.",
   "author": {
     "name": "JiangWeixian",
     "email": "jiangweixian1994@gmail.com"
   },
-  "homepage": "https://github.com/jiangweixian/claudeui/tree/main/plugins/timeline",
-  "repository": "https://github.com/jiangweixian/claudeui",
+  "homepage": "https://github.com/JiangWeixian/ohmyc/tree/main/plugins/timeline",
+  "repository": "https://github.com/JiangWeixian/ohmyc",
   "license": "MIT",
   "keywords": [
     "timeline",
@@ -134,7 +134,7 @@ python3 -m pip install --user PyYAML >/tmp/timeline-pyyaml-install.log 2>&1 || t
 python3 /Volumes/ORICO/Users/jiangwei/.codex/skills/.system/plugin-creator/scripts/validate_plugin.py plugins/timeline
 ```
 
-Expected: `Plugin validation passed: /Volumes/ORICO/Users/jiangwei/projects/claudeui/plugins/timeline`
+Expected: `Plugin validation passed: /Volumes/ORICO/Users/jiangwei/projects/ohmyc/plugins/timeline`
 
 - [ ] **Step 5: Run the manifest test**
 
@@ -595,9 +595,9 @@ git commit -m "feat(timeline): support agent-aware transcript ingest"
 Create `packages/timeline/tests/fixtures/codex-session.jsonl`:
 
 ```jsonl
-{"timestamp":"2026-06-12T14:05:24.091Z","type":"session_meta","payload":{"id":"019ebc25-b5ab-72a0-b391-0364d948be20","timestamp":"2026-06-12T14:04:08.529Z","cwd":"/Volumes/ORICO/Users/jiangwei/projects/claudeui","originator":"Codex Desktop","model_provider":"openai"}}
+{"timestamp":"2026-06-12T14:05:24.091Z","type":"session_meta","payload":{"id":"019ebc25-b5ab-72a0-b391-0364d948be20","timestamp":"2026-06-12T14:04:08.529Z","cwd":"/Volumes/ORICO/Users/jiangwei/projects/ohmyc","originator":"Codex Desktop","model_provider":"openai"}}
 {"timestamp":"2026-06-12T14:05:24.104Z","type":"event_msg","payload":{"type":"task_started","turn_id":"019ebc26-dca2-7460-a5ea-9db46cfd1e8d","started_at":1781273124,"model_context_window":258400,"collaboration_mode_kind":"default"}}
-{"timestamp":"2026-06-12T14:05:24.153Z","type":"turn_context","payload":{"turn_id":"019ebc26-dca2-7460-a5ea-9db46cfd1e8d","cwd":"/Volumes/ORICO/Users/jiangwei/projects/claudeui","model":"gpt-5.5"}}
+{"timestamp":"2026-06-12T14:05:24.153Z","type":"turn_context","payload":{"turn_id":"019ebc26-dca2-7460-a5ea-9db46cfd1e8d","cwd":"/Volumes/ORICO/Users/jiangwei/projects/ohmyc","model":"gpt-5.5"}}
 {"timestamp":"2026-06-12T14:05:24.165Z","type":"response_item","payload":{"type":"message","role":"user","content":[{"type":"input_text","text":"把我 review timeline codex compat plan"}]}}
 {"timestamp":"2026-06-12T14:05:30.000Z","type":"response_item","payload":{"type":"function_call","name":"functions.exec_command","arguments":"{\"cmd\":\"sed -n '1,220p' docs/superpowers/plans/2026-06-12-timeline-codex-compat.md\"}"}}
 {"timestamp":"2026-06-12T14:05:31.000Z","type":"response_item","payload":{"type":"function_call","name":"functions.exec_command","arguments":"{\"cmd\":\"sed -n '1,220p' plugins/timeline/hooks/ingest-codex.sh\"}"}}
@@ -633,7 +633,7 @@ describe('parseCodexTranscript', () => {
 
     expect(data.sessionId).toBe('019ebc25-b5ab-72a0-b391-0364d948be20')
     expect(data.agentName).toBe('codex')
-    expect(data.project).toBe('/Volumes/ORICO/Users/jiangwei/projects/claudeui')
+    expect(data.project).toBe('/Volumes/ORICO/Users/jiangwei/projects/ohmyc')
     expect(data.turns).toBe(1)
     expect(data.summary).toBe('把我 review timeline codex compat plan')
     expect(data.summarySource).toBe('first_message')
@@ -915,7 +915,7 @@ Add this test to `plugins/timeline/tests/runtime/ingest-cli.test.ts` after the d
 
 ```bash
 cd plugins/timeline && npm run build
-cd /Volumes/ORICO/Users/jiangwei/projects/claudeui
+cd /Volumes/ORICO/Users/jiangwei/projects/ohmyc
 npx vitest run plugins/timeline/tests/runtime/ingest-cli.test.ts --reporter=verbose
 ```
 
@@ -967,7 +967,7 @@ function runDiskMode(sessionId: string, transcriptPath: string, agentName: strin
 
 ```bash
 cd plugins/timeline && npm run build
-cd /Volumes/ORICO/Users/jiangwei/projects/claudeui
+cd /Volumes/ORICO/Users/jiangwei/projects/ohmyc
 npx vitest run plugins/timeline/tests/runtime/ingest-cli.test.ts --reporter=verbose
 ```
 
@@ -1409,7 +1409,7 @@ The shared writer contract is `ParsedSessionData` from `@ohmyc/timeline`. Agent-
 {
   "name": "timeline",
   "version": "1.0.0",
-  "description": "Auto-collects Claude Code, Codex, and OpenCode session data for ClaudeUI Timeline dashboard"
+  "description": "Auto-collects Claude Code, Codex, and OpenCode session data for OhMyC Timeline dashboard"
 }
 ```
 
@@ -1454,12 +1454,12 @@ Expected: Build succeeds and `plugins/timeline/dist/ingest.mjs` exists.
 - [ ] **Step 3: Validate Codex plugin manifest**
 
 ```bash
-cd /Volumes/ORICO/Users/jiangwei/projects/claudeui
+cd /Volumes/ORICO/Users/jiangwei/projects/ohmyc
 python3 -m pip install --user PyYAML >/tmp/timeline-pyyaml-install.log 2>&1 || true
 python3 /Volumes/ORICO/Users/jiangwei/.codex/skills/.system/plugin-creator/scripts/validate_plugin.py plugins/timeline
 ```
 
-Expected: `Plugin validation passed: /Volumes/ORICO/Users/jiangwei/projects/claudeui/plugins/timeline`
+Expected: `Plugin validation passed: /Volumes/ORICO/Users/jiangwei/projects/ohmyc/plugins/timeline`
 
 - [ ] **Step 4: Validate all JSON files**
 
@@ -1484,7 +1484,7 @@ Expected: `OK` for all five files.
 - [ ] **Step 5: Reinstall Codex plugin from repo marketplace**
 
 ```bash
-codex plugin marketplace add /Volumes/ORICO/Users/jiangwei/projects/claudeui/.agents/plugins
+codex plugin marketplace add /Volumes/ORICO/Users/jiangwei/projects/ohmyc/.agents/plugins
 codex plugin add timeline@ohmyc
 codex plugin list | rg 'timeline|ohmyc'
 ```

@@ -15,6 +15,8 @@ describe('Codex plugin manifest', () => {
 
     expect(manifest.name).toBe('timeline')
     expect(manifest.version).toBe('1.0.0')
+    expect(manifest.homepage).toBe('https://github.com/JiangWeixian/ohmyc/tree/main/plugins/timeline')
+    expect(manifest.repository).toBe('https://github.com/JiangWeixian/ohmyc')
     expect(manifest).not.toHaveProperty('hooks')
     expect(interfaceMeta.defaultPrompt).toEqual([
       'Show my recent Claude Code, OpenCode, and Codex session activity.',
