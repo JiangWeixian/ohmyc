@@ -216,6 +216,7 @@ function parseCodexTranscript(
   let tokensOutput = 0
   let tokensCached = 0
   const toolCounts = new Map<string, number>()
+  const skills = new Set<string>()
 
   for (const line of lines) {
     const trimmed = line.trim()
@@ -274,14 +275,26 @@ function parseCodexTranscript(
     if (payload.type === 'message' && payload.role === 'user') {
       const text = extractCodexMessageText(payload.content)
       if (text) {
-        turns++
-        firstUserMessage ??= text
+        for (const skillName of extractCodexSkillNames(text)) {
+          skills.add(skillName)
+        }
+        if (!isCodexSkillInjection(text)) {
+          turns++
+          firstUserMessage ??= text
+        }
       }
     }
 
     if (payload.type === 'function_call' && typeof payload.name === 'string') {
       const toolName = payload.name
       toolCounts.set(toolName, (toolCounts.get(toolName) || 0) + 1)
+
+      if (toolName === 'exec_command' || toolName === 'functions.exec_command') {
+        const skillName = extractCodexSkillNameFromCommandArguments(payload.arguments)
+        if (skillName) {
+          skills.add(skillName)
+        }
+      }
     }
   }
 
@@ -307,7 +320,7 @@ function parseCodexTranscript(
     transcriptPath,
     fileSize,
     tools: [...toolCounts.entries()].map(([toolName, callCount]) => ({ toolName, callCount })),
-    skills: [],
+    skills: [...skills],
     model,
   }
 }
@@ -334,6 +347,34 @@ function extractCodexMessageText(content: unknown): string | null {
     .join('\n')
     .trim()
   return text || null
+}
+
+function extractCodexSkillNames(text: string): string[] {
+  return [...text.matchAll(/<skill\b[^>]*>[\s\S]*?<name>([^<]+)<\/name>[\s\S]*?<\/skill>/g)]
+    .map(match => match[1]?.trim())
+    .filter(Boolean)
+}
+
+function isCodexSkillInjection(text: string): boolean {
+  const trimmed = text.trim()
+  return trimmed.startsWith('<skill>') && trimmed.endsWith('</skill>') && extractCodexSkillNames(trimmed).length > 0
+}
+
+function extractCodexSkillNameFromCommandArguments(argumentsValue: unknown): string | null {
+  if (typeof argumentsValue !== 'string') {
+    return null
+  }
+  let parsed: Record<string, unknown>
+  try {
+    parsed = JSON.parse(argumentsValue)
+  } catch {
+    return null
+  }
+  if (typeof parsed.cmd !== 'string') {
+    return null
+  }
+  const match = parsed.cmd.match(/(?:^|[\s"'])\S*\/skills\/([^/\s"']+)\/SKILL\.md(?:[\s"']|$)/)
+  return match?.[1] ?? null
 }
 
 function truncateSummary(value: string): string {

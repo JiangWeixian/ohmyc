@@ -83,6 +83,13 @@ if command -v jq >/dev/null 2>&1; then
       (((("0." + ($parts.frac // "0")) | tonumber) * 1000) | floor);
     def display_project($home):
       if startswith($home) then ("~" + ltrimstr($home)) else . end;
+    def is_skill_injection:
+      (gsub("^\\s+|\\s+$"; "") | startswith("<skill>")) and test("<name>[^<]+</name>") and (gsub("^\\s+|\\s+$"; "") | endswith("</skill>"));
+    def command_skill_name:
+      select((.payload.name == "exec_command" or .payload.name == "functions.exec_command") and (.payload.arguments | type) == "string")
+      | (.payload.arguments | fromjson? | .cmd? // empty)
+      | select(type == "string")
+      | capture("(^|[\\s\"'\''])\\S*/skills/(?<name>[^/\\s\"'\'']+)/SKILL\\.md([\\s\"'\'']|$)").name;
 
     (map(select(.timestamp) | .timestamp | timestamp_ms) | min // (now * 1000)) as $startedAt |
     (map(select(.timestamp) | .timestamp | timestamp_ms) | max // (now * 1000)) as $endedAt |
@@ -93,7 +100,11 @@ if command -v jq >/dev/null 2>&1; then
       if type == "string" then .
       elif type == "array" then ([.[] | select((.text | type) == "string") | .text] | join("\n"))
       else empty end
-    ] | map(select(length > 0))) as $userMessages |
+    ] | map(select(length > 0))) as $userTexts |
+    ($userTexts | map(select(is_skill_injection | not))) as $userMessages |
+    (($userTexts | map(select(is_skill_injection) | capture("<name>(?<name>[^<]+)</name>").name)) +
+      ([.[] | select(.type == "response_item" and .payload.type == "function_call") | command_skill_name])) as $skillNames |
+    ($skillNames | unique) as $skills |
     ([.[] | select(.type == "event_msg" and .payload.type == "token_count" and (.payload.info | type) == "object") | .payload.info] | last // {}) as $usage |
     {
       sessionId: $sessionId,
@@ -111,7 +122,7 @@ if command -v jq >/dev/null 2>&1; then
       transcriptPath: $transcriptPath,
       fileSize: ($fileSize | tonumber),
       tools: ([.[] | select(.type == "response_item" and .payload.type == "function_call" and (.payload.name | type) == "string") | .payload.name] | group_by(.) | map({toolName: .[0], callCount: length})),
-      skills: [],
+      skills: $skills,
       model: $model
     }
   ' --arg sessionId "$SESSION_ID" --arg transcriptPath "$TRANSCRIPT_PATH" --arg HOME "$HOME" --arg fileSize "$FILE_SIZE" "$TRANSCRIPT_PATH" 2>/dev/null)

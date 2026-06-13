@@ -24,9 +24,10 @@ describe('parseTranscript (Codex JSONL)', () => {
     expect(data.summary).toBe('把我 review timeline codex compat plan')
     expect(data.summarySource).toBe('first_message')
     expect(data.tools).toEqual([
+      { toolName: 'exec_command', callCount: 1 },
       { toolName: 'functions.exec_command', callCount: 2 },
     ])
-    expect(data.skills).toEqual([])
+    expect(data.skills).toEqual(['superpowers:writing-plans', 'test-driven-development'])
     expect(data.tokensInput).toBe(1200)
     expect(data.tokensOutput).toBe(350)
     expect(data.tokensCached).toBe(200)

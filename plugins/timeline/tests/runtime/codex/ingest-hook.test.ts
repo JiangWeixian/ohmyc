@@ -22,6 +22,8 @@ const CODEX_LINES = [
   '{"timestamp":"2026-06-13T01:00:00.000Z","type":"session_meta","payload":{"id":"codex-session-001","cwd":"/tmp/codex-project"}}',
   '{"timestamp":"2026-06-13T01:00:01.000Z","type":"turn_context","payload":{"model":"gpt-5.5","cwd":"/tmp/codex-project"}}',
   '{"timestamp":"2026-06-13T01:00:02.000Z","type":"response_item","payload":{"type":"message","role":"user","content":[{"type":"input_text","text":"hello codex"}]}}',
+  String.raw`{"timestamp":"2026-06-13T01:00:02.500Z","type":"response_item","payload":{"type":"message","role":"user","content":[{"type":"input_text","text":"<skill>\n<name>superpowers:writing-plans</name>\n<path>/tmp/skills/writing-plans/SKILL.md</path>\n---\nname: writing-plans\ndescription: Use when you have a spec or requirements for a multi-step task, before touching code\n---\n\n# Writing Plans\n</skill>"}]}}`,
+  String.raw`{"timestamp":"2026-06-13T01:00:02.750Z","type":"response_item","payload":{"type":"function_call","name":"exec_command","arguments":"{\"cmd\":\"sed -n '1,240p' /tmp/skills/test-driven-development/SKILL.md\"}"}}`,
   String.raw`{"timestamp":"2026-06-13T01:00:03.000Z","type":"response_item","payload":{"type":"function_call","name":"functions.exec_command","arguments":"{\"cmd\":\"pwd\"}"}}`,
   '{"timestamp":"2026-06-13T01:00:04.000Z","type":"event_msg","payload":{"type":"token_count","info":{"input_tokens":10,"output_tokens":5,"cached_input_tokens":2}}}',
 ]
@@ -111,6 +113,7 @@ describe('ingest-codex.sh', () => {
       tokensCached: 2,
       summary: 'hello codex',
       summarySource: 'first_message',
+      skills: ['superpowers:writing-plans', 'test-driven-development'],
       model: 'gpt-5.5',
     })
   })
@@ -124,6 +127,8 @@ describe('ingest-codex.sh', () => {
         `{"timestamp":"2026-06-13T01:00:00.123Z","type":"session_meta","payload":{"id":"${CODEX_UUID}","cwd":${JSON.stringify(homeProject)}}}`,
         `{"timestamp":"2026-06-13T01:00:01.456Z","type":"turn_context","payload":{"model":"gpt-5.5","cwd":${JSON.stringify(homeProject)}}}`,
         '{"timestamp":"2026-06-13T01:00:02.789Z","type":"response_item","payload":{"type":"message","role":"user","content":[{"type":"input_text","text":"hello codex"}]}}',
+        String.raw`{"timestamp":"2026-06-13T01:00:02.900Z","type":"response_item","payload":{"type":"message","role":"user","content":[{"type":"input_text","text":"<skill>\n<name>superpowers:writing-plans</name>\n<path>/tmp/skills/writing-plans/SKILL.md</path>\n---\nname: writing-plans\ndescription: Use when you have a spec or requirements for a multi-step task, before touching code\n---\n\n# Writing Plans\n</skill>"}]}}`,
+        String.raw`{"timestamp":"2026-06-13T01:00:03.500Z","type":"response_item","payload":{"type":"function_call","name":"exec_command","arguments":"{\"cmd\":\"sed -n '1,240p' /tmp/skills/test-driven-development/SKILL.md\"}"}}`,
         String.raw`{"timestamp":"2026-06-13T01:00:03.999Z","type":"response_item","payload":{"type":"function_call","name":"functions.exec_command","arguments":"{\"cmd\":\"pwd\"}"}}`,
         '{"timestamp":"2026-06-13T01:00:04.987Z","type":"event_msg","payload":{"type":"token_count","info":{"input_tokens":10,"output_tokens":5,"cached_input_tokens":2}}}',
       ],
@@ -148,7 +153,11 @@ describe('ingest-codex.sh', () => {
       tokensCached: 2,
       summary: 'hello codex',
       summarySource: 'first_message',
-      tools: [{ toolName: 'functions.exec_command', callCount: 1 }],
+      tools: [
+        { toolName: 'exec_command', callCount: 1 },
+        { toolName: 'functions.exec_command', callCount: 1 },
+      ],
+      skills: ['superpowers:writing-plans', 'test-driven-development'],
       model: 'gpt-5.5',
     })
   })
