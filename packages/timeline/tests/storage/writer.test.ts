@@ -1,4 +1,4 @@
-// packages/timeline/tests/writer.test.ts
+// packages/timeline/tests/storage/writer.test.ts
 import {
   afterEach,
   beforeEach,
@@ -7,11 +7,11 @@ import {
   it,
 } from 'vitest'
 
-import { closeDatabase, openDatabase } from '../src/db.js'
-import { createWriter } from '../src/writer.js'
+import { closeDatabase, openDatabase } from '../../src/db.js'
+import { createWriter } from '../../src/writer.js'
 
 import type Database from 'better-sqlite3'
-import type { ParsedSessionData } from '../src/schema.js'
+import type { ParsedSessionData } from '../../src/schema.js'
 
 describe('createWriter', () => {
   let db: Database.Database

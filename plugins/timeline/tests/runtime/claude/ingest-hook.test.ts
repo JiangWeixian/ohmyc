@@ -66,7 +66,7 @@ describe('ingest.sh', () => {
     mkdirSync(path.join(tempPluginDir, 'hooks'), { recursive: true })
     mkdirSync(path.join(tempPluginDir, 'dist'), { recursive: true })
 
-    const realHook = readFileSync(path.resolve(import.meta.dirname, '../hooks/ingest.sh'), 'utf8')
+    const realHook = readFileSync(path.resolve(import.meta.dirname, '../../../hooks/ingest.sh'), 'utf8')
     writeFileSync(path.join(tempPluginDir, 'hooks/ingest.sh'), realHook)
     chmodSync(path.join(tempPluginDir, 'hooks/ingest.sh'), 0o755)
 

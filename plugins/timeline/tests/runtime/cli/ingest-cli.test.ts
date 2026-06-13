@@ -17,7 +17,7 @@ import {
   it,
 } from 'vitest'
 
-const INGEST_MJS = path.resolve(import.meta.dirname, '../dist/ingest.mjs')
+const INGEST_MJS = path.resolve(import.meta.dirname, '../../../dist/ingest.mjs')
 
 const MINIMAL_TRANSCRIPT = [
   '{"type":"user","timestamp":"2026-04-30T10:00:00.000Z","message":{"role":"user","content":"hello"}}',

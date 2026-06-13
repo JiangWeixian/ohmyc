@@ -8,7 +8,7 @@ import {
   vi,
 } from 'vitest'
 
-import { createAccumulator, createEventHandler } from '../opencode'
+import { createAccumulator, createEventHandler } from '../../../opencode'
 import {
   assistantMessageUpdatedEvent,
   ignoredMessagePartEvent,
@@ -19,7 +19,7 @@ import {
   sessionIdleEvent,
   syntheticMessagePartEvent,
   userMessageUpdatedEvent,
-} from './fixtures/events'
+} from '../../fixtures/events'
 
 vi.mock('bun:sqlite', () => ({
   Database: class MockDatabase {

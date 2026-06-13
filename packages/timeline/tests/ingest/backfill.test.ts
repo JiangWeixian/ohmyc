@@ -15,8 +15,8 @@ import {
   it,
 } from 'vitest'
 
-import { backfillAll, getDefaultProjectsDir } from '../src/backfill.js'
-import { closeDatabase, openDatabase } from '../src/db.js'
+import { backfillAll, getDefaultProjectsDir } from '../../src/backfill.js'
+import { closeDatabase, openDatabase } from '../../src/db.js'
 
 import type Database from 'better-sqlite3'
 
