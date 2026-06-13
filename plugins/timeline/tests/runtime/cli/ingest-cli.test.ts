@@ -63,6 +63,46 @@ describe('dist/ingest.mjs (node entry)', () => {
     expect(row?.turns).toBe(1)
   })
 
+  it('ingests Codex transcripts from disk via --agent-name codex', () => {
+    const codexTranscript = [
+      '{"timestamp":"2026-06-12T14:05:24.091Z","type":"session_meta","payload":{"id":"codex-session-001","timestamp":"2026-06-12T14:04:08.529Z","cwd":"/tmp/codex-project","originator":"Codex Desktop"}}',
+      '{"timestamp":"2026-06-12T14:05:24.153Z","type":"turn_context","payload":{"turn_id":"turn-001","cwd":"/tmp/codex-project","model":"gpt-5.5"}}',
+      '{"timestamp":"2026-06-12T14:05:24.165Z","type":"response_item","payload":{"type":"message","role":"user","content":[{"type":"input_text","text":"review this plan"}]}}',
+      String.raw`{"timestamp":"2026-06-12T14:05:30.000Z","type":"response_item","payload":{"type":"function_call","name":"functions.exec_command","arguments":"{\"cmd\":\"pwd\"}"}}`,
+      '{"timestamp":"2026-06-12T14:05:40.000Z","type":"event_msg","payload":{"type":"token_count","info":{"input_tokens":10,"output_tokens":5,"cached_input_tokens":2}}}',
+    ].join('\n')
+    writeFileSync(transcriptPath, `${codexTranscript}\n`)
+
+    const result = run([
+      '--session-id',
+      'codex-session-001',
+      '--transcript-path',
+      transcriptPath,
+      '--agent-name',
+      'codex',
+    ])
+
+    expect(result.status).toBe(0)
+
+    const db = new Database(path.join(dbDir, 'timeline.db'), { readonly: true })
+    const row = db
+      .prepare('SELECT session_id, agent_name, project, turns FROM sessions WHERE session_id = ?')
+      .get('codex-session-001') as {
+        session_id: string
+        agent_name: string
+        project: string
+        turns: number
+      } | undefined
+    db.close()
+
+    expect(row).toMatchObject({
+      session_id: 'codex-session-001',
+      agent_name: 'codex',
+      project: '/tmp/codex-project',
+      turns: 1,
+    })
+  })
+
   it('ingests pre-parsed JSON from stdin via --raw', () => {
     const parsed = {
       sessionId: 'session-bbb',

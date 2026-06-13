@@ -18,8 +18,14 @@ cli
   .command('', 'Ingest a single session into the timeline DB')
   .option('--session-id <id>', 'Session UUID (disk-path mode)')
   .option('--transcript-path <path>', 'Path to JSONL transcript (disk-path mode)')
+  .option('--agent-name <name>', 'Agent name for disk-path mode', { default: 'claude' })
   .option('--raw', 'Read pre-parsed ParsedSessionData JSON from stdin')
-  .action(async (options: { sessionId?: string; transcriptPath?: string; raw?: boolean }) => {
+  .action(async (options: {
+    sessionId?: string
+    transcriptPath?: string
+    agentName?: string
+    raw?: boolean
+  }) => {
     if (options.raw) {
       await runRawMode()
       return
@@ -28,16 +34,16 @@ cli
       console.error('error: --session-id and --transcript-path are required when --raw is not set')
       process.exit(1)
     }
-    runDiskMode(options.sessionId, options.transcriptPath)
+    runDiskMode(options.sessionId, options.transcriptPath, options.agentName ?? 'claude')
   })
 
 cli.help()
 cli.parse()
 
-function runDiskMode(sessionId: string, transcriptPath: string): void {
+function runDiskMode(sessionId: string, transcriptPath: string, agentName: string): void {
   const db = openDatabase()
   try {
-    ingestSession(db, sessionId, transcriptPath)
+    ingestSession(db, sessionId, transcriptPath, { agentName })
   } finally {
     closeDatabase(db)
   }
