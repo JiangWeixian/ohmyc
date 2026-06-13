@@ -1208,16 +1208,7 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PLUGIN_DIR="${PLUGIN_ROOT:-$(cd "$SCRIPT_DIR/.." && pwd)}"
 INGEST_MJS="$PLUGIN_DIR/dist/ingest.mjs"
 
-if [ -n "${OHMYC_HOME:-}" ]; then
-  OHMYC_DIR="$OHMYC_HOME"
-elif [ -d "$HOME/.config/ohmyc" ]; then
-  OHMYC_DIR="$HOME/.config/ohmyc"
-elif [ -d "$HOME/.cui" ]; then
-  OHMYC_DIR="$HOME/.cui"
-else
-  OHMYC_DIR="$HOME/.config/ohmyc"
-fi
-export OHMYC_HOME="$OHMYC_DIR"
+export OHMYC_HOME="${OHMYC_HOME:-$HOME/.config/ohmyc}"
 
 log_error() { echo "[timeline] $1" >&2; }
 log_info()  { echo "[timeline] $1" >&2; }

@@ -359,15 +359,9 @@ describe('ingest-claude.sh', () => {
     })
   })
 
-  // ---------------------------------------------------------------------------
-  // OHMYC_HOME / legacy ~/.cui fallback
-  // ---------------------------------------------------------------------------
-
   describe('home directory resolution', () => {
-    it('uses ~/.cui as fallback when OHMYC_HOME unset and ~/.config/ohmyc missing', () => {
+    it('uses ~/.config/ohmyc as default when OHMYC_HOME is unset', () => {
       writeTranscript(fakeClaudeDir, 'test-legacy-home', FIXTURES.minimal)
-      const legacyHome = path.join(tmpDir, '.cui')
-      mkdirSync(legacyHome, { recursive: true })
 
       const result = spawnSync('bash', [pluginHook, 'test-legacy-home'], {
         env: {
