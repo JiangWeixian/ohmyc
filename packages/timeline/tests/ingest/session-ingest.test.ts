@@ -82,13 +82,14 @@ describe('ingestSession', () => {
 
   it('writes an explicit agent name when provided', () => {
     const transcriptPath = path.join(fixturesDir, 'simple-session.jsonl')
-    ingestSession(db, 'test-session-codex', transcriptPath, { agentName: 'codex' })
+    ingestSession(db, 'test-session-claude-cli', transcriptPath, { agentName: 'claude-cli' })
 
     const session = db
-      .prepare('SELECT agent_name FROM sessions WHERE session_id = ?')
-      .get('test-session-codex') as { agent_name: string }
+      .prepare('SELECT agent_name, turns FROM sessions WHERE session_id = ?')
+      .get('test-session-claude-cli') as { agent_name: string; turns: number }
 
-    expect(session.agent_name).toBe('codex')
+    expect(session.agent_name).toBe('claude-cli')
+    expect(session.turns).toBe(2)
   })
 
   it('writes tool usage into session_tools table', () => {

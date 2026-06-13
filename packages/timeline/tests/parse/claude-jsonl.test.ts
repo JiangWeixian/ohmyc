@@ -37,9 +37,10 @@ describe('parseTranscript (Claude JSONL)', () => {
 
   it('accepts an explicit agent name for shared writers', () => {
     const transcriptPath = path.join(fixturesDir, 'simple-session.jsonl')
-    const data = parseTranscript('test-session-001', transcriptPath, { agentName: 'codex' })
+    const data = parseTranscript('test-session-001', transcriptPath, { agentName: 'claude-cli' })
 
-    expect(data.agentName).toBe('codex')
+    expect(data.agentName).toBe('claude-cli')
+    expect(data.turns).toBe(2)
   })
 
   it('counts tool calls correctly', () => {

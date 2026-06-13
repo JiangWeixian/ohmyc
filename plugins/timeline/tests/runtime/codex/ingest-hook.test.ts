@@ -26,6 +26,8 @@ const CODEX_LINES = [
   '{"timestamp":"2026-06-13T01:00:04.000Z","type":"event_msg","payload":{"type":"token_count","info":{"input_tokens":10,"output_tokens":5,"cached_input_tokens":2}}}',
 ]
 
+const CODEX_UUID = '019ebc25-b5ab-72a0-b391-0364d948be20'
+
 function writeTranscript(dir: string, sessionId: string, lines: readonly string[]): string {
   mkdirSync(dir, { recursive: true })
   const filePath = path.join(dir, `${sessionId}.jsonl`)
@@ -109,6 +111,44 @@ describe('ingest-codex.sh', () => {
       tokensCached: 2,
       summary: 'hello codex',
       summarySource: 'first_message',
+      model: 'gpt-5.5',
+    })
+  })
+
+  it('keeps jq fast path output equivalent to the Node parser shape', () => {
+    const homeProject = path.join(tmpDir, 'codex-project')
+    const transcriptPath = writeTranscript(
+      path.join(tmpDir, '.codex', 'sessions', '2026', '06', '13'),
+      `rollout-2026-06-13T01-02-03-${CODEX_UUID}`,
+      [
+        `{"timestamp":"2026-06-13T01:00:00.123Z","type":"session_meta","payload":{"id":"${CODEX_UUID}","cwd":${JSON.stringify(homeProject)}}}`,
+        `{"timestamp":"2026-06-13T01:00:01.456Z","type":"turn_context","payload":{"model":"gpt-5.5","cwd":${JSON.stringify(homeProject)}}}`,
+        '{"timestamp":"2026-06-13T01:00:02.789Z","type":"response_item","payload":{"type":"message","role":"user","content":[{"type":"input_text","text":"hello codex"}]}}',
+        String.raw`{"timestamp":"2026-06-13T01:00:03.999Z","type":"response_item","payload":{"type":"function_call","name":"functions.exec_command","arguments":"{\"cmd\":\"pwd\"}"}}`,
+        '{"timestamp":"2026-06-13T01:00:04.987Z","type":"event_msg","payload":{"type":"token_count","info":{"input_tokens":10,"output_tokens":5,"cached_input_tokens":2}}}',
+      ],
+    )
+
+    const result = runCodexHook(JSON.stringify({ transcript_path: transcriptPath }), {
+      HOME: tmpDir,
+    })
+
+    expect(result.status).toBe(0)
+    expect(result.stdout).toContain('INGEST_RAW_OK')
+    expect(readCaptured()).toMatchObject({
+      sessionId: CODEX_UUID,
+      agentName: 'codex',
+      project: '~/codex-project',
+      startedAt: Date.parse('2026-06-13T01:00:00.123Z'),
+      endedAt: Date.parse('2026-06-13T01:00:04.987Z'),
+      durationMs: 4864,
+      turns: 1,
+      tokensInput: 10,
+      tokensOutput: 5,
+      tokensCached: 2,
+      summary: 'hello codex',
+      summarySource: 'first_message',
+      tools: [{ toolName: 'functions.exec_command', callCount: 1 }],
       model: 'gpt-5.5',
     })
   })

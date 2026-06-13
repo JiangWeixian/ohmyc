@@ -58,8 +58,26 @@ if [ -z "$TRANSCRIPT_PATH" ] || [ ! -f "$TRANSCRIPT_PATH" ]; then
 fi
 
 if [ -z "$SESSION_ID" ]; then
+  SESSION_ID=$(TRANSCRIPT_PATH="$TRANSCRIPT_PATH" node -e '
+const { readFileSync } = require("node:fs")
+const transcriptPath = process.env.TRANSCRIPT_PATH || ""
+try {
+  for (const line of readFileSync(transcriptPath, "utf8").split("\n")) {
+    if (!line.trim()) continue
+    const parsed = JSON.parse(line)
+    const id = parsed?.type === "session_meta" ? parsed?.payload?.id : undefined
+    if (typeof id === "string" && id) {
+      console.log(id)
+      process.exit(0)
+    }
+  }
+} catch {}
+console.log("")
+')
+fi
+
+if [ -z "$SESSION_ID" ]; then
   SESSION_ID=$(basename "$TRANSCRIPT_PATH" .jsonl)
-  SESSION_ID="${SESSION_ID##rollout-*T*-}"
 fi
 
 FILE_SIZE=$(stat -f%z "$TRANSCRIPT_PATH" 2>/dev/null || stat -c%s "$TRANSCRIPT_PATH" 2>/dev/null || echo 0)
@@ -68,8 +86,15 @@ if command -v jq >/dev/null 2>&1; then
   log_info "Using jq fast path for Codex session $SESSION_ID"
   set +e
   EXTRACTED=$(jq -s '
-    (map(select(.timestamp) | .timestamp | sub("\\.[0-9]+Z$"; "Z") | fromdateiso8601 * 1000) | min // (now * 1000)) as $startedAt |
-    (map(select(.timestamp) | .timestamp | sub("\\.[0-9]+Z$"; "Z") | fromdateiso8601 * 1000) | max // (now * 1000)) as $endedAt |
+    def timestamp_ms:
+      capture("^(?<base>[^.]+)(?:\\.(?<frac>[0-9]+))?Z$") as $parts |
+      (($parts.base + "Z") | fromdateiso8601 * 1000) +
+      (((("0." + ($parts.frac // "0")) | tonumber) * 1000) | floor);
+    def display_project($home):
+      if startswith($home) then ("~" + ltrimstr($home)) else . end;
+
+    (map(select(.timestamp) | .timestamp | timestamp_ms) | min // (now * 1000)) as $startedAt |
+    (map(select(.timestamp) | .timestamp | timestamp_ms) | max // (now * 1000)) as $endedAt |
     ([.[] | select(.type == "session_meta" and (.payload.cwd | type) == "string") | .payload.cwd] | last) as $sessionProject |
     ([.[] | select(.type == "turn_context" and (.payload.cwd | type) == "string") | .payload.cwd] | last) as $turnProject |
     ([.[] | select(.type == "turn_context" and (.payload.model | type) == "string") | .payload.model] | last // null) as $model |
@@ -81,7 +106,7 @@ if command -v jq >/dev/null 2>&1; then
     ([.[] | select(.type == "event_msg" and .payload.type == "token_count" and (.payload.info | type) == "object") | .payload.info] | last // {}) as $usage |
     {
       sessionId: $sessionId,
-      project: ($turnProject // $sessionProject // "unknown"),
+      project: (($turnProject // $sessionProject // "unknown") | display_project($HOME)),
       agentName: "codex",
       startedAt: $startedAt,
       endedAt: $endedAt,
@@ -98,7 +123,7 @@ if command -v jq >/dev/null 2>&1; then
       skills: [],
       model: $model
     }
-  ' --arg sessionId "$SESSION_ID" --arg transcriptPath "$TRANSCRIPT_PATH" --arg fileSize "$FILE_SIZE" "$TRANSCRIPT_PATH" 2>/dev/null)
+  ' --arg sessionId "$SESSION_ID" --arg transcriptPath "$TRANSCRIPT_PATH" --arg HOME "$HOME" --arg fileSize "$FILE_SIZE" "$TRANSCRIPT_PATH" 2>/dev/null)
   JQ_STATUS=$?
   set -e
 
