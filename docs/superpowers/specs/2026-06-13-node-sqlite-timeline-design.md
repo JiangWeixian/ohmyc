@@ -1,7 +1,7 @@
 # Timeline Node SQLite Migration — Design Spec
 
 **Date:** 2026-06-13
-**Status:** Draft, pending review
+**Status:** Approved, implementation planned
 **Owner:** OhMyC core
 **Related:** `plugins/timeline/`, `packages/timeline/`, `packages/cli/`
 

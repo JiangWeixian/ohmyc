@@ -20,11 +20,11 @@ import {
   getYears,
 } from '../../src/query.js'
 
-import type Database from 'better-sqlite3'
+import type { NodeSqliteDatabase } from '../../src/node-sqlite.js'
 
 describe('query', () => {
   let tmpDir: string
-  let db: Database.Database
+  let db: NodeSqliteDatabase
 
   beforeEach(() => {
     tmpDir = mkdtempSync(path.join(os.tmpdir(), 'timeline-query-test-'))

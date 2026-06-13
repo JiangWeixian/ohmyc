@@ -37,6 +37,7 @@ export type {
 
 export { createWriter } from './writer.js'
 export type { SqliteDatabase, SqliteStatement, Writer } from './writer.js'
+export type { NodeSqliteDatabase } from './node-sqlite.js'
 
 // ------------------------------------------------------------------
 // Backfill

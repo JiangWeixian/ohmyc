@@ -30,6 +30,10 @@ ${PLUGIN_ROOT}/hooks/ingest-codex.sh
 
 `ingest-codex.sh` reads Codex hook input from stdin. It accepts `transcript_path` directly, or searches `~/.codex/sessions/` and `~/.codex/archived_sessions/` by `session_id`. It uses a Codex-specific jq fast path when jq is available, and falls back to the bundled Node parser with `--agent-name codex`; both paths emit the same `ParsedSessionData` shape.
 
+## Node Hook Runtime
+
+The Claude and Codex hook runtime requires Node 22+ and uses Node's built-in `node:sqlite` module. The plugin does not require `better-sqlite3` or a system `sqlite3` command.
+
 ## OpenCode Setup
 
 The OpenCode plugin lives at `plugins/timeline/opencode.ts` and is symlinked from `.opencode/plugins/timeline.ts`. It sets `agentName='opencode'` and hooks into:

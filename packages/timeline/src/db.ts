@@ -7,9 +7,10 @@ import { mkdirSync } from 'node:fs'
 import os from 'node:os'
 import path from 'node:path'
 
-import Database from 'better-sqlite3'
-
 import { migrate } from './migrate.js'
+import { openNodeSqliteDatabase } from './node-sqlite.js'
+
+import type { NodeSqliteDatabase } from './node-sqlite.js'
 
 export { migrate } from './migrate.js'
 export type { MigrateOptions } from './migrate.js'
@@ -32,20 +33,20 @@ export interface OpenDatabaseOptions {
 
 /**
  * Opens (or creates) the timeline SQLite database, enables WAL mode and foreign
- * keys, and runs any pending schema migrations. Returns the raw `better-sqlite3`
- * instance — callers are responsible for closing it via {@link closeDatabase}.
+ * keys, and runs any pending schema migrations. Returns a Node sqlite database
+ * handle — callers are responsible for closing it via {@link closeDatabase}.
  *
  * @param options - Optional database path override.
- * @returns The opened `better-sqlite3` database instance.
+ * @returns The opened Node sqlite database handle.
  */
-export function openDatabase(options?: OpenDatabaseOptions): Database.Database {
+export function openDatabase(options?: OpenDatabaseOptions): NodeSqliteDatabase {
   const dbPath = options?.dbPath ?? getDefaultDbPath()
   const dbDir = path.dirname(dbPath)
   mkdirSync(dbDir, { recursive: true })
 
-  const db = new Database(dbPath)
-  db.pragma('journal_mode = WAL')
-  db.pragma('foreign_keys = ON')
+  const db = openNodeSqliteDatabase(dbPath)
+  db.exec('PRAGMA journal_mode = WAL')
+  db.exec('PRAGMA foreign_keys = ON')
 
   migrate(db)
 
@@ -55,8 +56,8 @@ export function openDatabase(options?: OpenDatabaseOptions): Database.Database {
 /**
  * Closes the database connection.
  *
- * @param db - The `better-sqlite3` instance to close.
+ * @param db - The Node sqlite database handle to close.
  */
-export function closeDatabase(db: Database.Database): void {
+export function closeDatabase(db: NodeSqliteDatabase): void {
   db.close()
 }

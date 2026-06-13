@@ -2,7 +2,6 @@ import { mkdtempSync, rmSync } from 'node:fs'
 import os from 'node:os'
 import path from 'node:path'
 
-import Database from 'better-sqlite3'
 import {
   afterEach,
   beforeEach,
@@ -17,6 +16,11 @@ import {
   migrate,
   openDatabase,
 } from '../../src/db.js'
+import { openNodeSqliteDatabase } from '../../src/node-sqlite.js'
+
+function getPragmaValue<PragmaRow>(db: ReturnType<typeof openDatabase>, pragma: string): PragmaRow {
+  return db.prepare(`PRAGMA ${pragma}`).get() as PragmaRow
+}
 
 describe('db', () => {
   let tmpDir: string
@@ -111,8 +115,7 @@ describe('db', () => {
     db.prepare("UPDATE meta SET value = '1' WHERE key = 'schema_version'").run()
     closeDatabase(db)
 
-    const db2 = new Database(dbPath)
-    // Missing migration for version 2 (only have version 3)
+    const db2 = openNodeSqliteDatabase(dbPath)
     expect(() =>
       migrate(db2, {
         currentSchemaVersion: 3,
@@ -125,16 +128,16 @@ describe('db', () => {
   it('WAL mode is enabled', () => {
     const dbPath = path.join(tmpDir, 'timeline.db')
     const db = openDatabase({ dbPath })
-    const result = db.pragma('journal_mode') as { journal_mode: string }[]
-    expect(result[0].journal_mode).toBe('wal')
+    const result = getPragmaValue<{ journal_mode: string }>(db, 'journal_mode')
+    expect(result.journal_mode).toBe('wal')
     closeDatabase(db)
   })
 
   it('foreign keys are enabled', () => {
     const dbPath = path.join(tmpDir, 'timeline.db')
     const db = openDatabase({ dbPath })
-    const result = db.pragma('foreign_keys') as { foreign_keys: number }[]
-    expect(result[0].foreign_keys).toBe(1)
+    const result = getPragmaValue<{ foreign_keys: number }>(db, 'foreign_keys')
+    expect(result.foreign_keys).toBe(1)
     closeDatabase(db)
   })
 })

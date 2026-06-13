@@ -10,7 +10,6 @@ import path from 'node:path'
 
 import { createWriter } from './writer.js'
 
-import type Database from 'better-sqlite3'
 import type { IngestResult, ParsedSessionData } from './schema.js'
 import type { SqliteDatabase } from './writer.js'
 
@@ -419,13 +418,13 @@ export function upsertSessionData(
  * Convenience entry point that combines {@link parseTranscript} and
  * {@link upsertSessionData}. Used by the backfill process and CLI.
  *
- * @param db - Open `better-sqlite3` database instance.
+ * @param db - Database handle conforming to {@link SqliteDatabase}.
  * @param sessionId - Unique session identifier (UUID).
  * @param transcriptPath - Absolute path to the JSONL transcript file.
  * @returns Summary of the write operation.
  */
 export function ingestSession(
-  db: Database.Database,
+  db: SqliteDatabase,
   sessionId: string,
   transcriptPath: string,
   options?: TranscriptParseOptions,

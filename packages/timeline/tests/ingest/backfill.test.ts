@@ -18,11 +18,11 @@ import {
 import { backfillAll, getDefaultProjectsDir } from '../../src/backfill.js'
 import { closeDatabase, openDatabase } from '../../src/db.js'
 
-import type Database from 'better-sqlite3'
+import type { NodeSqliteDatabase } from '../../src/node-sqlite.js'
 
 describe('backfillAll', () => {
   let tmpDir: string
-  let db: Database.Database
+  let db: NodeSqliteDatabase
 
   beforeEach(() => {
     tmpDir = mkdtempSync(path.join(os.tmpdir(), 'timeline-backfill-test-'))

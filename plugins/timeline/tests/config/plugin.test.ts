@@ -68,12 +68,16 @@ describe('hook configuration compatibility', () => {
 })
 
 describe('ingest CLI package boundaries', () => {
-  it('uses @ohmyc/timeline subpath APIs instead of cross-package source imports', () => {
+  it('uses @ohmyc/timeline public APIs and does not import the removed native sqlite driver', () => {
     const source = readFileSync(path.resolve(import.meta.dirname, '../../src/ingest.ts'), 'utf8')
+    const removedNativeDriver = 'better' + '-sqlite3'
 
+    expect(source).toContain('from \'@ohmyc/timeline\'')
     expect(source).toContain('from \'@ohmyc/timeline/ingest\'')
     expect(source).toContain('from \'@ohmyc/timeline/writer\'')
-    expect(source).toContain('from \'@ohmyc/timeline/migrate\'')
+    expect(source).not.toContain('@ohmyc/timeline/migrate')
     expect(source).not.toContain('../../../packages/timeline/src')
+    expect(source).not.toContain(removedNativeDriver)
+    expect(source).not.toContain('node:' + '$' + '{\'sqlite\'}')
   })
 })

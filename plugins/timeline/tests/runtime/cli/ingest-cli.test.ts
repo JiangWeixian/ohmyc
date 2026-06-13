@@ -9,7 +9,7 @@ import {
 import os from 'node:os'
 import path from 'node:path'
 
-import Database from 'better-sqlite3'
+import { closeDatabase, openDatabase } from '@ohmyc/timeline'
 import {
   afterEach,
   beforeEach,
@@ -63,14 +63,25 @@ describe('dist/ingest.mjs (node entry)', () => {
     })
   }
 
+  function readDb<QueryResult>(query: (db: ReturnType<typeof openDatabase>) => QueryResult): QueryResult {
+    const db = openDatabase({ dbPath: path.join(dbDir, 'timeline.db') })
+    try {
+      return query(db)
+    } finally {
+      closeDatabase(db)
+    }
+  }
+
   it('ingests from disk via --session-id + --transcript-path', () => {
     const result = run(['--session-id', 'session-aaa', '--transcript-path', transcriptPath])
 
     expect(result.status).toBe(0)
 
-    const db = new Database(path.join(dbDir, 'timeline.db'), { readonly: true })
-    const row = db.prepare('SELECT session_id, turns FROM sessions WHERE session_id = ?').get('session-aaa') as { session_id: string; turns: number } | undefined
-    db.close()
+    const row = readDb(db =>
+      db.prepare('SELECT session_id, turns FROM sessions WHERE session_id = ?').get('session-aaa') as
+      | { session_id: string; turns: number }
+      | undefined,
+    )
 
     expect(row).toBeDefined()
     expect(row?.session_id).toBe('session-aaa')
@@ -98,16 +109,16 @@ describe('dist/ingest.mjs (node entry)', () => {
 
     expect(result.status).toBe(0)
 
-    const db = new Database(path.join(dbDir, 'timeline.db'), { readonly: true })
-    const row = db
-      .prepare('SELECT session_id, agent_name, project, turns FROM sessions WHERE session_id = ?')
-      .get('codex-session-001') as {
-        session_id: string
-        agent_name: string
-        project: string
-        turns: number
-      } | undefined
-    db.close()
+    const row = readDb(db =>
+      db
+        .prepare('SELECT session_id, agent_name, project, turns FROM sessions WHERE session_id = ?')
+        .get('codex-session-001') as {
+          session_id: string
+          agent_name: string
+          project: string
+          turns: number
+        } | undefined,
+    )
 
     expect(row).toMatchObject({
       session_id: 'codex-session-001',
@@ -141,9 +152,11 @@ describe('dist/ingest.mjs (node entry)', () => {
     const result = run(['--raw'], JSON.stringify(parsed))
     expect(result.status).toBe(0)
 
-    const db = new Database(path.join(dbDir, 'timeline.db'), { readonly: true })
-    const row = db.prepare('SELECT session_id, project FROM sessions WHERE session_id = ?').get('session-bbb') as { session_id: string; project: string } | undefined
-    db.close()
+    const row = readDb(db =>
+      db.prepare('SELECT session_id, project FROM sessions WHERE session_id = ?').get('session-bbb') as
+      | { session_id: string; project: string }
+      | undefined,
+    )
 
     expect(row?.session_id).toBe('session-bbb')
     expect(row?.project).toBe('demo')
@@ -173,14 +186,16 @@ describe('dist/ingest.mjs (node entry)', () => {
     const result = runFromCacheWithoutNodeModules(['--raw'], JSON.stringify(parsed))
     expect(result.status).toBe(0)
 
-    const db = new Database(path.join(dbDir, 'timeline.db'), { readonly: true })
-    const row = db
-      .prepare('SELECT session_id, agent_name, project FROM sessions WHERE session_id = ?')
-      .get('session-cache') as { session_id: string; agent_name: string; project: string } | undefined
-    const skill = db
-      .prepare('SELECT skill_name FROM session_skills WHERE session_id = ?')
-      .get('session-cache') as { skill_name: string } | undefined
-    db.close()
+    const { row, skill } = readDb((db) => {
+      const row = db
+        .prepare('SELECT session_id, agent_name, project FROM sessions WHERE session_id = ?')
+        .get('session-cache') as { session_id: string; agent_name: string; project: string } | undefined
+      const skill = db
+        .prepare('SELECT skill_name FROM session_skills WHERE session_id = ?')
+        .get('session-cache') as { skill_name: string } | undefined
+
+      return { row, skill }
+    })
 
     expect(row).toMatchObject({
       session_id: 'session-cache',

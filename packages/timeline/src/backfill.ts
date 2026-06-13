@@ -10,7 +10,7 @@ import path from 'node:path'
 
 import { ingestSession } from './ingest.js'
 
-import type Database from 'better-sqlite3'
+import type { SqliteDatabase } from './writer.js'
 
 /** Options for {@link backfillAll}. */
 export interface BackfillOptions {
@@ -68,12 +68,12 @@ function findJsonlFiles(dir: string): string[] {
  * and ingests each one, skipping sessions that already exist in the database.
  * Records the completion timestamp in the `meta` table.
  *
- * @param db - Open `better-sqlite3` database instance.
+ * @param db - Database handle conforming to {@link SqliteDatabase}.
  * @param options - Custom projects directory and progress callback.
  * @returns Counts of indexed, skipped, and errored transcripts.
  */
 export function backfillAll(
-  db: Database.Database,
+  db: SqliteDatabase,
   options?: BackfillOptions,
 ): BackfillResult {
   const projectsDir = options?.claudeProjectsDir ?? getDefaultProjectsDir()

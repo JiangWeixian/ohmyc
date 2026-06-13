@@ -190,7 +190,7 @@ src/
     └── services/       # 10 service modules
 ```
 
-Key dependencies: **Fastify**, **cac**, **better-sqlite3** (via `@ohmyc/timeline`), **pino**/**pino-roll**.
+Key dependencies: **Fastify**, **cac**, **node:sqlite** (via `@ohmyc/timeline`), **pino**/**pino-roll**.
 
 ---
 

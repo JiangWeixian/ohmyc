@@ -9,9 +9,6 @@ export default defineConfig({
   platform: 'node',
   target: 'node22',
   outExtension: () => ({ js: '.mjs' }),
-  banner: {
-    js: "import { createRequire } from 'module'; const require = createRequire(import.meta.url);",
-  },
-  external: ['better-sqlite3', 'node:sqlite'],
+  external: ['node:sqlite'],
   noExternal: [/@[\w-]+\/[\w-]+/, 'cac'],
 })

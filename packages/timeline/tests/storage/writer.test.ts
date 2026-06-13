@@ -10,11 +10,11 @@ import {
 import { closeDatabase, openDatabase } from '../../src/db.js'
 import { createWriter } from '../../src/writer.js'
 
-import type Database from 'better-sqlite3'
+import type { NodeSqliteDatabase } from '../../src/node-sqlite.js'
 import type { ParsedSessionData } from '../../src/schema.js'
 
 describe('createWriter', () => {
-  let db: Database.Database
+  let db: NodeSqliteDatabase
   let writer: ReturnType<typeof createWriter>
 
   beforeEach(() => {

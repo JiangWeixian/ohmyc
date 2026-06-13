@@ -19,7 +19,7 @@ import {
 import { logger } from '../logger'
 
 import type { PluginInstall } from '@ohmyc/shared'
-import type Database from 'better-sqlite3'
+import type { NodeSqliteDatabase } from '@ohmyc/timeline/node-sqlite'
 
 // ------------------------------------------------------------------
 // Helpers
@@ -191,10 +191,10 @@ export async function runDoctor(): Promise<void> {
   }
 
   // 3. Check DB exists and integrity
-  let db: Database.Database | null = null
+  let db: NodeSqliteDatabase | null = null
   try {
     db = openDatabase()
-    const integrityResult = db.pragma('integrity_check') as Array<{ integrity_check: string }>
+    const integrityResult = db.prepare('PRAGMA integrity_check').all() as Array<{ integrity_check: string }>
     const integrityOk = integrityResult.length > 0 && integrityResult[0].integrity_check === 'ok'
     if (!integrityOk) {
       issues.push(`Database integrity check failed: ${JSON.stringify(integrityResult)}`)

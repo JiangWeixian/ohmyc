@@ -2,6 +2,9 @@
   "name": "@ohmyc/timeline",
   "version": "0.1.0",
   "type": "module",
+  "engines": {
+    "node": ">=22"
+  },
   "files": ["dist"],
   "exports": {
     ".": {
@@ -20,6 +23,10 @@
       "types": "./dist/migrate.d.ts",
       "default": "./dist/migrate.js"
     },
+    "./node-sqlite": {
+      "types": "./dist/node-sqlite.d.ts",
+      "default": "./dist/node-sqlite.js"
+    },
     "./schema": {
       "types": "./dist/schema.d.ts",
       "default": "./dist/schema.js"
@@ -28,18 +35,14 @@
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "scripts": {
-    "build": "tsup src/index.ts src/writer.ts src/ingest.ts src/migrate.ts src/schema.ts --format esm --dts",
-    "dev": "tsup src/index.ts src/writer.ts src/ingest.ts src/migrate.ts src/schema.ts --format esm --dts --watch",
+    "build": "tsup src/index.ts src/writer.ts src/ingest.ts src/migrate.ts src/node-sqlite.ts src/schema.ts --format esm --dts --platform node --external node:sqlite --clean",
+    "dev": "tsup src/index.ts src/writer.ts src/ingest.ts src/migrate.ts src/node-sqlite.ts src/schema.ts --format esm --dts --platform node --external node:sqlite --watch",
     "test": "vitest run",
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage"
   },
-  "dependencies": {
-    "better-sqlite3": "^11.5.0"
-  },
   "devDependencies": {
-    "@types/better-sqlite3": "^7.6.12",
-    "@types/node": "^20.12.7",
+    "@types/node": "^22.13.0",
     "@vitest/coverage-v8": "^3.2.4",
     "tsup": "^8.0.2",
     "typescript": "^5.4.5",

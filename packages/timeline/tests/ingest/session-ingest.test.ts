@@ -17,7 +17,7 @@ import {
 import { closeDatabase, openDatabase } from '../../src/db.js'
 import { ingestSession } from '../../src/ingest.js'
 
-import type Database from 'better-sqlite3'
+import type { NodeSqliteDatabase } from '../../src/node-sqlite.js'
 
 const fixturesDir = path.resolve(import.meta.dirname, '../fixtures')
 
@@ -27,7 +27,7 @@ const fixturesDir = path.resolve(import.meta.dirname, '../fixtures')
 
 describe('ingestSession', () => {
   let tmpDir: string
-  let db: Database.Database
+  let db: NodeSqliteDatabase
 
   beforeEach(() => {
     tmpDir = mkdtempSync(path.join(os.tmpdir(), 'timeline-ingest-test-'))
