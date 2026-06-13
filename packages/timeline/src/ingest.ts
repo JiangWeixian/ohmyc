@@ -41,6 +41,11 @@ export function parseTranscript(
   transcriptPath: string,
   options?: TranscriptParseOptions,
 ): ParsedSessionData {
+  const agentName = options?.agentName ?? 'claude'
+  if (agentName === 'codex') {
+    return parseCodexTranscript(sessionId, transcriptPath)
+  }
+
   const fileStat = statSync(transcriptPath)
   const fileSize = fileStat.size
 
@@ -160,10 +165,7 @@ export function parseTranscript(
   }
 
   if (summary === null && firstUserMessage !== null) {
-    // Truncate to keep summaries compact for list views
-    summary = firstUserMessage.length > 140
-      ? firstUserMessage.slice(0, 140)
-      : firstUserMessage
+    summary = truncateSummary(firstUserMessage)
   }
 
   if (summary === null) {
@@ -178,7 +180,7 @@ export function parseTranscript(
   return {
     sessionId,
     project,
-    agentName: options?.agentName ?? 'claude',
+    agentName,
     startedAt,
     endedAt,
     durationMs,
@@ -194,6 +196,156 @@ export function parseTranscript(
     skills: [...skills],
     model,
   }
+}
+
+function parseCodexTranscript(
+  sessionId: string,
+  transcriptPath: string,
+): ParsedSessionData {
+  const fileStat = statSync(transcriptPath)
+  const fileSize = fileStat.size
+  const lines = readFileSync(transcriptPath, 'utf8').split('\n')
+
+  let firstTimestamp: number | null = null
+  let lastTimestamp: number | null = null
+  let project = 'unknown'
+  let model: string | null = null
+  let firstUserMessage: string | null = null
+  let turns = 0
+  let tokensInput = 0
+  let tokensOutput = 0
+  let tokensCached = 0
+  const toolCounts = new Map<string, number>()
+
+  for (const line of lines) {
+    const trimmed = line.trim()
+    if (!trimmed) {
+      continue
+    }
+
+    let parsed: Record<string, unknown>
+    try {
+      parsed = JSON.parse(trimmed)
+    } catch {
+      console.error(`Malformed JSON line in ${transcriptPath}: ${trimmed.slice(0, 200)}`)
+      continue
+    }
+
+    const timestamp = parsed.timestamp
+    if (typeof timestamp === 'string') {
+      const ts = new Date(timestamp).getTime()
+      if (!Number.isNaN(ts)) {
+        firstTimestamp = firstTimestamp === null ? ts : Math.min(firstTimestamp, ts)
+        lastTimestamp = lastTimestamp === null ? ts : Math.max(lastTimestamp, ts)
+      }
+    }
+
+    const payload = parsed.payload as Record<string, unknown> | undefined
+    if (!payload) {
+      continue
+    }
+
+    if (parsed.type === 'session_meta' && typeof payload.cwd === 'string') {
+      project = payload.cwd
+    }
+
+    if (parsed.type === 'turn_context') {
+      if (typeof payload.cwd === 'string') {
+        project = payload.cwd
+      }
+      if (typeof payload.model === 'string') {
+        model = payload.model
+      }
+    }
+
+    if (parsed.type === 'event_msg' && payload.type === 'token_count') {
+      const info = payload.info as Record<string, unknown> | null | undefined
+      if (info) {
+        tokensInput = Number(info.input_tokens) || tokensInput
+        tokensOutput = Number(info.output_tokens) || tokensOutput
+        tokensCached = Number(info.cached_input_tokens) || tokensCached
+      }
+    }
+
+    if (parsed.type !== 'response_item') {
+      continue
+    }
+
+    if (payload.type === 'message' && payload.role === 'user') {
+      const text = extractCodexMessageText(payload.content)
+      if (text) {
+        turns++
+        firstUserMessage ??= text
+      }
+    }
+
+    if (payload.type === 'function_call' && typeof payload.name === 'string') {
+      const toolName = payload.name
+      toolCounts.set(toolName, (toolCounts.get(toolName) || 0) + 1)
+    }
+  }
+
+  const summary = firstUserMessage
+    ? truncateSummary(firstUserMessage)
+    : '(untitled session)'
+  const startedAt = firstTimestamp ?? Date.now()
+  const endedAt = lastTimestamp ?? Date.now()
+
+  return {
+    sessionId,
+    project: displayProject(project),
+    agentName: 'codex',
+    startedAt,
+    endedAt,
+    durationMs: endedAt - startedAt,
+    turns,
+    tokensInput,
+    tokensOutput,
+    tokensCached,
+    summary,
+    summarySource: firstUserMessage ? 'first_message' : 'auto',
+    transcriptPath,
+    fileSize,
+    tools: [...toolCounts.entries()].map(([toolName, callCount]) => ({ toolName, callCount })),
+    skills: [],
+    model,
+  }
+}
+
+function extractCodexMessageText(content: unknown): string | null {
+  if (typeof content === 'string') {
+    return content
+  }
+  if (!Array.isArray(content)) {
+    return null
+  }
+  const text = content
+    .map((part) => {
+      if (!part || typeof part !== 'object') {
+        return ''
+      }
+      const record = part as Record<string, unknown>
+      if (typeof record.text === 'string') {
+        return record.text
+      }
+      return ''
+    })
+    .filter(Boolean)
+    .join('\n')
+    .trim()
+  return text || null
+}
+
+function truncateSummary(value: string): string {
+  return value.length > 140 ? value.slice(0, 140) : value
+}
+
+function displayProject(project: string): string {
+  const homeDir = os.homedir()
+  if (project.startsWith(homeDir)) {
+    return `~${project.slice(homeDir.length)}`
+  }
+  return project
 }
 
 // ---------------------------------------------------------------------------
