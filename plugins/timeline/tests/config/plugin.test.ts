@@ -21,3 +21,33 @@ describe('Codex plugin manifest', () => {
     ])
   })
 })
+
+describe('Codex marketplace entry', () => {
+  it('points the timeline plugin entry at plugins/timeline', () => {
+    const marketplacePath = path.resolve(import.meta.dirname, '../../../../.agents/plugins/marketplace.json')
+    const marketplace = JSON.parse(readFileSync(marketplacePath, 'utf8')) as {
+      name: string
+      plugins: Array<{
+        name: string
+        source: { source: string; path: string }
+        policy: { installation: string; authentication: string }
+        category: string
+      }>
+    }
+
+    const entry = marketplace.plugins.find(plugin => plugin.name === 'timeline')
+    expect(marketplace.name).toBe('ohmyc')
+    expect(entry).toEqual({
+      name: 'timeline',
+      source: {
+        source: 'local',
+        path: './plugins/timeline',
+      },
+      policy: {
+        installation: 'AVAILABLE',
+        authentication: 'ON_INSTALL',
+      },
+      category: 'Productivity',
+    })
+  })
+})
