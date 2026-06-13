@@ -1,5 +1,6 @@
 import { spawnSync } from 'node:child_process'
 import {
+  copyFileSync,
   mkdirSync,
   mkdtempSync,
   rmSync,
@@ -43,6 +44,19 @@ describe('dist/ingest.mjs (node entry)', () => {
 
   function run(args: string[], stdin?: string) {
     return spawnSync('node', [INGEST_MJS, ...args], {
+      env: { ...process.env, OHMYC_HOME: dbDir },
+      input: stdin,
+      encoding: 'utf8',
+    })
+  }
+
+  function runFromCacheWithoutNodeModules(args: string[], stdin?: string) {
+    const cacheDir = path.join(tmpDir, 'cache-plugin')
+    const cacheDist = path.join(cacheDir, 'dist')
+    mkdirSync(cacheDist, { recursive: true })
+    copyFileSync(INGEST_MJS, path.join(cacheDist, 'ingest.mjs'))
+
+    return spawnSync('node', [path.join(cacheDist, 'ingest.mjs'), ...args], {
       env: { ...process.env, OHMYC_HOME: dbDir },
       input: stdin,
       encoding: 'utf8',
@@ -133,6 +147,47 @@ describe('dist/ingest.mjs (node entry)', () => {
 
     expect(row?.session_id).toBe('session-bbb')
     expect(row?.project).toBe('demo')
+  })
+
+  it('ingests pre-parsed JSON from an installed Codex cache without node_modules', () => {
+    const parsed = {
+      sessionId: 'session-cache',
+      project: 'demo-cache',
+      agentName: 'codex',
+      startedAt: 1_714_478_400_000,
+      endedAt: 1_714_478_405_000,
+      durationMs: 5000,
+      turns: 1,
+      tokensInput: 5,
+      tokensOutput: 3,
+      tokensCached: 0,
+      summary: 'hello from cache',
+      summarySource: 'first_message',
+      transcriptPath: '/dev/null',
+      fileSize: 0,
+      tools: [{ toolName: 'exec_command', callCount: 1 }],
+      skills: ['test-driven-development'],
+      model: 'gpt-5.5',
+    }
+
+    const result = runFromCacheWithoutNodeModules(['--raw'], JSON.stringify(parsed))
+    expect(result.status).toBe(0)
+
+    const db = new Database(path.join(dbDir, 'timeline.db'), { readonly: true })
+    const row = db
+      .prepare('SELECT session_id, agent_name, project FROM sessions WHERE session_id = ?')
+      .get('session-cache') as { session_id: string; agent_name: string; project: string } | undefined
+    const skill = db
+      .prepare('SELECT skill_name FROM session_skills WHERE session_id = ?')
+      .get('session-cache') as { skill_name: string } | undefined
+    db.close()
+
+    expect(row).toMatchObject({
+      session_id: 'session-cache',
+      agent_name: 'codex',
+      project: 'demo-cache',
+    })
+    expect(skill?.skill_name).toBe('test-driven-development')
   })
 
   it('exits 1 when neither --raw nor required disk args are provided', () => {

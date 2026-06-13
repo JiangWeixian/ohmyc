@@ -7,22 +7,22 @@ Collects session data from **Claude Code**, **OpenCode**, and **Codex** agents a
 | Agent | Integration | Data Source |
 |-------|-------------|-------------|
 | Claude Code | Stop hook via `hooks/hooks.json` and `hooks/ingest-claude.sh` | Claude JSONL transcripts in `~/.claude/projects/` |
-| Codex | Codex plugin manifest, root `hooks.json`, and `hooks/ingest-codex.sh` | Codex JSONL sessions in `~/.codex/sessions/` and `~/.codex/archived_sessions/` |
+| Codex | Codex plugin manifest, default `hooks/hooks.json`, and `hooks/ingest-codex.sh` | Codex JSONL sessions in `~/.codex/sessions/` and `~/.codex/archived_sessions/` |
 | OpenCode | OpenCode plugin entry at `opencode.ts` | Real-time OpenCode lifecycle, message, and tool events |
 
 ## Claude Code Setup
 
-Claude Code reads `plugins/timeline/.claude-plugin/plugin.json` and `plugins/timeline/hooks/hooks.json`. The Stop hook calls:
+Claude Code reads `plugins/timeline/.claude-plugin/plugin.json` and `plugins/timeline/hooks/hooks.json`. The shared Stop hook dispatches Claude sessions to:
 
 ```bash
-${PLUGIN_ROOT:-$CLAUDE_PLUGIN_ROOT}/hooks/ingest-claude.sh $CLAUDE_SESSION_ID
+${CLAUDE_PLUGIN_ROOT}/hooks/ingest-claude.sh $CLAUDE_SESSION_ID
 ```
 
 `ingest-claude.sh` searches `~/.claude/projects/` for the matching transcript and uses the Claude jq fast path when jq is available. If jq is unavailable or the fast path fails, the bundled Node entry at `dist/ingest.mjs` parses the transcript with `--agent-name claude`.
 
 ## Codex Setup
 
-Codex discovers the plugin from `.agents/plugins/marketplace.json` and validates `plugins/timeline/.codex-plugin/plugin.json`. Runtime hooks live in the plugin root `hooks.json`; the Codex Stop hook calls:
+Codex discovers the plugin from `.agents/plugins/marketplace.json` and validates `plugins/timeline/.codex-plugin/plugin.json`. Codex plugin lifecycle hooks use the default `hooks/hooks.json`; the shared Stop hook dispatches Codex sessions to:
 
 ```bash
 ${PLUGIN_ROOT}/hooks/ingest-codex.sh

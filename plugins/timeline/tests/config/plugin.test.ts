@@ -14,7 +14,7 @@ describe('Codex plugin manifest', () => {
     const interfaceMeta = manifest.interface as Record<string, unknown>
 
     expect(manifest.name).toBe('timeline')
-    expect(manifest.version).toBe('1.0.1')
+    expect(manifest.version).toBe('1.0.3')
     expect(manifest.homepage).toBe('https://github.com/JiangWeixian/ohmyc/tree/main/plugins/timeline')
     expect(manifest.repository).toBe('https://github.com/JiangWeixian/ohmyc')
     expect(manifest).not.toHaveProperty('hooks')
@@ -55,23 +55,25 @@ describe('Codex marketplace entry', () => {
 })
 
 describe('hook configuration compatibility', () => {
-  it('routes Claude Code Stop hook to ingest-claude.sh with CLAUDE_SESSION_ID', () => {
-    const pluginRoot = '$' + '{PLUGIN_ROOT:-$CLAUDE_PLUGIN_ROOT}'
+  it('routes the default plugin Stop hook to the Codex and Claude entrypoints', () => {
     const hooksJson = JSON.parse(
       readFileSync(path.resolve(import.meta.dirname, '../../hooks/hooks.json'), 'utf8'),
     ) as { hooks: { Stop: Array<{ hooks: Array<{ command: string }> }> } }
 
     const command = hooksJson.hooks.Stop[0].hooks[0].command
-    expect(command).toBe(`${pluginRoot}/hooks/ingest-claude.sh $CLAUDE_SESSION_ID`)
+    expect(command).toContain('$' + '{PLUGIN_ROOT}/hooks/ingest-codex.sh')
+    expect(command).toContain('$' + '{CLAUDE_PLUGIN_ROOT}/hooks/ingest-claude.sh')
+    expect(command).toContain('$CLAUDE_SESSION_ID')
   })
+})
 
-  it('routes Codex Stop hook to ingest-codex.sh without Claude arguments', () => {
-    const pluginRoot = '$' + '{PLUGIN_ROOT}'
-    const hooksJson = JSON.parse(
-      readFileSync(path.resolve(import.meta.dirname, '../../hooks.json'), 'utf8'),
-    ) as { hooks: { Stop: Array<{ hooks: Array<{ command: string }> }> } }
+describe('ingest CLI package boundaries', () => {
+  it('uses @ohmyc/timeline subpath APIs instead of cross-package source imports', () => {
+    const source = readFileSync(path.resolve(import.meta.dirname, '../../src/ingest.ts'), 'utf8')
 
-    const command = hooksJson.hooks.Stop[0].hooks[0].command
-    expect(command).toBe(`${pluginRoot}/hooks/ingest-codex.sh`)
+    expect(source).toContain('from \'@ohmyc/timeline/ingest\'')
+    expect(source).toContain('from \'@ohmyc/timeline/writer\'')
+    expect(source).toContain('from \'@ohmyc/timeline/migrate\'')
+    expect(source).not.toContain('../../../packages/timeline/src')
   })
 })

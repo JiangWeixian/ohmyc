@@ -13,6 +13,8 @@ export {
 } from './db.js'
 
 export type { OpenDatabaseOptions as DatabaseOptions } from './db.js'
+export { migrate } from './migrate.js'
+export type { MigrateOptions } from './migrate.js'
 
 // ------------------------------------------------------------------
 // Ingest

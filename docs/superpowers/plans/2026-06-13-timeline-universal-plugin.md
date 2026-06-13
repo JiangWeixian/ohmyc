@@ -20,8 +20,7 @@
 | File | Action | Responsibility |
 |------|--------|----------------|
 | `plugins/timeline/.codex-plugin/plugin.json` | Create | Valid Codex plugin manifest. No `hooks` field because the local Codex validator rejects it. |
-| `plugins/timeline/hooks/hooks.json` | Modify | Claude Code hook config that invokes `hooks/ingest-claude.sh`. |
-| `plugins/timeline/hooks.json` | Create | Codex hook config that invokes `hooks/ingest-codex.sh`. |
+| `plugins/timeline/hooks/hooks.json` | Modify | Default plugin hook config. It dispatches Codex to `hooks/ingest-codex.sh` when `PLUGIN_ROOT` is set, otherwise dispatches Claude Code to `hooks/ingest-claude.sh`. |
 | `.agents/plugins/marketplace.json` | Create or update | Repo-local Codex marketplace entry for `timeline`. |
 | `plugins/timeline/hooks/ingest-claude.sh` | Create | Claude Stop hook entrypoint: find `~/.claude/projects` transcript, use Claude jq fast path, fallback to Node parser with `--agent-name claude`. |
 | `plugins/timeline/hooks/ingest-codex.sh` | Create | Codex Stop hook entrypoint: read stdin hook JSON, find `~/.codex` transcript, use Codex jq fast path, fallback to Node parser with `--agent-name codex`. |
@@ -248,7 +247,6 @@ git commit -m "feat(timeline): add Codex marketplace entry"
 ### Task 3: Route Claude and Codex Hook Configs to Separate Scripts
 
 **Files:**
-- Create: `plugins/timeline/hooks.json`
 - Modify: `plugins/timeline/hooks/hooks.json`
 - Modify: `plugins/timeline/tests/config/plugin.test.ts`
 
@@ -258,24 +256,16 @@ Add this block to `plugins/timeline/tests/config/plugin.test.ts`:
 
 ```typescript
 describe('hook configuration compatibility', () => {
-  it('routes Claude Code Stop hook to ingest-claude.sh with CLAUDE_SESSION_ID', () => {
+  it('routes the default plugin Stop hook to the Codex and Claude entrypoints', () => {
     const hooksJson = JSON.parse(readFileSync(
       path.resolve(import.meta.dirname, '../../hooks/hooks.json'),
       'utf8',
     )) as { hooks: { Stop: Array<{ hooks: Array<{ command: string }> }> } }
 
     const command = hooksJson.hooks.Stop[0].hooks[0].command
-    expect(command).toBe('${PLUGIN_ROOT:-$CLAUDE_PLUGIN_ROOT}/hooks/ingest-claude.sh $CLAUDE_SESSION_ID')
-  })
-
-  it('routes Codex Stop hook to ingest-codex.sh without Claude arguments', () => {
-    const hooksJson = JSON.parse(readFileSync(
-      path.resolve(import.meta.dirname, '../../hooks.json'),
-      'utf8',
-    )) as { hooks: { Stop: Array<{ hooks: Array<{ command: string }> }> } }
-
-    const command = hooksJson.hooks.Stop[0].hooks[0].command
-    expect(command).toBe('${PLUGIN_ROOT}/hooks/ingest-codex.sh')
+    expect(command).toContain('${PLUGIN_ROOT}/hooks/ingest-codex.sh')
+    expect(command).toContain('${CLAUDE_PLUGIN_ROOT}/hooks/ingest-claude.sh')
+    expect(command).toContain('$CLAUDE_SESSION_ID')
   })
 })
 ```
@@ -288,7 +278,7 @@ npx vitest run plugins/timeline/tests/config/plugin.test.ts --reporter=verbose
 
 Expected: FAIL because hook config still points at `hooks/ingest.sh`.
 
-- [ ] **Step 3: Replace `plugins/timeline/hooks/hooks.json` for Claude Code**
+- [ ] **Step 3: Replace `plugins/timeline/hooks/hooks.json` with the shared plugin hook dispatcher**
 
 ```json
 {
@@ -299,7 +289,7 @@ Expected: FAIL because hook config still points at `hooks/ingest.sh`.
         "hooks": [
           {
             "type": "command",
-            "command": "${PLUGIN_ROOT:-$CLAUDE_PLUGIN_ROOT}/hooks/ingest-claude.sh $CLAUDE_SESSION_ID"
+            "command": "sh -c 'if [ -n \"${PLUGIN_ROOT:-}\" ]; then \"${PLUGIN_ROOT}/hooks/ingest-codex.sh\"; else \"${CLAUDE_PLUGIN_ROOT}/hooks/ingest-claude.sh\" \"$CLAUDE_SESSION_ID\"; fi'"
           }
         ]
       }
@@ -308,27 +298,7 @@ Expected: FAIL because hook config still points at `hooks/ingest.sh`.
 }
 ```
 
-- [ ] **Step 4: Create `plugins/timeline/hooks.json` for Codex**
-
-```json
-{
-  "hooks": {
-    "Stop": [
-      {
-        "matcher": "",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "${PLUGIN_ROOT}/hooks/ingest-codex.sh"
-          }
-        ]
-      }
-    ]
-  }
-}
-```
-
-- [ ] **Step 5: Run hook config tests**
+- [ ] **Step 4: Run hook config tests**
 
 ```bash
 npx vitest run plugins/timeline/tests/config/plugin.test.ts --reporter=verbose
@@ -336,10 +306,10 @@ npx vitest run plugins/timeline/tests/config/plugin.test.ts --reporter=verbose
 
 Expected: PASS for `hook configuration compatibility`.
 
-- [ ] **Step 6: Commit**
+- [ ] **Step 5: Commit**
 
 ```bash
-git add plugins/timeline/hooks.json plugins/timeline/hooks/hooks.json plugins/timeline/tests/config/plugin.test.ts
+git add plugins/timeline/hooks/hooks.json plugins/timeline/tests/config/plugin.test.ts
 git commit -m "feat(timeline): route hooks to agent-specific ingest scripts"
 ```
 
@@ -1351,22 +1321,22 @@ Collects session data from **Claude Code**, **OpenCode**, and **Codex** agents a
 | Agent | Integration | Data Source |
 |-------|-------------|-------------|
 | Claude Code | Stop hook via `hooks/hooks.json` and `hooks/ingest-claude.sh` | Claude JSONL transcripts in `~/.claude/projects/` |
-| Codex | Codex plugin manifest, root `hooks.json`, and `hooks/ingest-codex.sh` | Codex JSONL sessions in `~/.codex/sessions/` and `~/.codex/archived_sessions/` |
+| Codex | Codex plugin manifest, default `hooks/hooks.json`, and `hooks/ingest-codex.sh` | Codex JSONL sessions in `~/.codex/sessions/` and `~/.codex/archived_sessions/` |
 | OpenCode | OpenCode plugin entry at `opencode.ts` | Real-time OpenCode lifecycle, message, and tool events |
 
 ## Claude Code Setup
 
-Claude Code reads `plugins/timeline/.claude-plugin/plugin.json` and `plugins/timeline/hooks/hooks.json`. The Stop hook calls:
+Claude Code reads `plugins/timeline/.claude-plugin/plugin.json` and `plugins/timeline/hooks/hooks.json`. The shared Stop hook dispatches Claude sessions to:
 
 ```bash
-${PLUGIN_ROOT:-$CLAUDE_PLUGIN_ROOT}/hooks/ingest-claude.sh $CLAUDE_SESSION_ID
+${CLAUDE_PLUGIN_ROOT}/hooks/ingest-claude.sh $CLAUDE_SESSION_ID
 ```
 
 `ingest-claude.sh` searches `~/.claude/projects/` for the matching transcript and uses the Claude jq fast path when jq is available. If jq is unavailable or the fast path fails, the bundled Node entry at `dist/ingest.mjs` parses the transcript with `--agent-name claude`.
 
 ## Codex Setup
 
-Codex discovers the plugin from `.agents/plugins/marketplace.json` and validates `plugins/timeline/.codex-plugin/plugin.json`. Runtime hooks live in the plugin root `hooks.json`; the Codex Stop hook calls:
+Codex discovers the plugin from `.agents/plugins/marketplace.json` and validates `plugins/timeline/.codex-plugin/plugin.json`. Codex plugin lifecycle hooks use the default `hooks/hooks.json`; the shared Stop hook dispatches Codex sessions to:
 
 ```bash
 ${PLUGIN_ROOT}/hooks/ingest-codex.sh
@@ -1461,7 +1431,6 @@ for (const file of [
   '.agents/plugins/marketplace.json',
   'plugins/timeline/.codex-plugin/plugin.json',
   'plugins/timeline/.claude-plugin/plugin.json',
-  'plugins/timeline/hooks.json',
   'plugins/timeline/hooks/hooks.json',
 ]) {
   JSON.parse(fs.readFileSync(file, 'utf8'))

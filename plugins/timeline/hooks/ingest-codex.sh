@@ -130,7 +130,7 @@ if command -v jq >/dev/null 2>&1; then
   set -e
 
   if [ $JQ_STATUS -eq 0 ] && [ -n "$EXTRACTED" ] && [ "$EXTRACTED" != "null" ]; then
-    echo "$EXTRACTED" | node "$INGEST_MJS" --raw && exit 0
+    echo "$EXTRACTED" | node --no-warnings "$INGEST_MJS" --raw && exit 0
     log_error "Codex jq fast path failed for $SESSION_ID, falling back to slow path"
   else
     log_error "Codex jq extraction failed for $SESSION_ID, falling back to slow path"
@@ -138,4 +138,4 @@ if command -v jq >/dev/null 2>&1; then
 fi
 
 log_info "Using Node parser for Codex session $SESSION_ID"
-node "$INGEST_MJS" --session-id "$SESSION_ID" --transcript-path "$TRANSCRIPT_PATH" --agent-name codex
+node --no-warnings "$INGEST_MJS" --session-id "$SESSION_ID" --transcript-path "$TRANSCRIPT_PATH" --agent-name codex
