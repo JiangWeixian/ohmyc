@@ -158,6 +158,32 @@ describe('ingest-claude.sh', () => {
     expect(result.stdout).toContain('INGEST_RAW_OK')
   })
 
+  it('hook invocation reads transcript_path from stdin JSON when jq is unavailable', () => {
+    const transcriptPath = writeTranscript(fakeClaudeDir, 'test-session-stdin-no-jq', FIXTURES.minimal)
+    const fakeJq = path.join(tmpDir, 'jq')
+    writeFileSync(fakeJq, '#!/bin/bash\nexit 1\n')
+    chmodSync(fakeJq, 0o755)
+
+    const result = runIngest([], {
+      stdin: JSON.stringify({ transcript_path: transcriptPath }),
+      env: { PATH: `${tmpDir}:${process.env.PATH}` },
+    })
+
+    expect(result.status).toBe(0)
+    expect(result.stderr).toContain('Using slow path')
+    expect(result.stdout).toContain('INGEST_SLOW_OK')
+    expect(readCaptured()).toEqual({
+      args: [
+        '--session-id',
+        'test-session-stdin-no-jq',
+        '--transcript-path',
+        transcriptPath,
+        '--agent-name',
+        'claude',
+      ],
+    })
+  })
+
   it('hook invocation exits 0 when transcript_path missing', () => {
     const result = runIngest([], { stdin: JSON.stringify({}) })
     expect(result.status).toBe(0)

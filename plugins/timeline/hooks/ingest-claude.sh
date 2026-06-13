@@ -56,7 +56,15 @@ if [ -n "${1:-}" ]; then
   fi
 else
   HOOK_INPUT=$(cat)
-  TRANSCRIPT_PATH=$(echo "$HOOK_INPUT" | jq -r '.transcript_path // empty' 2>/dev/null || true)
+  TRANSCRIPT_PATH=$(HOOK_INPUT="$HOOK_INPUT" node -e '
+const input = process.env.HOOK_INPUT || ""
+try {
+  const parsed = JSON.parse(input)
+  console.log(typeof parsed.transcript_path === "string" ? parsed.transcript_path : "")
+} catch {
+  console.log("")
+}
+')
 
   if [ -z "$TRANSCRIPT_PATH" ] || [ ! -f "$TRANSCRIPT_PATH" ]; then
     log_error "No transcript path in hook input or file not found"
