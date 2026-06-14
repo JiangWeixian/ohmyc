@@ -28,6 +28,7 @@ pub fn open_main_window(app: tauri::AppHandle) -> Result<(), String> {
         return Ok(());
     }
 
+    #[cfg_attr(not(target_os = "macos"), allow(unused_mut))]
     let mut builder = WebviewWindowBuilder::new(&app, MAIN_LABEL, WebviewUrl::App("index.html".into()))
         .title("OhMyC")
         .inner_size(DEFAULT_WIDTH, DEFAULT_HEIGHT)
