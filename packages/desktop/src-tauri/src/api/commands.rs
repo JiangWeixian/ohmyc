@@ -16,9 +16,7 @@ pub struct CommandResponse {
 }
 
 #[tauri::command]
-pub fn commands_list(
-    origins: Option<serde_json::Value>,
-) -> Result<CommandsResponse, ApiError> {
+pub fn commands_list(origins: Option<serde_json::Value>) -> Result<CommandsResponse, ApiError> {
     if !include_origin(&origins, "claude") {
         return Ok(CommandsResponse { commands: Vec::new() });
     }

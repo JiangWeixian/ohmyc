@@ -107,23 +107,18 @@ pub fn preflight(
     name: &str,
 ) -> Result<PreflightResult, ApiError> {
     let Some(profile) = crud::get(profiles_dir, name)? else {
-        return Err(ApiError::NotFound { kind: "profile", name: name.to_string() });
+        return Err(ApiError::NotFound {
+            kind: "profile",
+            name: name.to_string(),
+        });
     };
     let missing = compute_missing(store_dir, &profile);
     let current = read_settings(settings_path);
-    let settings_warnings = compute_settings_warnings(
-        &current,
-        profile.settings.as_ref(),
-    );
+    let settings_warnings = compute_settings_warnings(&current, profile.settings.as_ref());
     let current_active = crud::read_active_profile_name(profiles_dir)?;
 
-    let model_config_changes = compute_model_config_changes_branch(
-        profiles_dir,
-        store_dir,
-        &current,
-        current_active.as_deref(),
-        &profile,
-    )?;
+    let model_config_changes =
+        compute_model_config_changes_branch(profiles_dir, store_dir, &current, current_active.as_deref(), &profile)?;
 
     Ok(PreflightResult {
         can_activate: missing.is_empty(),
@@ -158,7 +153,11 @@ fn compute_model_config_changes_branch(
     let changes = build_env_changes(
         &mc.api_key,
         &mc.base_url,
-        if mc.model_name.is_empty() { None } else { Some(mc.model_name.as_str()) },
+        if mc.model_name.is_empty() {
+            None
+        } else {
+            Some(mc.model_name.as_str())
+        },
         &current_env,
     );
 
@@ -183,11 +182,7 @@ fn compute_model_config_changes_branch(
                             .map(|key| ModelConfigEnvChange {
                                 action: EnvAction::Remove,
                                 key: (*key).to_string(),
-                                value: current_env
-                                    .get(*key)
-                                    .and_then(|v| v.as_str())
-                                    .unwrap_or("")
-                                    .to_string(),
+                                value: current_env.get(*key).and_then(|v| v.as_str()).unwrap_or("").to_string(),
                                 previous_value: None,
                             })
                             .collect(),
@@ -283,7 +278,12 @@ mod tests {
         std::fs::create_dir_all(store.join("commands")).unwrap();
         std::fs::create_dir_all(store.join("skills")).unwrap();
         write(&settings, "{}");
-        Fixture { _root: root, profiles, store, settings }
+        Fixture {
+            _root: root,
+            profiles,
+            store,
+            settings,
+        }
     }
 
     fn write_mc(store_dir: &Path, name: &str, api_key: &str, base_url: &str, model_name: &str) {
@@ -343,7 +343,10 @@ mod tests {
         )
         .unwrap();
         let r = preflight(&f.profiles, &f.store, &f.settings, "test").unwrap();
-        assert_eq!(r.settings_warnings, vec!["Settings key 'effort' would be overwritten".to_string()]);
+        assert_eq!(
+            r.settings_warnings,
+            vec!["Settings key 'effort' would be overwritten".to_string()]
+        );
     }
 
     #[test]
@@ -379,7 +382,13 @@ mod tests {
     #[test]
     fn preflight_returns_set_actions_when_env_keys_absent() {
         let f = fixture();
-        write_mc(&f.store, "anthropic", "sk-test1234567890", "https://api.anthropic.com", "");
+        write_mc(
+            &f.store,
+            "anthropic",
+            "sk-test1234567890",
+            "https://api.anthropic.com",
+            "",
+        );
         crud::create(
             &f.profiles,
             &serde_json::json!({"name": "test", "modelConfig": "anthropic"}),
@@ -431,10 +440,7 @@ mod tests {
     #[test]
     fn preflight_emits_change_action_for_existing_env_keys() {
         let f = fixture();
-        write(
-            &f.settings,
-            r#"{"env":{"ANTHROPIC_BASE_URL":"https://old"}}"#,
-        );
+        write(&f.settings, r#"{"env":{"ANTHROPIC_BASE_URL":"https://old"}}"#);
         write_mc(&f.store, "anthropic", "sk-x", "https://new", "");
         crud::create(
             &f.profiles,

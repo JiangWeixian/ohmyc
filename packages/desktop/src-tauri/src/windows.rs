@@ -4,9 +4,9 @@
 //! it is not declared in `tauri.conf.json`, because the popover should be
 //! the only auto-built window at launch.
 
-use tauri::{Manager, WebviewUrl, WebviewWindowBuilder};
 #[cfg(target_os = "macos")]
 use tauri::TitleBarStyle;
+use tauri::{Manager, WebviewUrl, WebviewWindowBuilder};
 
 pub const MAIN_LABEL: &str = "main";
 const DEFAULT_WIDTH: f64 = 1200.0;
@@ -28,6 +28,7 @@ pub fn open_main_window(app: tauri::AppHandle) -> Result<(), String> {
         return Ok(());
     }
 
+    #[cfg_attr(not(target_os = "macos"), allow(unused_mut))]
     let mut builder = WebviewWindowBuilder::new(&app, MAIN_LABEL, WebviewUrl::App("index.html".into()))
         .title("OhMyC")
         .inner_size(DEFAULT_WIDTH, DEFAULT_HEIGHT)
@@ -38,9 +39,7 @@ pub fn open_main_window(app: tauri::AppHandle) -> Result<(), String> {
 
     #[cfg(target_os = "macos")]
     {
-        builder = builder
-            .title_bar_style(TitleBarStyle::Overlay)
-            .hidden_title(true);
+        builder = builder.title_bar_style(TitleBarStyle::Overlay).hidden_title(true);
     }
 
     builder.build().map_err(|e| e.to_string())?;

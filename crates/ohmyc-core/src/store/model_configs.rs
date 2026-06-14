@@ -84,8 +84,8 @@ pub fn get(dir: &Path, name: &str) -> Result<Option<ModelConfig>, ApiError> {
     let path = dir.join(format!("{name}.json"));
     match std::fs::read_to_string(&path) {
         Ok(raw) => {
-            let c: ModelConfig = serde_json::from_str(&raw)
-                .map_err(|e| ApiError::Parse(format!("{}: {e}", path.display())))?;
+            let c: ModelConfig =
+                serde_json::from_str(&raw).map_err(|e| ApiError::Parse(format!("{}: {e}", path.display())))?;
             Ok(Some(c))
         }
         Err(e) if e.kind() == std::io::ErrorKind::NotFound => Ok(None),
@@ -108,29 +108,22 @@ pub fn create(dir: &Path, config: &ModelConfig) -> Result<ModelConfig, ApiError>
         )));
     }
     if let Some(parent) = path.parent() {
-        std::fs::create_dir_all(parent)
-            .map_err(|e| ApiError::Io(format!("mkdir {}: {e}", parent.display())))?;
+        std::fs::create_dir_all(parent).map_err(|e| ApiError::Io(format!("mkdir {}: {e}", parent.display())))?;
     }
-    let raw = serde_json::to_string_pretty(config)
-        .map_err(|e| ApiError::Internal(format!("serialize model config: {e}")))?;
-    std::fs::write(&path, raw)
-        .map_err(|e| ApiError::Io(format!("write {}: {e}", path.display())))?;
+    let raw =
+        serde_json::to_string_pretty(config).map_err(|e| ApiError::Internal(format!("serialize model config: {e}")))?;
+    std::fs::write(&path, raw).map_err(|e| ApiError::Io(format!("write {}: {e}", path.display())))?;
     Ok(config.clone())
 }
 
-pub fn update(
-    dir: &Path,
-    name: &str,
-    changes: &serde_json::Value,
-) -> Result<Option<ModelConfig>, ApiError> {
+pub fn update(dir: &Path, name: &str, changes: &serde_json::Value) -> Result<Option<ModelConfig>, ApiError> {
     if !is_safe_model_config_name(name) {
         return Ok(None);
     }
     let Some(existing) = get(dir, name)? else {
         return Ok(None);
     };
-    let mut merged = serde_json::to_value(&existing)
-        .map_err(|e| ApiError::Internal(format!("to_value: {e}")))?;
+    let mut merged = serde_json::to_value(&existing).map_err(|e| ApiError::Internal(format!("to_value: {e}")))?;
     if let (Some(merged_obj), Some(changes_obj)) = (merged.as_object_mut(), changes.as_object()) {
         for (k, v) in changes_obj {
             merged_obj.insert(k.clone(), v.clone());
@@ -139,10 +132,8 @@ pub fn update(
     let next: ModelConfig = serde_json::from_value(merged)
         .map_err(|e| ApiError::Validation(format!("merged model-config invalid: {e}")))?;
     let path = dir.join(format!("{name}.json"));
-    let raw = serde_json::to_string_pretty(&next)
-        .map_err(|e| ApiError::Internal(format!("serialize: {e}")))?;
-    std::fs::write(&path, raw)
-        .map_err(|e| ApiError::Io(format!("write {}: {e}", path.display())))?;
+    let raw = serde_json::to_string_pretty(&next).map_err(|e| ApiError::Internal(format!("serialize: {e}")))?;
+    std::fs::write(&path, raw).map_err(|e| ApiError::Io(format!("write {}: {e}", path.display())))?;
     Ok(Some(next))
 }
 
@@ -285,9 +276,7 @@ mod tests {
     #[test]
     fn update_returns_none_when_missing() {
         let dir = tempfile::tempdir().unwrap();
-        assert!(update(dir.path(), "missing", &serde_json::json!({}))
-            .unwrap()
-            .is_none());
+        assert!(update(dir.path(), "missing", &serde_json::json!({})).unwrap().is_none());
     }
 
     #[test]

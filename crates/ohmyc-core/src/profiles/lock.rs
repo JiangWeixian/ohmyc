@@ -30,6 +30,7 @@ impl LockGuard {
         let lock_path = profiles_dir.join(LOCK_FILENAME);
         let file = OpenOptions::new()
             .create(true)
+            .truncate(true)
             .write(true)
             .read(true)
             .open(&lock_path)
@@ -46,8 +47,7 @@ impl LockGuard {
     /// any unlock errors (which Drop silently swallows).
     pub fn release(mut self) -> Result<(), ApiError> {
         if let Some(file) = self.file.take() {
-            FileExt::unlock(&file)
-                .map_err(|e| ApiError::Io(format!("unlock: {e}")))?;
+            FileExt::unlock(&file).map_err(|e| ApiError::Io(format!("unlock: {e}")))?;
         }
         Ok(())
     }

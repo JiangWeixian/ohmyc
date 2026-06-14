@@ -23,15 +23,21 @@ pub struct LspResponse {
 
 #[tauri::command]
 pub fn configs_mcp() -> Result<McpResponse, ApiError> {
-    Ok(McpResponse { mcp_servers: configs::mcp_servers()? })
+    Ok(McpResponse {
+        mcp_servers: configs::mcp_servers()?,
+    })
 }
 
 #[tauri::command]
 pub fn configs_hooks() -> Result<HooksResponse, ApiError> {
-    Ok(HooksResponse { hooks: configs::hooks()? })
+    Ok(HooksResponse {
+        hooks: configs::hooks()?,
+    })
 }
 
 #[tauri::command]
 pub fn configs_lsp() -> Result<LspResponse, ApiError> {
-    Ok(LspResponse { lsp_servers: configs::lsp_servers()? })
+    Ok(LspResponse {
+        lsp_servers: configs::lsp_servers()?,
+    })
 }

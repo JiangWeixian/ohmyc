@@ -77,13 +77,7 @@ fn main() {
                 true,
                 Some("CmdOrCtrl+O"),
             )?;
-            let quit_item = MenuItem::with_id(
-                app,
-                TrayMenuId::Quit.as_str(),
-                "Quit OhMyC",
-                true,
-                Some("CmdOrCtrl+Q"),
-            )?;
+            let quit_item = MenuItem::with_id(app, TrayMenuId::Quit.as_str(), "Quit OhMyC", true, Some("CmdOrCtrl+Q"))?;
             let menu = Menu::with_items(app, &[&open_item, &quit_item])?;
 
             // Tray icon
@@ -92,17 +86,21 @@ fn main() {
                 .icon_as_template(true)
                 .menu(&menu)
                 .show_menu_on_left_click(false)
-                .on_menu_event(|app, event| {
-                    match TrayMenuId::from_id(event.id.as_ref()) {
-                        Some(TrayMenuId::Quit) => app.exit(0),
-                        Some(TrayMenuId::OpenMain) => {
-                            let _ = ohmyc_desktop_lib::windows::open_main_window(app.clone());
-                        }
-                        None => {}
+                .on_menu_event(|app, event| match TrayMenuId::from_id(event.id.as_ref()) {
+                    Some(TrayMenuId::Quit) => app.exit(0),
+                    Some(TrayMenuId::OpenMain) => {
+                        let _ = ohmyc_desktop_lib::windows::open_main_window(app.clone());
                     }
+                    None => {}
                 })
                 .on_tray_icon_event(|tray, event| {
-                    if let TrayIconEvent::Click { button, button_state, rect, .. } = event {
+                    if let TrayIconEvent::Click {
+                        button,
+                        button_state,
+                        rect,
+                        ..
+                    } = event
+                    {
                         let button_str = match button {
                             MouseButton::Left => "Left",
                             MouseButton::Right => "Right",
@@ -187,7 +185,9 @@ fn hide_popover(app: tauri::AppHandle) {
 
 fn toggle_popover(app: &tauri::AppHandle, tray: TrayRect) {
     let guard = app.state::<PopoverGuard>();
-    let Some(window) = app.get_webview_window("popover") else { return };
+    let Some(window) = app.get_webview_window("popover") else {
+        return;
+    };
 
     // Snapshot current state, drop lock before Tauri calls (avoid reentrancy
     // if WindowEvent::Focused fires synchronously and re-acquires the lock).
@@ -209,7 +209,12 @@ fn toggle_popover(app: &tauri::AppHandle, tray: TrayRect) {
                     width: m.size().width,
                     height: m.size().height,
                 })
-                .unwrap_or(MonitorBounds { x: 0, y: 0, width: 1920, height: 1080 });
+                .unwrap_or(MonitorBounds {
+                    x: 0,
+                    y: 0,
+                    width: 1920,
+                    height: 1080,
+                });
 
             let pos = position_under_tray(tray, size, monitor);
             let _ = window.set_position(pos);

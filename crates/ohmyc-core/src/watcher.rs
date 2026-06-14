@@ -24,30 +24,30 @@ pub enum FsEvent {
 /// Builds a debouncer (250ms) that watches the given paths recursively and
 /// forwards events to `tx`. The returned `Debouncer` must be kept alive —
 /// dropping it stops the watcher.
-pub fn spawn(
-    paths: Vec<PathBuf>,
-    tx: Sender<FsEvent>,
-) -> Result<Debouncer<notify::RecommendedWatcher>, ApiError> {
-    let mut debouncer = new_debouncer(Duration::from_millis(250), move |res: notify_debouncer_mini::DebounceEventResult| {
-        let Ok(events) = res else { return };
-        for ev in events {
-            let p = &ev.path;
-            let path = p.to_string_lossy().into_owned();
-            if !matches!(ev.kind, DebouncedEventKind::Any) {
-                continue;
+pub fn spawn(paths: Vec<PathBuf>, tx: Sender<FsEvent>) -> Result<Debouncer<notify::RecommendedWatcher>, ApiError> {
+    let mut debouncer = new_debouncer(
+        Duration::from_millis(250),
+        move |res: notify_debouncer_mini::DebounceEventResult| {
+            let Ok(events) = res else { return };
+            for ev in events {
+                let p = &ev.path;
+                let path = p.to_string_lossy().into_owned();
+                if !matches!(ev.kind, DebouncedEventKind::Any) {
+                    continue;
+                }
+                let lower = path.to_lowercase();
+                let event = if lower.ends_with("timeline.db")
+                    || lower.ends_with("timeline.db-wal")
+                    || lower.ends_with("timeline.db-shm")
+                {
+                    FsEvent::TimelineDb { path }
+                } else {
+                    FsEvent::ClaudeHome { path }
+                };
+                let _ = tx.send(event);
             }
-            let lower = path.to_lowercase();
-            let event = if lower.ends_with("timeline.db")
-                || lower.ends_with("timeline.db-wal")
-                || lower.ends_with("timeline.db-shm")
-            {
-                FsEvent::TimelineDb { path }
-            } else {
-                FsEvent::ClaudeHome { path }
-            };
-            let _ = tx.send(event);
-        }
-    })
+        },
+    )
     .map_err(|e| ApiError::Internal(format!("debouncer init: {e}")))?;
 
     for path in &paths {
@@ -70,9 +70,10 @@ pub fn spawn(
 /// - `~/.claude` (claude home root)
 pub fn default_watch_paths() -> Result<Vec<PathBuf>, ApiError> {
     let db = crate::timeline::default_db_path()?;
-    let db_dir = db.parent().map(|p| p.to_path_buf()).ok_or_else(|| {
-        ApiError::Internal("db path has no parent".to_string())
-    })?;
+    let db_dir = db
+        .parent()
+        .map(|p| p.to_path_buf())
+        .ok_or_else(|| ApiError::Internal("db path has no parent".to_string()))?;
     let claude_home = crate::claude_home::resolve()?;
     let ohmyc_base = crate::store::base_dir()?;
     Ok(vec![db_dir, claude_home, ohmyc_base])
@@ -88,7 +89,9 @@ mod tests {
 
     #[test]
     fn fs_event_serializes_with_tag_and_path() {
-        let ev = FsEvent::TimelineDb { path: "/tmp/timeline.db".into() };
+        let ev = FsEvent::TimelineDb {
+            path: "/tmp/timeline.db".into(),
+        };
         let json = serde_json::to_value(&ev).unwrap();
         assert_eq!(json["kind"], "timeline_db");
         assert_eq!(json["path"], "/tmp/timeline.db");
@@ -163,10 +166,7 @@ mod tests {
             Some(v) => std::env::set_var("OHMYC_HOME", v),
             None => std::env::remove_var("OHMYC_HOME"),
         }
-        let path_strings: Vec<String> = paths
-            .iter()
-            .map(|p| p.to_string_lossy().to_string())
-            .collect();
+        let path_strings: Vec<String> = paths.iter().map(|p| p.to_string_lossy().to_string()).collect();
         assert!(path_strings.iter().any(|p| p.contains("test-ohmyc-home")));
     }
 }

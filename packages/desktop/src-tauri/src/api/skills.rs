@@ -16,9 +16,7 @@ pub struct SkillResponse {
 }
 
 #[tauri::command]
-pub fn skills_list(
-    origins: Option<serde_json::Value>,
-) -> Result<SkillsResponse, ApiError> {
+pub fn skills_list(origins: Option<serde_json::Value>) -> Result<SkillsResponse, ApiError> {
     if !include_origin(&origins, "claude") {
         return Ok(SkillsResponse { skills: Vec::new() });
     }

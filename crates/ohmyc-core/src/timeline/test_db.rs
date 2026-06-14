@@ -66,7 +66,15 @@ pub fn insert_session(
             turns, tokens_input, tokens_output, tokens_cached,
             summary, summary_source, transcript_path, last_offset, ingested_at, model
         ) VALUES (?1, ?2, NULL, ?3, ?3, 0, ?4, ?5, ?6, ?7, NULL, 'auto', '/tmp/t.jsonl', 0, ?3, NULL)",
-        params![session_id, project, started_at_ms, turns, tokens_input, tokens_output, tokens_cached],
+        params![
+            session_id,
+            project,
+            started_at_ms,
+            turns,
+            tokens_input,
+            tokens_output,
+            tokens_cached
+        ],
     )
     .expect("insert session");
 }

@@ -77,12 +77,22 @@ mod tests {
     use super::*;
 
     fn default_monitor() -> MonitorBounds {
-        MonitorBounds { x: 0, y: 0, width: 1920, height: 1080 }
+        MonitorBounds {
+            x: 0,
+            y: 0,
+            width: 1920,
+            height: 1080,
+        }
     }
 
     #[test]
     fn test_position_under_tray_centers_with_offset() {
-        let tray = TrayRect { x: 1000, y: 0, width: 24, height: 24 };
+        let tray = TrayRect {
+            x: 1000,
+            y: 0,
+            width: 24,
+            height: 24,
+        };
         let win = PhysicalSize::new(360u32, 440u32);
         let pos = position_under_tray(tray, win, default_monitor());
         // tray center 1012, x = 1012 - 360 + 28 = 680, y = 28
@@ -93,7 +103,12 @@ mod tests {
     #[test]
     fn test_position_under_tray_clamps_at_right_edge() {
         // Tray icon very close to the right edge of a 1920-wide monitor.
-        let tray = TrayRect { x: 1900, y: 0, width: 24, height: 24 };
+        let tray = TrayRect {
+            x: 1900,
+            y: 0,
+            width: 24,
+            height: 24,
+        };
         let win = PhysicalSize::new(360u32, 440u32);
         let pos = position_under_tray(tray, win, default_monitor());
         // Unclamped x = 1912 - 360 + 28 = 1580. Window right = 1940. Monitor
@@ -106,7 +121,12 @@ mod tests {
     #[test]
     fn test_position_under_tray_clamps_at_left_edge() {
         // Pathological: tray very close to left edge.
-        let tray = TrayRect { x: 10, y: 0, width: 24, height: 24 };
+        let tray = TrayRect {
+            x: 10,
+            y: 0,
+            width: 24,
+            height: 24,
+        };
         let win = PhysicalSize::new(360u32, 440u32);
         let pos = position_under_tray(tray, win, default_monitor());
         // Unclamped x = 22 - 360 + 28 = -310. Clamped to monitor.x + 8 = 8.
@@ -115,7 +135,12 @@ mod tests {
 
     #[test]
     fn test_position_under_tray_y_includes_menu_bar_gap() {
-        let tray = TrayRect { x: 500, y: 0, width: 24, height: 24 };
+        let tray = TrayRect {
+            x: 500,
+            y: 0,
+            width: 24,
+            height: 24,
+        };
         let win = PhysicalSize::new(360u32, 440u32);
         let pos = position_under_tray(tray, win, default_monitor());
         assert_eq!(pos.y, 28); // 24 (tray height) + 4 (gap)
