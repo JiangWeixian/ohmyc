@@ -34,7 +34,7 @@ describe('parseTranscript (Codex JSONL)', () => {
     const raw = readFileSync(
       path.join(fixturesDir, 'codex-session.jsonl'),
       'utf8',
-    ).replaceAll('/Volumes/ORICO/Users/jiangwei', home)
+    ).replaceAll('__HOME__', home)
     withTranscript([raw.replace(/\n$/, '')], (transcriptPath) => {
       const data = parseTranscript('019ebc25-b5ab-72a0-b391-0364d948be20', transcriptPath, {
         agentName: 'codex',
