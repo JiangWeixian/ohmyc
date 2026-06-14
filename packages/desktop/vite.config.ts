@@ -28,7 +28,7 @@ function uiAliasPlugin(): Plugin {
       if (!source.startsWith('@/')) {
         return null
       }
-      const root = importer && importer.startsWith(uiSrc) ? uiSrc : desktopSrc
+      const root = importer && importer.replaceAll('\\', '/').startsWith(uiSrc.replaceAll('\\', '/')) ? uiSrc : desktopSrc
       const rel = source.slice(2) // strip '@/'
       const resolved = await this.resolve(path.resolve(root, rel), importer, { skipSelf: true })
       return resolved ?? null
