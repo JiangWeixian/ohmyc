@@ -1,0 +1,29 @@
+{
+  "compilerOptions": {
+    "target": "ES2020",
+    "jsx": "react-jsx",
+    "lib": ["ES2020", "DOM", "DOM.Iterable"],
+    "useDefineForClassFields": true,
+    "baseUrl": ".",
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "paths": {
+      "@ohmyc/ui/components/*": ["../ui/src/components/*"],
+      "@ohmyc/ui/hooks/*": ["../ui/src/hooks/*"],
+      "@ohmyc/ui/state/*": ["../ui/src/state/*"],
+      "@ohmyc/ui/lib/*": ["../ui/src/lib/*"],
+      "@/*": ["../ui/src/*"],
+      "@tauri-apps/api/*": ["./node_modules/@tauri-apps/api/*"]
+    },
+    "resolveJsonModule": true,
+    "allowImportingTsExtensions": true,
+    "strict": true,
+    "noFallthroughCasesInSwitch": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "noEmit": true,
+    "isolatedModules": true,
+    "skipLibCheck": true
+  },
+  "include": ["src"]
+}

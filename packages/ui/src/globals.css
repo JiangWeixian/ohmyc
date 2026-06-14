@@ -16,7 +16,11 @@
     --text-secondary: #d0d6e0;
     --text-tertiary: #8a8f98;
     --text-quaternary: #62666d;
-    
+
+    /* shadcn chart palette — single monochrome slot for v0.1.
+       DESIGN.md L40: "Pure monochrome — zero chromatic colors". */
+    --chart-1: 220 14% 96%; /* hsl form of #f7f8f8 (DESIGN.md Primary text) */
+
     --border-subtle: rgba(255,255,255,0.05);
     --border-standard: rgba(255,255,255,0.08);
     --border-primary: #23252a;

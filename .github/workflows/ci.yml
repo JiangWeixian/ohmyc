@@ -54,3 +54,16 @@ jobs:
       - name: Test
         run: |
           pnpm test
+
+  desktop-test:
+    runs-on: macos-14
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+      - name: Cache cargo
+        uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: packages/desktop/src-tauri
+      - name: Run Rust unit tests
+        run: cargo test --manifest-path packages/desktop/src-tauri/Cargo.toml

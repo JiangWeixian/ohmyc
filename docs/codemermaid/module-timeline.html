@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>timeline — ohmyc-core</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+<script src="beautiful-mermaid.bundle.js"></script>
+</head>
+<body>
+<header class="topbar"><a class="back-link" href="index.html">← ohmyc-core</a></header>
+<main class="container">
+  <section class="hero">
+    <div class="eyebrow">ohmyc-core · module</div>
+    <h1>timeline</h1>
+    <p class="learning-promise">Understand how the timeline module queries Claude Code's SQLite database for session history, heatmaps, projects, and analytics.</p>
+  </section>
+  <nav class="toc">
+    <div class="toc-label">On this page</div>
+    <ol class="toc-list">
+      <li><a class="toc-item" href="#unit-0"><span class="toc-num">1</span>Read-only SQLite queries<span class="toc-kind">concept</span></a></li>
+      <li><a class="toc-item" href="#unit-1"><span class="toc-num">2</span>Query types and metrics<span class="toc-kind">concept</span></a></li>
+      <li><a class="toc-item" href="#unit-2"><span class="toc-num">3</span>Database path resolution<span class="toc-kind">code-walk</span></a></li>
+      <li><a class="toc-item" href="#unit-3"><span class="toc-num">4</span>Test database infrastructure<span class="toc-kind">concept</span></a></li>
+      <li><a class="toc-item" href="#unit-4"><span class="toc-num">5</span>Check your understanding<span class="toc-kind">quiz</span></a></li>
+      <li><a class="toc-item" href="#unit-5"><span class="toc-num">6</span>Key takeaways<span class="toc-kind">takeaway</span></a></li>
+    </ol>
+  </nav>
+
+  <section class="unit unit-concept" id="unit-0">
+    <span class="unit-kind">concept</span>
+    <h2>Read-only SQLite queries</h2>
+    <p>The timeline module queries <code>~/.config/ohmyc/timeline.db</code> (or <code>$OHMYC_HOME/timeline.db</code>) via <code>rusqlite</code>. It's read-only — it never writes to the database. The database is populated by Claude Code itself during sessions; OhMyC reads it to display analytics in the UI.</p>
+    <p>At ~900 lines, this is the second-largest file in the crate after <code>profiles/activation.rs</code>. The size comes from the variety of queries: heatmaps by date, project lists, session details, event timelines, year summaries, and status checks. Each query returns a typed struct via <code>serde::Serialize</code>.</p>
+  </section>
+
+  <section class="unit unit-concept" id="unit-1">
+    <span class="unit-kind">concept</span>
+    <h2>Query types and metrics</h2>
+    <p>The <code>Metric</code> enum (<code>Sessions</code>, <code>Turns</code>, <code>Tokens</code>) drives the heatmap query. The UI passes a metric string like <code>"sessions"</code> and the heatmap query returns date-bucketed counts. The <code>HeatmapPoint</code> struct serializes as <code>{"date": "2026-01-15", "value": 42}</code>.</p>
+    <p>Other queries return <code>SessionRow</code> (session details with timestamps, model names, token counts), project lists, event timelines, and year summaries. All queries use parameterized SQL to prevent injection — the module constructs queries with <code>?</code> placeholders and binds values.</p>
+  </section>
+
+  <section class="unit unit-codewalk" id="unit-2">
+    <span class="unit-kind">code-walk</span>
+    <h2>Database path resolution</h2>
+    <div class="codewalk-split">
+      <div class="codewalk-head">
+        <span class="codewalk-file">crates/ohmyc-core/src/timeline.rs</span>
+        <span class="file-actions">
+          <span class="editor-menu" data-editor-menu data-editor="cursor">
+            <button class="file-action-select editor-menu-trigger" type="button" aria-haspopup="listbox" aria-expanded="false" data-editor-trigger><span data-editor-current>Cursor</span><span class="gg-chevron-down" aria-hidden="true"></span></button>
+            <span class="editor-menu-list" role="listbox" hidden data-editor-list>
+              <button class="editor-menu-item" type="button" role="option" aria-selected="true" data-editor-option="cursor">Cursor</button>
+              <button class="editor-menu-item" type="button" role="option" aria-selected="false" data-editor-option="vscode">VS Code</button>
+            </span>
+          </span>
+          <button class="file-action" type="button" data-copy-path="crates/ohmyc-core/src/timeline.rs:22">Copy path</button>
+        </span>
+      </div>
+      <div class="codewalk-split-body">
+        <pre class="code-block"><span class="line" data-line="1"><span class="ln">1</span><span class="code-text">pub fn default_db_path() -&gt; Result&lt;PathBuf, ApiError&gt; {</span></span><span class="line line-hl" data-line="2"><span class="ln">2</span><span class="code-text">    if let Ok(home) = std::env::var(ENV_HOME) {</span></span><span class="line" data-line="3"><span class="ln">3</span><span class="code-text">        if !home.is_empty() {</span></span><span class="line" data-line="4"><span class="ln">4</span><span class="code-text">            return Ok(PathBuf::from(home).join(DB_FILENAME));</span></span><span class="line" data-line="5"><span class="ln">5</span><span class="code-text">        }</span></span><span class="line" data-line="6"><span class="ln">6</span><span class="code-text">    }</span></span><span class="line" data-line="7"><span class="ln">7</span><span class="code-text">    let user_home = dirs::home_dir()</span></span><span class="line" data-line="8"><span class="ln">8</span><span class="code-text">        .ok_or_else(|| ApiError::Internal("could not determine home dir".to_string()))?;</span></span><span class="line" data-line="9"><span class="ln">9</span><span class="code-text">    Ok(user_home.join(".config").join("ohmyc").join(DB_FILENAME))</span></span><span class="line" data-line="10"><span class="ln">10</span><span class="code-text">}</span></span></pre>
+        <div class="codewalk-annotations">
+          <div class="codewalk-annotation" data-note-lines="2"><span class="annotation-line">L2</span><p>Same env-override pattern as <code>store::base_dir()</code>. The timeline database lives under <code>$OHMYC_HOME</code>, which mirrors the TypeScript <code>getDefaultDbPath</code> function.</p></div>
+          <div class="codewalk-annotation" data-note-lines="9"><span class="annotation-line">L9</span><p>Default path: <code>~/.config/ohmyc/timeline.db</code>. Note this is different from <code>~/.claude</code> — the timeline database is OhMyC's own data, not Claude Code's.</p></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="unit unit-concept" id="unit-3">
+    <span class="unit-kind">concept</span>
+    <h2>Test database infrastructure</h2>
+    <p>The <code>test_db</code> submodule (only compiled under <code>#[cfg(test)]</code>) provides a test database builder that creates an in-memory SQLite database, seeds it with test data, and returns a connection. This allows unit tests to verify query logic without needing a real <code>timeline.db</code> file on disk.</p>
+  </section>
+
+  <section class="unit unit-quiz" id="unit-4">
+    <span class="unit-kind">quiz</span>
+    <h2>Check your understanding</h2>
+    <div class="quiz">
+      <div class="quiz-question">Where does the timeline database live by default?</div>
+      <div class="quiz-options">
+        <div class="quiz-option" data-correct="false"><span class="quiz-option-letter">A</span><span><code>~/.claude/timeline.db</code></span></div>
+        <div class="quiz-option" data-correct="true"><span class="quiz-option-letter">B</span><span><code>~/.config/ohmyc/timeline.db</code> — OhMyC's own data directory, not Claude Code's</span></div>
+        <div class="quiz-option" data-correct="false"><span class="quiz-option-letter">C</span><span><code>$OHMYC_HOME/store/timeline.db</code></span></div>
+        <div class="quiz-option" data-correct="false"><span class="quiz-option-letter">D</span><span>In the system temp directory</span></div>
+      </div>
+      <div class="quiz-explanation"><strong>Correct: B</strong> — The timeline database is OhMyC's analytics database, stored under <code>~/.config/ohmyc/</code>. It's separate from <code>~/.claude</code> (Claude Code's config) and from <code>$OHMYC_HOME/store/</code> (OhMyC's component storage). <strong>A</strong> is Claude Code's directory. <strong>C</strong> is the store subdirectory. <strong>D</strong> is wrong (no temp directory usage).</div>
+    </div>
+  </section>
+
+  <section class="unit unit-takeaway" id="unit-5">
+    <div class="unit-takeaway">
+      <span class="unit-kind">takeaway</span>
+      <p>The timeline module is a read-only SQLite query layer. It provides typed results for heatmaps, sessions, projects, events, and analytics. The <code>Metric</code> enum drives the heatmap query. The test database submodule enables unit testing without a real database file. All SQL queries use parameterized inputs to prevent injection. The module uses the same env-override pattern as <code>store</code> for testability.</p>
+    </div>
+  </section>
+
+  <footer class="page-footer">
+    <a class="next-link" href="module-watcher.html">watcher →</a>
+    <p class="recap">Next: the watcher module — debounced filesystem events that power real-time updates.</p>
+  </footer>
+</main>
+<div class="zoom-overlay" hidden>
+  <div class="zoom-stage"></div>
+  <div class="zoom-controls">
+    <button data-zoom-out aria-label="Zoom out" title="Zoom out"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14"/></svg></button>
+    <span class="zoom-level" data-zoom-level>100%</span>
+    <button data-zoom-reset aria-label="Reset zoom" title="Reset zoom"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 12a9 9 0 1 0 3-6.7"/><path d="M3 4v6h6"/></svg></button>
+    <button data-zoom-in aria-label="Zoom in" title="Zoom in"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14"/><path d="M5 12h14"/></svg></button>
+    <button data-zoom-close aria-label="Close zoom" title="Close zoom"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg></button>
+  </div>
+</div>
+<script src="mermaid-bridge.js"></script>
+<script src="runtime.js"></script>
+</body>
+</html>

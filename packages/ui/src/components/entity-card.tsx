@@ -1,6 +1,4 @@
 // Reusable card for top-level entities (agents, skills, commands) shown in grids.
-import React from 'react'
-
 import { MonoBadge } from './badge'
 import { RenderBadgeView } from './render-badge'
 import { Card } from '@/components/ui/card'

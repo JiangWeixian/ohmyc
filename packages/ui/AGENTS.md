@@ -1,1 +1,1 @@
-$HOME is /Volumes/ORICO/Users/jiangwei
+$HOME is os.homedir()

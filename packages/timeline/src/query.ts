@@ -4,7 +4,6 @@
 // list, year list, and sync-status queries against the SQLite DB.
 // ============================================================
 
-import type Database from 'better-sqlite3'
 import type {
   DayEvents,
   EventsParams,
@@ -15,6 +14,7 @@ import type {
   SessionDetail,
   SessionRow,
 } from './schema.js'
+import type { SqliteDatabase } from './writer.js'
 
 // ------------------------------------------------------------------
 // Date helpers (YYYY-MM-DD <-> milliseconds)
@@ -56,12 +56,12 @@ function generateDateRange(from: string, to: string): string[] {
  * Gaps in the range are filled with `0` values. Supports sessions, turns, or
  * tokens as the aggregation metric, with optional project filtering.
  *
- * @param db - Open `better-sqlite3` database instance.
+ * @param db - Database handle conforming to {@link SqliteDatabase}.
  * @param params - Date range, metric, and optional project filter.
  * @returns One {@link HeatmapPoint} per day in the range, zero-filled.
  */
 export function getHeatmap(
-  db: Database.Database,
+  db: SqliteDatabase,
   params: HeatmapParams,
 ): HeatmapPoint[] {
   const { from, to, metric, project } = params
@@ -126,12 +126,12 @@ export function getHeatmap(
  * `nextCursor` value is the last day string in the page — pass it as
  * `cursor` to fetch the next page.
  *
- * @param db - Open `better-sqlite3` database instance.
+ * @param db - Database handle conforming to {@link SqliteDatabase}.
  * @param params - Filter, pagination, and limit options.
  * @returns Days with nested project groups and a cursor for the next page.
  */
 export function getEvents(
-  db: Database.Database,
+  db: SqliteDatabase,
   params: EventsParams = {},
 ): EventsResult {
   const { from, to, project, limit = 30, cursor } = params
@@ -221,7 +221,7 @@ export function getEvents(
   }
 
   // 4. Add tool / skill counts per project group
-  for (const [day, projects] of dayMap) {
+  for (const projects of dayMap.values()) {
     const sessionIds = [...projects.values()].flatMap(g => g.sessions.map(s => s.session_id))
     if (sessionIds.length === 0) {
       continue
@@ -285,12 +285,12 @@ export function getEvents(
  * Returns a single session enriched with its tool usage and skill invocation
  * records. Returns `null` if the session ID is not found.
  *
- * @param db - Open `better-sqlite3` database instance.
+ * @param db - Database handle conforming to {@link SqliteDatabase}.
  * @param sessionId - The session UUID to look up.
  * @returns The session with tools and skills, or `null`.
  */
 export function getSession(
-  db: Database.Database,
+  db: SqliteDatabase,
   sessionId: string,
 ): SessionDetail | null {
   const session = db
@@ -319,10 +319,10 @@ export function getSession(
 /**
  * Returns all distinct project names that have at least one session, sorted alphabetically.
  *
- * @param db - Open `better-sqlite3` database instance.
+ * @param db - Database handle conforming to {@link SqliteDatabase}.
  * @returns Sorted array of project names.
  */
-export function getProjects(db: Database.Database): string[] {
+export function getProjects(db: SqliteDatabase): string[] {
   const rows = db
     .prepare('SELECT DISTINCT project FROM sessions ORDER BY project')
     .all() as { project: string }[]
@@ -337,10 +337,10 @@ export function getProjects(db: Database.Database): string[] {
 /**
  * Returns all distinct years that contain sessions, sorted ascending.
  *
- * @param db - Open `better-sqlite3` database instance.
+ * @param db - Database handle conforming to {@link SqliteDatabase}.
  * @returns Sorted array of years (e.g. `[2024, 2025]`).
  */
-export function getYears(db: Database.Database): number[] {
+export function getYears(db: SqliteDatabase): number[] {
   const rows = db
     .prepare("SELECT DISTINCT CAST(strftime('%Y', started_at / 1000, 'unixepoch') AS INTEGER) AS year FROM sessions ORDER BY year")
     .all() as { year: number }[]
@@ -355,10 +355,10 @@ export function getYears(db: Database.Database): number[] {
 /**
  * Returns database status: total session count and timestamp of the last sync (if any).
  *
- * @param db - Open `better-sqlite3` database instance.
+ * @param db - Database handle conforming to {@link SqliteDatabase}.
  * @returns Session count and optional last-sync timestamp (epoch ms).
  */
-export function getStatus(db: Database.Database): { sessionCount: number; lastSyncAt?: number } {
+export function getStatus(db: SqliteDatabase): { sessionCount: number; lastSyncAt?: number } {
   const countRow = db
     .prepare('SELECT COUNT(*) AS cnt FROM sessions')
     .get() as { cnt: number }

@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>components — ohmyc-core</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+<script src="beautiful-mermaid.bundle.js"></script>
+</head>
+<body>
+<header class="topbar"><a class="back-link" href="index.html">← ohmyc-core</a></header>
+<main class="container">
+  <section class="hero">
+    <div class="eyebrow">ohmyc-core · module</div>
+    <h1>components</h1>
+    <p class="learning-promise">Understand how OhMyC reads markdown files from <code>~/.claude</code> — parsing YAML frontmatter, filtering invalid entries, and returning typed structs for agents, skills, and commands.</p>
+  </section>
+  <nav class="toc">
+    <div class="toc-label">On this page</div>
+    <ol class="toc-list">
+      <li><a class="toc-item" href="#unit-0"><span class="toc-num">1</span>Three readers, one pattern<span class="toc-kind">concept</span></a></li>
+      <li><a class="toc-item" href="#unit-1"><span class="toc-num">2</span>The Agent struct and list function<span class="toc-kind">code-walk</span></a></li>
+      <li><a class="toc-item" href="#unit-2"><span class="toc-num">3</span>read_md_or_skip: the vanishing-file policy<span class="toc-kind">code-walk</span></a></li>
+      <li><a class="toc-item" href="#unit-3"><span class="toc-num">4</span>Frontmatter boundary validation<span class="toc-kind">code</span></a></li>
+      <li><a class="toc-item" href="#unit-4"><span class="toc-num">5</span>Safe names and CRUD<span class="toc-kind">concept</span></a></li>
+      <li><a class="toc-item" href="#unit-5"><span class="toc-num">6</span>Check your understanding<span class="toc-kind">quiz</span></a></li>
+      <li><a class="toc-item" href="#unit-6"><span class="toc-num">7</span>Key takeaways<span class="toc-kind">takeaway</span></a></li>
+    </ol>
+  </nav>
+
+  <section class="unit unit-concept" id="unit-0">
+    <span class="unit-kind">concept</span>
+    <h2>Three readers, one pattern</h2>
+    <p>The <code>components</code> module contains three sub-readers — <code>agents</code>, <code>skills</code>, <code>commands</code> — that all follow the same pattern: scan a directory for <code>.md</code> files, parse YAML frontmatter, filter out entries missing required fields (<code>name</code> + <code>description</code>), and return typed structs. The shared types (<code>ComponentSource</code>, <code>Origin</code>, <code>Scope</code>) and the <code>read_md_or_skip</code> helper live in <code>mod.rs</code>, while each reader implements its own <code>list</code>, <code>get</code>, <code>create</code>, <code>update</code>, and <code>delete</code> functions.</p>
+    <p>Skills are slightly different: they're directories (not single files) — a skill is identified by a directory containing a <code>SKILL.md</code> file. This is why <code>component_exists</code> in the store checks for directory existence for skills but file existence for agents and commands.</p>
+  </section>
+
+  <section class="unit unit-codewalk" id="unit-1">
+    <span class="unit-kind">code-walk</span>
+    <h2>The Agent struct and list function</h2>
+    <div class="codewalk-split">
+      <div class="codewalk-head">
+        <span class="codewalk-file">crates/ohmyc-core/src/components/agents.rs</span>
+        <span class="file-actions">
+          <span class="editor-menu" data-editor-menu data-editor="cursor">
+            <button class="file-action-select editor-menu-trigger" type="button" aria-haspopup="listbox" aria-expanded="false" data-editor-trigger><span data-editor-current>Cursor</span><span class="gg-chevron-down" aria-hidden="true"></span></button>
+            <span class="editor-menu-list" role="listbox" hidden data-editor-list>
+              <button class="editor-menu-item" type="button" role="option" aria-selected="true" data-editor-option="cursor">Cursor</button>
+              <button class="editor-menu-item" type="button" role="option" aria-selected="false" data-editor-option="vscode">VS Code</button>
+            </span>
+          </span>
+          <button class="file-action" type="button" data-copy-path="crates/ohmyc-core/src/components/agents.rs:23">Copy path</button>
+        </span>
+      </div>
+      <div class="codewalk-split-body">
+        <pre class="code-block"><span class="line" data-line="1"><span class="ln">1</span><span class="code-text">pub fn list(dir: &amp;Path) -&gt; Result&lt;Vec&lt;Agent&gt;, ApiError&gt; {</span></span><span class="line line-hl" data-line="2"><span class="ln">2</span><span class="code-text">    if !dir.exists() {</span></span><span class="line line-hl" data-line="3"><span class="ln">3</span><span class="code-text">        return Ok(Vec::new());</span></span><span class="line" data-line="4"><span class="ln">4</span><span class="code-text">    }</span></span><span class="line" data-line="5"><span class="ln">5</span><span class="code-text">    let mut out: Vec&lt;Agent&gt; = Vec::new();</span></span><span class="line" data-line="6"><span class="ln">6</span><span class="code-text">    for entry in std::fs::read_dir(dir).map_err(ApiError::from)? {</span></span><span class="line" data-line="7"><span class="ln">7</span><span class="code-text">        let entry = entry.map_err(ApiError::from)?;</span></span><span class="line" data-line="8"><span class="ln">8</span><span class="code-text">        let path = entry.path();</span></span><span class="line line-hl" data-line="9"><span class="ln">9</span><span class="code-text">        if path.extension().and_then(|s| s.to_str()) != Some("md") {</span></span><span class="line" data-line="10"><span class="ln">10</span><span class="code-text">            continue;</span></span><span class="line" data-line="11"><span class="ln">11</span><span class="code-text">        }</span></span><span class="line" data-line="12"><span class="ln">12</span><span class="code-text">        let raw = match read_md_or_skip(&amp;path)? {</span></span><span class="line" data-line="13"><span class="ln">13</span><span class="code-text">            Some(s) =&gt; s,</span></span><span class="line" data-line="14"><span class="ln">14</span><span class="code-text">            None =&gt; continue,</span></span><span class="line" data-line="15"><span class="ln">15</span><span class="code-text">        };</span></span><span class="line" data-line="16"><span class="ln">16</span><span class="code-text">        if let Some(agent) = parse_agent(&amp;filename, &amp;raw)? {</span></span><span class="line" data-line="17"><span class="ln">17</span><span class="code-text">            out.push(agent);</span></span><span class="line" data-line="18"><span class="ln">18</span><span class="code-text">        }</span></span><span class="line" data-line="19"><span class="ln">19</span><span class="code-text">    }</span></span><span class="line line-hl" data-line="20"><span class="ln">20</span><span class="code-text">    out.sort_by(|a, b| a.id.cmp(&amp;b.id));</span></span><span class="line" data-line="21"><span class="ln">21</span><span class="code-text">    Ok(out)</span></span><span class="line" data-line="22"><span class="ln">22</span><span class="code-text">}</span></span></pre>
+        <div class="codewalk-annotations">
+          <div class="codewalk-annotation" data-note-lines="2,3"><span class="annotation-line">L2–3</span><p>Missing directory is not an error — return empty list. This is the same defensive pattern used across every reader module.</p></div>
+          <div class="codewalk-annotation" data-note-lines="9"><span class="annotation-line">L9</span><p>Only process <code>.md</code> files. Non-markdown files in the agents directory (README, .gitkeep, etc.) are silently skipped.</p></div>
+          <div class="codewalk-annotation" data-note-lines="16"><span class="annotation-line">L16</span><p><code>parse_agent</code> returns <code>None</code> for files missing required <code>name</code> or <code>description</code> fields. Invalid entries are filtered, not errored — a README file in the agents dir should not crash the listing.</p></div>
+          <div class="codewalk-annotation" data-note-lines="20"><span class="annotation-line">L20</span><p>Alphabetical sort by ID for stable ordering. The UI shows agents in a consistent order regardless of filesystem traversal order.</p></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="unit unit-codewalk" id="unit-2">
+    <span class="unit-kind">code-walk</span>
+    <h2>read_md_or_skip: the vanishing-file policy</h2>
+    <div class="codewalk-split">
+      <div class="codewalk-head">
+        <span class="codewalk-file">crates/ohmyc-core/src/components/mod.rs</span>
+        <span class="file-actions">
+          <span class="editor-menu" data-editor-menu data-editor="cursor">
+            <button class="file-action-select editor-menu-trigger" type="button" aria-haspopup="listbox" aria-expanded="false" data-editor-trigger><span data-editor-current>Cursor</span><span class="gg-chevron-down" aria-hidden="true"></span></button>
+            <span class="editor-menu-list" role="listbox" hidden data-editor-list>
+              <button class="editor-menu-item" type="button" role="option" aria-selected="true" data-editor-option="cursor">Cursor</button>
+              <button class="editor-menu-item" type="button" role="option" aria-selected="false" data-editor-option="vscode">VS Code</button>
+            </span>
+          </span>
+          <button class="file-action" type="button" data-copy-path="crates/ohmyc-core/src/components/mod.rs:54">Copy path</button>
+        </span>
+      </div>
+      <div class="codewalk-split-body">
+        <pre class="code-block"><span class="line" data-line="1"><span class="ln">1</span><span class="code-text">pub fn read_md_or_skip(path: &amp;std::path::Path) -&gt; Result&lt;Option&lt;String&gt;, ApiError&gt; {</span></span><span class="line" data-line="2"><span class="ln">2</span><span class="code-text">    match std::fs::read_to_string(path) {</span></span><span class="line" data-line="3"><span class="ln">3</span><span class="code-text">        Ok(s) =&gt; Ok(Some(s)),</span></span><span class="line line-hl" data-line="4"><span class="ln">4</span><span class="code-text">        Err(e) if e.kind() == std::io::ErrorKind::NotFound =&gt; Ok(None),</span></span><span class="line line-hl" data-line="5"><span class="ln">5</span><span class="code-text">        Err(e) =&gt; Err(ApiError::Io(format!("read {}: {e}", path.display()))),</span></span><span class="line" data-line="6"><span class="ln">6</span><span class="code-text">    }</span></span><span class="line" data-line="7"><span class="ln">7</span><span class="code-text">}</span></span></pre>
+        <div class="codewalk-annotations">
+          <div class="codewalk-annotation" data-note-lines="4"><span class="annotation-line">L4</span><p>NotFound is <code>Ok(None)</code> — the file vanished between <code>read_dir</code> and <code>read_to_string</code>. This is a race condition that happens when the user deletes a file while OhMyC is listing the directory. It's benign — skip the file.</p></div>
+          <div class="codewalk-annotation" data-note-lines="5"><span class="annotation-line">L5</span><p>All other IO errors (permission denied, disk full, transient FS errors) surface as <code>ApiError::Io</code>. The policy: missing is fine, broken is not.</p></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="unit unit-concept" id="unit-3">
+    <span class="unit-kind">concept</span>
+    <h2>Frontmatter boundary validation</h2>
+    <p>The <code>frontmatter</code> submodule uses the <code>gray_matter</code> crate to parse YAML between <code>---</code> delimiters. The boundary validation is strict: null or non-object frontmatter is rejected immediately. This prevents silent data loss — if the YAML is malformed, the caller gets an error instead of an empty frontmatter object where every field lookup returns <code>None</code>.</p>
+    <p>The stringify function writes frontmatter back to YAML, preserving arbitrary fields. Round-trip correctness is tested — any frontmatter that parses should stringify back to the same data.</p>
+  </section>
+
+  <section class="unit unit-concept" id="unit-4">
+    <span class="unit-kind">concept</span>
+    <h2>Safe names and CRUD</h2>
+    <p>Every component reader uses <code>is_safe_name()</code> to validate user-supplied names before using them in file paths. The rules: only ASCII alphanumeric, underscore, and dash. No dots (prevents <code>.env</code>), no slashes (prevents path traversal), no spaces. This guard runs before any filesystem operation in <code>get</code>, <code>create</code>, <code>update</code>, and <code>delete</code>.</p>
+    <p>The CRUD operations follow standard patterns: <code>create</code> writes a new file (errors on conflict), <code>update</code> merges frontmatter and replaces content, <code>delete</code> removes the file. All operations use the frontmatter module's stringify function for consistent formatting.</p>
+  </section>
+
+  <section class="unit unit-quiz" id="unit-5">
+    <span class="unit-kind">quiz</span>
+    <h2>Check your understanding</h2>
+    <div class="quiz">
+      <div class="quiz-question">Why does <code>list</code> silently skip files missing <code>name</code> and <code>description</code> instead of returning an error?</div>
+      <div class="quiz-options">
+        <div class="quiz-option" data-correct="true"><span class="quiz-option-letter">A</span><span>The agents directory may contain non-agent files (README, templates) that are valid markdown but not agents</span></div>
+        <div class="quiz-option" data-correct="false"><span class="quiz-option-letter">B</span><span>Errors would be too expensive to handle in the calling code</span></div>
+        <div class="quiz-option" data-correct="false"><span class="quiz-option-letter">C</span><span>The frontmatter parser doesn't distinguish between missing and malformed YAML</span></div>
+        <div class="quiz-option" data-correct="false"><span class="quiz-option-letter">D</span><span>It's a performance optimization to avoid parsing invalid files</span></div>
+      </div>
+      <div class="quiz-explanation"><strong>Correct: A</strong> — The agents directory is user-managed; it may contain any markdown files. A README or template file is valid content but not a valid agent. Filtering (not erroring) keeps the listing resilient. <strong>B</strong> is wrong (error handling is cheap). <strong>C</strong> is wrong (the parser does distinguish — malformed YAML returns <code>ApiError::Parse</code>). <strong>D</strong> is wrong (the file is parsed regardless).</div>
+    </div>
+  </section>
+
+  <section class="unit unit-takeaway" id="unit-6">
+    <div class="unit-takeaway">
+      <span class="unit-kind">takeaway</span>
+      <p>The components module reads <code>.md</code> files from <code>~/.claude/{agents,skills,commands}/</code> into typed Rust structs. Every reader follows the same pattern: scan, filter by extension, parse frontmatter, skip invalid entries, sort by ID. The <code>read_md_or_skip</code> helper centralizes the "file vanished" policy. The <code>is_safe_name</code> guard prevents path traversal. The frontmatter boundary validation catches malformed YAML at the parse boundary.</p>
+    </div>
+  </section>
+
+  <footer class="page-footer">
+    <a class="next-link" href="module-profiles.html">profiles →</a>
+    <p class="recap">Next: the profiles module — the most complex module, with transactional activation and undo-stack rollback.</p>
+  </footer>
+</main>
+
+<div class="zoom-overlay" hidden>
+  <div class="zoom-stage"></div>
+  <div class="zoom-controls">
+    <button data-zoom-out aria-label="Zoom out" title="Zoom out"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14"/></svg></button>
+    <span class="zoom-level" data-zoom-level>100%</span>
+    <button data-zoom-reset aria-label="Reset zoom" title="Reset zoom"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 12a9 9 0 1 0 3-6.7"/><path d="M3 4v6h6"/></svg></button>
+    <button data-zoom-in aria-label="Zoom in" title="Zoom in"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14"/><path d="M5 12h14"/></svg></button>
+    <button data-zoom-close aria-label="Close zoom" title="Close zoom"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg></button>
+  </div>
+</div>
+<script src="mermaid-bridge.js"></script>
+<script src="runtime.js"></script>
+</body>
+</html>

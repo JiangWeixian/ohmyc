@@ -45,10 +45,9 @@ ohmyc dashboard --doctor
 | `--install` | `boolean` | — | `--install` | Install the timeline plugin and run initial backfill |
 | `--uninstall` | `boolean` | — | `--uninstall` | Remove the timeline plugin (preserves database) |
 | `--sync` | `boolean` | — | `--sync` | Scan all transcripts and import missing sessions |
-| `--ingest` | `boolean` | — | `--ingest` | Ingest a single session (requires `--session`) |
-| `--session` | `string` | — | `--session abc-123` | Session ID to ingest |
-| `--file` | `string` | auto-discovered | `--file ./x.jsonl` | Explicit path to transcript file |
 | `--doctor` | `boolean` | — | `--doctor` | Diagnose plugin, hooks, and database health |
+
+Per-session ingest is handled by the timeline plugin's bundled node entry (`plugins/timeline/dist/ingest.mjs`), invoked directly by the Claude Code Stop hook — not via this CLI.
 
 ## API
 
@@ -184,14 +183,14 @@ src/
 ├── launcher.ts         # Server startup, port fallback, browser open
 ├── logger.ts           # Pino + pino-roll daily rotation
 ├── commands/
-│   └── dashboard.ts    # Timeline plugin install/sync/ingest/doctor
+│   └── dashboard.ts    # Timeline plugin install/uninstall/sync/doctor
 └── server/
     ├── index.ts        # Fastify factory, route registration
     ├── routes/         # 11 route modules
     └── services/       # 10 service modules
 ```
 
-Key dependencies: **Fastify**, **cac**, **better-sqlite3** (via `@ohmyc/timeline`), **pino**/**pino-roll**.
+Key dependencies: **Fastify**, **cac**, **node:sqlite** (via `@ohmyc/timeline`), **pino**/**pino-roll**.
 
 ---
 

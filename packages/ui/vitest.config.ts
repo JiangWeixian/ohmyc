@@ -11,6 +11,8 @@ export default defineConfig({
   resolve: {
     alias: {
       '@': path.resolve(rootDir, 'src'),
+      '@tauri-apps/api/core': path.resolve(rootDir, 'tests/test/stubs/tauri-api-core.ts'),
+      '@tauri-apps/api/event': path.resolve(rootDir, 'tests/test/stubs/tauri-api-event.ts'),
     },
   },
   server: {
@@ -22,11 +24,16 @@ export default defineConfig({
     environment: 'jsdom',
     globals: true,
     setupFiles: ['./tests/test/setup.ts'],
+    server: {
+      deps: {
+        // @lobehub/ui ships ESM Node can't load directly (JSON imports without
+        // `type: json` attributes); inline it so Vite transforms it instead.
+        inline: [/@lobehub\/(ui|icons)/],
+      },
+    },
     include: [
       'tests/**/*.test.ts',
       'tests/**/*.test.tsx',
-      'src/**/*.test.ts',
-      'src/**/*.test.tsx',
     ],
     coverage: {
       provider: 'v8',

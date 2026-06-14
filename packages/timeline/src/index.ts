@@ -13,14 +13,23 @@ export {
 } from './db.js'
 
 export type { OpenDatabaseOptions as DatabaseOptions } from './db.js'
+export { migrate } from './migrate.js'
+export type { MigrateOptions } from './migrate.js'
 
 // ------------------------------------------------------------------
 // Ingest
 // ------------------------------------------------------------------
 
-export { ingestSession } from './ingest.js'
+export {
+  ingestSession,
+  parseTranscript,
+  upsertSessionData,
+} from './ingest.js'
 
-export type { IngestResult } from './schema.js'
+export type {
+  IngestResult,
+  TranscriptParseOptions,
+} from './ingest.js'
 
 // ------------------------------------------------------------------
 // Writer
@@ -28,6 +37,7 @@ export type { IngestResult } from './schema.js'
 
 export { createWriter } from './writer.js'
 export type { SqliteDatabase, SqliteStatement, Writer } from './writer.js'
+export type { NodeSqliteDatabase } from './node-sqlite.js'
 
 // ------------------------------------------------------------------
 // Backfill

@@ -9,9 +9,9 @@ import type { IngestResult, ParsedSessionData } from './schema.js'
 export type { IngestResult } from './schema.js'
 
 /**
- * Minimal SQLite-like interface that works with both better-sqlite3 and bun:sqlite.
- * Abstracting over the driver lets the same writer logic run in Node (better-sqlite3)
- * and Bun (bun:sqlite) without changes.
+ * Minimal SQLite-like interface that works with both node:sqlite and bun:sqlite.
+ * Abstracting over the driver lets the same writer logic run in Node and Bun
+ * without changes.
  */
 export interface SqliteDatabase {
   /** Compiles a SQL string into a reusable prepared statement. */

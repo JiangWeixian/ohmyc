@@ -1,36 +1,54 @@
 # OhMyC Timeline Plugin
 
-Collects session data (turns, tokens, tools, skills) from both **Claude Code** and **OpenCode** agents and ingests it into the OhMyC Timeline dashboard.
+Collects session data from **Claude Code**, **OpenCode**, and **Codex** agents and ingests it into the OhMyC Timeline dashboard.
 
 ## Supported Agents
 
 | Agent | Integration | Data Source |
 |-------|-------------|-------------|
-| Claude Code | Hook-based (`hooks/ingest.sh`) | JSONL transcript files |
-| OpenCode | Plugin-based (`opencode.ts`) | Real-time event hooks |
+| Claude Code | Stop hook via `hooks/hooks.json` and `hooks/ingest-claude.sh` | Claude JSONL transcripts in `~/.claude/projects/` |
+| Codex | Codex plugin manifest, default `hooks/hooks.json`, and `hooks/ingest-codex.sh` | Codex JSONL sessions in `~/.codex/sessions/` and `~/.codex/archived_sessions/` |
+| OpenCode | OpenCode plugin entry at `opencode.ts` | Real-time OpenCode lifecycle, message, and tool events |
 
 ## Claude Code Setup
 
-The Claude Code plugin uses a `Stop` hook that fires when a session ends. The hook script reads the transcript JSONL file and ingests it into the timeline database via the CLI.
+Claude Code reads `plugins/timeline/.claude-plugin/plugin.json` and `plugins/timeline/hooks/hooks.json`. The shared Stop hook dispatches Claude sessions to:
+
+```bash
+${CLAUDE_PLUGIN_ROOT}/hooks/ingest-claude.sh $CLAUDE_SESSION_ID
+```
+
+`ingest-claude.sh` searches `~/.claude/projects/` for the matching transcript and uses the Claude jq fast path when jq is available. If jq is unavailable or the fast path fails, the bundled Node entry at `dist/ingest.mjs` parses the transcript with `--agent-name claude`.
+
+## Codex Setup
+
+Codex discovers the plugin from `.agents/plugins/marketplace.json` and validates `plugins/timeline/.codex-plugin/plugin.json`. Codex plugin lifecycle hooks use the default `hooks/hooks.json`; the shared Stop hook dispatches Codex sessions to:
+
+```bash
+${PLUGIN_ROOT}/hooks/ingest-codex.sh
+```
+
+`ingest-codex.sh` reads Codex hook input from stdin. It accepts `transcript_path` directly, or searches `~/.codex/sessions/` and `~/.codex/archived_sessions/` by `session_id`. It uses a Codex-specific jq fast path when jq is available, and falls back to the bundled Node parser with `--agent-name codex`; both paths emit the same `ParsedSessionData` shape.
+
+## Node Hook Runtime
+
+The Claude and Codex hook runtime requires Node 22+ and uses Node's built-in `node:sqlite` module. The plugin does not require `better-sqlite3` or a system `sqlite3` command.
 
 ## OpenCode Setup
 
 The OpenCode plugin lives at `plugins/timeline/opencode.ts` and is symlinked from `.opencode/plugins/timeline.ts`. It sets `agentName='opencode'` and hooks into:
 
-- `session.created` / `session.idle` / `session.deleted` — session lifecycle
-- `message.updated` — message tokens and model info
-- `message.part.updated` — user message text for summaries
-- `tool.execute.before` / `tool.execute.after` — tool and skill tracking
+- `session.created`, `session.idle`, and `session.deleted`
+- `message.updated`
+- `message.part.updated`
+- `tool.execute.before` and `tool.execute.after`
 
-Data is written directly to `~/.config/ohmyc/timeline.db` using `bun:sqlite` via the shared `@ohmyc/timeline/writer` module.
+## Shared Output
 
-## Shared Code
+All agents write to the same SQLite database:
 
-Both agents write to the same SQLite database (`~/.config/ohmyc/timeline.db`) using the schema and writer from `@ohmyc/timeline`:
+```text
+~/.config/ohmyc/timeline.db
+```
 
-- `@ohmyc/timeline/writer` — Runtime-agnostic writer (works with `better-sqlite3` and `bun:sqlite`)
-- `@ohmyc/timeline/schema` — Database schema and TypeScript types
-
-## Future: OpenCode Backfill
-
-OpenCode stores historical session data in `~/.local/share/opencode/opencode.db`. A future enhancement could read this database and backfill missing sessions into the timeline.
+The shared writer contract is `ParsedSessionData` from `@ohmyc/timeline`. Agent-specific collectors normalize their native event or transcript format into that contract before writing.

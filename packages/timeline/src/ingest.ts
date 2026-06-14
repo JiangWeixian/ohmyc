@@ -10,11 +10,16 @@ import path from 'node:path'
 
 import { createWriter } from './writer.js'
 
-import type Database from 'better-sqlite3'
 import type { IngestResult, ParsedSessionData } from './schema.js'
 import type { SqliteDatabase } from './writer.js'
 
 export type { ParsedSessionData, IngestResult } from './schema.js'
+
+/** Options accepted by transcript parsing and ingest entry points. */
+export interface TranscriptParseOptions {
+  /** Agent that produced the transcript. Defaults to `claude` for historical Claude JSONL ingestion. */
+  agentName?: string | null
+}
 
 // ---------------------------------------------------------------------------
 // Parser — pure function, does not touch the database
@@ -33,7 +38,13 @@ export type { ParsedSessionData, IngestResult } from './schema.js'
 export function parseTranscript(
   sessionId: string,
   transcriptPath: string,
+  options?: TranscriptParseOptions,
 ): ParsedSessionData {
+  const agentName = options?.agentName ?? 'claude'
+  if (agentName === 'codex') {
+    return parseCodexTranscript(sessionId, transcriptPath)
+  }
+
   const fileStat = statSync(transcriptPath)
   const fileSize = fileStat.size
 
@@ -153,10 +164,7 @@ export function parseTranscript(
   }
 
   if (summary === null && firstUserMessage !== null) {
-    // Truncate to keep summaries compact for list views
-    summary = firstUserMessage.length > 140
-      ? firstUserMessage.slice(0, 140)
-      : firstUserMessage
+    summary = truncateSummary(firstUserMessage)
   }
 
   if (summary === null) {
@@ -171,7 +179,7 @@ export function parseTranscript(
   return {
     sessionId,
     project,
-    agentName: 'claude', // Fixed for CLI-sourced transcripts; plugins override this
+    agentName,
     startedAt,
     endedAt,
     durationMs,
@@ -187,6 +195,261 @@ export function parseTranscript(
     skills: [...skills],
     model,
   }
+}
+
+function parseCodexTranscript(
+  sessionId: string,
+  transcriptPath: string,
+): ParsedSessionData {
+  const fileStat = statSync(transcriptPath)
+  const fileSize = fileStat.size
+  const lines = readFileSync(transcriptPath, 'utf8').split('\n')
+
+  let firstTimestamp: number | null = null
+  let lastTimestamp: number | null = null
+  let project = 'unknown'
+  let model: string | null = null
+  let firstUserMessage: string | null = null
+  let turns = 0
+  let tokensInput = 0
+  let tokensOutput = 0
+  let tokensCached = 0
+  const toolCounts = new Map<string, number>()
+  const skills = new Set<string>()
+
+  for (const line of lines) {
+    const trimmed = line.trim()
+    if (!trimmed) {
+      continue
+    }
+
+    let parsed: Record<string, unknown>
+    try {
+      parsed = JSON.parse(trimmed)
+    } catch {
+      console.error(`Malformed JSON line in ${transcriptPath}: ${trimmed.slice(0, 200)}`)
+      continue
+    }
+
+    const timestamp = parsed.timestamp
+    if (typeof timestamp === 'string') {
+      const ts = new Date(timestamp).getTime()
+      if (!Number.isNaN(ts)) {
+        firstTimestamp = firstTimestamp === null ? ts : Math.min(firstTimestamp, ts)
+        lastTimestamp = lastTimestamp === null ? ts : Math.max(lastTimestamp, ts)
+      }
+    }
+
+    if (parsed.type === 'turn.completed') {
+      const usage = extractCodexTokenUsage(parsed.usage)
+      if (usage) {
+        tokensInput = usage.input ?? tokensInput
+        tokensOutput = usage.output ?? tokensOutput
+        tokensCached = usage.cached ?? tokensCached
+      }
+    }
+
+    const payload = parsed.payload as Record<string, unknown> | undefined
+    if (!payload) {
+      continue
+    }
+
+    if (parsed.type === 'session_meta' && typeof payload.cwd === 'string') {
+      project = payload.cwd
+    }
+
+    if (parsed.type === 'turn_context') {
+      if (typeof payload.cwd === 'string') {
+        project = payload.cwd
+      }
+      if (typeof payload.model === 'string') {
+        model = payload.model
+      }
+    }
+
+    if (parsed.type === 'event_msg' && payload.type === 'token_count') {
+      const usage = extractCodexTokenUsage(payload.info)
+      if (usage) {
+        tokensInput = usage.input ?? tokensInput
+        tokensOutput = usage.output ?? tokensOutput
+        tokensCached = usage.cached ?? tokensCached
+      }
+    }
+
+    if (parsed.type !== 'response_item') {
+      continue
+    }
+
+    if (payload.type === 'message' && payload.role === 'user') {
+      const text = extractCodexMessageText(payload.content)
+      if (text) {
+        for (const skillName of extractCodexSkillNames(text)) {
+          skills.add(skillName)
+        }
+        if (!isCodexSkillInjection(text)) {
+          turns++
+          firstUserMessage ??= text
+        }
+      }
+    }
+
+    if (payload.type === 'function_call' && typeof payload.name === 'string') {
+      const toolName = payload.name
+      toolCounts.set(toolName, (toolCounts.get(toolName) || 0) + 1)
+
+      if (toolName === 'exec_command' || toolName === 'functions.exec_command') {
+        const skillName = extractCodexSkillNameFromCommandArguments(payload.arguments)
+        if (skillName) {
+          skills.add(skillName)
+        }
+      }
+    }
+  }
+
+  const summary = firstUserMessage
+    ? truncateSummary(firstUserMessage)
+    : '(untitled session)'
+  const startedAt = firstTimestamp ?? Date.now()
+  const endedAt = lastTimestamp ?? Date.now()
+
+  return {
+    sessionId,
+    project: displayProject(project),
+    agentName: 'codex',
+    startedAt,
+    endedAt,
+    durationMs: endedAt - startedAt,
+    turns,
+    tokensInput,
+    tokensOutput,
+    tokensCached,
+    summary,
+    summarySource: firstUserMessage ? 'first_message' : 'auto',
+    transcriptPath,
+    fileSize,
+    tools: [...toolCounts.entries()].map(([toolName, callCount]) => ({ toolName, callCount })),
+    skills: [...skills],
+    model,
+  }
+}
+
+interface CodexTokenUsage {
+  input?: number
+  output?: number
+  cached?: number
+}
+
+function extractCodexTokenUsage(value: unknown): CodexTokenUsage | null {
+  if (!isRecord(value)) {
+    return null
+  }
+
+  let candidate: Record<string, unknown> | null = null
+  if (isRecord(value.total_token_usage)) {
+    candidate = value.total_token_usage
+  } else if (hasCodexTokenFields(value)) {
+    candidate = value
+  } else if (isRecord(value.last_token_usage)) {
+    candidate = value.last_token_usage
+  }
+
+  if (!candidate) {
+    return null
+  }
+
+  const usage: CodexTokenUsage = {}
+  const input = numberValue(candidate.input_tokens)
+  const output = numberValue(candidate.output_tokens)
+  const cached = numberValue(candidate.cached_input_tokens)
+
+  if (input !== null) {
+    usage.input = input
+  }
+  if (output !== null) {
+    usage.output = output
+  }
+  if (cached !== null) {
+    usage.cached = cached
+  }
+
+  return Object.keys(usage).length > 0 ? usage : null
+}
+
+function hasCodexTokenFields(value: Record<string, unknown>): boolean {
+  return 'input_tokens' in value || 'output_tokens' in value || 'cached_input_tokens' in value
+}
+
+function numberValue(value: unknown): number | null {
+  const number = Number(value)
+  return Number.isFinite(number) ? number : null
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return Boolean(value) && typeof value === 'object' && !Array.isArray(value)
+}
+
+function extractCodexMessageText(content: unknown): string | null {
+  if (typeof content === 'string') {
+    return content
+  }
+  if (!Array.isArray(content)) {
+    return null
+  }
+  const text = content
+    .map((part) => {
+      if (!part || typeof part !== 'object') {
+        return ''
+      }
+      const record = part as Record<string, unknown>
+      if (typeof record.text === 'string') {
+        return record.text
+      }
+      return ''
+    })
+    .filter(Boolean)
+    .join('\n')
+    .trim()
+  return text || null
+}
+
+function extractCodexSkillNames(text: string): string[] {
+  return [...text.matchAll(/<skill\b[^>]*>[\s\S]*?<name>([^<]+)<\/name>[\s\S]*?<\/skill>/g)]
+    .map(match => match[1]?.trim())
+    .filter(Boolean)
+}
+
+function isCodexSkillInjection(text: string): boolean {
+  const trimmed = text.trim()
+  return trimmed.startsWith('<skill>') && trimmed.endsWith('</skill>') && extractCodexSkillNames(trimmed).length > 0
+}
+
+function extractCodexSkillNameFromCommandArguments(argumentsValue: unknown): string | null {
+  if (typeof argumentsValue !== 'string') {
+    return null
+  }
+  let parsed: Record<string, unknown>
+  try {
+    parsed = JSON.parse(argumentsValue)
+  } catch {
+    return null
+  }
+  if (typeof parsed.cmd !== 'string') {
+    return null
+  }
+  const match = parsed.cmd.match(/(?:^|[\s"'])\S*\/skills\/([^/\s"']+)\/SKILL\.md(?:[\s"']|$)/)
+  return match?.[1] ?? null
+}
+
+function truncateSummary(value: string): string {
+  return value.length > 140 ? value.slice(0, 140) : value
+}
+
+function displayProject(project: string): string {
+  const homeDir = os.homedir()
+  if (project.startsWith(homeDir)) {
+    return `~${project.slice(homeDir.length)}`
+  }
+  return project
 }
 
 // ---------------------------------------------------------------------------
@@ -219,17 +482,18 @@ export function upsertSessionData(
  * Convenience entry point that combines {@link parseTranscript} and
  * {@link upsertSessionData}. Used by the backfill process and CLI.
  *
- * @param db - Open `better-sqlite3` database instance.
+ * @param db - Database handle conforming to {@link SqliteDatabase}.
  * @param sessionId - Unique session identifier (UUID).
  * @param transcriptPath - Absolute path to the JSONL transcript file.
  * @returns Summary of the write operation.
  */
 export function ingestSession(
-  db: Database.Database,
+  db: SqliteDatabase,
   sessionId: string,
   transcriptPath: string,
+  options?: TranscriptParseOptions,
 ): IngestResult {
-  const data = parseTranscript(sessionId, transcriptPath)
+  const data = parseTranscript(sessionId, transcriptPath, options)
   return upsertSessionData(db, sessionId, data)
 }
 

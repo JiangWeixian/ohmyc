@@ -5,19 +5,19 @@
       "source": "git@github.com:neo-hack/supermario.git",
       "sourceType": "git",
       "skillPath": "skills/changeset/SKILL.md",
-      "computedHash": "f406c9a32c27ff337e3e68f65871f49e81e8847bbe87d2f193a96a9ec3b02c9d"
+      "computedHash": "90ea3e2fdbf1738eecc25f3ac3be460939c0332affbc5a70a952aa63cba20b50"
     },
     "codemermaid": {
       "source": "git@github.com:neo-hack/supermario.git",
       "sourceType": "git",
       "skillPath": "skills/codemermaid/SKILL.md",
-      "computedHash": "ae2fd72c53b7019c7bfc5a374966f6ef699b03912faaf3af776b506516e8e487"
+      "computedHash": "ba58f0d168b4452d4c422d2bb20479e05cff897ab6447fb2d9eb412579ab279c"
     },
     "create-mr": {
       "source": "git@github.com:neo-hack/supermario.git",
       "sourceType": "git",
       "skillPath": "skills/create-mr/SKILL.md",
-      "computedHash": "f08083f0714efe7db7d51f05721d203d68be020943def21869e8c0bd7864c840"
+      "computedHash": "aebf4dc899c62d34888e63e533b582a8d801d3f4fad62b0f05013f6153f666d9"
     },
     "design-taste-frontend": {
       "source": "Leonxlnx/taste-skill",
@@ -34,13 +34,19 @@
       "source": "git@github.com:neo-hack/supermario.git",
       "sourceType": "git",
       "skillPath": "skills/docs-code/SKILL.md",
-      "computedHash": "dd577d4ad752e183a4dec802be47d67d0be86e78892cd028710787be7b973a81"
+      "computedHash": "e66f5e79434fdfe0d8e5319cb98329be0f168b9ecd3f6e7b7a582179eb1aa4f7"
     },
     "fast-commit": {
       "source": "git@github.com:neo-hack/supermario.git",
       "sourceType": "git",
       "skillPath": "skills/fast-commit/SKILL.md",
-      "computedHash": "ab7c67c3d17e89032760184f0a1da2992aece9db97815388455ba2ed54908596"
+      "computedHash": "83d590c6934c596b9a9877a0a361770cdc8e900dd4834885ea116cf2da31d014"
+    },
+    "fire": {
+      "source": "git@github.com:neo-hack/supermario.git",
+      "sourceType": "git",
+      "skillPath": "skills/fire/SKILL.md",
+      "computedHash": "8abc615aa472175122b48c5b5685cc6365caaa109353190d888b2d2e33bf5b07"
     },
     "full-output-enforcement": {
       "source": "Leonxlnx/taste-skill",
@@ -82,18 +88,24 @@
       "source": "git@github.com:neo-hack/supermario.git",
       "sourceType": "git",
       "skillPath": "skills/request-plan-review/SKILL.md",
-      "computedHash": "a02e784b6fe53f21e510e288ccdb5586524e1829848034adfcd753385e1ed3c6"
+      "computedHash": "da5e4ac432d55d42fa57ed860f3f8f08ad392183fcbf1d13fc4cfaf132595ab8"
     },
     "stitch-design-taste": {
       "source": "Leonxlnx/taste-skill",
       "sourceType": "github",
       "computedHash": "3aa58992f0fd9673b975cd48cd4f8ae4b4976fd5cdd9f20e26d3d447aee317fb"
     },
+    "ui-review": {
+      "source": "git@github.com:neo-hack/supermario.git",
+      "sourceType": "git",
+      "skillPath": "skills/ui-review/SKILL.md",
+      "computedHash": "d2b11026f4e278e14c8022cab3dce18ed848b636c656b4ecd79d8474a1a4f047"
+    },
     "write-docs": {
       "source": "git@github.com:neo-hack/supermario.git",
       "sourceType": "git",
       "skillPath": "skills/write-docs/SKILL.md",
-      "computedHash": "25cb87414c4f542d7f838c11b9dc235be903d15baa879aeed99fee603ea42c8a"
+      "computedHash": "f3e12e4dc39e60b2cc2b8d7e9c39247a6f49980794d294e233ae812109ddad38"
     }
   }
 }
