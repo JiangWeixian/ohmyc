@@ -6,8 +6,7 @@ use std::path::PathBuf;
 
 use ohmyc_core::error::ApiError;
 use ohmyc_core::timeline::{
-    self, EventsQuery, EventsResult, HeatmapPoint, HeatmapQuery, Metric, SessionDetail,
-    TimelineStatus,
+    self, EventsQuery, EventsResult, HeatmapPoint, HeatmapQuery, Metric, SessionDetail, TimelineStatus,
 };
 use serde::Serialize;
 
@@ -75,7 +74,9 @@ pub struct ProjectsResponse {
 #[tauri::command]
 pub fn timeline_projects() -> Result<ProjectsResponse, ApiError> {
     let conn = timeline::open_db(&db_path()?)?;
-    Ok(ProjectsResponse { projects: timeline::projects(&conn)? })
+    Ok(ProjectsResponse {
+        projects: timeline::projects(&conn)?,
+    })
 }
 
 #[derive(Serialize)]
@@ -86,7 +87,9 @@ pub struct YearsResponse {
 #[tauri::command]
 pub fn timeline_years() -> Result<YearsResponse, ApiError> {
     let conn = timeline::open_db(&db_path()?)?;
-    Ok(YearsResponse { years: timeline::years(&conn)? })
+    Ok(YearsResponse {
+        years: timeline::years(&conn)?,
+    })
 }
 
 #[tauri::command]

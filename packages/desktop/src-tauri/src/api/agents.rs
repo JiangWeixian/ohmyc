@@ -16,9 +16,7 @@ pub struct AgentResponse {
 }
 
 #[tauri::command]
-pub fn agents_list(
-    origins: Option<serde_json::Value>,
-) -> Result<AgentsResponse, ApiError> {
+pub fn agents_list(origins: Option<serde_json::Value>) -> Result<AgentsResponse, ApiError> {
     if !include_origin(&origins, "claude") {
         return Ok(AgentsResponse { agents: Vec::new() });
     }

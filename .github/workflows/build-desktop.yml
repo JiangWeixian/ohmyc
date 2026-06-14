@@ -1,0 +1,60 @@
+name: Build Desktop App
+
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Release tag (e.g. v0.2.0)
+        required: true
+        type: string
+
+jobs:
+  build:
+    strategy:
+      matrix:
+        platform: [macos-14, windows-latest]
+    runs-on: ${{ matrix.platform }}
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: pnpm/action-setup@v4
+        with:
+          run_install: false
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+
+      - name: Get pnpm store directory
+        shell: bash
+        run: echo "STORE_PATH=$(pnpm store path --silent)" >> $GITHUB_ENV
+
+      - uses: actions/cache@v4
+        with:
+          path: ${{ env.STORE_PATH }}
+          key: ${{ runner.os }}-pnpm-store-${{ hashFiles('**/pnpm-lock.yaml') }}
+          restore-keys: ${{ runner.os }}-pnpm-store-
+
+      - run: pnpm install --frozen-lockfile=false
+
+      - uses: dtolnay/rust-toolchain@stable
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: packages/desktop/src-tauri
+
+      - name: Build workspace dependencies
+        run: pnpm --filter @ohmyc/timeline build
+
+      - uses: tauri-apps/tauri-action@v0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tagName: ${{ inputs.tag }}
+          releaseName: "OhMyC ${{ inputs.tag }}"
+          releaseDraft: true
+          prerelease: false
+          projectPath: packages/desktop
+          tauriScript: pnpm tauri

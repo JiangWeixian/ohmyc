@@ -20,16 +20,13 @@ pub fn create_symlink(source: &Path, dest: &Path) -> Result<(), ApiError> {
     {
         if dest.symlink_metadata().is_ok() {
             if dest.is_dir() && !dest.is_symlink() {
-                std::fs::remove_dir_all(dest)
-                    .map_err(|e| ApiError::Io(format!("remove {}: {e}", dest.display())))?;
+                std::fs::remove_dir_all(dest).map_err(|e| ApiError::Io(format!("remove {}: {e}", dest.display())))?;
             } else {
-                std::fs::remove_file(dest)
-                    .map_err(|e| ApiError::Io(format!("remove {}: {e}", dest.display())))?;
+                std::fs::remove_file(dest).map_err(|e| ApiError::Io(format!("remove {}: {e}", dest.display())))?;
             }
         }
         if let Some(parent) = dest.parent() {
-            std::fs::create_dir_all(parent)
-                .map_err(|e| ApiError::Io(format!("mkdir {}: {e}", parent.display())))?;
+            std::fs::create_dir_all(parent).map_err(|e| ApiError::Io(format!("mkdir {}: {e}", parent.display())))?;
         }
         std::os::unix::fs::symlink(source, dest)
             .map_err(|e| ApiError::Io(format!("symlink {} -> {}: {e}", dest.display(), source.display())))?;

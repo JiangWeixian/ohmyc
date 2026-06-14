@@ -3,10 +3,10 @@
 //! `force` flag — when false, refuse if any profile references the
 //! component and return Conflict with the referencing profile names.
 
-use ohmyc_core::components::{agents, commands, skills};
 use ohmyc_core::components::agents::Agent;
 use ohmyc_core::components::commands::Command;
 use ohmyc_core::components::skills::Skill;
+use ohmyc_core::components::{agents, commands, skills};
 use ohmyc_core::error::ApiError;
 use ohmyc_core::store::{
     self,
@@ -50,17 +50,29 @@ pub struct ModelConfigDto {
 }
 
 #[derive(Serialize)]
-pub struct ListAgents { pub agents: Vec<AgentDto> }
+pub struct ListAgents {
+    pub agents: Vec<AgentDto>,
+}
 #[derive(Serialize)]
-pub struct GetAgent { pub agent: AgentDto }
+pub struct GetAgent {
+    pub agent: AgentDto,
+}
 #[derive(Serialize)]
-pub struct ListSkills { pub skills: Vec<SkillDto> }
+pub struct ListSkills {
+    pub skills: Vec<SkillDto>,
+}
 #[derive(Serialize)]
-pub struct GetSkill { pub skill: SkillDto }
+pub struct GetSkill {
+    pub skill: SkillDto,
+}
 #[derive(Serialize)]
-pub struct ListCommands { pub commands: Vec<CommandDto> }
+pub struct ListCommands {
+    pub commands: Vec<CommandDto>,
+}
 #[derive(Serialize)]
-pub struct GetCommand { pub command: CommandDto }
+pub struct GetCommand {
+    pub command: CommandDto,
+}
 #[derive(Serialize)]
 pub struct ListModelConfigs {
     #[serde(rename = "modelConfigs")]
@@ -72,7 +84,9 @@ pub struct GetModelConfig {
     pub config: ModelConfigDto,
 }
 #[derive(Serialize)]
-pub struct DeleteOk { pub success: bool }
+pub struct DeleteOk {
+    pub success: bool,
+}
 
 fn attach_provenance<T>(kind: ComponentKind, id: &str, item: T) -> Result<(T, Option<Provenance>), ApiError> {
     let idx_path = store::provenance_index_path()?;
@@ -98,20 +112,32 @@ pub fn store_agents_list() -> Result<ListAgents, ApiError> {
 #[tauri::command]
 pub fn store_agents_get(name: String) -> Result<GetAgent, ApiError> {
     let dir = store::store_agents_dir()?;
-    let a = agents::get(&dir, &name)?
-        .ok_or_else(|| ApiError::NotFound { kind: "agent", name: name.clone() })?;
+    let a = agents::get(&dir, &name)?.ok_or_else(|| ApiError::NotFound {
+        kind: "agent",
+        name: name.clone(),
+    })?;
     let (agent, provenance) = attach_provenance(ComponentKind::Agents, &name, a)?;
-    Ok(GetAgent { agent: AgentDto { agent, provenance } })
+    Ok(GetAgent {
+        agent: AgentDto { agent, provenance },
+    })
 }
 
 #[derive(Deserialize)]
-pub struct CreateAgentBody { pub frontmatter: Value, pub content: String }
+pub struct CreateAgentBody {
+    pub frontmatter: Value,
+    pub content: String,
+}
 
 #[tauri::command]
 pub fn store_agents_create(body: CreateAgentBody) -> Result<GetAgent, ApiError> {
     let dir = store::store_agents_dir()?;
     let a = agents::create(&dir, &body.frontmatter, &body.content)?;
-    Ok(GetAgent { agent: AgentDto { agent: a, provenance: None } })
+    Ok(GetAgent {
+        agent: AgentDto {
+            agent: a,
+            provenance: None,
+        },
+    })
 }
 
 #[derive(Deserialize)]
@@ -123,9 +149,19 @@ pub struct UpdateAgentBody {
 #[tauri::command]
 pub fn store_agents_update(name: String, body: UpdateAgentBody) -> Result<GetAgent, ApiError> {
     let dir = store::store_agents_dir()?;
-    let updated = agents::update(&dir, &name, body.frontmatter.as_ref(), body.content.as_deref())?
-        .ok_or_else(|| ApiError::NotFound { kind: "agent", name: name.clone() })?;
-    Ok(GetAgent { agent: AgentDto { agent: updated, provenance: None } })
+    let updated =
+        agents::update(&dir, &name, body.frontmatter.as_ref(), body.content.as_deref())?.ok_or_else(|| {
+            ApiError::NotFound {
+                kind: "agent",
+                name: name.clone(),
+            }
+        })?;
+    Ok(GetAgent {
+        agent: AgentDto {
+            agent: updated,
+            provenance: None,
+        },
+    })
 }
 
 #[tauri::command]
@@ -134,7 +170,11 @@ pub fn store_agents_delete(name: String, force: Option<bool>) -> Result<DeleteOk
         let profiles_dir = store::store_profiles_dir()?;
         let refs = references::referencing_profiles(&profiles_dir, ComponentKind::Agents, &name)?;
         if !refs.is_empty() {
-            return Err(ApiError::ReferencedBy { kind: "agent", name, profiles: refs });
+            return Err(ApiError::ReferencedBy {
+                kind: "agent",
+                name,
+                profiles: refs,
+            });
         }
     }
     let dir = store::store_agents_dir()?;
@@ -163,31 +203,56 @@ pub fn store_skills_list() -> Result<ListSkills, ApiError> {
 #[tauri::command]
 pub fn store_skills_get(name: String) -> Result<GetSkill, ApiError> {
     let dir = store::store_skills_dir()?;
-    let s = skills::get(&dir, &name)?
-        .ok_or_else(|| ApiError::NotFound { kind: "skill", name: name.clone() })?;
+    let s = skills::get(&dir, &name)?.ok_or_else(|| ApiError::NotFound {
+        kind: "skill",
+        name: name.clone(),
+    })?;
     let (skill, provenance) = attach_provenance(ComponentKind::Skills, &name, s)?;
-    Ok(GetSkill { skill: SkillDto { skill, provenance } })
+    Ok(GetSkill {
+        skill: SkillDto { skill, provenance },
+    })
 }
 
 #[derive(Deserialize)]
-pub struct CreateSkillBody { pub frontmatter: Value, pub content: String }
+pub struct CreateSkillBody {
+    pub frontmatter: Value,
+    pub content: String,
+}
 
 #[tauri::command]
 pub fn store_skills_create(body: CreateSkillBody) -> Result<GetSkill, ApiError> {
     let dir = store::store_skills_dir()?;
     let s = skills::create(&dir, &body.frontmatter, &body.content)?;
-    Ok(GetSkill { skill: SkillDto { skill: s, provenance: None } })
+    Ok(GetSkill {
+        skill: SkillDto {
+            skill: s,
+            provenance: None,
+        },
+    })
 }
 
 #[derive(Deserialize)]
-pub struct UpdateSkillBody { pub frontmatter: Option<Value>, pub content: Option<String> }
+pub struct UpdateSkillBody {
+    pub frontmatter: Option<Value>,
+    pub content: Option<String>,
+}
 
 #[tauri::command]
 pub fn store_skills_update(name: String, body: UpdateSkillBody) -> Result<GetSkill, ApiError> {
     let dir = store::store_skills_dir()?;
-    let updated = skills::update(&dir, &name, body.frontmatter.as_ref(), body.content.as_deref())?
-        .ok_or_else(|| ApiError::NotFound { kind: "skill", name: name.clone() })?;
-    Ok(GetSkill { skill: SkillDto { skill: updated, provenance: None } })
+    let updated =
+        skills::update(&dir, &name, body.frontmatter.as_ref(), body.content.as_deref())?.ok_or_else(|| {
+            ApiError::NotFound {
+                kind: "skill",
+                name: name.clone(),
+            }
+        })?;
+    Ok(GetSkill {
+        skill: SkillDto {
+            skill: updated,
+            provenance: None,
+        },
+    })
 }
 
 #[tauri::command]
@@ -196,7 +261,11 @@ pub fn store_skills_delete(name: String, force: Option<bool>) -> Result<DeleteOk
         let profiles_dir = store::store_profiles_dir()?;
         let refs = references::referencing_profiles(&profiles_dir, ComponentKind::Skills, &name)?;
         if !refs.is_empty() {
-            return Err(ApiError::ReferencedBy { kind: "skill", name, profiles: refs });
+            return Err(ApiError::ReferencedBy {
+                kind: "skill",
+                name,
+                profiles: refs,
+            });
         }
     }
     let dir = store::store_skills_dir()?;
@@ -225,31 +294,56 @@ pub fn store_commands_list() -> Result<ListCommands, ApiError> {
 #[tauri::command]
 pub fn store_commands_get(name: String) -> Result<GetCommand, ApiError> {
     let dir = store::store_commands_dir()?;
-    let c = commands::get(&dir, &name)?
-        .ok_or_else(|| ApiError::NotFound { kind: "command", name: name.clone() })?;
+    let c = commands::get(&dir, &name)?.ok_or_else(|| ApiError::NotFound {
+        kind: "command",
+        name: name.clone(),
+    })?;
     let (command, provenance) = attach_provenance(ComponentKind::Commands, &name, c)?;
-    Ok(GetCommand { command: CommandDto { command, provenance } })
+    Ok(GetCommand {
+        command: CommandDto { command, provenance },
+    })
 }
 
 #[derive(Deserialize)]
-pub struct CreateCommandBody { pub frontmatter: Value, pub content: String }
+pub struct CreateCommandBody {
+    pub frontmatter: Value,
+    pub content: String,
+}
 
 #[tauri::command]
 pub fn store_commands_create(body: CreateCommandBody) -> Result<GetCommand, ApiError> {
     let dir = store::store_commands_dir()?;
     let c = commands::create(&dir, &body.frontmatter, &body.content)?;
-    Ok(GetCommand { command: CommandDto { command: c, provenance: None } })
+    Ok(GetCommand {
+        command: CommandDto {
+            command: c,
+            provenance: None,
+        },
+    })
 }
 
 #[derive(Deserialize)]
-pub struct UpdateCommandBody { pub frontmatter: Option<Value>, pub content: Option<String> }
+pub struct UpdateCommandBody {
+    pub frontmatter: Option<Value>,
+    pub content: Option<String>,
+}
 
 #[tauri::command]
 pub fn store_commands_update(name: String, body: UpdateCommandBody) -> Result<GetCommand, ApiError> {
     let dir = store::store_commands_dir()?;
-    let updated = commands::update(&dir, &name, body.frontmatter.as_ref(), body.content.as_deref())?
-        .ok_or_else(|| ApiError::NotFound { kind: "command", name: name.clone() })?;
-    Ok(GetCommand { command: CommandDto { command: updated, provenance: None } })
+    let updated =
+        commands::update(&dir, &name, body.frontmatter.as_ref(), body.content.as_deref())?.ok_or_else(|| {
+            ApiError::NotFound {
+                kind: "command",
+                name: name.clone(),
+            }
+        })?;
+    Ok(GetCommand {
+        command: CommandDto {
+            command: updated,
+            provenance: None,
+        },
+    })
 }
 
 #[tauri::command]
@@ -258,7 +352,11 @@ pub fn store_commands_delete(name: String, force: Option<bool>) -> Result<Delete
         let profiles_dir = store::store_profiles_dir()?;
         let refs = references::referencing_profiles(&profiles_dir, ComponentKind::Commands, &name)?;
         if !refs.is_empty() {
-            return Err(ApiError::ReferencedBy { kind: "command", name, profiles: refs });
+            return Err(ApiError::ReferencedBy {
+                kind: "command",
+                name,
+                profiles: refs,
+            });
         }
     }
     let dir = store::store_commands_dir()?;
@@ -287,28 +385,41 @@ pub fn store_model_configs_list() -> Result<ListModelConfigs, ApiError> {
 #[tauri::command]
 pub fn store_model_configs_get(name: String) -> Result<GetModelConfig, ApiError> {
     let dir = store::store_model_configs_dir()?;
-    let c = model_configs::get(&dir, &name)?
-        .ok_or_else(|| ApiError::NotFound { kind: "model-config", name: name.clone() })?;
+    let c = model_configs::get(&dir, &name)?.ok_or_else(|| ApiError::NotFound {
+        kind: "model-config",
+        name: name.clone(),
+    })?;
     let (config, provenance) = attach_provenance(ComponentKind::ModelConfigs, &name, c)?;
-    Ok(GetModelConfig { config: ModelConfigDto { config, provenance } })
+    Ok(GetModelConfig {
+        config: ModelConfigDto { config, provenance },
+    })
 }
 
 #[tauri::command]
 pub fn store_model_configs_create(body: ModelConfig) -> Result<GetModelConfig, ApiError> {
     let dir = store::store_model_configs_dir()?;
     let c = model_configs::create(&dir, &body)?;
-    Ok(GetModelConfig { config: ModelConfigDto { config: c, provenance: None } })
+    Ok(GetModelConfig {
+        config: ModelConfigDto {
+            config: c,
+            provenance: None,
+        },
+    })
 }
 
 #[tauri::command]
-pub fn store_model_configs_update(
-    name: String,
-    body: Value,
-) -> Result<GetModelConfig, ApiError> {
+pub fn store_model_configs_update(name: String, body: Value) -> Result<GetModelConfig, ApiError> {
     let dir = store::store_model_configs_dir()?;
-    let updated = model_configs::update(&dir, &name, &body)?
-        .ok_or_else(|| ApiError::NotFound { kind: "model-config", name: name.clone() })?;
-    Ok(GetModelConfig { config: ModelConfigDto { config: updated, provenance: None } })
+    let updated = model_configs::update(&dir, &name, &body)?.ok_or_else(|| ApiError::NotFound {
+        kind: "model-config",
+        name: name.clone(),
+    })?;
+    Ok(GetModelConfig {
+        config: ModelConfigDto {
+            config: updated,
+            provenance: None,
+        },
+    })
 }
 
 #[tauri::command]
@@ -317,13 +428,20 @@ pub fn store_model_configs_delete(name: String, force: Option<bool>) -> Result<D
         let profiles_dir = store::store_profiles_dir()?;
         let refs = references::referencing_profiles(&profiles_dir, ComponentKind::ModelConfigs, &name)?;
         if !refs.is_empty() {
-            return Err(ApiError::ReferencedBy { kind: "model-config", name, profiles: refs });
+            return Err(ApiError::ReferencedBy {
+                kind: "model-config",
+                name,
+                profiles: refs,
+            });
         }
     }
     let dir = store::store_model_configs_dir()?;
     let removed = model_configs::delete(&dir, &name)?;
     if !removed {
-        return Err(ApiError::NotFound { kind: "model-config", name });
+        return Err(ApiError::NotFound {
+            kind: "model-config",
+            name,
+        });
     }
     Ok(DeleteOk { success: true })
 }

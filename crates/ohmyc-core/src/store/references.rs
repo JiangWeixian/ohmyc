@@ -94,12 +94,7 @@ mod tests {
 
     #[test]
     fn returns_empty_when_profiles_dir_missing() {
-        let r = referencing_profiles(
-            Path::new("/nonexistent"),
-            ComponentKind::Agents,
-            "alpha",
-        )
-        .unwrap();
+        let r = referencing_profiles(Path::new("/nonexistent"), ComponentKind::Agents, "alpha").unwrap();
         assert!(r.is_empty());
     }
 
@@ -128,19 +123,9 @@ mod tests {
     #[test]
     fn finds_profiles_referencing_model_config_by_string_field() {
         let dir = tempfile::tempdir().unwrap();
-        make_profile(
-            dir.path(),
-            "p1",
-            r#"{"name":"p1","modelConfig":"anthropic/sonnet-4"}"#,
-        );
-        make_profile(
-            dir.path(),
-            "p2",
-            r#"{"name":"p2","modelConfig":"openai/gpt-4o"}"#,
-        );
-        let r =
-            referencing_profiles(dir.path(), ComponentKind::ModelConfigs, "anthropic/sonnet-4")
-                .unwrap();
+        make_profile(dir.path(), "p1", r#"{"name":"p1","modelConfig":"anthropic/sonnet-4"}"#);
+        make_profile(dir.path(), "p2", r#"{"name":"p2","modelConfig":"openai/gpt-4o"}"#);
+        let r = referencing_profiles(dir.path(), ComponentKind::ModelConfigs, "anthropic/sonnet-4").unwrap();
         assert_eq!(r, vec!["p1"]);
     }
 

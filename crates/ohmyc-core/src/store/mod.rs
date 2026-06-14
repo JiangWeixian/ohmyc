@@ -24,8 +24,7 @@ pub fn base_dir() -> Result<PathBuf, ApiError> {
             return Ok(PathBuf::from(home));
         }
     }
-    let user_home = dirs::home_dir()
-        .ok_or_else(|| ApiError::Internal("could not determine home dir".to_string()))?;
+    let user_home = dirs::home_dir().ok_or_else(|| ApiError::Internal("could not determine home dir".to_string()))?;
     Ok(user_home.join(".config").join("ohmyc"))
 }
 
@@ -57,16 +56,8 @@ pub fn provenance_index_path() -> Result<PathBuf, ApiError> {
     Ok(store_dir()?.join(".metadata").join("imports.json"))
 }
 
-pub fn component_exists(
-    store_dir: &std::path::Path,
-    kind: provenance::ComponentKind,
-    name: &str,
-) -> bool {
-    if name.is_empty()
-        || name.contains("..")
-        || name.contains('/')
-        || name.contains('\\')
-    {
+pub fn component_exists(store_dir: &std::path::Path, kind: provenance::ComponentKind, name: &str) -> bool {
+    if name.is_empty() || name.contains("..") || name.contains('/') || name.contains('\\') {
         return false;
     }
     let path = match kind {
@@ -81,8 +72,8 @@ pub fn component_exists(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use std::sync::Mutex;
     use crate::store::ComponentKind;
+    use std::sync::Mutex;
 
     fn write(p: &std::path::Path, body: &str) {
         if let Some(parent) = p.parent() {
@@ -141,8 +132,14 @@ mod tests {
         let _lock = ENV_LOCK.lock().unwrap();
         let prev = std::env::var(ENV_HOME).ok();
         std::env::set_var(ENV_HOME, "/tmp/fake-ohmyc");
-        assert_eq!(store_agents_dir().unwrap(), PathBuf::from("/tmp/fake-ohmyc/store/agents"));
-        assert_eq!(store_skills_dir().unwrap(), PathBuf::from("/tmp/fake-ohmyc/store/skills"));
+        assert_eq!(
+            store_agents_dir().unwrap(),
+            PathBuf::from("/tmp/fake-ohmyc/store/agents")
+        );
+        assert_eq!(
+            store_skills_dir().unwrap(),
+            PathBuf::from("/tmp/fake-ohmyc/store/skills")
+        );
         assert_eq!(
             store_commands_dir().unwrap(),
             PathBuf::from("/tmp/fake-ohmyc/store/commands"),

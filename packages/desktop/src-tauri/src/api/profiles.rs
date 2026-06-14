@@ -23,13 +23,18 @@ pub struct ProfileResponse {
 }
 
 #[derive(Debug, Serialize)]
-pub struct DeleteOk { pub success: bool }
+pub struct DeleteOk {
+    pub success: bool,
+}
 
 #[tauri::command]
 pub fn profiles_list() -> Result<ProfileListResponse, ApiError> {
     let dir = store::store_profiles_dir()?;
     let r = crud::list(&dir)?;
-    Ok(ProfileListResponse { profiles: r.profiles, active: r.active })
+    Ok(ProfileListResponse {
+        profiles: r.profiles,
+        active: r.active,
+    })
 }
 
 #[tauri::command]
@@ -104,7 +109,10 @@ pub fn profiles_activate(name: String) -> Result<ActivateResponse, ApiError> {
         &claude_settings,
         &name,
     )?;
-    Ok(ActivateResponse { success: true, warnings })
+    Ok(ActivateResponse {
+        success: true,
+        warnings,
+    })
 }
 
 #[tauri::command]

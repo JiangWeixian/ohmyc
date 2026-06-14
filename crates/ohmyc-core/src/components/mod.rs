@@ -6,10 +6,7 @@ pub mod skills;
 use serde::Serialize;
 
 pub fn is_safe_name(name: &str) -> bool {
-    !name.is_empty()
-        && name
-            .chars()
-            .all(|c| c.is_ascii_alphanumeric() || c == '_' || c == '-')
+    !name.is_empty() && name.chars().all(|c| c.is_ascii_alphanumeric() || c == '_' || c == '-')
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize)]

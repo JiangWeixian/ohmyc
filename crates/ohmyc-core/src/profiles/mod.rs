@@ -20,8 +20,7 @@ use crate::store;
 /// Names reserved by the profiles dir layout. Mirrors TS
 /// `RESERVED_PROFILE_NAMES`. `.active` is a marker file; the rest are
 /// sibling directories under the store.
-pub const RESERVED_PROFILE_NAMES: &[&str] =
-    &["store", ".active", "plugins", "agents", "skills", "commands"];
+pub const RESERVED_PROFILE_NAMES: &[&str] = &["store", ".active", "plugins", "agents", "skills", "commands"];
 
 /// `$OHMYC_HOME/profiles/<name>/`.
 pub fn profile_dir(name: &str) -> Result<PathBuf, ApiError> {

@@ -106,14 +106,11 @@ pub fn create(dir: &Path, frontmatter: &Value, content: &str) -> Result<Skill, A
     if skill_dir.exists() {
         return Err(ApiError::Conflict(format!("skill '{name}' already exists")));
     }
-    std::fs::create_dir_all(&skill_dir)
-        .map_err(|e| ApiError::Io(format!("mkdir {}: {e}", skill_dir.display())))?;
+    std::fs::create_dir_all(&skill_dir).map_err(|e| ApiError::Io(format!("mkdir {}: {e}", skill_dir.display())))?;
     let raw = frontmatter::stringify(frontmatter, content)?;
     let file_path = skill_dir.join(SKILL_FILE);
-    std::fs::write(&file_path, &raw)
-        .map_err(|e| ApiError::Io(format!("write {}: {e}", file_path.display())))?;
-    parse_skill(name, &raw)?
-        .ok_or_else(|| ApiError::Internal("parse_skill returned None after create".to_string()))
+    std::fs::write(&file_path, &raw).map_err(|e| ApiError::Io(format!("write {}: {e}", file_path.display())))?;
+    parse_skill(name, &raw)?.ok_or_else(|| ApiError::Internal("parse_skill returned None after create".to_string()))
 }
 
 pub fn update(
@@ -130,8 +127,7 @@ pub fn update(
     };
     let mut merged = existing.frontmatter.clone();
     if let Some(changes) = frontmatter_changes {
-        if let (Some(merged_obj), Some(changes_obj)) = (merged.as_object_mut(), changes.as_object())
-        {
+        if let (Some(merged_obj), Some(changes_obj)) = (merged.as_object_mut(), changes.as_object()) {
             for (k, v) in changes_obj {
                 merged_obj.insert(k.clone(), v.clone());
             }
@@ -140,8 +136,7 @@ pub fn update(
     let body = new_content.unwrap_or(&existing.content);
     let raw = frontmatter::stringify(&merged, body)?;
     let file_path = dir.join(name).join(SKILL_FILE);
-    std::fs::write(&file_path, &raw)
-        .map_err(|e| ApiError::Io(format!("write {}: {e}", file_path.display())))?;
+    std::fs::write(&file_path, &raw).map_err(|e| ApiError::Io(format!("write {}: {e}", file_path.display())))?;
     parse_skill(name, &raw)
 }
 
@@ -153,10 +148,7 @@ pub fn delete(dir: &Path, name: &str) -> Result<bool, ApiError> {
     match std::fs::remove_dir_all(&skill_dir) {
         Ok(()) => Ok(true),
         Err(e) if e.kind() == std::io::ErrorKind::NotFound => Ok(false),
-        Err(e) => Err(ApiError::Io(format!(
-            "remove {}: {e}",
-            skill_dir.display()
-        ))),
+        Err(e) => Err(ApiError::Io(format!("remove {}: {e}", skill_dir.display()))),
     }
 }
 

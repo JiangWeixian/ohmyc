@@ -36,12 +36,9 @@ pub fn parse(raw: &str) -> Result<(Value, String), ApiError> {
 
 pub fn stringify(frontmatter: &Value, content: &str) -> Result<String, ApiError> {
     if !frontmatter.is_object() {
-        return Err(ApiError::Validation(
-            "frontmatter must be a JSON object".to_string(),
-        ));
+        return Err(ApiError::Validation("frontmatter must be a JSON object".to_string()));
     }
-    let yaml = serde_yaml::to_string(frontmatter)
-        .map_err(|e| ApiError::Internal(format!("serialize yaml: {e}")))?;
+    let yaml = serde_yaml::to_string(frontmatter).map_err(|e| ApiError::Internal(format!("serialize yaml: {e}")))?;
     let trimmed = yaml.trim_start_matches("---\n").trim_end();
     let body = content.trim_end();
     Ok(format!("---\n{trimmed}\n---\n{body}\n"))

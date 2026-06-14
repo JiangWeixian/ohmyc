@@ -39,9 +39,7 @@ pub enum ApiError {
     /// `{ code: "ActivationBlocked", detail: { missing: [...] } }` so
     /// the UI can render the missing-list in the activation dialog.
     #[error("activation blocked: {} missing component(s)", missing.len())]
-    ActivationBlocked {
-        missing: Vec<String>,
-    },
+    ActivationBlocked { missing: Vec<String> },
 
     #[error("validation error: {0}")]
     Validation(String),
@@ -62,7 +60,10 @@ mod tests {
 
     #[test]
     fn not_found_serializes_with_code_and_detail() {
-        let err = ApiError::NotFound { kind: "profile", name: "missing".to_string() };
+        let err = ApiError::NotFound {
+            kind: "profile",
+            name: "missing".to_string(),
+        };
         let json = serde_json::to_value(&err).unwrap();
         assert_eq!(json["code"], "NotFound");
         assert_eq!(json["detail"]["kind"], "profile");
@@ -108,7 +109,10 @@ mod tests {
         };
         let json = serde_json::to_value(&err).unwrap();
         assert_eq!(json["code"], "ActivationBlocked");
-        assert_eq!(json["detail"]["missing"], serde_json::json!(["agent:reviewer", "skill:deploy"]));
+        assert_eq!(
+            json["detail"]["missing"],
+            serde_json::json!(["agent:reviewer", "skill:deploy"])
+        );
     }
 
     #[test]

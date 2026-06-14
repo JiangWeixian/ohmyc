@@ -27,7 +27,9 @@ pub struct MarketplaceResponse {
 pub fn plugins_list() -> Result<PluginsResponse, ApiError> {
     let dir = claude_home::plugins_dir()?;
     let settings = claude_home::settings_path()?;
-    Ok(PluginsResponse { plugins: plugins::list_plugins(&dir, &settings)? })
+    Ok(PluginsResponse {
+        plugins: plugins::list_plugins(&dir, &settings)?,
+    })
 }
 
 #[tauri::command]
@@ -35,7 +37,10 @@ pub fn plugins_get(id: String) -> Result<PluginResponse, ApiError> {
     let dir = claude_home::plugins_dir()?;
     let settings = claude_home::settings_path()?;
     let Some(plugin) = plugins::get_plugin(&dir, &settings, &id)? else {
-        return Err(ApiError::NotFound { kind: "plugin", name: id });
+        return Err(ApiError::NotFound {
+            kind: "plugin",
+            name: id,
+        });
     };
     Ok(PluginResponse { plugin })
 }
@@ -43,14 +48,19 @@ pub fn plugins_get(id: String) -> Result<PluginResponse, ApiError> {
 #[tauri::command]
 pub fn marketplaces_list() -> Result<MarketplacesResponse, ApiError> {
     let dir = claude_home::plugins_dir()?;
-    Ok(MarketplacesResponse { marketplaces: plugins::list_marketplaces(&dir)? })
+    Ok(MarketplacesResponse {
+        marketplaces: plugins::list_marketplaces(&dir)?,
+    })
 }
 
 #[tauri::command]
 pub fn marketplaces_get(id: String) -> Result<MarketplaceResponse, ApiError> {
     let dir = claude_home::plugins_dir()?;
     let Some(marketplace) = plugins::get_marketplace(&dir, &id)? else {
-        return Err(ApiError::NotFound { kind: "marketplace", name: id });
+        return Err(ApiError::NotFound {
+            kind: "marketplace",
+            name: id,
+        });
     };
     Ok(MarketplaceResponse { marketplace })
 }

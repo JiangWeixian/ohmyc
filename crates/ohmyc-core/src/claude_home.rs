@@ -21,8 +21,7 @@ pub fn resolve() -> Result<PathBuf, ApiError> {
             return Ok(PathBuf::from(override_path));
         }
     }
-    let home = dirs::home_dir()
-        .ok_or_else(|| ApiError::Internal("could not determine home dir".to_string()))?;
+    let home = dirs::home_dir().ok_or_else(|| ApiError::Internal("could not determine home dir".to_string()))?;
     Ok(home.join(".claude"))
 }
 

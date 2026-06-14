@@ -25,8 +25,7 @@ pub fn default_db_path() -> Result<PathBuf, ApiError> {
             return Ok(PathBuf::from(home).join(DB_FILENAME));
         }
     }
-    let user_home = dirs::home_dir()
-        .ok_or_else(|| ApiError::Internal("could not determine home dir".to_string()))?;
+    let user_home = dirs::home_dir().ok_or_else(|| ApiError::Internal("could not determine home dir".to_string()))?;
     Ok(user_home.join(".config").join("ohmyc").join(DB_FILENAME))
 }
 
@@ -228,7 +227,7 @@ pub fn heatmap(conn: &Connection, q: HeatmapQuery) -> Result<Vec<HeatmapPoint>, 
 }
 
 pub struct EventsQuery {
-    pub from: Option<String>,   // YYYY-MM-DD
+    pub from: Option<String>, // YYYY-MM-DD
     pub to: Option<String>,
     pub project: Option<String>,
     pub limit: Option<i64>,
@@ -289,7 +288,10 @@ pub fn events(conn: &Connection, q: EventsQuery) -> Result<EventsResult, ApiErro
     };
 
     if day_batch.is_empty() {
-        return Ok(EventsResult { days: Vec::new(), next_cursor: None });
+        return Ok(EventsResult {
+            days: Vec::new(),
+            next_cursor: None,
+        });
     }
 
     let placeholders = day_batch.iter().map(|_| "?").collect::<Vec<_>>().join(", ");
@@ -302,8 +304,7 @@ pub fn events(conn: &Connection, q: EventsQuery) -> Result<EventsResult, ApiErro
          WHERE date(started_at / 1000, 'unixepoch') IN ({placeholders}) {project_filter} \
          ORDER BY started_at DESC"
     );
-    let mut session_args: Vec<rusqlite::types::Value> =
-        day_batch.iter().map(|d| d.clone().into()).collect();
+    let mut session_args: Vec<rusqlite::types::Value> = day_batch.iter().map(|d| d.clone().into()).collect();
     if let Some(p) = q.project.as_ref() {
         session_args.push(p.clone().into());
     }
@@ -343,8 +344,7 @@ pub fn events(conn: &Connection, q: EventsQuery) -> Result<EventsResult, ApiErro
         group.sessions.push(session.clone());
         group.session_count += 1;
         group.turn_count += session.turns;
-        group.token_count +=
-            session.tokens_input + session.tokens_output + session.tokens_cached;
+        group.token_count += session.tokens_input + session.tokens_output + session.tokens_cached;
         if let Some(agent) = session.agent_name.as_ref() {
             if !group.agents.contains(agent) {
                 group.agents.push(agent.clone());
@@ -543,19 +543,18 @@ pub fn status(conn: &Connection) -> Result<TimelineStatus, ApiError> {
         .map_err(|e| ApiError::Internal(format!("status count: {e}")))?;
 
     let last_sync_at: Option<i64> = conn
-        .query_row(
-            "SELECT value FROM meta WHERE key = 'last_sync_at'",
-            [],
-            |row| {
-                let v: String = row.get(0)?;
-                Ok(v.parse::<i64>().ok())
-            },
-        )
+        .query_row("SELECT value FROM meta WHERE key = 'last_sync_at'", [], |row| {
+            let v: String = row.get(0)?;
+            Ok(v.parse::<i64>().ok())
+        })
         .optional()
         .map_err(|e| ApiError::Internal(format!("status meta: {e}")))?
         .flatten();
 
-    Ok(TimelineStatus { session_count, last_sync_at })
+    Ok(TimelineStatus {
+        session_count,
+        last_sync_at,
+    })
 }
 
 use rusqlite::OptionalExtension;
@@ -565,13 +564,9 @@ use rusqlite::OptionalExtension;
 /// schema + writes; this crate is read-only).
 pub fn open_db(path: &std::path::Path) -> Result<Connection, ApiError> {
     if !path.exists() {
-        return Err(ApiError::Io(format!(
-            "timeline db not found at {}",
-            path.display()
-        )));
+        return Err(ApiError::Io(format!("timeline db not found at {}", path.display())));
     }
-    let conn = Connection::open(path)
-        .map_err(|e| ApiError::Internal(format!("open db: {e}")))?;
+    let conn = Connection::open(path).map_err(|e| ApiError::Internal(format!("open db: {e}")))?;
     conn.pragma_update(None, "journal_mode", "WAL")
         .map_err(|e| ApiError::Internal(format!("set wal: {e}")))?;
     Ok(conn)
@@ -654,9 +649,27 @@ mod tests {
         )
         .unwrap();
         assert_eq!(result.len(), 3);
-        assert_eq!(result[0], HeatmapPoint { date: "2026-01-01".into(), value: 2 });
-        assert_eq!(result[1], HeatmapPoint { date: "2026-01-02".into(), value: 0 });
-        assert_eq!(result[2], HeatmapPoint { date: "2026-01-03".into(), value: 1 });
+        assert_eq!(
+            result[0],
+            HeatmapPoint {
+                date: "2026-01-01".into(),
+                value: 2
+            }
+        );
+        assert_eq!(
+            result[1],
+            HeatmapPoint {
+                date: "2026-01-02".into(),
+                value: 0
+            }
+        );
+        assert_eq!(
+            result[2],
+            HeatmapPoint {
+                date: "2026-01-03".into(),
+                value: 1
+            }
+        );
     }
 
     #[test]
@@ -750,7 +763,13 @@ mod tests {
         let conn = seeded_events_db();
         let res = events(
             &conn,
-            EventsQuery { from: None, to: None, project: None, limit: None, cursor: None },
+            EventsQuery {
+                from: None,
+                to: None,
+                project: None,
+                limit: None,
+                cursor: None,
+            },
         )
         .unwrap();
         assert_eq!(res.days.len(), 2);
@@ -799,7 +818,13 @@ mod tests {
         let conn = seeded_events_db();
         let res = events(
             &conn,
-            EventsQuery { from: None, to: None, project: None, limit: Some(1), cursor: None },
+            EventsQuery {
+                from: None,
+                to: None,
+                project: None,
+                limit: Some(1),
+                cursor: None,
+            },
         )
         .unwrap();
         assert_eq!(res.days.len(), 1);
@@ -827,7 +852,13 @@ mod tests {
         let conn = empty_db();
         let res = events(
             &conn,
-            EventsQuery { from: None, to: None, project: None, limit: None, cursor: None },
+            EventsQuery {
+                from: None,
+                to: None,
+                project: None,
+                limit: None,
+                cursor: None,
+            },
         )
         .unwrap();
         assert!(res.days.is_empty());
