@@ -16,6 +16,10 @@ jobs:
       matrix:
         node-version: [22.x]
 
+    permissions:
+      contents: read
+      pull-requests: write
+
     steps:
       - name: Checkout code repository
         uses: actions/checkout@v4
@@ -53,7 +57,35 @@ jobs:
         run: pnpm build
       - name: Test
         run: |
-          pnpm test
+          pnpm -r test:coverage
+
+      - name: Report Coverage (timeline)
+        if: always()
+        uses: davelosert/vitest-coverage-report-action@v2
+        with:
+          name: timeline
+          working-directory: packages/timeline
+
+      - name: Report Coverage (ui)
+        if: always()
+        uses: davelosert/vitest-coverage-report-action@v2
+        with:
+          name: ui
+          working-directory: packages/ui
+
+      - name: Report Coverage (cli)
+        if: always()
+        uses: davelosert/vitest-coverage-report-action@v2
+        with:
+          name: cli
+          working-directory: packages/cli
+
+      - name: Report Coverage (timeline-plugin)
+        if: always()
+        uses: davelosert/vitest-coverage-report-action@v2
+        with:
+          name: timeline-plugin
+          working-directory: plugins/timeline
 
   desktop-test:
     runs-on: macos-14

@@ -15,9 +15,6 @@ pub fn settings_get(_project: Option<String>) -> Result<SettingsRead, ApiError> 
 }
 
 #[tauri::command]
-pub fn settings_set(
-    content: Value,
-    _project: Option<String>,
-) -> Result<SettingsWrite, ApiError> {
+pub fn settings_set(content: Value, _project: Option<String>) -> Result<SettingsWrite, ApiError> {
     settings::write(&content)
 }

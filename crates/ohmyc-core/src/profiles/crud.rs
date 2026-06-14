@@ -68,7 +68,10 @@ pub fn list(profiles_dir: &Path) -> Result<ProfileList, ApiError> {
     let active = read_active_profile_name(profiles_dir)?;
 
     if !profiles_dir.exists() {
-        return Ok(ProfileList { profiles: Vec::new(), active });
+        return Ok(ProfileList {
+            profiles: Vec::new(),
+            active,
+        });
     }
 
     let mut profiles: Vec<Profile> = Vec::new();
@@ -121,38 +124,27 @@ pub fn create(profiles_dir: &Path, body: &Value) -> Result<Profile, ApiError> {
         )));
     }
     if is_reserved_profile_name(name) {
-        return Err(ApiError::InvalidInput(format!(
-            "profile name '{name}' is reserved"
-        )));
+        return Err(ApiError::InvalidInput(format!("profile name '{name}' is reserved")));
     }
     let dir = profiles_dir.join(name);
     if dir.exists() {
-        return Err(ApiError::Conflict(format!(
-            "profile '{name}' already exists"
-        )));
+        return Err(ApiError::Conflict(format!("profile '{name}' already exists")));
     }
-    let profile: Profile = serde_json::from_value(body.clone())
-        .map_err(|e| ApiError::Validation(format!("invalid profile body: {e}")))?;
-    std::fs::create_dir_all(&dir)
-        .map_err(|e| ApiError::Io(format!("mkdir {}: {e}", dir.display())))?;
+    let profile: Profile =
+        serde_json::from_value(body.clone()).map_err(|e| ApiError::Validation(format!("invalid profile body: {e}")))?;
+    std::fs::create_dir_all(&dir).map_err(|e| ApiError::Io(format!("mkdir {}: {e}", dir.display())))?;
     let json_path = dir.join("profile.json");
-    let raw = serde_json::to_string_pretty(&profile)
-        .map_err(|e| ApiError::Internal(format!("serialize profile: {e}")))?;
-    std::fs::write(&json_path, raw)
-        .map_err(|e| ApiError::Io(format!("write {}: {e}", json_path.display())))?;
+    let raw =
+        serde_json::to_string_pretty(&profile).map_err(|e| ApiError::Internal(format!("serialize profile: {e}")))?;
+    std::fs::write(&json_path, raw).map_err(|e| ApiError::Io(format!("write {}: {e}", json_path.display())))?;
     Ok(profile)
 }
 
-pub fn update(
-    profiles_dir: &Path,
-    name: &str,
-    changes: &Value,
-) -> Result<Option<Profile>, ApiError> {
+pub fn update(profiles_dir: &Path, name: &str, changes: &Value) -> Result<Option<Profile>, ApiError> {
     let Some(existing) = get(profiles_dir, name)? else {
         return Ok(None);
     };
-    let mut merged = serde_json::to_value(&existing)
-        .map_err(|e| ApiError::Internal(format!("to_value: {e}")))?;
+    let mut merged = serde_json::to_value(&existing).map_err(|e| ApiError::Internal(format!("to_value: {e}")))?;
     if let (Some(merged_obj), Some(changes_obj)) = (merged.as_object_mut(), changes.as_object()) {
         for (k, v) in changes_obj {
             if k == "name" {
@@ -161,13 +153,11 @@ pub fn update(
             merged_obj.insert(k.clone(), v.clone());
         }
     }
-    let next: Profile = serde_json::from_value(merged)
-        .map_err(|e| ApiError::Validation(format!("merged profile invalid: {e}")))?;
+    let next: Profile =
+        serde_json::from_value(merged).map_err(|e| ApiError::Validation(format!("merged profile invalid: {e}")))?;
     let json_path = profiles_dir.join(name).join("profile.json");
-    let raw = serde_json::to_string_pretty(&next)
-        .map_err(|e| ApiError::Internal(format!("serialize: {e}")))?;
-    std::fs::write(&json_path, raw)
-        .map_err(|e| ApiError::Io(format!("write {}: {e}", json_path.display())))?;
+    let raw = serde_json::to_string_pretty(&next).map_err(|e| ApiError::Internal(format!("serialize: {e}")))?;
+    std::fs::write(&json_path, raw).map_err(|e| ApiError::Io(format!("write {}: {e}", json_path.display())))?;
     Ok(Some(next))
 }
 
@@ -179,8 +169,7 @@ pub fn delete(profiles_dir: &Path, name: &str) -> Result<bool, ApiError> {
     if !dir.exists() {
         return Ok(false);
     }
-    std::fs::remove_dir_all(&dir)
-        .map_err(|e| ApiError::Io(format!("rm {}: {e}", dir.display())))?;
+    std::fs::remove_dir_all(&dir).map_err(|e| ApiError::Io(format!("rm {}: {e}", dir.display())))?;
     Ok(true)
 }
 
@@ -391,12 +380,8 @@ mod tests {
     #[test]
     fn update_returns_none_for_invalid_or_reserved_names() {
         let dir = tempfile::tempdir().unwrap();
-        assert!(update(dir.path(), "../bad", &serde_json::json!({}))
-            .unwrap()
-            .is_none());
-        assert!(update(dir.path(), "store", &serde_json::json!({}))
-            .unwrap()
-            .is_none());
+        assert!(update(dir.path(), "../bad", &serde_json::json!({})).unwrap().is_none());
+        assert!(update(dir.path(), "store", &serde_json::json!({})).unwrap().is_none());
     }
 
     // --- delete tests ---

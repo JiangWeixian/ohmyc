@@ -15,6 +15,7 @@ jobs:
       contents: write
       packages: write
       pull-requests: write
+      id-token: write
     steps:
       - name: Checkout code repository
         uses: actions/checkout@v4
@@ -24,6 +25,7 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 22
+          registry-url: "https://registry.npmjs.org"
       - uses: oven-sh/setup-bun@v1
         name: Install bun
         with:
@@ -58,4 +60,5 @@ jobs:
           publish: pnpm ci:publish
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
+          NPM_CONFIG_PROVENANCE: true
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}

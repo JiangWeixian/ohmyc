@@ -37,13 +37,19 @@ pub fn read() -> Result<SettingsRead, ApiError> {
     let path_str = path.to_string_lossy().to_string();
     match std::fs::read_to_string(&path) {
         Ok(raw) => {
-            let content: Value = serde_json::from_str(&raw)
-                .map_err(|e| ApiError::Parse(format!("settings.json: {e}")))?;
-            Ok(SettingsRead { path: path_str, content: Some(content), exists: true })
+            let content: Value =
+                serde_json::from_str(&raw).map_err(|e| ApiError::Parse(format!("settings.json: {e}")))?;
+            Ok(SettingsRead {
+                path: path_str,
+                content: Some(content),
+                exists: true,
+            })
         }
-        Err(e) if e.kind() == std::io::ErrorKind::NotFound => {
-            Ok(SettingsRead { path: path_str, content: None, exists: false })
-        }
+        Err(e) if e.kind() == std::io::ErrorKind::NotFound => Ok(SettingsRead {
+            path: path_str,
+            content: None,
+            exists: false,
+        }),
         Err(e) => Err(ApiError::Io(format!("read {path_str}: {e}"))),
     }
 }
@@ -60,20 +66,18 @@ pub struct SettingsWrite {
 /// missing. Writes via temp-file in the same directory + atomic rename.
 pub fn write(content: &Value) -> Result<SettingsWrite, ApiError> {
     if !content.is_object() {
-        return Err(ApiError::Validation(
-            "content must be a JSON object".to_string(),
-        ));
+        return Err(ApiError::Validation("content must be a JSON object".to_string()));
     }
     let path = settings_path()?;
     let path_str = path.to_string_lossy().to_string();
 
-    let dir = path.parent().ok_or_else(|| {
-        ApiError::Internal(format!("settings path has no parent: {path_str}"))
-    })?;
+    let dir = path
+        .parent()
+        .ok_or_else(|| ApiError::Internal(format!("settings path has no parent: {path_str}")))?;
     std::fs::create_dir_all(dir).map_err(|e| ApiError::Io(format!("mkdir {}: {e}", dir.display())))?;
 
-    let serialized = serde_json::to_string_pretty(content)
-        .map_err(|e| ApiError::Internal(format!("serialize settings: {e}")))?;
+    let serialized =
+        serde_json::to_string_pretty(content).map_err(|e| ApiError::Internal(format!("serialize settings: {e}")))?;
 
     // Atomic replace: write to a sibling temp file, then rename.
     let mut tmp = tempfile::NamedTempFile::new_in(dir)
@@ -84,7 +88,10 @@ pub fn write(content: &Value) -> Result<SettingsWrite, ApiError> {
     tmp.persist(&path)
         .map_err(|e| ApiError::Io(format!("persist {path_str}: {e}")))?;
 
-    Ok(SettingsWrite { path: path_str, success: true })
+    Ok(SettingsWrite {
+        path: path_str,
+        success: true,
+    })
 }
 
 #[cfg(test)]
@@ -119,8 +126,11 @@ mod tests {
     #[test]
     fn read_returns_parsed_content_when_file_exists() {
         let dir = tempfile::tempdir().unwrap();
-        std::fs::write(dir.path().join("settings.json"), r#"{"model":"sonnet-4","general":{"alwaysThinkingEnabled":true}}"#)
-            .unwrap();
+        std::fs::write(
+            dir.path().join("settings.json"),
+            r#"{"model":"sonnet-4","general":{"alwaysThinkingEnabled":true}}"#,
+        )
+        .unwrap();
         with_claude_home(dir.path(), || {
             let r = read().unwrap();
             assert!(r.exists);

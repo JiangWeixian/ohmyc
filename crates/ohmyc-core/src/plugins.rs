@@ -266,10 +266,7 @@ fn read_json_or_none(path: &Path) -> Result<Option<Value>, ApiError> {
     Ok(serde_json::from_str::<Value>(&raw).ok())
 }
 
-pub fn list_plugins(
-    plugins_dir: &Path,
-    settings_path: &Path,
-) -> Result<Vec<InstalledPlugin>, ApiError> {
+pub fn list_plugins(plugins_dir: &Path, settings_path: &Path) -> Result<Vec<InstalledPlugin>, ApiError> {
     let registry_path = plugins_dir.join("installed_plugins.json");
     let raw = match std::fs::read_to_string(&registry_path) {
         Ok(s) => s,
@@ -287,8 +284,7 @@ pub fn list_plugins(
     let mut out: Vec<InstalledPlugin> = Vec::with_capacity(plugins_obj.len());
     for (id, installs_value) in plugins_obj {
         let (name, marketplace) = split_id(id);
-        let installs: Vec<PluginInstall> =
-            serde_json::from_value(installs_value.clone()).unwrap_or_default();
+        let installs: Vec<PluginInstall> = serde_json::from_value(installs_value.clone()).unwrap_or_default();
         let (manifest, components) = match installs.first() {
             Some(first) if !first.install_path.is_empty() => {
                 let install_path = PathBuf::from(&first.install_path);
@@ -310,11 +306,7 @@ pub fn list_plugins(
     Ok(out)
 }
 
-pub fn get_plugin(
-    plugins_dir: &Path,
-    settings_path: &Path,
-    id: &str,
-) -> Result<Option<InstalledPlugin>, ApiError> {
+pub fn get_plugin(plugins_dir: &Path, settings_path: &Path, id: &str) -> Result<Option<InstalledPlugin>, ApiError> {
     let all = list_plugins(plugins_dir, settings_path)?;
     Ok(all.into_iter().find(|p| p.id == id))
 }
@@ -419,11 +411,7 @@ mod tests {
     fn read_enabled_plugins_from_parses_map() {
         let dir = tempfile::tempdir().unwrap();
         let settings = dir.path().join("settings.json");
-        std::fs::write(
-            &settings,
-            r#"{"enabledPlugins":{"gitlab@m":true,"other@m":false}}"#,
-        )
-        .unwrap();
+        std::fs::write(&settings, r#"{"enabledPlugins":{"gitlab@m":true,"other@m":false}}"#).unwrap();
         let map = read_enabled_plugins_from(&settings).unwrap();
         assert_eq!(map.get("gitlab@m"), Some(&true));
         assert_eq!(map.get("other@m"), Some(&false));

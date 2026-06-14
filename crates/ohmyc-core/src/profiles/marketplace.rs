@@ -53,13 +53,11 @@ fn default_installed() -> Value {
 
 /// Write `<plugins_dir>/installed_plugins.json` (creates parent dir).
 pub fn write_installed_plugins(plugins_dir: &Path, data: &Value) -> Result<(), ApiError> {
-    std::fs::create_dir_all(plugins_dir)
-        .map_err(|e| ApiError::Io(format!("mkdir {}: {e}", plugins_dir.display())))?;
+    std::fs::create_dir_all(plugins_dir).map_err(|e| ApiError::Io(format!("mkdir {}: {e}", plugins_dir.display())))?;
     let path = plugins_dir.join("installed_plugins.json");
     let raw = serde_json::to_string_pretty(data)
         .map_err(|e| ApiError::Internal(format!("serialize installed_plugins: {e}")))?;
-    std::fs::write(&path, raw)
-        .map_err(|e| ApiError::Io(format!("write {}: {e}", path.display())))?;
+    std::fs::write(&path, raw).map_err(|e| ApiError::Io(format!("write {}: {e}", path.display())))?;
     Ok(())
 }
 
@@ -74,13 +72,11 @@ pub fn read_known_marketplaces(plugins_dir: &Path) -> Value {
 
 /// Write `<plugins_dir>/known_marketplaces.json` (creates parent dir).
 pub fn write_known_marketplaces(plugins_dir: &Path, data: &Value) -> Result<(), ApiError> {
-    std::fs::create_dir_all(plugins_dir)
-        .map_err(|e| ApiError::Io(format!("mkdir {}: {e}", plugins_dir.display())))?;
+    std::fs::create_dir_all(plugins_dir).map_err(|e| ApiError::Io(format!("mkdir {}: {e}", plugins_dir.display())))?;
     let path = plugins_dir.join("known_marketplaces.json");
     let raw = serde_json::to_string_pretty(data)
         .map_err(|e| ApiError::Internal(format!("serialize known_marketplaces: {e}")))?;
-    std::fs::write(&path, raw)
-        .map_err(|e| ApiError::Io(format!("write {}: {e}", path.display())))?;
+    std::fs::write(&path, raw).map_err(|e| ApiError::Io(format!("write {}: {e}", path.display())))?;
     Ok(())
 }
 
@@ -165,13 +161,9 @@ pub fn register_known_marketplace(
 /// profile (name, source path, description, fixed version "1.0.0").
 /// `profile_summaries` is `(name, description_or_name)` pairs sorted by
 /// name — caller-supplied so this stays pure I/O.
-pub fn write_marketplace_json(
-    base_dir: &Path,
-    profile_summaries: &[(String, String)],
-) -> Result<(), ApiError> {
+pub fn write_marketplace_json(base_dir: &Path, profile_summaries: &[(String, String)]) -> Result<(), ApiError> {
     let dir = base_dir.join(".claude-plugin");
-    std::fs::create_dir_all(&dir)
-        .map_err(|e| ApiError::Io(format!("mkdir {}: {e}", dir.display())))?;
+    std::fs::create_dir_all(&dir).map_err(|e| ApiError::Io(format!("mkdir {}: {e}", dir.display())))?;
     let plugins: Vec<Value> = profile_summaries
         .iter()
         .map(|(name, desc)| {
@@ -192,8 +184,7 @@ pub fn write_marketplace_json(
     let path = dir.join("marketplace.json");
     let raw = serde_json::to_string_pretty(&body)
         .map_err(|e| ApiError::Internal(format!("serialize marketplace.json: {e}")))?;
-    std::fs::write(&path, raw)
-        .map_err(|e| ApiError::Io(format!("write {}: {e}", path.display())))?;
+    std::fs::write(&path, raw).map_err(|e| ApiError::Io(format!("write {}: {e}", path.display())))?;
     Ok(())
 }
 
@@ -223,7 +214,10 @@ mod tests {
         let v = read_installed_plugins(dir.path());
         let id = "profile-dev@ohmyc-profiles";
         assert!(v["plugins"][id].is_array());
-        assert_eq!(v["plugins"][id][0]["installPath"], install_path.to_string_lossy().as_ref());
+        assert_eq!(
+            v["plugins"][id][0]["installPath"],
+            install_path.to_string_lossy().as_ref()
+        );
         assert_eq!(v["plugins"][id][0]["scope"], "user");
         assert_eq!(v["plugins"][id][0]["version"], "1.0.0");
     }
@@ -251,8 +245,14 @@ mod tests {
         let snapshot = register_known_marketplace(dir.path(), base.path(), "2026-06-06T00:00:00Z").unwrap();
         let v = read_known_marketplaces(dir.path());
         assert_eq!(v[MARKETPLACE_ID]["source"]["source"], "directory");
-        assert_eq!(v[MARKETPLACE_ID]["source"]["path"], base.path().to_string_lossy().as_ref());
-        assert_eq!(v[MARKETPLACE_ID]["installLocation"], base.path().to_string_lossy().as_ref());
+        assert_eq!(
+            v[MARKETPLACE_ID]["source"]["path"],
+            base.path().to_string_lossy().as_ref()
+        );
+        assert_eq!(
+            v[MARKETPLACE_ID]["installLocation"],
+            base.path().to_string_lossy().as_ref()
+        );
         assert_eq!(snapshot.0, json!({}));
     }
 

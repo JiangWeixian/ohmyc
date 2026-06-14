@@ -94,16 +94,14 @@ pub fn create(dir: &Path, frontmatter: &Value, content: &str) -> Result<Command,
             "command name '{name}' must match [a-zA-Z0-9_-]"
         )));
     }
-    std::fs::create_dir_all(dir)
-        .map_err(|e| ApiError::Io(format!("mkdir {}: {e}", dir.display())))?;
+    std::fs::create_dir_all(dir).map_err(|e| ApiError::Io(format!("mkdir {}: {e}", dir.display())))?;
     let filename = format!("{name}.md");
     let path: PathBuf = dir.join(&filename);
     if path.exists() {
         return Err(ApiError::Conflict(format!("command '{name}' already exists")));
     }
     let raw = frontmatter::stringify(frontmatter, content)?;
-    std::fs::write(&path, &raw)
-        .map_err(|e| ApiError::Io(format!("write {}: {e}", path.display())))?;
+    std::fs::write(&path, &raw).map_err(|e| ApiError::Io(format!("write {}: {e}", path.display())))?;
     parse_command(&filename, &raw)?
         .ok_or_else(|| ApiError::Internal("parse_command returned None after create".to_string()))
 }
@@ -122,8 +120,7 @@ pub fn update(
     };
     let mut merged = existing.frontmatter.clone();
     if let Some(changes) = frontmatter_changes {
-        if let (Some(merged_obj), Some(changes_obj)) = (merged.as_object_mut(), changes.as_object())
-        {
+        if let (Some(merged_obj), Some(changes_obj)) = (merged.as_object_mut(), changes.as_object()) {
             for (k, v) in changes_obj {
                 merged_obj.insert(k.clone(), v.clone());
             }
@@ -132,8 +129,7 @@ pub fn update(
     let body = new_content.unwrap_or(&existing.content);
     let raw = frontmatter::stringify(&merged, body)?;
     let path = dir.join(format!("{name}.md"));
-    std::fs::write(&path, &raw)
-        .map_err(|e| ApiError::Io(format!("write {}: {e}", path.display())))?;
+    std::fs::write(&path, &raw).map_err(|e| ApiError::Io(format!("write {}: {e}", path.display())))?;
     parse_command(&format!("{name}.md"), &raw)
 }
 

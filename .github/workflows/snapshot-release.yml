@@ -20,6 +20,7 @@ jobs:
       contents: write
       packages: write
       pull-requests: write
+      id-token: write
     steps:
       - name: checkout code repository
         uses: actions/checkout@v4
@@ -31,6 +32,7 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 22
+          registry-url: "https://registry.npmjs.org"
 
       - uses: oven-sh/setup-bun@v1
         name: Install bun
@@ -60,18 +62,11 @@ jobs:
       - name: install dependencies
         run: pnpm install --frozen-lockfile=false
 
-      - name: Creating .npmrc
-        run: |
-          cat << EOF > "$HOME/.npmrc"
-            //registry.npmjs.org/:_authToken=$NPM_TOKEN
-          EOF
-        env:
-          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
-
       - name: create and publish versions
         run: |
           pnpm ci:snapshot
           pnpm ci:prerelease
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
+          NPM_CONFIG_PROVENANCE: true
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
