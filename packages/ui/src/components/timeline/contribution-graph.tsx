@@ -48,7 +48,7 @@ function formatDay(date: string): string {
   return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric', timeZone: 'UTC' })
 }
 
-interface ContributionGraphProps {
+export interface ContributionGraphProps {
   year: number
   metric: TimelineMetric
   data: HeatmapPoint[]
@@ -61,6 +61,8 @@ interface ContributionGraphProps {
  * onSelectDay so the parent can scroll the event list to that date.
  */
 export function ContributionGraph({ year, metric, data, onSelectDay }: ContributionGraphProps) {
+  const CELL_SIZE = 10
+  const CELL_GAP = 4
   const [hover, setHover] = useState<{
     x: number
     y: number
@@ -140,7 +142,15 @@ export function ContributionGraph({ year, metric, data, onSelectDay }: Contribut
 
   return (
     <div className="rounded-[10px] border border-[var(--border-default)] bg-[rgba(255,255,255,0.02)] px-[22px] py-[18px]">
-      <div className="relative" style={{ display: 'grid', gridTemplateColumns: '18px 1fr', gridTemplateRows: '16px 1fr', gap: 4 }}>
+      <div
+        className="relative"
+        style={{
+          display: 'grid',
+          gridTemplateColumns: '18px 1fr',
+          gridTemplateRows: '16px 1fr',
+          gap: CELL_GAP,
+        }}
+      >
         {/* Months strip */}
         <div
           style={{
@@ -165,8 +175,8 @@ export function ContributionGraph({ year, metric, data, onSelectDay }: Contribut
             gridColumn: 1,
             gridRow: 2,
             display: 'grid',
-            gridTemplateRows: 'repeat(7, 10px)',
-            gap: 4,
+            gridTemplateRows: `repeat(7, ${CELL_SIZE}px)`,
+            gap: CELL_GAP,
             fontSize: 9,
             fontWeight: 510,
             color: 'var(--text-quaternary)',
@@ -176,7 +186,7 @@ export function ContributionGraph({ year, metric, data, onSelectDay }: Contribut
           }}
         >
           {DOW_LABELS.map((label, i) => (
-            <span key={i} style={{ lineHeight: '10px', height: 10, visibility: label ? 'visible' : 'hidden' }}>
+            <span key={i} style={{ lineHeight: `${CELL_SIZE}px`, height: CELL_SIZE, visibility: label ? 'visible' : 'hidden' }}>
               {label}
             </span>
           ))}
@@ -188,10 +198,10 @@ export function ContributionGraph({ year, metric, data, onSelectDay }: Contribut
             gridColumn: 2,
             gridRow: 2,
             display: 'grid',
-            gridTemplateColumns: 'repeat(53, 10px)',
-            gridTemplateRows: 'repeat(7, 10px)',
+            gridTemplateColumns: `repeat(53, ${CELL_SIZE}px)`,
+            gridTemplateRows: `repeat(7, ${CELL_SIZE}px)`,
             gridAutoFlow: 'column',
-            gap: 4,
+            gap: CELL_GAP,
           }}
         >
           {cells.map((c, i) => {
@@ -221,8 +231,8 @@ export function ContributionGraph({ year, metric, data, onSelectDay }: Contribut
                 onMouseLeave={() => setHover(null)}
                 className={`heat-cell ${cls}`}
                 style={{
-                  width: 10,
-                  height: 10,
+                  width: CELL_SIZE,
+                  height: CELL_SIZE,
                   borderRadius: 2,
                   cursor: c.inYear && c.value > 0 ? 'pointer' : 'default',
                 }}

@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>configs — ohmyc-core</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+<script src="beautiful-mermaid.bundle.js"></script>
+</head>
+<body>
+<header class="topbar"><a class="back-link" href="index.html">← ohmyc-core</a></header>
+<main class="container">
+  <section class="hero">
+    <div class="eyebrow">ohmyc-core · module</div>
+    <h1>configs</h1>
+    <p class="learning-promise">Understand how the configs module reads MCP servers, hooks, and LSP servers from Claude Code's configuration files.</p>
+  </section>
+  <nav class="toc">
+    <div class="toc-label">On this page</div>
+    <ol class="toc-list">
+      <li><a class="toc-item" href="#unit-0"><span class="toc-num">1</span>Three config sources, one module<span class="toc-kind">concept</span></a></li>
+      <li><a class="toc-item" href="#unit-1"><span class="toc-num">2</span>MCP server entries<span class="toc-kind">code-walk</span></a></li>
+      <li><a class="toc-item" href="#unit-2"><span class="toc-num">3</span>Hooks flattening<span class="toc-kind">concept</span></a></li>
+      <li><a class="toc-item" href="#unit-3"><span class="toc-num">4</span>Check your understanding<span class="toc-kind">quiz</span></a></li>
+      <li><a class="toc-item" href="#unit-4"><span class="toc-num">5</span>Key takeaways<span class="toc-kind">takeaway</span></a></li>
+    </ol>
+  </nav>
+
+  <section class="unit unit-concept" id="unit-0">
+    <span class="unit-kind">concept</span>
+    <h2>Three config sources, one module</h2>
+    <p>The configs module reads three types of configuration from <code>~/.claude</code>: MCP servers from <code>.mcp.json</code>, hooks from <code>settings.json</code>, and LSP servers from <code>settings.json</code>. Each type has its own entry struct (<code>McpEntry</code>, <code>HookEntry</code>, <code>LspEntry</code>) that tags the data with <code>source</code> and <code>scope</code> metadata.</p>
+    <p>All three are read-only. The module reads from <code>claude_home</code> and the <code>settings</code> module — it doesn't write anything. This is a pure extraction layer that turns raw JSON into typed entries for the UI.</p>
+  </section>
+
+  <section class="unit unit-codewalk" id="unit-1">
+    <span class="unit-kind">code-walk</span>
+    <h2>MCP server entries</h2>
+    <div class="codewalk-split">
+      <div class="codewalk-head">
+        <span class="codewalk-file">crates/ohmyc-core/src/configs.rs</span>
+        <span class="file-actions">
+          <span class="editor-menu" data-editor-menu data-editor="cursor">
+            <button class="file-action-select editor-menu-trigger" type="button" aria-haspopup="listbox" aria-expanded="false" data-editor-trigger><span data-editor-current>Cursor</span><span class="gg-chevron-down" aria-hidden="true"></span></button>
+            <span class="editor-menu-list" role="listbox" hidden data-editor-list>
+              <button class="editor-menu-item" type="button" role="option" aria-selected="true" data-editor-option="cursor">Cursor</button>
+              <button class="editor-menu-item" type="button" role="option" aria-selected="false" data-editor-option="vscode">VS Code</button>
+            </span>
+          </span>
+          <button class="file-action" type="button" data-copy-path="crates/ohmyc-core/src/configs.rs:46">Copy path</button>
+        </span>
+      </div>
+      <div class="codewalk-split-body">
+        <pre class="code-block"><span class="line" data-line="1"><span class="ln">1</span><span class="code-text">pub fn mcp_servers() -&gt; Result&lt;Vec&lt;McpEntry&gt;, ApiError&gt; {</span></span><span class="line line-hl" data-line="2"><span class="ln">2</span><span class="code-text">    let path = claude_home::resolve()?.join(".mcp.json");</span></span><span class="line" data-line="3"><span class="ln">3</span><span class="code-text">    let Some(json) = read_json_or_none(&amp;path)? else {</span></span><span class="line line-hl" data-line="4"><span class="ln">4</span><span class="code-text">        return Ok(Vec::new());</span></span><span class="line" data-line="5"><span class="ln">5</span><span class="code-text">    };</span></span><span class="line" data-line="6"><span class="ln">6</span><span class="code-text">    let Some(servers) = json.get("mcpServers").and_then(|v| v.as_object()) else {</span></span><span class="line line-hl" data-line="7"><span class="ln">7</span><span class="code-text">        return Ok(Vec::new());</span></span><span class="line" data-line="8"><span class="ln">8</span><span class="code-text">    };</span></span><span class="line" data-line="9"><span class="ln">9</span><span class="code-text">    Ok(servers.iter().map(|(name, config)| McpEntry {</span></span><span class="line" data-line="10"><span class="ln">10</span><span class="code-text">        name: name.clone(),</span></span><span class="line" data-line="11"><span class="ln">11</span><span class="code-text">        config: config.clone(),</span></span><span class="line" data-line="12"><span class="ln">12</span><span class="code-text">        source: "local",</span></span><span class="line" data-line="13"><span class="ln">13</span><span class="code-text">        scope: "global",</span></span><span class="line" data-line="14"><span class="ln">14</span><span class="code-text">    }).collect())</span></span><span class="line" data-line="15"><span class="ln">15</span><span class="code-text">}</span></span></pre>
+        <div class="codewalk-annotations">
+          <div class="codewalk-annotation" data-note-lines="2"><span class="annotation-line">L2</span><p>Reads <code>~/.claude/.mcp.json</code> — a dot-prefixed file in the claude home directory. This is Claude Code's MCP server configuration format.</p></div>
+          <div class="codewalk-annotation" data-note-lines="4,7"><span class="annotation-line">L4, L7</span><p>Two defensive returns: file missing → empty list, <code>mcpServers</code> field missing or not an object → empty list. Missing or malformed config is never an error.</p></div>
+          <div class="codewalk-annotation" data-note-lines="12,13"><span class="annotation-line">L12–13</span><p>Every entry is tagged <code>source: "local"</code> and <code>scope: "global"</code>. Future slices will add profile-scoped and project-scoped entries with different tags.</p></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="unit unit-concept" id="unit-2">
+    <span class="unit-kind">concept</span>
+    <h2>Hooks flattening</h2>
+    <p>Hooks in <code>settings.json</code> have a nested shape: <code>{ event: [{ matcher?, hooks: [...] }] }</code>. The configs module flattens this into linear <code>HookEntry</code> structs: one entry per hook, with the event name and matcher data attached. Each entry is tagged with <code>source</code> and <code>scope</code> like MCP entries.</p>
+    <p>This flattening makes hooks easier for the UI to render — a flat list instead of nested arrays. The original nesting is a Claude Code internal format that doesn't need to leak into the UI layer.</p>
+  </section>
+
+  <section class="unit unit-quiz" id="unit-3">
+    <span class="unit-kind">quiz</span>
+    <h2>Check your understanding</h2>
+    <div class="quiz">
+      <div class="quiz-question">Why does <code>mcp_servers()</code> return an empty list when <code>.mcp.json</code> is missing instead of an error?</div>
+      <div class="quiz-options">
+        <div class="quiz-option" data-correct="false"><span class="quiz-option-letter">A</span><span>The file is expected to be missing in most installations</span></div>
+        <div class="quiz-option" data-correct="true"><span class="quiz-option-letter">B</span><span>MCP servers are optional — Claude Code works fine without any configured, so missing config is valid state</span></div>
+        <div class="quiz-option" data-correct="false"><span class="quiz-option-letter">C</span><span>The module doesn't have access to the error type</span></div>
+        <div class="quiz-option" data-correct="false"><span class="quiz-option-letter">D</span><span>It's a performance optimization to avoid file system calls</span></div>
+      </div>
+      <div class="quiz-explanation"><strong>Correct: B</strong> — MCP servers are an optional feature. Many Claude Code installations have no MCP servers configured. The module returns an empty list so the UI can show "no MCP servers configured" without special error handling. <strong>A</strong> is close but not precise — it's about optionality, not expectation. <strong>C</strong> is wrong (the module imports <code>ApiError</code>). <strong>D</strong> is wrong (the file system call still happens).</div>
+    </div>
+  </section>
+
+  <section class="unit unit-takeaway" id="unit-4">
+    <div class="unit-takeaway">
+      <span class="unit-kind">takeaway</span>
+      <p>The configs module is a read-only extraction layer. It reads MCP servers from <code>.mcp.json</code> and hooks + LSP servers from <code>settings.json</code>, returning typed entries tagged with source and scope metadata. The hooks flattening transforms Claude Code's nested format into a flat list. Missing or malformed config files always return empty results, never errors.</p>
+    </div>
+  </section>
+
+  <footer class="page-footer">
+    <a class="next-link" href="module-timeline.html">timeline →</a>
+    <p class="recap">Next: the timeline module — SQLite queries for session history and analytics.</p>
+  </footer>
+</main>
+<div class="zoom-overlay" hidden>
+  <div class="zoom-stage"></div>
+  <div class="zoom-controls">
+    <button data-zoom-out aria-label="Zoom out" title="Zoom out"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14"/></svg></button>
+    <span class="zoom-level" data-zoom-level>100%</span>
+    <button data-zoom-reset aria-label="Reset zoom" title="Reset zoom"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 12a9 9 0 1 0 3-6.7"/><path d="M3 4v6h6"/></svg></button>
+    <button data-zoom-in aria-label="Zoom in" title="Zoom in"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14"/><path d="M5 12h14"/></svg></button>
+    <button data-zoom-close aria-label="Close zoom" title="Close zoom"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg></button>
+  </div>
+</div>
+<script src="mermaid-bridge.js"></script>
+<script src="runtime.js"></script>
+</body>
+</html>

@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>claude-home — ohmyc-core</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+<script src="beautiful-mermaid.bundle.js"></script>
+</head>
+<body>
+<header class="topbar">
+  <a class="back-link" href="index.html">← ohmyc-core</a>
+</header>
+
+<main class="container">
+  <section class="hero">
+    <div class="eyebrow">ohmyc-core · module</div>
+    <h1>claude-home</h1>
+    <p class="learning-promise">Understand the simplest module in the crate — a thin path resolver that every other module depends on, and why its env-override design makes the entire crate testable.</p>
+  </section>
+
+  <nav class="toc">
+    <div class="toc-label">On this page</div>
+    <ol class="toc-list">
+      <li><a class="toc-item" href="#unit-0"><span class="toc-num">1</span>One job: resolve a directory<span class="toc-kind">concept</span></a></li>
+      <li><a class="toc-item" href="#unit-1"><span class="toc-num">2</span>The resolve function<span class="toc-kind">code-walk</span></a></li>
+      <li><a class="toc-item" href="#unit-2"><span class="toc-num">3</span>Convenience helpers<span class="toc-kind">concept</span></a></li>
+      <li><a class="toc-item" href="#unit-3"><span class="toc-num">4</span>Check your understanding<span class="toc-kind">quiz</span></a></li>
+      <li><a class="toc-item" href="#unit-4"><span class="toc-num">5</span>Key takeaways<span class="toc-kind">takeaway</span></a></li>
+    </ol>
+  </nav>
+
+  <section class="unit unit-concept" id="unit-0">
+    <span class="unit-kind">concept</span>
+    <h2>One job: resolve a directory</h2>
+    <p><code>claude_home</code> does exactly one thing — it answers "where is <code>~/.claude</code>?" The default is <code>$HOME/.claude</code>, but the <code>OHMYC_CLAUDE_HOME</code> env var overrides it. That's the whole module. It doesn't read files, doesn't write files, doesn't parse anything. It returns <code>PathBuf</code> values.</p>
+    <p>The reason this is a separate module instead of a constant: <strong>testability</strong>. Every test in the crate sets <code>OHMYC_CLAUDE_HOME</code> to a temp directory before running. Without the env-override pattern, tests would either need to mock the filesystem or touch the real <code>~/.claude</code> — both bad options. This module's simplicity IS its value.</p>
+  </section>
+
+  <section class="unit unit-codewalk" id="unit-1">
+    <span class="unit-kind">code-walk</span>
+    <h2>The resolve function</h2>
+    <div class="codewalk-split">
+      <div class="codewalk-head">
+        <span class="codewalk-file">crates/ohmyc-core/src/claude_home.rs</span>
+        <span class="file-actions">
+          <span class="editor-menu" data-editor-menu data-editor="cursor">
+            <button class="file-action-select editor-menu-trigger" type="button" aria-haspopup="listbox" aria-expanded="false" data-editor-trigger>
+              <span data-editor-current>Cursor</span>
+              <span class="gg-chevron-down" aria-hidden="true"></span>
+            </button>
+            <span class="editor-menu-list" role="listbox" hidden data-editor-list>
+              <button class="editor-menu-item" type="button" role="option" aria-selected="true" data-editor-option="cursor">Cursor</button>
+              <button class="editor-menu-item" type="button" role="option" aria-selected="false" data-editor-option="vscode">VS Code</button>
+            </span>
+          </span>
+          <button class="file-action" type="button" data-copy-path="crates/ohmyc-core/src/claude_home.rs:18">Copy path</button>
+        </span>
+      </div>
+      <div class="codewalk-split-body">
+        <pre class="code-block"><span class="line" data-line="1"><span class="ln">1</span><span class="code-text">pub fn resolve() -&gt; Result&lt;PathBuf, ApiError&gt; {</span></span><span class="line line-hl" data-line="2"><span class="ln">2</span><span class="code-text">    if let Ok(override_path) = std::env::var(ENV_OVERRIDE) {</span></span><span class="line line-hl" data-line="3"><span class="ln">3</span><span class="code-text">        if !override_path.is_empty() {</span></span><span class="line" data-line="4"><span class="ln">4</span><span class="code-text">            return Ok(PathBuf::from(override_path));</span></span><span class="line" data-line="5"><span class="ln">5</span><span class="code-text">        }</span></span><span class="line" data-line="6"><span class="ln">6</span><span class="code-text">    }</span></span><span class="line" data-line="7"><span class="ln">7</span><span class="code-text">    let home = dirs::home_dir()</span></span><span class="line" data-line="8"><span class="ln">8</span><span class="code-text">        .ok_or_else(|| ApiError::Internal("could not determine home dir".to_string()))?;</span></span><span class="line" data-line="9"><span class="ln">9</span><span class="code-text">    Ok(home.join(".claude"))</span></span><span class="line" data-line="10"><span class="ln">10</span><span class="code-text">}</span></span></pre>
+        <div class="codewalk-annotations">
+          <div class="codewalk-annotation" data-note-lines="2"><span class="annotation-line">L2</span><p>Check <code>OHMYC_CLAUDE_HOME</code> first. This is the testability escape hatch — every unit test sets this to <code>tempfile::tempdir()</code> so tests never touch the real <code>~/.claude</code>.</p></div>
+          <div class="codewalk-annotation" data-note-lines="3"><span class="annotation-line">L3</span><p>Empty-string guard: <code>OHMYC_CLAUDE_HOME=""</code> should fall through to the default, not resolve to the current working directory.</p></div>
+          <div class="codewalk-annotation" data-note-lines="7,8"><span class="annotation-line">L7–8</span><p>Fallback: use the <code>dirs</code> crate to find <code>$HOME</code>. The <code>ok_or_else</code> converts <code>None</code> into <code>ApiError::Internal</code> — rare but possible on containers or minimal systems.</p></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="unit unit-concept" id="unit-2">
+    <span class="unit-kind">concept</span>
+    <h2>Convenience helpers</h2>
+    <p>The module also provides <code>join(rel)</code> (resolve + append a relative path), <code>plugins_dir()</code>, and <code>settings_path()</code>. Each is a one-liner built on <code>resolve()</code>. The pattern is worth noticing: the helpers compose on the single source of truth (<code>resolve()</code>) instead of each computing its own path. If the resolution logic ever changes, every helper follows automatically.</p>
+  </section>
+
+  <section class="unit unit-quiz" id="unit-3">
+    <span class="unit-kind">quiz</span>
+    <h2>Check your understanding</h2>
+    <div class="quiz">
+      <div class="quiz-question">Why does <code>resolve()</code> check for an empty string after reading the env var?</div>
+      <div class="quiz-options">
+        <div class="quiz-option" data-correct="true"><span class="quiz-option-letter">A</span><span>An empty env var should fall through to the default <code>~/.claude</code>, not resolve to the current working directory</span></div>
+        <div class="quiz-option" data-correct="false"><span class="quiz-option-letter">B</span><span>Empty strings cause <code>PathBuf::from</code> to panic</span></div>
+        <div class="quiz-option" data-correct="false"><span class="quiz-option-letter">C</span><span>The dirs crate rejects empty paths</span></div>
+        <div class="quiz-option" data-correct="false"><span class="quiz-option-letter">D</span><span>It's a performance optimization to avoid unnecessary path construction</span></div>
+      </div>
+      <div class="quiz-explanation"><strong>Correct: A</strong> — <code>PathBuf::from("")</code> is valid Rust and resolves to the current directory. If a user accidentally sets <code>OHMYC_CLAUDE_HOME=""</code>, the system would look for <code>./agents</code>, <code>./settings.json</code>, etc. in the CWD — silently wrong behavior. The empty-string guard prevents this. <strong>B</strong> is wrong (no panic). <strong>C</strong> is wrong (<code>dirs</code> is not involved when the env var is set). <strong>D</strong> is wrong (not about performance).</div>
+    </div>
+  </section>
+
+  <section class="unit unit-takeaway" id="unit-4">
+    <div class="unit-takeaway">
+      <span class="unit-kind">takeaway</span>
+      <p><code>claude_home</code> is the crate's simplest module by design — it does one thing (resolve <code>~/.claude</code>) and does it correctly for both production (default path) and testing (env override). Every module that reads from or writes to <code>~/.claude</code> depends on this single source of truth. The env-override pattern is the testing foundation for the entire crate.</p>
+    </div>
+  </section>
+
+  <footer class="page-footer">
+    <a class="next-link" href="module-store.html">store →</a>
+    <p class="recap">Next: see how the store module extends the path resolution pattern to OhMyC's own directory tree.</p>
+  </footer>
+</main>
+
+<div class="zoom-overlay" hidden>
+  <div class="zoom-stage"></div>
+  <div class="zoom-controls">
+    <button data-zoom-out aria-label="Zoom out" title="Zoom out"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14"/></svg></button>
+    <span class="zoom-level" data-zoom-level>100%</span>
+    <button data-zoom-reset aria-label="Reset zoom" title="Reset zoom"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 12a9 9 0 1 0 3-6.7"/><path d="M3 4v6h6"/></svg></button>
+    <button data-zoom-in aria-label="Zoom in" title="Zoom in"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14"/><path d="M5 12h14"/></svg></button>
+    <button data-zoom-close aria-label="Close zoom" title="Close zoom"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg></button>
+  </div>
+</div>
+
+<script src="mermaid-bridge.js"></script>
+<script src="runtime.js"></script>
+</body>
+</html>

@@ -1,7 +1,6 @@
 // Sidebar navigation — Activity link + vertical explorer section tabs.
 import { Activity, LayoutGrid } from 'lucide-react'
 import React from 'react'
-import { useNavigate } from 'react-router-dom'
 
 import {
   Tabs,
@@ -22,7 +21,11 @@ export interface SidebarSection {
 /** Sidebar header with the Explorer title and an optional view-switcher slot. */
 function SidebarHeader({ headerSlot }: { headerSlot?: React.ReactNode }) {
   return (
-    <div className="border-b border-[rgba(255,255,255,0.05)] px-4 pb-4 pt-5">
+    // pt-10 (instead of pt-5) clears the macOS traffic-light cluster:
+    // the Tauri window uses TitleBarStyle::Overlay which places the
+    // traffic lights at ~10px from top, spanning ~78x14px. Extra 20px
+    // keeps the LayoutGrid icon from sliding under the close button.
+    <div className="border-b border-[rgba(255,255,255,0.05)] px-4 pb-4 pt-10">
       <div className="mb-5 flex items-center gap-3">
         <div className="flex size-10 shrink-0 items-center justify-center rounded-[10px] border border-[rgba(255,255,255,0.08)] bg-[rgba(255,255,255,0.02)]">
           <LayoutGrid size={18} className="text-[var(--text-secondary)]" />
@@ -56,7 +59,6 @@ export function Sidebar({
   onSectionChange,
   headerSlot,
 }: SidebarProperties) {
-  const navigate = useNavigate()
   return (
     <aside className="flex w-60 flex-col border-r border-[rgba(255,255,255,0.05)] bg-[var(--bg-panel)]">
       <SidebarHeader headerSlot={headerSlot} />
@@ -66,10 +68,15 @@ export function Sidebar({
         </div>
         <button
           type="button"
-          onClick={() => navigate('/timeline')}
-          className="flex w-full items-center gap-2.5 rounded-md px-3 py-2 text-left text-[13px] font-[510] text-[var(--text-secondary)] transition-colors duration-150 hover:bg-[rgba(255,255,255,0.03)] hover:text-[var(--text-primary)]"
+          onClick={() => onSectionChange('timeline')}
+          className={cn(
+            'flex w-full items-center gap-2.5 rounded-md px-3 py-2 text-left text-[13px] font-[510] transition-colors duration-150',
+            activeSection === 'timeline'
+              ? 'bg-[rgba(255,255,255,0.08)] text-[var(--text-primary)]'
+              : 'text-[var(--text-secondary)] hover:bg-[rgba(255,255,255,0.03)] hover:text-[var(--text-primary)]',
+          )}
         >
-          <span className="shrink-0 text-[var(--text-tertiary)]">
+          <span className={cn('shrink-0', activeSection === 'timeline' ? 'text-[var(--text-primary)]' : 'text-[var(--text-tertiary)]')}>
             <Activity size={16} />
           </span>
           <span>Timeline</span>

@@ -1,10 +1,9 @@
-// Global keyboard shortcut hook — implements `g`-prefixed navigation (g-p, g-e, g-s).
+// Global keyboard shortcut hook — implements `g`-prefixed navigation (g-e, g-s).
 import { useEffect } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 
 /**
  * Sets up global `g`-prefixed keyboard navigation:
- * - `g` then `p` → Profiles
  * - `g` then `e` → Explorer (Agents)
  * - `g` then `s` → Settings
  *
@@ -50,11 +49,6 @@ export function useGlobalKeyboardShortcuts() {
           gTimeout = null
         }
 
-        if (e.key === 'p') {
-          e.preventDefault()
-          navigate('/profiles')
-          return
-        }
         if (e.key === 'e') {
           e.preventDefault()
           navigate('/explore/agents')

@@ -1,5 +1,8 @@
 // React Query hooks for timeline analytics — heatmap, events, years, projects, and sync status.
+// Backend transport is selected at build time via packages/ui/src/lib/transport.ts.
 import { useQuery } from '@tanstack/react-query'
+
+import { request } from '@/lib/transport'
 
 /** Allowed aggregation metrics for the timeline heatmap. */
 export type TimelineMetric = 'sessions' | 'tokens' | 'turns'
@@ -72,20 +75,30 @@ function isoDateToUtcMs(date: string): number {
   )
 }
 
-/** Generic JSON fetch helper for timeline endpoints. */
-async function fetchJson<TResult>(url: string): Promise<TResult> {
-  const r = await fetch(url)
-  if (!r.ok) {
-    throw new Error(`Request failed: ${url} (${r.status})`)
-  }
-  return r.json() as Promise<TResult>
+function normalizeEvents(raw: unknown): EventsResult {
+  const r = raw as { days?: unknown[]; nextCursor?: string; next_cursor?: string }
+  const days = (r.days ?? []).map((d) => {
+    const dd = d as Record<string, unknown>
+    const groups = (dd.projectGroups ?? dd.project_groups ?? []) as unknown[]
+    return {
+      day: dd.day as string,
+      projectGroups: groups as ProjectGroup[],
+      session_count: dd.session_count as number,
+      turn_count: dd.turn_count as number,
+      token_count: dd.token_count as number,
+    }
+  })
+  return { days, nextCursor: r.nextCursor ?? r.next_cursor }
 }
 
 /** Query hook for the list of years that have timeline data. */
 export function useTimelineYears() {
   return useQuery({
     queryKey: ['timeline', 'years'],
-    queryFn: () => fetchJson<{ years: number[] }>('/api/timeline/years').then(r => r.years),
+    queryFn: async () => {
+      const r = await request<{ years: number[] }>('timeline.years', {})
+      return r.years
+    },
   })
 }
 
@@ -93,8 +106,10 @@ export function useTimelineYears() {
 export function useTimelineProjects() {
   return useQuery({
     queryKey: ['timeline', 'projects'],
-    queryFn: () =>
-      fetchJson<{ projects: string[] }>('/api/timeline/projects').then(r => r.projects),
+    queryFn: async () => {
+      const r = await request<{ projects: string[] }>('timeline.projects', {})
+      return r.projects
+    },
   })
 }
 
@@ -102,15 +117,18 @@ export function useTimelineProjects() {
 export function useTimelineStatus() {
   return useQuery({
     queryKey: ['timeline', 'status'],
-    queryFn: () => fetchJson<TimelineStatus>('/api/timeline/status'),
+    queryFn: async () => {
+      const raw = await request<Record<string, unknown>>('timeline.status', {})
+      return {
+        sessionCount: (raw.sessionCount ?? raw.session_count) as number,
+        lastSyncAt: (raw.lastSyncAt ?? raw.last_sync_at ?? null) as number | null,
+      } satisfies TimelineStatus
+    },
   })
 }
 
 /**
  * Query hook for the yearly heatmap data.
- * @param params.year - Year to fetch heatmap for.
- * @param params.metric - Aggregation metric (`sessions`, `tokens`, or `turns`).
- * @param params.project - Optional project filter.
  */
 export function useTimelineHeatmap(params: {
   year: number
@@ -120,41 +138,61 @@ export function useTimelineHeatmap(params: {
   const { year, metric, project } = params
   const fromMs = isoDateToUtcMs(`${year}-01-01`)
   const toMs = isoDateToUtcMs(`${year}-12-31`)
-  const qs = new URLSearchParams({
-    from: String(fromMs),
-    to: String(toMs),
-    metric,
-  })
-  if (project) {
-    qs.set('project', project)
-  }
   return useQuery({
     queryKey: ['timeline', 'heatmap', year, metric, project ?? null],
-    queryFn: () =>
-      fetchJson<{ data: HeatmapPoint[] }>(`/api/timeline/heatmap?${qs.toString()}`).then(
-        r => r.data,
-      ),
+    queryFn: async () => {
+      const r = await request<{ data: HeatmapPoint[] }>('timeline.heatmap', {
+        from: fromMs,
+        to: toMs,
+        metric,
+        ...(project ? { project } : {}),
+      })
+      return r.data
+    },
+  })
+}
+
+/**
+ * Date-range variant of {@link useTimelineHeatmap}.
+ */
+export function useTimelineHeatmapRange(params: {
+  from: string
+  to: string
+  metric: TimelineMetric
+  project?: string
+}) {
+  const { from, to, metric, project } = params
+  const fromMs = isoDateToUtcMs(from)
+  const toMs = isoDateToUtcMs(to)
+  return useQuery({
+    queryKey: ['timeline', 'heatmap-range', from, to, metric, project ?? null],
+    queryFn: async () => {
+      const r = await request<{ data: HeatmapPoint[] }>('timeline.heatmap', {
+        from: fromMs,
+        to: toMs,
+        metric,
+        ...(project ? { project } : {}),
+      })
+      return r.data
+    },
   })
 }
 
 /**
  * Query hook for paginated session events grouped by day.
- * @param params.project - Optional project filter.
- * @param params.year - Optional year filter.
  */
 export function useTimelineEvents(params: { project?: string; year?: number }) {
   const { project, year } = params
-  const qs = new URLSearchParams()
+  const args: Record<string, unknown> = { limit: 60 }
   if (project) {
-    qs.set('project', project)
+    args.project = project
   }
   if (year !== undefined) {
-    qs.set('from', String(isoDateToUtcMs(`${year}-01-01`)))
-    qs.set('to', String(isoDateToUtcMs(`${year}-12-31`)))
+    args.from = isoDateToUtcMs(`${year}-01-01`)
+    args.to = isoDateToUtcMs(`${year}-12-31`)
   }
-  qs.set('limit', '60')
   return useQuery({
     queryKey: ['timeline', 'events', project ?? null, year ?? null],
-    queryFn: () => fetchJson<EventsResult>(`/api/timeline/events?${qs.toString()}`),
+    queryFn: async () => normalizeEvents(await request<unknown>('timeline.events', args)),
   })
 }

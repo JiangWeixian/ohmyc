@@ -93,15 +93,16 @@ export function ModelConfigEditor({ editName, onSaved, onCancel }: ModelConfigEd
 
   const [deleteReferencedBy, setDeleteReferencedBy] = useState<string[]>([])
 
-  // Two-phase delete: first attempt (force:false) is rejected by the server if
-  // the config is referenced; the error payload surfaces the referencing profiles,
-  // which opens the confirmation dialog for a force:true retry.
+  // Two-phase delete: first attempt (force:false) is rejected by the backend
+  // if the config is referenced; the error surfaces the referencing profiles
+  // so we can open the confirmation dialog for a force:true retry.
+  // ApiError::ReferencedBy → error.detail.referencedBy.
   const handleDelete = () => {
     deleteMut.mutate({ name: editName!, force: false }, {
       onSuccess: () => onSaved(),
       onError: (error_: any) => {
-        const references = error_.data?.referencedBy
-        if (references) {
+        const references: string[] | undefined = error_?.detail?.referencedBy
+        if (references && references.length > 0) {
           setShowDeleteDialog(true)
           setDeleteReferencedBy(references)
         } else {

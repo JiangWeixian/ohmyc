@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ohmyc-core — Codebase Course</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+<script src="beautiful-mermaid.bundle.js"></script>
+</head>
+<body>
+<main class="container">
+  <div class="project-header">
+    <h1>ohmyc-core</h1>
+    <p>Domain logic for OhMyC, a desktop app that manages <code>~/.claude</code> and <code>$OHMYC_HOME</code> I/O — profiles, components, timeline, settings, and filesystem watching. Pure Rust, no Tauri imports, testable standalone.</p>
+    <div class="badges">
+      <span class="badge">Rust</span>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-title">Architecture</div>
+    <figure class="figure">
+      <button class="zoom-btn" data-zoom-trigger>Zoom</button>
+      <div class="figure-diagram"><pre class="mermaid">graph TD
+  subgraph Path["Path Resolution"]
+    ClaudeHome["claude_home"]
+    Store["store"]
+  end
+  subgraph Readers["File Readers"]
+    Components["components"]
+    Plugins["plugins"]
+    Settings["settings"]
+    Configs["configs"]
+  end
+  subgraph Core["Core Logic"]
+    Profiles["profiles"]
+    Timeline["timeline"]
+  end
+  subgraph Events["Event Layer"]
+    Watcher["watcher"]
+  end
+  ClaudeHome -->|"provides paths"| Components
+  ClaudeHome -->|"provides paths"| Plugins
+  ClaudeHome -->|"provides paths"| Settings
+  Store -->|"provides paths"| Profiles
+  Components -->|"reads agents/skills/commands"| Profiles
+  Settings -->|"reads settings.json"| Configs
+  Settings -->|"reads settings.json"| Profiles
+  Watcher -->|"emits FsEvent"| Timeline
+  Watcher -->|"emits FsEvent"| Profiles</pre></div>
+      <figcaption>ohmyc-core is organized as a layered library. Path resolution (<strong>claude_home</strong>, <strong>store</strong>) feeds file readers (<strong>components</strong>, <strong>plugins</strong>, <strong>settings</strong>, <strong>configs</strong>), which feed the core logic layer (<strong>profiles</strong>, <strong>timeline</strong>). The <strong>watcher</strong> sits at the edge, emitting typed filesystem events when files change.</figcaption>
+    </figure>
+  </div>
+
+  <div class="section">
+    <div class="section-title">Perspectives</div>
+    <div class="card-grid">
+      <a class="card" href="architecture.html"><span class="card-type">perspective</span><h3>Architecture Overview</h3><p>The finished-system map: how every module connects, what data flows where, and why the layers are arranged this way.</p><div class="card-meta">7 units</div></a>
+      <a class="card" href="build-up.html"><span class="card-type">perspective</span><h3>Build-Up Walkthrough</h3><p>Start from the smallest useful behavior — resolving a path — and add one capability at a time until the complete system emerges.</p><div class="card-meta">12 units</div></a>
+      <a class="card" href="data-flow.html"><span class="card-type">perspective</span><h3>Data Flow</h3><p>Trace how data moves through the crate: from filesystem paths, through readers and parsers, into the profiles transaction engine and SQLite timeline queries.</p><div class="card-meta">6 units</div></a>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-title">Module Deep Dives</div>
+    <div class="card-grid">
+      <a class="card" href="module-error.html"><span class="card-type">module</span><h3>error</h3><p>Canonical <code>ApiError</code> enum — JSON-serializable error type used across every module.</p><div class="card-meta">5 units</div></a>
+      <a class="card" href="module-claude-home.html"><span class="card-type">module</span><h3>claude-home</h3><p>Resolves the <code>~/.claude</code> path with optional <code>OHMYC_CLAUDE_HOME</code> environment override.</p><div class="card-meta">5 units</div></a>
+      <a class="card" href="module-store.html"><span class="card-type">module</span><h3>store</h3><p><code>$OHMYC_HOME/store/</code> CRUD — provenance index, reference checking, and model config management.</p><div class="card-meta">8 units</div></a>
+      <a class="card" href="module-components.html"><span class="card-type">module</span><h3>components</h3><p>Reads <code>.md</code> files from <code>~/.claude/{agents,skills,commands}/</code>, parsing YAML frontmatter via gray_matter.</p><div class="card-meta">8 units</div></a>
+      <a class="card" href="module-profiles.html"><span class="card-type">module</span><h3>profiles</h3><p>Profile JSON CRUD, transactional activation with undo stack, preflight dry-run, RAII file locking.</p><div class="card-meta">10 units</div></a>
+      <a class="card" href="module-plugins.html"><span class="card-type">module</span><h3>plugins</h3><p>Reads <code>installed_plugins.json</code> and <code>known_marketplaces.json</code>, merging enabled-state from settings.</p><div class="card-meta">5 units</div></a>
+      <a class="card" href="module-settings.html"><span class="card-type">module</span><h3>settings</h3><p>Atomic read/write of <code>~/.claude/settings.json</code> via temp-file + rename pattern.</p><div class="card-meta">6 units</div></a>
+      <a class="card" href="module-configs.html"><span class="card-type">module</span><h3>configs</h3><p>Reads MCP servers from <code>.mcp.json</code>, hooks, and LSP servers from settings.</p><div class="card-meta">5 units</div></a>
+      <a class="card" href="module-timeline.html"><span class="card-type">module</span><h3>timeline</h3><p>SQLite queries against <code>~/.claude/timeline.db</code> — heatmap, projects, sessions, events, years, status.</p><div class="card-meta">8 units</div></a>
+      <a class="card" href="module-watcher.html"><span class="card-type">module</span><h3>watcher</h3><p>Debounced 250ms filesystem watcher emitting typed <code>FsEvent</code> variants.</p><div class="card-meta">6 units</div></a>
+    </div>
+  </div>
+</main>
+
+<script src="mermaid-bridge.js"></script>
+<script src="runtime.js"></script>
+</body>
+</html>

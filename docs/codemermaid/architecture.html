@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Architecture Overview — ohmyc-core</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+<script src="beautiful-mermaid.bundle.js"></script>
+</head>
+<body>
+<header class="topbar">
+  <a class="back-link" href="index.html">← ohmyc-core</a>
+</header>
+
+<main class="container">
+  <section class="hero">
+    <div class="eyebrow">ohmyc-core</div>
+    <h1>Architecture Overview</h1>
+    <p class="learning-promise">See the finished system before you dive into any module. You will understand how ten modules arrange into four layers, why path resolution sits at the bottom, and how the profiles transaction engine ties everything together.</p>
+    <ul class="prereqs">
+      <li>Familiarity with Rust</li>
+      <li>Basic understanding of filesystem I/O</li>
+    </ul>
+  </section>
+
+  <nav class="toc">
+    <div class="toc-label">On this page</div>
+    <ol class="toc-list">
+      <li><a class="toc-item" href="#unit-0"><span class="toc-num">1</span>Four layers, one crate<span class="toc-kind">concept</span></a></li>
+      <li><a class="toc-item" href="#unit-1"><span class="toc-num">2</span>Layer diagram<span class="toc-kind">diagram</span></a></li>
+      <li><a class="toc-item" href="#unit-2"><span class="toc-num">3</span>Path resolution: two roots<span class="toc-kind">concept</span></a></li>
+      <li><a class="toc-item" href="#unit-3"><span class="toc-num">4</span>Module dependency graph<span class="toc-kind">diagram</span></a></li>
+      <li><a class="toc-item" href="#unit-4"><span class="toc-num">5</span>The transactional activation engine<span class="toc-kind">concept</span></a></li>
+      <li><a class="toc-item" href="#unit-5"><span class="toc-num">6</span>Check your understanding<span class="toc-kind">quiz</span></a></li>
+      <li><a class="toc-item" href="#unit-6"><span class="toc-num">7</span>Key takeaways<span class="toc-kind">takeaway</span></a></li>
+    </ol>
+  </nav>
+
+  <section class="unit unit-concept" id="unit-0">
+    <span class="unit-kind">concept</span>
+    <h2>Four layers, one crate</h2>
+    <p>ohmyc-core is a <strong>layered library crate</strong> — not a microservice, not a framework. Every module lives at one of four conceptual layers, and the dependency rule is strict: a layer only imports from layers below it, never above. The layers, from bottom to top:</p>
+    <p><strong>Path Resolution</strong> — <code>claude_home</code> and <code>store</code> know where files live on disk. They do not read or write content; they return <code>PathBuf</code> values.</p>
+    <p><strong>File Readers</strong> — <code>components</code>, <code>plugins</code>, <code>settings</code>, and <code>configs</code> take paths from the resolution layer and read + parse files. They return structured Rust types (<code>Agent</code>, <code>SettingsRead</code>, etc.) but never mutate state.</p>
+    <p><strong>Core Logic</strong> — <code>profiles</code> and <code>timeline</code> orchestrate reads, writes, and transactions. The profiles module is the largest and most complex — it owns a <strong>transactional activation engine</strong> with an undo stack.</p>
+    <p><strong>Event Layer</strong> — <code>watcher</code> sits at the edge. It watches filesystem paths and emits typed <code>FsEvent</code> variants. It does not import from core logic; it only receives paths to watch.</p>
+    <p>Notice the tradeoff: by keeping the crate as a pure library with no Tauri imports, every module is unit-testable with temp directories. That's why you see <code>ENV_LOCK</code> mutexes and <code>tempfile::tempdir()</code> throughout the tests.</p>
+  </section>
+
+  <section class="unit unit-diagram" id="unit-1">
+    <span class="unit-kind">diagram</span>
+    <h2>Layer diagram</h2>
+    <figure class="figure">
+      <button class="zoom-btn" data-zoom-trigger>Zoom</button>
+      <div class="figure-diagram"><pre class="mermaid">graph TD
+  subgraph L1["Path Resolution"]
+    CH["claude_home"]
+    ST["store"]
+  end
+  subgraph L2["File Readers"]
+    CO["components"]
+    PL["plugins"]
+    SE["settings"]
+    CF["configs"]
+  end
+  subgraph L3["Core Logic"]
+    PR["profiles"]
+    TL["timeline"]
+  end
+  subgraph L4["Event Layer"]
+    WA["watcher"]
+  end
+  L1 --> L2
+  L2 --> L3
+  L3 --> L4</pre></div>
+      <figcaption>The four layers of ohmyc-core. Each layer only imports from layers below. The <strong>profiles</strong> module in the Core Logic layer is the system's transaction engine — the only place that writes to multiple files atomically.</figcaption>
+    </figure>
+  </section>
+
+  <section class="unit unit-concept" id="unit-2">
+    <span class="unit-kind">concept</span>
+    <h2>Path resolution: two roots</h2>
+    <p>Watch this — the crate manages <strong>two separate directory trees</strong>. <code>claude_home</code> resolves <code>~/.claude</code> (overridable via <code>OHMYC_CLAUDE_HOME</code>). This is where Claude Code stores its own config: agents, skills, commands, settings, plugins, and the timeline SQLite database.</p>
+    <p><code>store</code> resolves <code>$OHMYC_HOME</code> (default <code>~/.config/ohmyc/</code>). This is OhMyC's <em>own</em> directory — imported agents, skills, commands, model configs, and profiles. The separation is deliberate: OhMyC never writes directly into <code>~/.claude</code> during CRUD operations. It only touches <code>~/.claude</code> during <strong>profile activation</strong>, when it needs to symlink or copy components into Claude Code's directories.</p>
+    <p>Why two roots? Because Claude Code owns <code>~/.claude</code>. OhMyC is a manager on top — it needs its own staging area where it can safely import, organize, and preview components before writing anything into Claude Code's config.</p>
+  </section>
+
+  <section class="unit unit-diagram" id="unit-3">
+    <span class="unit-kind">diagram</span>
+    <h2>Module dependency graph</h2>
+    <figure class="figure">
+      <button class="zoom-btn" data-zoom-trigger>Zoom</button>
+      <div class="figure-diagram"><pre class="mermaid">graph LR
+  error["error"]
+  claude_home["claude_home"] -->|"imports"| error
+  store["store"] -->|"imports"| error
+  components["components"] -->|"imports"| error
+  components -->|"imports"| claude_home
+  settings["settings"] -->|"imports"| error
+  settings -->|"imports"| claude_home
+  plugins["plugins"] -->|"imports"| error
+  plugins -->|"imports"| claude_home
+  configs["configs"] -->|"imports"| settings
+  profiles["profiles"] -->|"imports"| error
+  profiles -->|"imports"| store
+  profiles -->|"imports"| components
+  profiles -->|"imports"| settings
+  timeline["timeline"] -->|"imports"| error
+  watcher["watcher"] -->|"imports"| error</pre></div>
+      <figcaption>Every module imports <strong>error</strong> (the canonical <code>ApiError</code> enum). The <strong>profiles</strong> module is the widest importer — it pulls from <strong>store</strong>, <strong>components</strong>, and <strong>settings</strong> because activation needs to touch all three.</figcaption>
+    </figure>
+  </section>
+
+  <section class="unit unit-concept" id="unit-4">
+    <span class="unit-kind">concept</span>
+    <h2>The transactional activation engine</h2>
+    <p>Here's where it gets clever. Profile activation in <code>profiles/activation.rs</code> is a <strong>transactional state machine</strong> that performs 10+ filesystem operations (symlink agents, write plugins, merge settings, inject env vars) — and if <em>any</em> step fails, it rolls back every previous step using an <strong>undo stack</strong> of <code>UndoAction</code> variants.</p>
+    <p>The undo stack records every mutation as it happens: <code>RemoveFile(path)</code>, <code>RemoveDir(path)</code>, <code>RestoreInstalled(previous_value)</code>, <code>RestoreSettings(previous_bytes)</code>. On failure, <code>rollback()</code> replays the stack in reverse order. This is not a database transaction — it's file-level compensating actions, which is the only option when you're orchestrating plain files on disk.</p>
+    <p>The preflight module (<code>profiles/preflight.rs</code>) adds another safety layer: a <strong>dry-run</strong> that checks whether all referenced components exist, whether settings will conflict, and what environment variables will change — without writing anything. The UI calls preflight before activation to show the user a preview.</p>
+  </section>
+
+  <section class="unit unit-quiz" id="unit-5">
+    <span class="unit-kind">quiz</span>
+    <h2>Check your understanding</h2>
+    <div class="quiz">
+      <div class="quiz-question">Which module has the widest import surface — it pulls from <code>store</code>, <code>components</code>, and <code>settings</code>?</div>
+      <div class="quiz-options">
+        <div class="quiz-option" data-correct="true"><span class="quiz-option-letter">A</span><span>profiles — activation needs to read components, resolve store paths, and merge settings</span></div>
+        <div class="quiz-option" data-correct="false"><span class="quiz-option-letter">B</span><span>watcher — it needs to watch paths from every module</span></div>
+        <div class="quiz-option" data-correct="false"><span class="quiz-option-letter">C</span><span>configs — it reads MCP servers, hooks, and LSP servers from multiple sources</span></div>
+        <div class="quiz-option" data-correct="false"><span class="quiz-option-letter">D</span><span>timeline — it queries SQLite which references all other data</span></div>
+      </div>
+      <div class="quiz-explanation"><strong>Correct: A</strong> — The <code>profiles</code> module is the transaction orchestrator. During activation, it reads components from <code>~/.claude</code>, resolves store paths via <code>store</code>, and merges settings via <code>settings</code>. <strong>watcher</strong> only receives paths — it does not import those modules. <strong>configs</strong> only reads from <code>settings</code>. <strong>timeline</strong> only talks to SQLite.</div>
+    </div>
+  </section>
+
+  <section class="unit unit-takeaway" id="unit-6">
+    <div class="unit-takeaway">
+      <span class="unit-kind">takeaway</span>
+      <p>ohmyc-core is a layered Rust library with strict dependency direction: path resolution feeds file readers, file readers feed core logic, and the event layer sits at the edge. The two-root design (<code>~/.claude</code> vs <code>$OHMYC_HOME</code>) keeps OhMyC's staging area separate from Claude Code's live config. The profiles module is the heart of the system — a transactional activation engine with undo-stack rollback and preflight dry-runs. Once you see this four-layer shape, every module's responsibility lines up.</p>
+    </div>
+  </section>
+
+  <footer class="page-footer">
+    <a class="next-link" href="build-up.html">Build-Up Walkthrough →</a>
+    <p class="recap">Now that you see the finished system, the Build-Up Walkthrough reconstructs it from the smallest useful behavior — one path resolution function — and adds capabilities until the whole picture emerges.</p>
+  </footer>
+</main>
+
+<div class="zoom-overlay" hidden>
+  <div class="zoom-stage"></div>
+  <div class="zoom-controls">
+    <button data-zoom-out aria-label="Zoom out" title="Zoom out">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14"/></svg>
+    </button>
+    <span class="zoom-level" data-zoom-level>100%</span>
+    <button data-zoom-reset aria-label="Reset zoom" title="Reset zoom">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 12a9 9 0 1 0 3-6.7"/><path d="M3 4v6h6"/></svg>
+    </button>
+    <button data-zoom-in aria-label="Zoom in" title="Zoom in">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14"/><path d="M5 12h14"/></svg>
+    </button>
+    <button data-zoom-close aria-label="Close zoom" title="Close zoom">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+    </button>
+  </div>
+</div>
+
+<script src="mermaid-bridge.js"></script>
+<script src="runtime.js"></script>
+</body>
+</html>

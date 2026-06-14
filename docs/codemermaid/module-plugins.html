@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>plugins — ohmyc-core</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+<script src="beautiful-mermaid.bundle.js"></script>
+</head>
+<body>
+<header class="topbar"><a class="back-link" href="index.html">← ohmyc-core</a></header>
+<main class="container">
+  <section class="hero">
+    <div class="eyebrow">ohmyc-core · module</div>
+    <h1>plugins</h1>
+    <p class="learning-promise">Understand how the plugins module reads installed plugins and known marketplaces from <code>~/.claude/plugins/</code>, and merges enabled-state from settings.</p>
+  </section>
+  <nav class="toc">
+    <div class="toc-label">On this page</div>
+    <ol class="toc-list">
+      <li><a class="toc-item" href="#unit-0"><span class="toc-num">1</span>Read-only plugin access<span class="toc-kind">concept</span></a></li>
+      <li><a class="toc-item" href="#unit-1"><span class="toc-num">2</span>PluginInstall with passthrough fields<span class="toc-kind">code-walk</span></a></li>
+      <li><a class="toc-item" href="#unit-2"><span class="toc-num">3</span>Enabled-state merge from settings<span class="toc-kind">concept</span></a></li>
+      <li><a class="toc-item" href="#unit-3"><span class="toc-num">4</span>Check your understanding<span class="toc-kind">quiz</span></a></li>
+      <li><a class="toc-item" href="#unit-4"><span class="toc-num">5</span>Key takeaways<span class="toc-kind">takeaway</span></a></li>
+    </ol>
+  </nav>
+
+  <section class="unit unit-concept" id="unit-0">
+    <span class="unit-kind">concept</span>
+    <h2>Read-only plugin access</h2>
+    <p>The plugins module reads from <code>~/.claude/plugins/installed_plugins.json</code> and <code>known_marketplaces.json</code>. It's read-only — plugin installation and removal happen through Claude Code itself. OhMyC reads the state to show the user what's installed and to merge enabled-state during profile activation.</p>
+    <p>The module mirrors the TypeScript <code>PluginService</code> in the Claude Code CLI. The data structures (<code>PluginInstall</code>, <code>PluginManifest</code>) are designed to round-trip with the TypeScript types, preserving unknown fields via <code>#[serde(flatten)]</code>.</p>
+  </section>
+
+  <section class="unit unit-codewalk" id="unit-1">
+    <span class="unit-kind">code-walk</span>
+    <h2>PluginInstall with passthrough fields</h2>
+    <div class="codewalk-split">
+      <div class="codewalk-head">
+        <span class="codewalk-file">crates/ohmyc-core/src/plugins.rs</span>
+        <span class="file-actions">
+          <span class="editor-menu" data-editor-menu data-editor="cursor">
+            <button class="file-action-select editor-menu-trigger" type="button" aria-haspopup="listbox" aria-expanded="false" data-editor-trigger><span data-editor-current>Cursor</span><span class="gg-chevron-down" aria-hidden="true"></span></button>
+            <span class="editor-menu-list" role="listbox" hidden data-editor-list>
+              <button class="editor-menu-item" type="button" role="option" aria-selected="true" data-editor-option="cursor">Cursor</button>
+              <button class="editor-menu-item" type="button" role="option" aria-selected="false" data-editor-option="vscode">VS Code</button>
+            </span>
+          </span>
+          <button class="file-action" type="button" data-copy-path="crates/ohmyc-core/src/plugins.rs:21">Copy path</button>
+        </span>
+      </div>
+      <div class="codewalk-split-body">
+        <pre class="code-block"><span class="line" data-line="1"><span class="ln">1</span><span class="code-text">#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]</span></span><span class="line" data-line="2"><span class="ln">2</span><span class="code-text">#[serde(rename_all = "camelCase")]</span></span><span class="line" data-line="3"><span class="ln">3</span><span class="code-text">pub struct PluginInstall {</span></span><span class="line" data-line="4"><span class="ln">4</span><span class="code-text">    pub version: String,</span></span><span class="line" data-line="5"><span class="ln">5</span><span class="code-text">    pub installed_at: String,</span></span><span class="line" data-line="6"><span class="ln">6</span><span class="code-text">    pub last_updated: String,</span></span><span class="line line-hl" data-line="7"><span class="ln">7</span><span class="code-text">    #[serde(flatten)]</span></span><span class="line line-hl" data-line="8"><span class="ln">8</span><span class="code-text">    pub extra: Map&lt;String, Value&gt;,</span></span><span class="line" data-line="9"><span class="ln">9</span><span class="code-text">}</span></span></pre>
+        <div class="codewalk-annotations">
+          <div class="codewalk-annotation" data-note-lines="7,8"><span class="annotation-line">L7–8</span><p><code>#[serde(flatten)]</code> captures any unknown fields into <code>extra</code>. This is the passthrough pattern — Claude Code may add fields the Rust code doesn't know about, and this ensures JSON round-trips don't lose data.</p></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="unit unit-concept" id="unit-2">
+    <span class="unit-kind">concept</span>
+    <h2>Enabled-state merge from settings</h2>
+    <p>The <code>list_plugins</code> function reads <code>installed_plugins.json</code> and then reads <code>settings.json</code> to find the <code>enabledPlugins</code> map. Each plugin's enabled state comes from settings, not from the install record. This separation means the user can disable a plugin without uninstalling it.</p>
+    <p>During profile activation, the activation engine writes a new <code>installed_plugins.json</code> that includes the profile's plugin list, and merges enabled-state into settings. The undo stack records both files for rollback.</p>
+  </section>
+
+  <section class="unit unit-quiz" id="unit-3">
+    <span class="unit-kind">quiz</span>
+    <h2>Check your understanding</h2>
+    <div class="quiz">
+      <div class="quiz-question">Why does <code>PluginInstall</code> use <code>#[serde(flatten)]</code> on the <code>extra</code> field?</div>
+      <div class="quiz-options">
+        <div class="quiz-option" data-correct="true"><span class="quiz-option-letter">A</span><span>To preserve unknown fields from the JSON source so round-trips don't lose data when Claude Code adds new fields</span></div>
+        <div class="quiz-option" data-correct="false"><span class="quiz-option-letter">B</span><span>To reduce the number of fields in the struct</span></div>
+        <div class="quiz-option" data-correct="false"><span class="quiz-option-letter">C</span><span>To enable dynamic plugin configuration</span></div>
+        <div class="quiz-option" data-correct="false"><span class="quiz-option-letter">D</span><span>To support plugin versioning</span></div>
+      </div>
+      <div class="quiz-explanation"><strong>Correct: A</strong> — The TypeScript side may add fields the Rust code doesn't model. <code>#[serde(flatten)]</code> captures these into a map so they survive JSON round-trips. <strong>B</strong> is wrong (it doesn't reduce field count). <strong>C</strong> is wrong (it's about data preservation, not dynamic config). <strong>D</strong> is wrong (versioning is a known field).</div>
+    </div>
+  </section>
+
+  <section class="unit unit-takeaway" id="unit-4">
+    <div class="unit-takeaway">
+      <span class="unit-kind">takeaway</span>
+      <p>The plugins module is a read-only bridge to Claude Code's plugin data. The <code>#[serde(flatten)]</code> passthrough pattern ensures forward compatibility when Claude Code adds new fields. Enabled-state lives in <code>settings.json</code>, separate from install records, allowing disable-without-uninstall. During profile activation, the activation engine writes both plugin files and records them on the undo stack.</p>
+    </div>
+  </section>
+
+  <footer class="page-footer">
+    <a class="next-link" href="module-settings.html">settings →</a>
+    <p class="recap">Next: the settings module — atomic read/write of settings.json via temp-file + rename.</p>
+  </footer>
+</main>
+<div class="zoom-overlay" hidden>
+  <div class="zoom-stage"></div>
+  <div class="zoom-controls">
+    <button data-zoom-out aria-label="Zoom out" title="Zoom out"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14"/></svg></button>
+    <span class="zoom-level" data-zoom-level>100%</span>
+    <button data-zoom-reset aria-label="Reset zoom" title="Reset zoom"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 12a9 9 0 1 0 3-6.7"/><path d="M3 4v6h6"/></svg></button>
+    <button data-zoom-in aria-label="Zoom in" title="Zoom in"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14"/><path d="M5 12h14"/></svg></button>
+    <button data-zoom-close aria-label="Close zoom" title="Close zoom"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg></button>
+  </div>
+</div>
+<script src="mermaid-bridge.js"></script>
+<script src="runtime.js"></script>
+</body>
+</html>

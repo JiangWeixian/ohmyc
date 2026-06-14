@@ -105,6 +105,6 @@ describe('StoreComponentList', () => {
     renderWithProviders(<StoreComponentList category="agents" />)
 
     expect(screen.getByText('No agents in your store yet')).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: 'Import components' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Create agent' })).toBeInTheDocument()
   })
 })
