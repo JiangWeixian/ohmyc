@@ -46,7 +46,7 @@ jobs:
           workspaces: packages/desktop/src-tauri
 
       - name: Build workspace dependencies
-        run: pnpm --filter @ohmyc/timeline build
+        run: pnpm --filter '@ohmyc/desktop...' build
 
       - uses: tauri-apps/tauri-action@v0
         env:
