@@ -26,7 +26,7 @@ import type { NodeSqliteDatabase } from '@ohmyc/timeline/node-sqlite'
 // ------------------------------------------------------------------
 
 /** Returns the Claude Code plugins directory (respects AGENT_HOME env var). */
-function getPluginsDir(): string {
+export function getPluginsDir(): string {
   const base = process.env.AGENT_HOME ?? path.join(process.env.HOME ?? '~', '.claude')
   return path.join(base, 'plugins')
 }
