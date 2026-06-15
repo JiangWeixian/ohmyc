@@ -82,7 +82,7 @@ fn main() {
 
             // Tray icon
             let _tray = TrayIconBuilder::with_id("main")
-                .icon(tauri::include_image!("icons/tray-icon-Template.png"))
+                .icon(tauri::include_image!("icons/mac-computer-tray-Template@2x.png"))
                 .icon_as_template(true)
                 .menu(&menu)
                 .show_menu_on_left_click(false)
