@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 // CLI entry point — install/uninstall/sync/doctor for the timeline plugin.
-// Session ingest moved into plugins/timeline/dist/ingest.mjs (called by the
-// Stop hook directly); this binary no longer participates in the hot path.
+// Session ingest is provided by the bundled @ohmyc/timeline-plugin assets
+// installed by `ohmyc dashboard --install`.
 import { cac } from 'cac'
 
 import {

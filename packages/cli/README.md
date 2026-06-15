@@ -47,7 +47,7 @@ ohmyc dashboard --doctor
 | `--sync` | `boolean` | — | `--sync` | Scan all transcripts and import missing sessions |
 | `--doctor` | `boolean` | — | `--doctor` | Diagnose plugin, hooks, and database health |
 
-Per-session ingest is handled by the timeline plugin's bundled node entry (`plugins/timeline/dist/ingest.mjs`), invoked directly by the Claude Code Stop hook — not via this CLI.
+Per-session ingest is handled by the bundled `@ohmyc/timeline-plugin` assets installed by `ohmyc dashboard --install`; the Claude Code Stop hook invokes that plugin entry directly.
 
 ## API
 
@@ -190,7 +190,7 @@ src/
     └── services/       # 10 service modules
 ```
 
-Key dependencies: **Fastify**, **cac**, **node:sqlite** (via `@ohmyc/timeline`), **pino**/**pino-roll**.
+Key dependencies: **Fastify**, **cac**, **node:sqlite** (via `@ohmyc/timeline`), **pino**/**pino-roll**, and bundled `@ohmyc/timeline-plugin` assets for dashboard install.
 
 ---
 
