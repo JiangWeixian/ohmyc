@@ -6,6 +6,7 @@ import {
   readFileSync,
   writeFileSync,
 } from 'node:fs'
+import { createRequire } from 'node:module'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 
@@ -21,9 +22,27 @@ import { logger } from '../logger'
 import type { PluginInstall } from '@ohmyc/shared'
 import type { NodeSqliteDatabase } from '@ohmyc/timeline/node-sqlite'
 
+const TIMELINE_PLUGIN_PACKAGE = '@ohmyc/timeline-plugin'
+const require = createRequire(import.meta.url)
+
 // ------------------------------------------------------------------
 // Helpers
 // ------------------------------------------------------------------
+
+function getCurrentDir(): string {
+  return path.dirname(fileURLToPath(import.meta.url))
+}
+
+function findPackageRoot(resolvedEntry: string): string {
+  let current = path.dirname(resolvedEntry)
+  while (current !== path.dirname(current)) {
+    if (existsSync(path.join(current, 'package.json'))) {
+      return current
+    }
+    current = path.dirname(current)
+  }
+  throw new Error(`Could not find package root for ${resolvedEntry}`)
+}
 
 /** Returns the Claude Code plugins directory (respects AGENT_HOME env var). */
 export function getPluginsDir(): string {
@@ -64,16 +83,31 @@ export function hasJq(): boolean {
 }
 
 /** Resolves the timeline plugin source directory, preferring the production bundled copy. */
-export function getPluginSourceDir(): string {
-  // In development: resolve from src/commands/dashboard.ts → ../../plugins/timeline
-  // In production (bundled): resolve from dist/index.mjs → ./plugins/timeline
-  const srcPath = path.resolve(fileURLToPath(import.meta.url), '..', '..', '..', '..', 'plugins', 'timeline')
-  const distPath = path.resolve(fileURLToPath(import.meta.url), '..', '..', 'plugins', 'timeline')
+export function getBundledPluginDir(): string {
+  return path.resolve(getCurrentDir(), '..', 'plugins', 'timeline')
+}
 
-  if (existsSync(distPath)) {
-    return distPath
+export function getTimelinePluginPackageDir(): string {
+  const entryPath = require.resolve(TIMELINE_PLUGIN_PACKAGE)
+  return findPackageRoot(entryPath)
+}
+
+export function getPluginSourceDir(): string {
+  const bundledPath = getBundledPluginDir()
+  if (existsSync(bundledPath)) {
+    return bundledPath
   }
-  return srcPath
+
+  try {
+    const packagePath = getTimelinePluginPackageDir()
+    if (existsSync(packagePath)) {
+      return packagePath
+    }
+  } catch {
+    // Convert module-resolution failures into the explicit install error below.
+  }
+
+  throw new Error(`Timeline plugin package not found. Reinstall or rebuild @ohmyc/cli so ${TIMELINE_PLUGIN_PACKAGE} is available.`)
 }
 
 /** Formats a Unix timestamp into a human-readable string, or "never" when undefined/invalid. */
