@@ -361,31 +361,6 @@ importers:
         specifier: ^3.2.4
         version: 3.2.4(@types/debug@4.1.13)(@types/node@20.19.39)(jsdom@26.1.0)
 
-  plugins/timeline:
-    dependencies:
-      '@ohmyc/timeline':
-        specifier: workspace:*
-        version: link:../../packages/timeline
-      cac:
-        specifier: ^6.7.14
-        version: 6.7.14
-    devDependencies:
-      '@opencode-ai/plugin':
-        specifier: ^1.14.31
-        version: 1.14.33
-      '@types/node':
-        specifier: ^22.13.0
-        version: 22.19.21
-      '@vitest/coverage-v8':
-        specifier: ^3.2.4
-        version: 3.2.4(vitest@3.2.4(@types/debug@4.1.13)(@types/node@22.19.21)(jsdom@26.1.0))
-      tsup:
-        specifier: ^8.0.2
-        version: 8.5.1(jiti@2.6.1)(postcss@8.5.13)(tsx@4.21.0)(typescript@5.9.3)(yaml@2.8.4)
-      vitest:
-        specifier: ^3.2.4
-        version: 3.2.4(@types/debug@4.1.13)(@types/node@22.19.21)(jsdom@26.1.0)
-
 packages:
 
   '@adobe/css-tools@4.4.4':
