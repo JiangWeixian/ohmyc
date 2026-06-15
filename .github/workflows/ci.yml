@@ -79,13 +79,6 @@ jobs:
           name: cli
           working-directory: packages/cli
 
-      - name: Report Coverage (timeline-plugin)
-        if: always()
-        uses: davelosert/vitest-coverage-report-action@v2
-        with:
-          name: timeline-plugin
-          working-directory: plugins/timeline
-
   desktop-test:
     runs-on: macos-14
     steps:

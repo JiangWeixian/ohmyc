@@ -53,6 +53,9 @@ importers:
       '@ohmyc/timeline':
         specifier: workspace:*
         version: link:../timeline
+      '@ohmyc/timeline-plugin':
+        specifier: 0.0.0-snapshot-20260615111700
+        version: 0.0.0-snapshot-20260615111700(@opencode-ai/plugin@1.14.33)
       cac:
         specifier: ^6.7.14
         version: 6.7.14
@@ -357,31 +360,6 @@ importers:
       vitest:
         specifier: ^3.2.4
         version: 3.2.4(@types/debug@4.1.13)(@types/node@20.19.39)(jsdom@26.1.0)
-
-  plugins/timeline:
-    dependencies:
-      '@ohmyc/timeline':
-        specifier: workspace:*
-        version: link:../../packages/timeline
-      cac:
-        specifier: ^6.7.14
-        version: 6.7.14
-    devDependencies:
-      '@opencode-ai/plugin':
-        specifier: ^1.14.31
-        version: 1.14.33
-      '@types/node':
-        specifier: ^22.13.0
-        version: 22.19.21
-      '@vitest/coverage-v8':
-        specifier: ^3.2.4
-        version: 3.2.4(vitest@3.2.4(@types/debug@4.1.13)(@types/node@22.19.21)(jsdom@26.1.0))
-      tsup:
-        specifier: ^8.0.2
-        version: 8.5.1(jiti@2.6.1)(postcss@8.5.13)(tsx@4.21.0)(typescript@5.9.3)(yaml@2.8.4)
-      vitest:
-        specifier: ^3.2.4
-        version: 3.2.4(@types/debug@4.1.13)(@types/node@22.19.21)(jsdom@26.1.0)
 
 packages:
 
@@ -1405,6 +1383,16 @@ packages:
   '@nodelib/fs.walk@1.2.8':
     resolution: {integrity: sha512-oGB+UxlgWcgQkgwo8GcEGwemoTFt3FIO9ababBmaGwXIoBKZ+GTy0pP185beGg7Llih/NSHSV2XAs1lnznocSg==}
     engines: {node: '>= 8'}
+
+  '@ohmyc/timeline-plugin@0.0.0-snapshot-20260615111700':
+    resolution: {integrity: sha512-VhxUaA4RIsXTH7ci/7NjUJ0xSRK/PXljgtKrWO/kQ4TOpZ3BdUB0Qy9DzMc6IwrBlOHSU3KS0pu1sxf7Ai1s+g==}
+    engines: {node: '>=22'}
+    peerDependencies:
+      '@opencode-ai/plugin': ^1.14.31
+
+  '@ohmyc/timeline@0.0.0-snapshot-20260614095355':
+    resolution: {integrity: sha512-kxai1Fysv8/eEthO5Nj0pcU3SGIrS/7J1GGYiHvVHrbCXAbxbZyaDHBWmHWsH8oiKaeJouiy4vIKDJRWvKY9Ug==}
+    engines: {node: '>=22'}
 
   '@opencode-ai/plugin@1.14.33':
     resolution: {integrity: sha512-C99NmgKgrLHsyNvTFLmmCq7sBnEB1CtuUK+f0dzGlhcxQfV5vEOLeX3PGSWd42ko+kabHLmMWXDiKScNPvSLBA==}
@@ -8310,6 +8298,14 @@ snapshots:
     dependencies:
       '@nodelib/fs.scandir': 2.1.5
       fastq: 1.20.1
+
+  '@ohmyc/timeline-plugin@0.0.0-snapshot-20260615111700(@opencode-ai/plugin@1.14.33)':
+    dependencies:
+      '@ohmyc/timeline': 0.0.0-snapshot-20260614095355
+      '@opencode-ai/plugin': 1.14.33
+      cac: 6.7.14
+
+  '@ohmyc/timeline@0.0.0-snapshot-20260614095355': {}
 
   '@opencode-ai/plugin@1.14.33':
     dependencies:

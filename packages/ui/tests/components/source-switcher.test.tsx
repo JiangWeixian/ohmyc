@@ -12,7 +12,7 @@ import { REGISTERED_ORIGINS, useSources } from '@/state/sources'
 
 describe('SourceSwitcher', () => {
   beforeEach(() => {
-    localStorage.clear()
+    globalThis.localStorage.clear()
     useSources.setState({ selected: new Set(REGISTERED_ORIGINS) })
   })
 

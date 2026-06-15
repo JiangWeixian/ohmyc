@@ -18,7 +18,7 @@ interface SourcesStore {
 
 function readStored(): Set<Origin> | null {
   try {
-    const raw = localStorage.getItem(STORAGE_KEY)
+    const raw = globalThis.localStorage.getItem(STORAGE_KEY)
     if (!raw) {
       return null
     }
@@ -40,7 +40,7 @@ function readStored(): Set<Origin> | null {
 
 function persist(selected: Set<Origin>) {
   try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify([...selected].toSorted()))
+    globalThis.localStorage.setItem(STORAGE_KEY, JSON.stringify([...selected].toSorted()))
   } catch {
     // localStorage write failure is non-fatal — selection still works in-memory.
   }

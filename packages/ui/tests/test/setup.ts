@@ -11,6 +11,37 @@ class ResizeObserverMock {
 
 globalThis.ResizeObserver = ResizeObserverMock
 
+const localStorageState = new Map<string, string>()
+const localStorageMock: Storage = {
+  get length() {
+    return localStorageState.size
+  },
+  clear() {
+    localStorageState.clear()
+  },
+  getItem(key) {
+    return localStorageState.get(key) ?? null
+  },
+  key(index) {
+    return [...localStorageState.keys()][index] ?? null
+  },
+  removeItem(key) {
+    localStorageState.delete(key)
+  },
+  setItem(key, value) {
+    localStorageState.set(key, value)
+  },
+}
+
+Object.defineProperty(globalThis, 'localStorage', {
+  value: localStorageMock,
+  configurable: true,
+})
+Object.defineProperty(globalThis, 'localStorage', {
+  value: localStorageMock,
+  configurable: true,
+})
+
 // jsdom doesn't implement these PointerEvent APIs that Radix uses; stub them
 // so dropdown-menu interactions work under test. Guards keep this idempotent.
 if (!('PointerEvent' in globalThis)) {
