@@ -54,8 +54,8 @@ importers:
         specifier: workspace:*
         version: link:../timeline
       '@ohmyc/timeline-plugin':
-        specifier: 0.0.0-snapshot-20260614095355
-        version: 0.0.0-snapshot-20260614095355(@opencode-ai/plugin@1.14.33)
+        specifier: 0.0.0-snapshot-20260615111700
+        version: 0.0.0-snapshot-20260615111700(@opencode-ai/plugin@1.14.33)
       cac:
         specifier: ^6.7.14
         version: 6.7.14
@@ -1409,8 +1409,8 @@ packages:
     resolution: {integrity: sha512-oGB+UxlgWcgQkgwo8GcEGwemoTFt3FIO9ababBmaGwXIoBKZ+GTy0pP185beGg7Llih/NSHSV2XAs1lnznocSg==}
     engines: {node: '>= 8'}
 
-  '@ohmyc/timeline-plugin@0.0.0-snapshot-20260614095355':
-    resolution: {integrity: sha512-ElJ3RbyIJpOjBhz89ydQHZ6yMihTsj9Ftqy9Lw+A8aLr6Z5aq7H60WYEadwoLq1lmDT979NAQ3gWNcMcuwQYWw==}
+  '@ohmyc/timeline-plugin@0.0.0-snapshot-20260615111700':
+    resolution: {integrity: sha512-VhxUaA4RIsXTH7ci/7NjUJ0xSRK/PXljgtKrWO/kQ4TOpZ3BdUB0Qy9DzMc6IwrBlOHSU3KS0pu1sxf7Ai1s+g==}
     engines: {node: '>=22'}
     peerDependencies:
       '@opencode-ai/plugin': ^1.14.31
@@ -8324,7 +8324,7 @@ snapshots:
       '@nodelib/fs.scandir': 2.1.5
       fastq: 1.20.1
 
-  '@ohmyc/timeline-plugin@0.0.0-snapshot-20260614095355(@opencode-ai/plugin@1.14.33)':
+  '@ohmyc/timeline-plugin@0.0.0-snapshot-20260615111700(@opencode-ai/plugin@1.14.33)':
     dependencies:
       '@ohmyc/timeline': 0.0.0-snapshot-20260614095355
       '@opencode-ai/plugin': 1.14.33
