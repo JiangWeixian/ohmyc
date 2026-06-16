@@ -13,12 +13,9 @@ function useBreadcrumb(): { root: string; current: string } {
     const labels: Record<string, string> = {
       timeline: 'Timeline',
       agents: 'Agents',
-      skills: 'Skills',
       commands: 'Commands',
       plugins: 'Plugins',
-      hooks: 'Hooks',
-      mcp: 'MCP Servers',
-      lsp: 'LSP Servers',
+      skills: 'Skills',
     }
     return { root: 'Explorer', current: labels[tab] ?? 'Timeline' }
   }

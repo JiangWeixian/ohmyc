@@ -97,18 +97,12 @@ git commit -m "docs(ui): record sidebar core tabs decision"
 - Modify: `packages/ui/src/explorer.tsx`
 - Modify: `packages/ui/src/components/header.tsx`
 
-- [ ] **Step 1: Add `within` to the Testing Library imports**
+- [ ] **Step 1: Keep the Testing Library imports unchanged**
 
-In `packages/ui/tests/explorer.inventory.test.tsx`, replace:
+In `packages/ui/tests/explorer.inventory.test.tsx`, keep the existing import:
 
 ```tsx
 import { fireEvent, screen } from '@testing-library/react'
-```
-
-with:
-
-```tsx
-import { fireEvent, screen, within } from '@testing-library/react'
 ```
 
 - [ ] **Step 2: Delete the obsolete config hook mock**
@@ -196,21 +190,19 @@ with these tests:
       { route: '/explore/plugins' },
     )
 
-    expect(screen.getByRole('button', { name: 'Timeline' })).toBeInTheDocument()
-    expect(screen.getByRole('tab', { name: 'Agents' })).toBeInTheDocument()
-    expect(screen.getByRole('tab', { name: 'Commands' })).toBeInTheDocument()
-    expect(screen.getByRole('tab', { name: 'Skills' })).toBeInTheDocument()
-    expect(screen.getByRole('tab', { name: 'Plugins' })).toBeInTheDocument()
-    expect(screen.getAllByRole('tab').map(tab => tab.textContent)).toEqual([
+    const tabs = [...document.querySelectorAll('[role="tab"]')]
+    const timelineButton = document.querySelector('aside button')
+
+    expect(timelineButton?.textContent).toBe('Timeline')
+    expect(tabs.map(tab => tab.textContent)).toEqual([
       'Agents',
       'Commands',
       'Skills',
       'Plugins',
     ])
-
-    expect(screen.queryByRole('tab', { name: 'Hooks' })).not.toBeInTheDocument()
-    expect(screen.queryByRole('tab', { name: 'MCP Servers' })).not.toBeInTheDocument()
-    expect(screen.queryByRole('tab', { name: 'LSP Servers' })).not.toBeInTheDocument()
+    expect(tabs.map(tab => tab.textContent)).not.toContain('Hooks')
+    expect(tabs.map(tab => tab.textContent)).not.toContain('MCP Servers')
+    expect(tabs.map(tab => tab.textContent)).not.toContain('LSP Servers')
   })
 
   it('shows plugin inventory details without the Environment summary', () => {
@@ -269,13 +261,14 @@ with this table-driven test:
       { route },
     )
 
-    const main = screen.getByRole('main')
-    const header = screen.getByRole('banner')
+    const main = document.querySelector('main')
+    const timelineHeading = document.querySelector('main h1')
+    const breadcrumb = document.querySelector('main header nav')
 
-    expect(within(main).getByRole('heading', { name: 'Timeline' })).toBeInTheDocument()
-    expect(within(header).getByText('Timeline')).toBeInTheDocument()
-    expect(within(header).queryByText(removedHeading)).not.toBeInTheDocument()
-    expect(screen.queryByRole('heading', { name: removedHeading })).not.toBeInTheDocument()
+    expect(timelineHeading?.textContent).toBe('Timeline')
+    expect(breadcrumb?.textContent).toContain('Timeline')
+    expect(breadcrumb?.textContent).not.toContain(removedHeading)
+    expect(main?.textContent).not.toContain(removedHeading)
     expect(screen.queryByText(removedEmptyState)).not.toBeInTheDocument()
   })
 ```

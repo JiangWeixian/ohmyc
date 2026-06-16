@@ -1,19 +1,15 @@
-// Explorer view — browse agents, skills, commands, plugins, hooks, MCP/LSP configs via sidebar tabs.
+// Explorer view — browse timeline activity plus agents, commands, skills, and plugins.
 import {
-  Anchor,
   Blocks,
   Bot,
-  Code,
   Info,
   Search,
-  Server,
   Sparkles,
   TerminalSquare,
 } from 'lucide-react'
 import { useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 
-import { ConfigSection } from './components/config-section'
 import { EntityCard } from './components/entity-card'
 import { EntityDetail } from './components/entity-detail'
 import { Header } from './components/header'
@@ -26,13 +22,6 @@ import {
   useAgents,
 } from './hooks/use-agents'
 import { useCommand, useCommands } from './hooks/use-commands'
-import {
-  type ConfigEntry,
-  type HookEntry,
-  useHooks,
-  useLspServers,
-  useMcpServers,
-} from './hooks/use-configs'
 import { useMarketplaces, usePlugins } from './hooks/use-plugins'
 import { useSkill, useSkills } from './hooks/use-skills'
 import { cn } from '@/lib/utils'
@@ -47,24 +36,18 @@ import type {
 
 const SECTIONS: SidebarSection[] = [
   { id: 'agents', label: 'Agents', icon: Bot },
-  { id: 'skills', label: 'Skills', icon: Sparkles },
   { id: 'commands', label: 'Commands', icon: TerminalSquare },
+  { id: 'skills', label: 'Skills', icon: Sparkles },
   { id: 'plugins', label: 'Plugins', icon: Blocks },
-  { id: 'hooks', label: 'Hooks', icon: Anchor },
-  { id: 'mcp', label: 'MCP Servers', icon: Server },
-  { id: 'lsp', label: 'LSP Servers', icon: Code },
 ]
 
 // Section descriptions
-const SECTION_DESCRIPTIONS: Record<string, string> = {
+const SECTION_DESCRIPTIONS: Record<'agents' | 'commands' | 'skills', string> = {
   agents:
     'Discover and manage your autonomous team. Each agent has unique capabilities tailored for different development tasks.',
+  commands: 'Custom slash commands you can invoke with ',
   skills:
     "Extend Claude's capabilities with custom skills. Each skill provides specialized instructions for specific tasks.",
-  commands: 'Custom slash commands you can invoke with ',
-  'mcp-servers': 'Model Context Protocol servers providing external tools and services.',
-  hooks: 'Event handlers that respond to Claude Code lifecycle events.',
-  'lsp-servers': 'Language Server Protocol servers providing code intelligence.',
 }
 
 // ═══════════ Entity Card Configurations ═══════════
@@ -95,8 +78,8 @@ interface ExplorerProperties {
 }
 
 /**
- * Main explorer view — renders a sidebar with section tabs and a detail panel
- * for the selected agent, skill, command, plugin, hook, MCP server, or LSP server.
+ * Main explorer view — renders Timeline plus the core resource tabs:
+ * agents, commands, skills, and plugins.
  */
 export function Explorer({ viewSwitcher }: ExplorerProperties) {
   const { tab } = useParams<{ tab: string }>()
@@ -114,38 +97,8 @@ export function Explorer({ viewSwitcher }: ExplorerProperties) {
   const { data: commands, isError: commandsError } = useCommands()
   const { data: selectedCommand } = useCommand(activeSection === 'commands' ? selectedItem : null)
 
-  const { data: mcpServers, isError: mcpError } = useMcpServers()
-  const { data: hooks, isError: hooksError } = useHooks()
-  const { data: lspServers, isError: lspError } = useLspServers()
   const { data: plugins, isError: pluginsError } = usePlugins()
   const { data: marketplaces } = useMarketplaces()
-
-  const hookCount = (hooks ?? []).length
-  const mcpCount = (mcpServers ?? []).length
-  const lspCount = (lspServers ?? []).length
-
-  const renderEnvironmentSummary = () => (
-    <section className="panel p-7">
-      <div className="flex items-baseline justify-between">
-        <h2 className="text-[18px] font-semibold tracking-[-0.02em] text-[var(--text-primary)]">Environment</h2>
-        <span className="text-[12px] text-[var(--text-tertiary)]">Current workspace</span>
-      </div>
-      <div className="mt-6 grid gap-4 md:grid-cols-3">
-        <div className="panel-subtle transition-smooth px-5 py-4 hover:border-[var(--border-hover)]">
-          <div className="text-[12px] font-medium tracking-[0.02em] text-[var(--text-tertiary)]">Hooks</div>
-          <div className="mt-1 text-[24px] font-semibold tabular-nums tracking-[-0.03em] text-[var(--text-primary)]">{hookCount}</div>
-        </div>
-        <div className="panel-subtle transition-smooth px-5 py-4 hover:border-[var(--border-hover)]">
-          <div className="text-[12px] font-medium tracking-[0.02em] text-[var(--text-tertiary)]">MCP servers</div>
-          <div className="mt-1 text-[24px] font-semibold tabular-nums tracking-[-0.03em] text-[var(--text-primary)]">{mcpCount}</div>
-        </div>
-        <div className="panel-subtle transition-smooth px-5 py-4 hover:border-[var(--border-hover)]">
-          <div className="text-[12px] font-medium tracking-[0.02em] text-[var(--text-tertiary)]">LSP servers</div>
-          <div className="mt-1 text-[24px] font-semibold tabular-nums tracking-[-0.03em] text-[var(--text-primary)]">{lspCount}</div>
-        </div>
-      </div>
-    </section>
-  )
 
   // Get current section config
   const getSectionConfig = (sectionId: string) => {
@@ -344,10 +297,7 @@ export function Explorer({ viewSwitcher }: ExplorerProperties) {
 
   const renderPlugins = () => {
     return (
-    <div className="space-y-6">
-      {renderEnvironmentSummary()}
-
-      <section>
+    <section>
         <SectionHeader
           title="Plugins"
           description="Inspect installed plugins, enabled state, and bundled component counts for the current environment."
@@ -427,23 +377,9 @@ export function Explorer({ viewSwitcher }: ExplorerProperties) {
           </div>
               )}
         {/* eslint-enable unicorn/no-nested-ternary */}
-      </section>
-    </div>
+    </section>
     )
   }
-
-  const renderConfigSection = (
-    _id: 'hooks' | 'lsp' | 'mcp',
-    config: {
-      title: string
-      description: string
-      data: ConfigEntry[] | undefined
-      isError: boolean
-      icon: typeof Server
-      iconColor: string
-      emptyMessage: string
-    },
-  ) => <ConfigSection {...config} />
 
   return (
     <div className="flex h-full min-w-0 font-sans text-[var(--text-primary)]">
@@ -467,39 +403,6 @@ export function Explorer({ viewSwitcher }: ExplorerProperties) {
             {activeSection === 'agents' && renderEntityList('agents')}
             {activeSection === 'skills' && renderEntityList('skills')}
             {activeSection === 'commands' && renderEntityList('commands')}
-            {activeSection === 'mcp' && (
-              renderConfigSection('mcp', {
-                title: 'MCP Servers',
-                description: SECTION_DESCRIPTIONS['mcp-servers'],
-                data: mcpServers,
-                isError: mcpError,
-                icon: Server,
-                iconColor: 'text-[var(--text-primary)]',
-                emptyMessage: 'No MCP servers configured in .mcp.json',
-              })
-            )}
-            {activeSection === 'hooks' && (
-              renderConfigSection('hooks', {
-                title: 'Hooks',
-                description: SECTION_DESCRIPTIONS.hooks,
-                data: hooks?.map((h: HookEntry) => ({ ...h, config: h.data })),
-                isError: hooksError,
-                icon: Anchor,
-                iconColor: 'text-[var(--text-secondary)]',
-                emptyMessage: 'No hooks configured in settings.json',
-              })
-            )}
-            {activeSection === 'lsp' && (
-              renderConfigSection('lsp', {
-                title: 'LSP Servers',
-                description: SECTION_DESCRIPTIONS['lsp-servers'],
-                data: lspServers,
-                isError: lspError,
-                icon: Code,
-                iconColor: 'text-[var(--text-tertiary)]',
-                emptyMessage: 'No LSP servers configured in .lsp.json',
-              })
-            )}
             {activeSection === 'plugins' && renderPlugins()}
             {activeSection === 'claude-md' && renderPlaceholder()}
           </div>

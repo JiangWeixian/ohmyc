@@ -43,34 +43,6 @@ vi.mock('@/hooks/use-commands', () => ({
   useCommand: () => ({ data: null }),
 }))
 
-vi.mock('@/hooks/use-configs', () => ({
-  useMcpServers: () => ({
-    data: [
-      { name: 'filesystem', config: {}, source: 'local' },
-      { name: 'github', config: {}, source: 'local' },
-    ],
-    isLoading: false,
-    isError: false,
-  }),
-  useHooks: () => ({
-    data: [
-      { event: 'PreToolUse', name: 'PreToolUse [0]', data: {}, source: 'local' },
-      { event: 'PostToolUse', name: 'PostToolUse [0]', data: {}, source: 'local' },
-    ],
-    isLoading: false,
-    isError: false,
-  }),
-  useLspServers: () => ({
-    data: [
-      { name: 'typescript', config: {}, source: 'local' },
-      { name: 'eslint', config: {}, source: 'local' },
-      { name: 'rust', config: {}, source: 'local' },
-    ],
-    isLoading: false,
-    isError: false,
-  }),
-}))
-
 vi.mock('@/hooks/use-plugins', () => ({
   usePlugins: () => ({
     data: [
@@ -98,7 +70,7 @@ vi.mock('@/hooks/use-plugins', () => ({
 }))
 
 describe('Explorer inventory views', () => {
-  it('shows current environment summary and plugin inventory details', () => {
+  it('shows Timeline plus only the four core Explorer resource tabs in the sidebar', () => {
     renderWithProviders(
       <Routes>
         <Route path="/explore/:tab" element={<Explorer />} />
@@ -106,30 +78,42 @@ describe('Explorer inventory views', () => {
       { route: '/explore/plugins' },
     )
 
-    expect(screen.getByText('Environment')).toBeInTheDocument()
-    expect(screen.getAllByText('Hooks').length).toBeGreaterThan(0)
-    expect(screen.getAllByText('2').length).toBeGreaterThan(0)
-    expect(screen.getByText('MCP servers')).toBeInTheDocument()
-    expect(screen.getByText('LSP servers')).toBeInTheDocument()
+    const tabs = [...document.querySelectorAll('[role="tab"]')]
+    const timelineButton = document.querySelector('aside button')
+
+    expect(timelineButton?.textContent).toBe('Timeline')
+    expect(tabs.map(tab => tab.textContent)).toEqual([
+      'Agents',
+      'Commands',
+      'Skills',
+      'Plugins',
+    ])
+    expect(tabs.map(tab => tab.textContent)).not.toContain('Hooks')
+    expect(tabs.map(tab => tab.textContent)).not.toContain('MCP Servers')
+    expect(tabs.map(tab => tab.textContent)).not.toContain('LSP Servers')
+  })
+
+  it('shows plugin inventory details without the Environment summary', () => {
+    renderWithProviders(
+      <Routes>
+        <Route path="/explore/:tab" element={<Explorer />} />
+      </Routes>,
+      { route: '/explore/plugins' },
+    )
+
+    expect(screen.queryByText('Environment')).not.toBeInTheDocument()
+    expect(screen.queryByText('Current workspace')).not.toBeInTheDocument()
+    expect(screen.queryByText('Hooks')).not.toBeInTheDocument()
+    expect(screen.queryByText('MCP servers')).not.toBeInTheDocument()
+    expect(screen.queryByText('LSP servers')).not.toBeInTheDocument()
+
     expect(screen.getByText('review-pack')).toBeInTheDocument()
     expect(screen.getByText('Enabled')).toBeInTheDocument()
     expect(screen.getByText('Agents: 1')).toBeInTheDocument()
     expect(screen.getByText('Skills: 1')).toBeInTheDocument()
     expect(screen.getByText('Commands: 1')).toBeInTheDocument()
-  })
-
-  it('shows the current environment summary only on plugins tab', () => {
-    renderWithProviders(
-      <Routes>
-        <Route path="/explore/:tab" element={<Explorer />} />
-      </Routes>,
-      { route: '/explore/plugins' },
-    )
-
-    expect(screen.getByText('Environment')).toBeInTheDocument()
-    expect(screen.getAllByText('Hooks').length).toBeGreaterThan(0)
-    expect(screen.getAllByText('MCP servers').length).toBeGreaterThan(0)
-    expect(screen.getAllByText('LSP servers').length).toBeGreaterThan(0)
+    expect(screen.getByText('Installs: 1')).toBeInTheDocument()
+    expect(screen.getByText('Marketplace: market')).toBeInTheDocument()
   })
 
   it('renders flattened permission.* rows and mode in the detail panel for opencode agents', async () => {
@@ -155,15 +139,27 @@ describe('Explorer inventory views', () => {
     expect(screen.getByText('ask')).toBeInTheDocument()
   })
 
-  it('does not show environment summary on hooks tab', () => {
+  it.each([
+    ['/explore/hooks', 'Hooks', 'No hooks configured in settings.json'],
+    ['/explore/mcp', 'MCP Servers', 'No MCP servers configured in .mcp.json'],
+    ['/explore/lsp', 'LSP Servers', 'No LSP servers configured in .lsp.json'],
+  ])('treats %s as a removed Explorer tab and falls back to Timeline content', (route, removedHeading, removedEmptyState) => {
     renderWithProviders(
       <Routes>
         <Route path="/explore/:tab" element={<Explorer />} />
       </Routes>,
-      { route: '/explore/hooks' },
+      { route },
     )
 
-    expect(screen.queryByText('Environment')).not.toBeInTheDocument()
+    const main = document.querySelector('main')
+    const timelineHeading = document.querySelector('main h1')
+    const breadcrumb = document.querySelector('main header nav')
+
+    expect(timelineHeading?.textContent).toBe('Timeline')
+    expect(breadcrumb?.textContent).toContain('Timeline')
+    expect(breadcrumb?.textContent).not.toContain(removedHeading)
+    expect(main?.textContent).not.toContain(removedHeading)
+    expect(screen.queryByText(removedEmptyState)).not.toBeInTheDocument()
   })
 
   it('treats /explore/settings as an invalid tab and falls back to timeline content', () => {
