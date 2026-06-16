@@ -4,10 +4,10 @@
 **Before any visual or UI work, read [DESIGN.md](./DESIGN.md).** It is the source of truth for:
 
 - Visual system (color, typography, spacing, elevation) — *settled, don't redesign*
-- **Layout & Interaction** — placement of header chrome, ⌘K palette, Compare panel, default route, Explorer rules
+- **Layout & Interaction** — placement of header chrome, ⌘K palette, default route, Explorer rules
 - Decisions Log — every visual/layout decision and its rationale
 
-Companion artifact: pixel-level wireframe index at `~/.gstack/projects/JiangWeixian-claudeui/designs/layout-interaction-20260426/index.html` (8 per-screen files: Profiles, ⌘K palette, Compare, Explorer, Profiles→Agents, Profile editor, Agent detail, Agent editor). Open the index, then jump to the screen you're touching before changing header / palette / compare layout.
+Companion artifact: pixel-level wireframe index at `~/.gstack/projects/JiangWeixian-claudeui/designs/layout-interaction-20260426/index.html`. Treat retired screens in that artifact as archived references; use DESIGN.md as the active source of truth before changing header, palette, or Explorer layout.
 
 When a UI change conflicts with DESIGN.md, update DESIGN.md *first* (add a Decisions Log row + amend the relevant section), then implement. Don't let code drift ahead of the doc.
 

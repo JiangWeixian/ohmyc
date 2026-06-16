@@ -1,6 +1,6 @@
 # @ohmyc/cli
 
-Local HTTP server and CLI that manages `.claude` agent configs, profiles, plugins, and timeline analytics for [OhMyC](https://github.com/JiangWeixian/ohmyc).
+Local HTTP server and CLI that manages `.claude` agent configs, plugins, store components, and timeline analytics for [OhMyC](https://github.com/JiangWeixian/ohmyc).
 
 ## Quick Start
 
@@ -74,22 +74,9 @@ Each inventory type is resolved from the OhMyC store, enabled plugins, and the p
 | `GET` | `/api/commands` | List commands |
 | `GET` | `/api/commands/:name` | Get command detail |
 
-### Profiles
-
-| Method | Path | Description |
-| --- | --- | --- |
-| `GET` | `/api/profiles` | List profiles with active indicator |
-| `POST` | `/api/profiles` | Create a profile |
-| `GET` | `/api/profiles/:name` | Get a profile |
-| `PUT` | `/api/profiles/:name` | Update a profile |
-| `DELETE` | `/api/profiles/:name` | Delete a profile (cannot delete active) |
-| `GET` | `/api/profiles/:name/preflight` | Preview activation changes |
-| `POST` | `/api/profiles/:name/activate` | Activate (writes symlinks and settings) |
-| `POST` | `/api/profiles/:name/deactivate` | Deactivate current profile |
-
 ### Store
 
-CRUD for user-managed store components. Delete checks profile references unless `?force=true`.
+CRUD for user-managed store components.
 
 | Method | Path | Description |
 | --- | --- | --- |
@@ -139,7 +126,6 @@ Directory layout:
 ├── agents/                      # user-managed agent definitions
 ├── skills/                      # user-managed skill definitions
 ├── commands/                    # user-managed command definitions
-├── profiles/<name>/profile.json
 ├── store/                       # agents, skills, commands, model-configs
 ├── settings.json
 └── logs/                        # daily-rotated pino logs

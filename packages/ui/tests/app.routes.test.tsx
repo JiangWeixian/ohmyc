@@ -31,13 +31,12 @@ vi.mock('@/hooks/use-commands', () => ({
 }))
 
 describe('App routes', () => {
-  it('redirects /profiles paths to the Explorer timeline fallback', async () => {
-    renderWithProviders(<App />, { route: '/profiles/daily' })
+  it('redirects unknown paths to the Explorer timeline fallback', async () => {
+    renderWithProviders(<App />, { route: '/legacy/missing' })
 
     await waitFor(() => {
       expect(screen.getByTestId('explorer-route')).toBeInTheDocument()
     })
-    expect(screen.queryByText(/Profiles/i)).not.toBeInTheDocument()
   })
 
   it('keeps /explore routed through Explorer', async () => {

@@ -17,8 +17,7 @@ const bodyStyle = document.body.style
  * (`index.html`). We branch on the window label here:
  *  - `popover` → transparent body, rounded-corner mask, render <Menubar />.
  *  - `main`    → opaque body, normal scroll, render full <App /> with
- *                initial route seeded to `/timeline` (slice 2 default;
- *                reverted in slice 7 when Profiles is migrated).
+ *                initial route seeded to `/timeline`.
  */
 const label = getCurrentWebviewWindow().label
 
