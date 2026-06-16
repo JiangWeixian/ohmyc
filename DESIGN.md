@@ -280,7 +280,7 @@ packages/ui/src/
 
 The visual system above is settled. This section governs **how the app is laid out and operated** — what lives where on the page, what the keyboard does, and which surfaces are the canonical entry points. Visual changes go in the sections above; placement / behavior changes go here.
 
-**Master thesis:** Explorer is the product shell. Timeline is the default activity surface; Agents, Skills, Commands, Plugins, Hooks, MCP, LSP, and Settings sit behind the same left navigation. Profiles were archived on 2026-06-16 behind the Git tag `archive/profiles-before-removal-20260616` and are no longer part of the active product.
+**Master thesis:** Explorer is the product shell. Timeline is the default activity surface; Agents, Skills, Commands, Plugins, Hooks, MCP, and LSP sit behind the same left navigation. Settings UI was removed on 2026-06-16; lower-level settings read/write APIs remain available for configuration flows that need them. Profiles were archived on 2026-06-16 behind the Git tag `archive/profiles-before-removal-20260616` and are no longer part of the active product.
 
 ### Default route
 - Landing route is `/explore/timeline`.
@@ -299,12 +299,12 @@ The visual system above is settled. This section governs **how the app is laid o
   - **Visually a search input; behaviorally a button** — clicking opens the palette.
 - **Open behavior:** ⌘K (or Ctrl+K) anywhere, or click the pill. Opens a centered dialog at Level 4 elevation (`#191a1b` + dialog shadow stack), 640px wide, max-height 480px, with backdrop dim `rgba(0,0,0,0.6)`.
 - **Command groups (in order):**
-  1. **Go to** — `Agents`, `Skills`, `Commands`, `Timeline`, `Settings`
+  1. **Go to** — `Agents`, `Skills`, `Commands`, `Timeline`
   2. **Search** — typed-in token searches across agents, skills, and commands
 - **Keyboard map (inside palette):** ↑/↓ navigate, ↵ run, Esc close.
 - **Global keyboard map (when palette is closed):**
   - `g a` — go to Agents
-  - `g s` — go to Skills or Settings according to the existing route context
+  - `g s` — go to Skills
   - `g c` — go to Commands
   - These bindings are silent when focus is in a text input.
 
@@ -348,6 +348,7 @@ The header renders the breadcrumb, Explorer-only source switcher, and command pa
 | 2026-05-13 | Header gains Explorer-only Source switcher next to the ⌘K pill | Default = all sources, persisted to `localStorage` as `ohmyc.sources`. Last-on guard prevents zero-state. Exception to header-chrome-uniformity rule because filter is Explorer-specific |
 | 2026-05-13 | EntityCard takes provider-supplied `badges`; per-entity-type switch removed | Schema branching belonged in the provider, not the card. Origin chip on the card header is `entity.origins.join(' · ')` so shared skills (claude · opencode · agents) read at a glance |
 | 2026-06-16 | Profiles archived and removed from product/backend surfaces | The restore point is Git tag `archive/profiles-before-removal-20260616`; user `$OHMYC_HOME/profiles` data is left untouched but no longer read or maintained |
+| 2026-06-16 | Settings UI removed from Explorer and ⌘K surfaces | Settings page entry points and components were deleted; `g s` now maps only to Skills. Lower-level settings APIs remain for non-page configuration flows |
 
 ## Migration Checklist
 
