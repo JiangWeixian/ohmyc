@@ -1,7 +1,5 @@
 //! Tauri command wrappers for ohmyc-core::store CRUD. 4 entity types ×
-//! 5 ops (list/get/create/update/delete). Delete commands honor a
-//! `force` flag — when false, refuse if any profile references the
-//! component and return Conflict with the referencing profile names.
+//! 5 ops (list/get/create/update/delete).
 
 use ohmyc_core::components::agents::Agent;
 use ohmyc_core::components::commands::Command;
@@ -12,7 +10,6 @@ use ohmyc_core::store::{
     self,
     model_configs::{self, ModelConfig},
     provenance::{self, ComponentKind, Provenance},
-    references,
 };
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
@@ -165,18 +162,7 @@ pub fn store_agents_update(name: String, body: UpdateAgentBody) -> Result<GetAge
 }
 
 #[tauri::command]
-pub fn store_agents_delete(name: String, force: Option<bool>) -> Result<DeleteOk, ApiError> {
-    if !force.unwrap_or(false) {
-        let profiles_dir = store::store_profiles_dir()?;
-        let refs = references::referencing_profiles(&profiles_dir, ComponentKind::Agents, &name)?;
-        if !refs.is_empty() {
-            return Err(ApiError::ReferencedBy {
-                kind: "agent",
-                name,
-                profiles: refs,
-            });
-        }
-    }
+pub fn store_agents_delete(name: String, _force: Option<bool>) -> Result<DeleteOk, ApiError> {
     let dir = store::store_agents_dir()?;
     let removed = agents::delete(&dir, &name)?;
     if !removed {
@@ -256,18 +242,7 @@ pub fn store_skills_update(name: String, body: UpdateSkillBody) -> Result<GetSki
 }
 
 #[tauri::command]
-pub fn store_skills_delete(name: String, force: Option<bool>) -> Result<DeleteOk, ApiError> {
-    if !force.unwrap_or(false) {
-        let profiles_dir = store::store_profiles_dir()?;
-        let refs = references::referencing_profiles(&profiles_dir, ComponentKind::Skills, &name)?;
-        if !refs.is_empty() {
-            return Err(ApiError::ReferencedBy {
-                kind: "skill",
-                name,
-                profiles: refs,
-            });
-        }
-    }
+pub fn store_skills_delete(name: String, _force: Option<bool>) -> Result<DeleteOk, ApiError> {
     let dir = store::store_skills_dir()?;
     let removed = skills::delete(&dir, &name)?;
     if !removed {
@@ -347,18 +322,7 @@ pub fn store_commands_update(name: String, body: UpdateCommandBody) -> Result<Ge
 }
 
 #[tauri::command]
-pub fn store_commands_delete(name: String, force: Option<bool>) -> Result<DeleteOk, ApiError> {
-    if !force.unwrap_or(false) {
-        let profiles_dir = store::store_profiles_dir()?;
-        let refs = references::referencing_profiles(&profiles_dir, ComponentKind::Commands, &name)?;
-        if !refs.is_empty() {
-            return Err(ApiError::ReferencedBy {
-                kind: "command",
-                name,
-                profiles: refs,
-            });
-        }
-    }
+pub fn store_commands_delete(name: String, _force: Option<bool>) -> Result<DeleteOk, ApiError> {
     let dir = store::store_commands_dir()?;
     let removed = commands::delete(&dir, &name)?;
     if !removed {
@@ -423,18 +387,7 @@ pub fn store_model_configs_update(name: String, body: Value) -> Result<GetModelC
 }
 
 #[tauri::command]
-pub fn store_model_configs_delete(name: String, force: Option<bool>) -> Result<DeleteOk, ApiError> {
-    if !force.unwrap_or(false) {
-        let profiles_dir = store::store_profiles_dir()?;
-        let refs = references::referencing_profiles(&profiles_dir, ComponentKind::ModelConfigs, &name)?;
-        if !refs.is_empty() {
-            return Err(ApiError::ReferencedBy {
-                kind: "model-config",
-                name,
-                profiles: refs,
-            });
-        }
-    }
+pub fn store_model_configs_delete(name: String, _force: Option<bool>) -> Result<DeleteOk, ApiError> {
     let dir = store::store_model_configs_dir()?;
     let removed = model_configs::delete(&dir, &name)?;
     if !removed {

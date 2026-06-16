@@ -1,12 +1,10 @@
 //! Store CRUD — agents/skills/commands/model-configs managed by OhMyC.
 //! Lives under `$OHMYC_HOME/store/`, separate from `<claude_home>/` which
 //! holds the user's Claude Code config. This namespace also owns
-//! provenance metadata (where each component was imported from) and the
-//! reference-check that gates delete-safety against active profiles.
+//! provenance metadata (where each component was imported from).
 
 pub mod model_configs;
 pub mod provenance;
-pub mod references;
 
 use std::path::PathBuf;
 
@@ -46,10 +44,6 @@ pub fn store_commands_dir() -> Result<PathBuf, ApiError> {
 
 pub fn store_model_configs_dir() -> Result<PathBuf, ApiError> {
     Ok(store_dir()?.join("model-configs"))
-}
-
-pub fn store_profiles_dir() -> Result<PathBuf, ApiError> {
-    Ok(base_dir()?.join("profiles"))
 }
 
 pub fn provenance_index_path() -> Result<PathBuf, ApiError> {
@@ -148,7 +142,6 @@ mod tests {
             store_model_configs_dir().unwrap(),
             PathBuf::from("/tmp/fake-ohmyc/store/model-configs"),
         );
-        assert_eq!(store_profiles_dir().unwrap(), PathBuf::from("/tmp/fake-ohmyc/profiles"));
         assert_eq!(
             provenance_index_path().unwrap(),
             PathBuf::from("/tmp/fake-ohmyc/store/.metadata/imports.json"),

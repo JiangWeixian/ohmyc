@@ -90,8 +90,8 @@ mod tests {
     #[test]
     fn join_concatenates_relative_path() {
         with_env(ENV_OVERRIDE, Some("/tmp/fake-claude"), || {
-            let path = join("profiles/default.yaml").unwrap();
-            assert_eq!(path, PathBuf::from("/tmp/fake-claude/profiles/default.yaml"));
+            let path = join("agents/reviewer.md").unwrap();
+            assert_eq!(path, PathBuf::from("/tmp/fake-claude/agents/reviewer.md"));
         });
     }
 

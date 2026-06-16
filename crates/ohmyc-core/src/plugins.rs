@@ -4,8 +4,7 @@
 //!
 //! Slice-6 scope cut: enabled-state merge uses a single settings path
 //! (`<claude_home>/settings.json`). Multi-path merge (user + project +
-//! project-local) lands with slice 7 (profiles), where per-project
-//! settings context is introduced.
+//! project-local) can be added when project-scoped settings context lands.
 
 use std::collections::BTreeMap;
 use std::path::{Path, PathBuf};

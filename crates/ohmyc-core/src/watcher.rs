@@ -17,7 +17,7 @@ use crate::error::ApiError;
 pub enum FsEvent {
     /// A timeline DB write (sessions.db / -wal / -shm changed).
     TimelineDb { path: String },
-    /// A claude-home file changed (profiles/agents/skills/commands/settings/plugins).
+    /// A claude-home file changed (agents/skills/commands/settings/plugins).
     ClaudeHome { path: String },
 }
 
@@ -55,8 +55,8 @@ pub fn spawn(paths: Vec<PathBuf>, tx: Sender<FsEvent>) -> Result<Debouncer<notif
             continue;
         }
         // Recursive: slices 3+ depend on detecting writes nested under
-        // ~/.claude (e.g. profiles/<name>.yaml, agents/<name>.md). The
-        // debouncer collapses bursts so cost stays low.
+        // ~/.claude (e.g. agents/<name>.md). The debouncer collapses bursts
+        // so cost stays low.
         debouncer
             .watcher()
             .watch(path, RecursiveMode::Recursive)
@@ -128,25 +128,27 @@ mod tests {
 
     #[test]
     fn debouncer_emits_event_for_nested_writes() {
-        // Slices 3+ will rely on this — claude-home writes land under
-        // nested dirs (profiles/<name>.yaml, agents/<name>.md). Lock in
-        // that the recursive watcher catches them.
+        // Slices 3+ rely on this: claude-home writes land under nested dirs
+        // such as agents/<name>.md. Lock in that the recursive watcher catches
+        // them even if notify emits a parent directory event first.
         let dir = tempfile::tempdir().unwrap();
-        let nested = dir.path().join("profiles");
+        let nested = dir.path().join("agents");
         std::fs::create_dir_all(&nested).unwrap();
         let (tx, rx): (Sender<FsEvent>, Receiver<FsEvent>) = channel();
         let _debouncer = spawn(vec![dir.path().to_path_buf()], tx).unwrap();
 
         std::thread::sleep(Duration::from_millis(50));
-        std::fs::write(nested.join("default.yaml"), "name: default\n").unwrap();
+        std::fs::write(nested.join("reviewer.md"), "name: reviewer\n").unwrap();
 
-        let event = rx.recv_timeout(Duration::from_secs(2)).expect("event received");
-        match event {
-            FsEvent::ClaudeHome { path } => {
-                assert!(path.contains("profiles"));
-                assert!(path.ends_with("default.yaml"));
+        let deadline = std::time::Instant::now() + Duration::from_secs(2);
+        loop {
+            let remaining = deadline.saturating_duration_since(std::time::Instant::now());
+            let event = rx.recv_timeout(remaining).expect("target file event received");
+            match event {
+                FsEvent::ClaudeHome { path } if path.contains("agents") && path.ends_with("reviewer.md") => break,
+                FsEvent::ClaudeHome { .. } => continue,
+                other => panic!("expected ClaudeHome for nested write, got {other:?}"),
             }
-            other => panic!("expected ClaudeHome for nested write, got {other:?}"),
         }
     }
 
