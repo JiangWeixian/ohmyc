@@ -2,7 +2,6 @@ pub mod agents;
 pub mod commands;
 pub mod configs;
 pub mod plugins;
-pub mod profiles;
 pub mod settings;
 pub mod skills;
 pub mod store;
