@@ -3,7 +3,6 @@ import {
   Activity,
   Bot,
   Search,
-  Settings,
   Sparkles,
   TerminalSquare,
 } from 'lucide-react'
@@ -63,13 +62,6 @@ function AppCommandPalette() {
       icon: <Activity size={14} />,
       category: 'Go to',
       action: () => navigate('/explore/timeline'),
-    },
-    {
-      id: 'goto-settings',
-      label: 'Settings',
-      icon: <Settings size={14} />,
-      category: 'Go to',
-      action: () => navigate('/explore/settings'),
     },
   ]
 

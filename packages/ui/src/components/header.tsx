@@ -19,9 +19,8 @@ function useBreadcrumb(): { root: string; current: string } {
       hooks: 'Hooks',
       mcp: 'MCP Servers',
       lsp: 'LSP Servers',
-      settings: 'Settings',
     }
-    return { root: 'Explorer', current: labels[tab] ?? tab }
+    return { root: 'Explorer', current: labels[tab] ?? 'Timeline' }
   }
   return { root: 'Explorer', current: '' }
 }
