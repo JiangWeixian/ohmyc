@@ -87,8 +87,7 @@
     "request-plan-review": {
       "source": "git@github.com:neo-hack/supermario.git",
       "sourceType": "git",
-      "skillPath": "skills/request-plan-review/SKILL.md",
-      "computedHash": "da5e4ac432d55d42fa57ed860f3f8f08ad392183fcbf1d13fc4cfaf132595ab8"
+      "computedHash": "acf5733ac57d245476b4e225a44ff0282cbd42cd9e677bfc4444c475590a9ed8"
     },
     "stitch-design-taste": {
       "source": "Leonxlnx/taste-skill",
