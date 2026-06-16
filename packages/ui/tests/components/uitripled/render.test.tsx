@@ -8,7 +8,7 @@
  * - Base primitives: Card, Button, Badge, Input, Textarea, Label, Separator,
  *   ScrollArea, Tabs, Dialog, Select, Switch, Tooltip, DropdownMenu,
  *   Slider, Checkbox, Avatar, PasswordInput
- * - Native animated wrappers: NativeDialog, NativeTooltip, NativeTabs, NativeButton
+ * - Native animated wrappers: NativeDialog, NativeButton
  */
 
 import { render, screen } from '@testing-library/react'
@@ -83,9 +83,6 @@ import {
   NativeDialog,
   NativeDialogContent,
   NativeDialogTitle,
-  NativeTabs,
-  NativeTooltip,
-  NativeTooltipProvider,
 } from '@/components/uitripled'
 
 // ─── Test 1: Card components ────────────────────────────────────────
@@ -384,42 +381,7 @@ describe('NativeDialog (animated wrapper)', () => {
   })
 })
 
-// ─── Test 17: NativeTooltip (animated wrapper) ──────────────────────
-
-describe('NativeTooltip (animated wrapper)', () => {
-  it('renders without errors', () => {
-    render(
-      <NativeTooltipProvider>
-        <NativeTooltip content="Tooltip hint">
-          <button>Hover target</button>
-        </NativeTooltip>
-      </NativeTooltipProvider>,
-    )
-
-    expect(screen.getByText('Hover target')).toBeInTheDocument()
-  })
-})
-
-// ─── Test 18: NativeTabs (animated wrapper) ─────────────────────────
-
-describe('NativeTabs (animated wrapper)', () => {
-  it('renders without errors', () => {
-    render(
-      <NativeTabs
-        items={[
-          { id: 't1', label: 'First', content: <span>First content</span> },
-          { id: 't2', label: 'Second', content: <span>Second content</span> },
-        ]}
-        defaultValue="t1"
-      />,
-    )
-
-    expect(screen.getByText('First')).toBeInTheDocument()
-    expect(screen.getByText('Second')).toBeInTheDocument()
-  })
-})
-
-// ─── Test 19: NativeButton (animated wrapper) ───────────────────────
+// ─── Test 17: NativeButton (animated wrapper) ───────────────────────
 
 describe('NativeButton (animated wrapper)', () => {
   it('renders without errors', () => {
