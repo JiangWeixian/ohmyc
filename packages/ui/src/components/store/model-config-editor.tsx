@@ -1,5 +1,4 @@
 // Model config editor — form for API key, base URL, model name, and provider.
-// Handles create, update, and delete-with-force for referenced configs.
 import { useEffect, useState } from 'react'
 
 import {
@@ -23,8 +22,6 @@ interface ModelConfigEditorProperties {
 /**
  * Form editor for model config store items. In edit mode, the API key field
  * is pre-filled with a masked placeholder; only an unmasked value is sent on save.
- * Delete attempts go through a two-phase flow (soft then force) when the config
- * is referenced by profiles.
  */
 export function ModelConfigEditor({ editName, onSaved, onCancel }: ModelConfigEditorProperties) {
   const isEdit = !!editName
@@ -91,33 +88,17 @@ export function ModelConfigEditor({ editName, onSaved, onCancel }: ModelConfigEd
     }
   }
 
-  const [deleteReferencedBy, setDeleteReferencedBy] = useState<string[]>([])
-
-  // Two-phase delete: first attempt (force:false) is rejected by the backend
-  // if the config is referenced; the error surfaces the referencing profiles
-  // so we can open the confirmation dialog for a force:true retry.
-  // ApiError::ReferencedBy → error.detail.referencedBy.
   const handleDelete = () => {
-    deleteMut.mutate({ name: editName!, force: false }, {
-      onSuccess: () => onSaved(),
-      onError: (error_: any) => {
-        const references: string[] | undefined = error_?.detail?.referencedBy
-        if (references && references.length > 0) {
-          setShowDeleteDialog(true)
-          setDeleteReferencedBy(references)
-        } else {
-          setError(error_.message)
-        }
-      },
-    })
+    setShowDeleteDialog(true)
   }
 
-  const handleForceDelete = () => {
-    deleteMut.mutate({ name: editName!, force: true }, {
+  const handleConfirmDelete = () => {
+    deleteMut.mutate({ name: editName! }, {
       onSuccess: () => {
         setShowDeleteDialog(false)
         onSaved()
       },
+      onError: (error_: any) => setError(error_.message),
     })
   }
 
@@ -181,8 +162,7 @@ export function ModelConfigEditor({ editName, onSaved, onCancel }: ModelConfigEd
         ? (
         <DeleteConfirmDialog
           name={editName ?? name}
-          referencedBy={deleteReferencedBy}
-          onConfirm={handleForceDelete}
+          onConfirm={handleConfirmDelete}
           onCancel={() => setShowDeleteDialog(false)}
         />
           )

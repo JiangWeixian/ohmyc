@@ -479,7 +479,6 @@ function MarkdownDocEditor({
         ? (
         <DeleteConfirmDialog
           name={editName ?? fileSlug}
-          referencedBy={[]}
           onConfirm={() => setShowDeleteDialog(false)}
           onCancel={() => setShowDeleteDialog(false)}
         />

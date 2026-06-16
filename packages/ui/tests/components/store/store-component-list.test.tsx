@@ -16,7 +16,6 @@ const mockUseStoreAgents = vi.fn()
 const mockUseStoreSkills = vi.fn()
 const mockUseStoreCommands = vi.fn()
 const mockUseStoreModelConfigs = vi.fn()
-const mockUseProfiles = vi.fn()
 
 vi.mock('@/hooks/use-store', () => ({
   useStoreAgents: () => mockUseStoreAgents(),
@@ -39,10 +38,6 @@ vi.mock('@/hooks/use-store', () => ({
   useUpdateStoreCommand: () => ({ mutate: vi.fn(), isPending: false }),
   useCreateStoreModelConfig: () => ({ mutate: vi.fn(), isPending: false }),
   useUpdateStoreModelConfig: () => ({ mutate: vi.fn(), isPending: false }),
-}))
-
-vi.mock('@/hooks/use-profiles', () => ({
-  useProfiles: () => mockUseProfiles(),
 }))
 
 describe('StoreComponentList', () => {
@@ -69,24 +64,19 @@ describe('StoreComponentList', () => {
     mockUseStoreSkills.mockReturnValue({ data: [], isLoading: false })
     mockUseStoreCommands.mockReturnValue({ data: [], isLoading: false })
     mockUseStoreModelConfigs.mockReturnValue({ data: [], isLoading: false })
-    mockUseProfiles.mockReturnValue({
-      data: {
-        profiles: [{ name: 'daily', agents: ['alpha-agent'], skills: [], commands: [], modelConfig: null }],
-      },
-    })
   })
 
-  it('renders heading, counter line, used-by chips, and an Unused row', () => {
+  it('renders heading, counter line, and store rows without reference status', () => {
     renderWithProviders(<StoreComponentList category="agents" />)
 
     expect(screen.getByRole('heading', { name: 'Agents', level: 1 })).toBeInTheDocument()
     expect(screen.getByText(/2 agents/)).toBeInTheDocument()
-    expect(screen.getByText(/1 referenced/)).toBeInTheDocument()
-    expect(screen.getByText(/1 unused/)).toBeInTheDocument()
+    expect(screen.queryByText(/referenced/)).not.toBeInTheDocument()
+    expect(screen.queryByText(/unused/)).not.toBeInTheDocument()
 
     expect(screen.getByText('Alpha Agent')).toBeInTheDocument()
-    expect(screen.getByText('daily')).toBeInTheDocument()
-    expect(screen.getByText('Unused')).toBeInTheDocument()
+    expect(screen.getByText('Lonely Agent')).toBeInTheDocument()
+    expect(screen.queryByText('daily')).not.toBeInTheDocument()
   })
 
   it('filters items by name via the toolbar search', async () => {

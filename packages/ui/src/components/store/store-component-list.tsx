@@ -8,7 +8,6 @@ import {
 } from 'lucide-react'
 import { useMemo, useState } from 'react'
 
-import { useProfiles } from '../../hooks/use-profiles'
 import {
   useDeleteStoreAgent,
   useDeleteStoreCommand,
@@ -37,19 +36,19 @@ const CATEGORY_LABEL: Record<Category, { plural: string; singular: string }> = {
 const CATEGORY_HEADING: Record<Category, { title: string; description: string }> = {
   agents: {
     title: 'Agents',
-    description: 'Canonical library of agent components. Profiles reference these — edit here changes them everywhere.',
+    description: 'Canonical library of agent components.',
   },
   skills: {
     title: 'Skills',
-    description: 'Canonical library of skill components. Profiles reference these — edit here changes them everywhere.',
+    description: 'Canonical library of skill components.',
   },
   commands: {
     title: 'Commands',
-    description: 'Canonical library of slash commands. Profiles reference these — edit here changes them everywhere.',
+    description: 'Canonical library of slash commands.',
   },
   'model-configs': {
     title: 'Model configs',
-    description: 'Canonical library of API connection presets. Profiles reference these — edit here changes them everywhere.',
+    description: 'Canonical library of API connection presets.',
   },
 }
 
@@ -66,49 +65,6 @@ function makeInitials(name: string): string {
   return cleaned.slice(0, 2).toUpperCase()
 }
 
-/** Renders "Used by profile-a, profile-b" badges; collapses to count when >2. */
-function UsedBy({ names }: { names: string[] }) {
-  const count = names.length
-  if (count === 0) {
-    return (
-      <span className="font-mono text-[11px] italic text-[var(--text-quaternary)]">
-        Unused
-      </span>
-    )
-  }
-  if (count <= 2) {
-    return (
-      <div className="flex items-center gap-1.5">
-        <span className="font-mono text-[11px] text-[var(--text-tertiary)]">Used by</span>
-        {names.map(n => (
-          <span
-            key={n}
-            className={cn(
-              'inline-flex items-center rounded-full px-2 py-[2px]',
-              'border border-[rgba(255,255,255,0.08)] bg-[rgba(255,255,255,0.02)]',
-              'text-[11px] font-[510] text-[var(--text-secondary)]',
-            )}
-          >
-            {n}
-          </span>
-        ))}
-      </div>
-    )
-  }
-  return (
-    <span
-      title={names.join(', ')}
-      className={cn(
-        'inline-flex items-center rounded-full px-2.5 py-[3px]',
-        'border border-[rgba(255,255,255,0.08)] bg-[rgba(255,255,255,0.04)]',
-        'font-mono text-[11px] text-[var(--text-secondary)]',
-      )}
-    >
-      Used by {count} profiles
-    </span>
-  )
-}
-
 // ═══════════ Main List Component ═══════════
 
 interface StoreComponentListProperties {
@@ -118,10 +74,10 @@ interface StoreComponentListProperties {
 
 /**
  * Renders a searchable, filterable list of store components for a given category.
- * Each row shows the component name, metadata, and which profiles reference it.
+ * Each row shows the component name and metadata.
  */
 export function StoreComponentList({ category, onEdit }: StoreComponentListProperties) {
-  const [deleteTarget, setDeleteTarget] = useState<{ category: Category; name: string; referencedBy: string[] } | null>(null)
+  const [deleteTarget, setDeleteTarget] = useState<{ category: Category; name: string } | null>(null)
   const [search, setSearch] = useState('')
 
   const agentsQ = useStoreAgents()
@@ -133,34 +89,6 @@ export function StoreComponentList({ category, onEdit }: StoreComponentListPrope
   const deleteSkillMut = useDeleteStoreSkill()
   const deleteCommandMut = useDeleteStoreCommand()
   const deleteModelConfigMut = useDeleteStoreModelConfig()
-
-  const { data: profilesData } = useProfiles()
-
-  // Build a reverse-index: component-id -> profile names that reference it.
-  // This powers the "Used by" badges and the referenced/unused counter.
-  const referencedByMap = useMemo(() => {
-    const allProfiles = profilesData?.profiles ?? []
-    const m = new Map<string, string[]>()
-    for (const p of allProfiles) {
-      for (const r of p.agents) {
-        const k = `agents:${r}`
-        m.set(k, [...(m.get(k) ?? []), p.name])
-      }
-      for (const r of p.skills) {
-        const k = `skills:${r}`
-        m.set(k, [...(m.get(k) ?? []), p.name])
-      }
-      for (const r of p.commands) {
-        const k = `commands:${r}`
-        m.set(k, [...(m.get(k) ?? []), p.name])
-      }
-      if (p.modelConfig) {
-        const k = `model-configs:${p.modelConfig}`
-        m.set(k, [...(m.get(k) ?? []), p.name])
-      }
-    }
-    return m
-  }, [profilesData])
 
   // Normalize each category's API response into a uniform shape for rendering.
   const items = useMemo(() => {
@@ -235,8 +163,6 @@ export function StoreComponentList({ category, onEdit }: StoreComponentListPrope
   const heading = CATEGORY_HEADING[category]
 
   const totalCount = items.length
-  const referencedCount = items.filter(it => (referencedByMap.get(`${category}:${it.id}`) ?? []).length > 0).length
-  const unusedCount = totalCount - referencedCount
 
   function getDeleteMutation(c: Category) {
     if (c === 'agents') {
@@ -251,30 +177,16 @@ export function StoreComponentList({ category, onEdit }: StoreComponentListPrope
     return deleteModelConfigMut
   }
 
-  // First delete attempt uses force:false; the backend rejects if referenced
-  // and surfaces the referencing profile list in the error so the UI can open
-  // a confirmation dialog. ApiError::ReferencedBy serializes as
-  //   { code: 'ReferencedBy', detail: { kind, name, referencedBy: string[] } }
   const handleDelete = (name: string) => {
-    const mut = getDeleteMutation(category)
-    mut.mutate({ name, force: false }, {
-      onSuccess: () => setDeleteTarget(null),
-      onError: (error: any) => {
-        const references: string[] | undefined = error?.detail?.referencedBy
-        if (references && references.length > 0) {
-          setDeleteTarget({ category, name, referencedBy: references })
-        }
-      },
-    })
+    setDeleteTarget({ category, name })
   }
 
-  // After the user explicitly confirms, re-issue with force:true to override references.
-  const handleForceDelete = () => {
+  const handleConfirmDelete = () => {
     if (!deleteTarget) {
       return
     }
     const mut = getDeleteMutation(deleteTarget.category)
-    mut.mutate({ name: deleteTarget.name, force: true }, {
+    mut.mutate({ name: deleteTarget.name }, {
       onSuccess: () => setDeleteTarget(null),
     })
   }
@@ -336,10 +248,6 @@ export function StoreComponentList({ category, onEdit }: StoreComponentListPrope
         )}
       >
         {totalCount} {labels.plural}
-        <span className="mx-1.5 text-[var(--text-quaternary)]">·</span>
-        {referencedCount} referenced
-        <span className="mx-1.5 text-[var(--text-quaternary)]">·</span>
-        {unusedCount} unused
       </div>
 
       {/* ═══════════ Item Rows ═══════════ */}
@@ -385,8 +293,6 @@ export function StoreComponentList({ category, onEdit }: StoreComponentListPrope
             : (
             <div className="space-y-1.5">
               {filteredItems.map((item) => {
-                const refs = referencedByMap.get(`${category}:${item.id}`) ?? []
-                const isUnused = refs.length === 0
                 const metaParts = item.meta.filter(Boolean) as string[]
                 return (
                   <div
@@ -403,7 +309,7 @@ export function StoreComponentList({ category, onEdit }: StoreComponentListPrope
                         'flex h-9 w-9 shrink-0 items-center justify-center rounded-md',
                         'border border-[rgba(255,255,255,0.08)] bg-[rgba(255,255,255,0.04)]',
                         'font-mono text-[11px] font-[510]',
-                        isUnused ? 'text-[var(--text-tertiary)]' : 'text-[var(--text-secondary)]',
+                        'text-[var(--text-secondary)]',
                       )}
                     >
                       {makeInitials(item.name)}
@@ -413,7 +319,7 @@ export function StoreComponentList({ category, onEdit }: StoreComponentListPrope
                       <div
                         className={cn(
                           'truncate text-[14px] font-[510]',
-                          isUnused ? 'text-[var(--text-secondary)]' : 'text-[var(--text-primary)]',
+                          'text-[var(--text-primary)]',
                         )}
                       >
                         {item.name}
@@ -434,10 +340,6 @@ export function StoreComponentList({ category, onEdit }: StoreComponentListPrope
                           ))}
                         </div>
                       )}
-                    </div>
-
-                    <div className="shrink-0">
-                      <UsedBy names={refs} />
                     </div>
 
                     <div
@@ -484,8 +386,7 @@ export function StoreComponentList({ category, onEdit }: StoreComponentListPrope
       {deleteTarget && (
         <DeleteConfirmDialog
           name={deleteTarget.name}
-          referencedBy={deleteTarget.referencedBy}
-          onConfirm={handleForceDelete}
+          onConfirm={handleConfirmDelete}
           onCancel={() => setDeleteTarget(null)}
         />
       )}

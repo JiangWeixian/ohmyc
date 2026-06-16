@@ -47,7 +47,6 @@ export function useFsChanged(): void {
               void qc.invalidateQueries({ queryKey: ['hooks'] })
               void qc.invalidateQueries({ queryKey: ['lsp'] })
               void qc.invalidateQueries({ queryKey: ['plugins'] })
-              void qc.invalidateQueries({ queryKey: ['profiles'] })
             }
             if (path.endsWith('/.mcp.json')) {
               void qc.invalidateQueries({ queryKey: ['mcp'] })

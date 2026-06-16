@@ -173,7 +173,6 @@ export function useCreateStoreModelConfig() {
       request<{ modelConfig: ModelConfig }>('store.model_configs.create', { body }),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['store', 'model-configs'] })
-      qc.invalidateQueries({ queryKey: ['profiles'] })
     },
   })
 }
@@ -185,7 +184,6 @@ export function useUpdateStoreModelConfig() {
       request<{ modelConfig: ModelConfig }>('store.model_configs.update', { name, body }),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['store', 'model-configs'] })
-      qc.invalidateQueries({ queryKey: ['profiles'] })
     },
   })
 }
@@ -197,7 +195,6 @@ export function useDeleteStoreModelConfig() {
       request<{ success: boolean }>('store.model_configs.delete', { name, force }),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['store', 'model-configs'] })
-      qc.invalidateQueries({ queryKey: ['profiles'] })
     },
   })
 }

@@ -118,32 +118,6 @@ describe('store agents — write', () => {
     await waitFor(() => expect(result.current.isSuccess).toBe(true))
     expect(captured).toEqual({ name: 'a', force: true })
   })
-
-  it('delete surfaces ReferencedBy with profile names (the killer "Used by N profiles" path)', async () => {
-    // Real wire shape: ApiError::ReferencedBy serializes as
-    //   { code: 'ReferencedBy', detail: { kind, name, referencedBy: [...] } }
-    // The UI's delete confirmation reads error.detail.referencedBy to render
-    // the profile list. Using the actual shape here prevents the regression
-    // the slice-5 review caught: a generic Conflict string mock passed but
-    // the UI dialog never opened.
-    setMockHandler('store.agents.delete', async () => {
-      throw Object.assign(new Error('agent referenced'), {
-        code: 'ReferencedBy',
-        detail: { kind: 'agent', name: 'a', referencedBy: ['dev', 'prod'] },
-      })
-    })
-    const { result } = renderHook(() => useDeleteStoreAgent(), { wrapper: wrapper() })
-    await act(async () => {
-      result.current.mutate({ name: 'a' } as never)
-    })
-    await waitFor(() => expect(result.current.isError).toBe(true))
-    const err = result.current.error as {
-      code?: string
-      detail?: { referencedBy?: string[] }
-    }
-    expect(err.code).toBe('ReferencedBy')
-    expect(err.detail?.referencedBy).toEqual(['dev', 'prod'])
-  })
 })
 
 describe('store wire routing — sampled across entity types', () => {
