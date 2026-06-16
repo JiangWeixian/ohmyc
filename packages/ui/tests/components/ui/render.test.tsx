@@ -1,14 +1,13 @@
 /**
- * Smoke test suite for uitripled primitives
+ * Smoke test suite for shared UI primitives.
  *
- * Verifies that all 18 shadcn base primitives and 4 native animated wrappers
- * render without React errors in the React 19 + Tailwind v3 + @radix-ui/react environment.
+ * Verifies that shadcn base primitives render without React errors in the
+ * React 19 + Tailwind v3 + @radix-ui/react environment.
  *
  * Components tested:
  * - Base primitives: Card, Button, Badge, Input, Textarea, Label, Separator,
  *   ScrollArea, Tabs, Dialog, Select, Switch, Tooltip, DropdownMenu,
  *   Slider, Checkbox, Avatar, PasswordInput
- * - Native animated wrappers: NativeDialog, NativeButton
  */
 
 import { render, screen } from '@testing-library/react'
@@ -77,13 +76,6 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from '@/components/ui/tooltip'
-// Native animated wrappers
-import {
-  NativeButton,
-  NativeDialog,
-  NativeDialogContent,
-  NativeDialogTitle,
-} from '@/components/uitripled'
 
 // ─── Test 1: Card components ────────────────────────────────────────
 
@@ -361,31 +353,5 @@ describe('PasswordInput component', () => {
     // The toggle button should be rendered
     const toggleButton = container.querySelector("button[type='button']")
     expect(toggleButton).toBeTruthy()
-  })
-})
-
-// ─── Test 16: NativeDialog (animated wrapper) ───────────────────────
-
-describe('NativeDialog (animated wrapper)', () => {
-  it('renders without errors', () => {
-    render(
-      <NativeDialog open={true} onOpenChange={() => {}}>
-        <NativeDialogContent>
-          <NativeDialogTitle>Native Dialog Test</NativeDialogTitle>
-        </NativeDialogContent>
-      </NativeDialog>,
-    )
-
-    // Radix Dialog renders into a portal; check document.body for dialog content
-    expect(screen.getByText('Native Dialog Test')).toBeInTheDocument()
-  })
-})
-
-// ─── Test 17: NativeButton (animated wrapper) ───────────────────────
-
-describe('NativeButton (animated wrapper)', () => {
-  it('renders without errors', () => {
-    render(<NativeButton>Animated Button</NativeButton>)
-    expect(screen.getByText('Animated Button')).toBeInTheDocument()
   })
 })

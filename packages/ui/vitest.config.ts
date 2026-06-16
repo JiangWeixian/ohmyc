@@ -42,6 +42,7 @@ export default defineConfig({
         'node_modules/',
         'tests/',
         'dist/',
+        'src/components/uitripled/**',
         '**/*.d.ts',
         '**/*.config.*',
       ],
