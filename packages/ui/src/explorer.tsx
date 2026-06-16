@@ -10,7 +10,7 @@ import {
   Sparkles,
   TerminalSquare,
 } from 'lucide-react'
-import { useMemo, useState } from 'react'
+import { useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 
 import { ConfigSection } from './components/config-section'
@@ -35,7 +35,6 @@ import {
   useMcpServers,
 } from './hooks/use-configs'
 import { useMarketplaces, usePlugins } from './hooks/use-plugins'
-import { useProfiles } from './hooks/use-profiles'
 import { useSkill, useSkills } from './hooks/use-skills'
 import { cn } from '@/lib/utils'
 
@@ -121,25 +120,10 @@ export function Explorer({ viewSwitcher }: ExplorerProperties) {
   const { data: lspServers, isError: lspError } = useLspServers()
   const { data: plugins, isError: pluginsError } = usePlugins()
   const { data: marketplaces } = useMarketplaces()
-  const { data: profilesData } = useProfiles()
 
   const hookCount = (hooks ?? []).length
   const mcpCount = (mcpServers ?? []).length
   const lspCount = (lspServers ?? []).length
-
-  // Reverse-lookup from plugin ID to profile names — powers the "used by N profiles" display.
-  const pluginReferenceMap = useMemo(() => {
-    const allProfiles = profilesData?.profiles ?? []
-    const map = new Map<string, string[]>()
-    for (const p of allProfiles) {
-      for (const pluginId of p.plugins) {
-        const existing = map.get(pluginId) ?? []
-        existing.push(p.name)
-        map.set(pluginId, existing)
-      }
-    }
-    return map
-  }, [profilesData])
 
   const renderEnvironmentSummary = () => (
     <section className="panel p-7">
@@ -388,8 +372,6 @@ export function Explorer({ viewSwitcher }: ExplorerProperties) {
             {plugins.map((plugin) => {
               const installCount = plugin.installs.length
               const marketplace = marketplaces?.find(entry => entry.id === plugin.marketplace)
-              const referenceNames = pluginReferenceMap.get(plugin.id) ?? []
-              const referenceCount = referenceNames.length
 
               return (
                 <div
@@ -421,36 +403,6 @@ export function Explorer({ viewSwitcher }: ExplorerProperties) {
                     <div>Skills: {plugin.componentCounts.skills}</div>
                     <div>Commands: {plugin.componentCounts.commands}</div>
                     <div>Installs: {installCount}</div>
-                  </div>
-                  {/* Compact display: inline badges for 1-2 profiles, count summary for 3+. */}
-                  <div className="mt-5">
-                    <div className="text-[10px] font-medium tracking-[0.04em] text-[var(--text-tertiary)]">Profiles</div>
-                    {referenceCount === 0
-                      ? (
-                      <span className="text-[13px] tabular-nums text-[var(--text-tertiary)]">0</span>
-                        )
-                      : (referenceCount <= 2
-                          ? (
-                      <div className="mt-1 flex items-center gap-1.5">
-                        <span className="text-[13px] tabular-nums text-[var(--text-primary)]">{referenceCount}</span>
-                        {referenceNames.map(name => (
-                          <span
-                            key={name}
-                            className="inline-block rounded border border-[var(--border-standard)] bg-[rgba(255,255,255,0.08)] px-1.5 py-0.5 text-[11px] text-[var(--text-secondary)]"
-                          >
-                            {name}
-                          </span>
-                        ))}
-                      </div>
-                            )
-                          : (
-                      <span
-                        className="mt-1 block text-[13px] text-[var(--text-secondary)]"
-                        title={referenceNames.join(', ')}
-                      >
-                        Used by {referenceCount} profiles
-                      </span>
-                            ))}
                   </div>
                   {marketplace
                     ? (

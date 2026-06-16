@@ -97,22 +97,6 @@ vi.mock('@/hooks/use-plugins', () => ({
   }),
 }))
 
-vi.mock('@/hooks/use-profiles', () => ({
-  useProfiles: () => ({
-    data: {
-      profiles: [
-        { name: 'default', plugins: ['review-pack@market'], agents: [], skills: [], commands: [] },
-      ],
-      active: null,
-    },
-    isLoading: false,
-    isError: false,
-  }),
-  useActivateProfile: () => ({ mutate: vi.fn() }),
-  useDeactivateProfile: () => ({ mutate: vi.fn() }),
-  useDeleteProfile: () => ({ mutate: vi.fn() }),
-}))
-
 describe('Explorer inventory views', () => {
   it('shows current environment summary and plugin inventory details', () => {
     renderWithProviders(
