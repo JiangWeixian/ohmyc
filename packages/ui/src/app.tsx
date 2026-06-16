@@ -22,7 +22,6 @@ import { useAgents } from './hooks/use-agents'
 import { useCommands } from './hooks/use-commands'
 import { useGlobalKeyboardShortcuts } from './hooks/use-keyboard-shortcuts'
 import { useSkills } from './hooks/use-skills'
-import { ProfilesView } from './profiles-view'
 
 /** Command palette content — exposes navigation and entity search. */
 function AppCommandPalette() {
@@ -124,7 +123,6 @@ function AppLayout() {
   return (
     <div className="h-dvh overflow-hidden bg-[var(--surface-base)] text-[var(--text-primary)]">
       <Routes>
-        <Route path="/profiles/*" element={<ProfilesView viewSwitcher={null} />} />
         <Route path="/explore/:tab" element={<Explorer viewSwitcher={null} />} />
         <Route path="/explore" element={<Navigate to="/explore/timeline" replace />} />
         <Route path="/menubar" element={<MenubarPage />} />
