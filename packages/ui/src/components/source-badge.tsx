@@ -1,8 +1,8 @@
-// Badge indicating where an entity originates — local, plugin, profile, or project.
+// Badge indicating where an entity originates — local, plugin, or project.
 import { Badge } from '@/components/ui/badge'
 
 /** Union of possible inventory sources for an entity. */
-type InventorySource = 'local' | 'plugin' | 'profile' | 'project'
+type InventorySource = 'local' | 'plugin' | 'project'
 
 /** Properties for the {@link SourceBadge} component. */
 interface SourceBadgeProperties {
@@ -11,7 +11,7 @@ interface SourceBadgeProperties {
 }
 
 /** Renders a small colored badge indicating the origin of an entity
- *  (local file, installed plugin, inherited profile, or project directory). */
+ *  (local file, installed plugin, or project directory). */
 export function SourceBadge({ source, pluginId }: SourceBadgeProperties) {
   if (source === 'local') {
     return (
@@ -20,16 +20,6 @@ export function SourceBadge({ source, pluginId }: SourceBadgeProperties) {
         className="h-auto min-h-0 rounded-[var(--radius-sm)] border-transparent bg-[var(--surface-overlay)] px-2 py-0.5 text-[10px] font-semibold uppercase text-[var(--text-tertiary)]"
       >
         local
-      </Badge>
-    )
-  }
-  if (source === 'profile') {
-    return (
-      <Badge
-        variant="outline"
-        className="h-auto min-h-0 rounded-[var(--radius-sm)] border-transparent bg-[var(--accent-blue)]/10 px-2 py-0.5 text-[10px] font-semibold uppercase text-[var(--accent-blue)]"
-      >
-        profile
       </Badge>
     )
   }

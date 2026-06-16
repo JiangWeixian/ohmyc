@@ -16,12 +16,6 @@ describe('SourceBadge', () => {
     expect(screen.getByText('local')).toBeInTheDocument()
   })
 
-  it('renders a profile source label', () => {
-    renderWithProviders(<SourceBadge source="profile" />)
-
-    expect(screen.getByText('profile')).toBeInTheDocument()
-  })
-
   it('renders plugin-provided rows as plugin items with plugin context', () => {
     renderWithProviders(<SourceBadge source="plugin" pluginId="review-pack@marketplace" />)
 

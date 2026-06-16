@@ -12,7 +12,6 @@ const DEFAULT_SHORTCUTS: Shortcut[] = [
   { key: 'g then a', label: 'Go to Agents', category: 'Navigation', action: () => {} },
   { key: 'g then s', label: 'Go to Skills', category: 'Navigation', action: () => {} },
   { key: 'g then c', label: 'Go to Commands', category: 'Navigation', action: () => {} },
-  { key: 'g then p', label: 'Go to Profiles', category: 'Navigation', action: () => {} },
   { key: 'escape', label: 'Close Dialog', category: 'Global', action: () => {} },
   { key: '?', label: 'Show Shortcuts', category: 'Global', action: () => {} },
 ]

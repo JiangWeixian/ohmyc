@@ -24,7 +24,7 @@ export const CommandSchema = z.object({
   content: z.string(),
   raw: z.string(),
   filename: z.string(),
-  source: z.enum(['local', 'profile', 'plugin', 'project']),
+  source: z.enum(['local', 'plugin', 'project']),
   scope: ScopeEnum.optional(),
   pluginId: z.string().optional(),
   provenance: StoreComponentProvenanceSchema.optional(),

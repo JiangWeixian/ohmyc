@@ -10,12 +10,12 @@ describe('transport seam', () => {
   })
 
   it('routes wire name to mock handler in tests', async () => {
-    setMockHandler('profiles.list', async () => [{ name: 'default' }])
+    setMockHandler('settings.get', async () => ({ settings: { theme: 'dark' } }))
     __setTransportForTests('mock')
 
-    const result = await request<Array<{ name: string }>>('profiles.list', {})
+    const result = await request<{ settings: { theme: string } }>('settings.get', {})
 
-    expect(result).toEqual([{ name: 'default' }])
+    expect(result).toEqual({ settings: { theme: 'dark' } })
   })
 
   it('propagates handler arguments to the mock', async () => {
@@ -32,18 +32,18 @@ describe('transport seam', () => {
   })
 
   it('rejects with ApiError shape when handler throws', async () => {
-    setMockHandler('profiles.get', async () => {
+    setMockHandler('settings.get', async () => {
       throw Object.assign(new Error('missing'), {
         code: 'NotFound',
-        detail: { kind: 'profile', name: 'x' },
+        detail: { kind: 'settings', name: 'user' },
       })
     })
     __setTransportForTests('mock')
 
-    await expect(request('profiles.get', { name: 'x' })).rejects.toMatchObject({
+    await expect(request('settings.get', {})).rejects.toMatchObject({
       code: 'NotFound',
       message: 'missing',
-      detail: { kind: 'profile', name: 'x' },
+      detail: { kind: 'settings', name: 'user' },
     })
   })
 
