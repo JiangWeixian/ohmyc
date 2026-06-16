@@ -84,8 +84,12 @@ mod tests {
     use super::*;
     use std::sync::mpsc::{channel, Receiver};
     use std::sync::Mutex;
+    use std::time::Instant;
 
     static ENV_LOCK: Mutex<()> = Mutex::new(());
+    // Real filesystem watcher tests race on macOS when several debouncers
+    // start at once; the production watcher still supports recursive paths.
+    static WATCHER_LOCK: Mutex<()> = Mutex::new(());
 
     #[test]
     fn fs_event_serializes_with_tag_and_path() {
@@ -99,46 +103,68 @@ mod tests {
 
     #[test]
     fn debouncer_emits_event_after_write() {
+        let _lock = WATCHER_LOCK.lock().unwrap();
         let dir = tempfile::tempdir().unwrap();
         let (tx, rx): (Sender<FsEvent>, Receiver<FsEvent>) = channel();
         let _debouncer = spawn(vec![dir.path().to_path_buf()], tx).unwrap();
+        let target = dir.path().join("anything.txt");
 
-        std::thread::sleep(Duration::from_millis(50));
-        std::fs::write(dir.path().join("anything.txt"), "hi").unwrap();
-
-        let deadline = std::time::Instant::now() + Duration::from_secs(2);
-        loop {
-            let remaining = deadline.saturating_duration_since(std::time::Instant::now());
-            let event = rx.recv_timeout(remaining).expect("target file event received");
-            match event {
-                FsEvent::ClaudeHome { path } if path.contains("anything.txt") => break,
-                FsEvent::ClaudeHome { .. } => continue,
+        wait_for_matching_event(
+            &rx,
+            || std::fs::write(&target, "hi").unwrap(),
+            |event| match event {
+                FsEvent::ClaudeHome { path } if path.contains("anything.txt") => true,
+                FsEvent::ClaudeHome { .. } => false,
                 other => panic!("unexpected event: {other:?}"),
+            },
+        );
+    }
+
+    fn wait_for_matching_event(
+        rx: &Receiver<FsEvent>,
+        mut trigger: impl FnMut(),
+        mut matches_event: impl FnMut(FsEvent) -> bool,
+    ) {
+        let deadline = Instant::now() + Duration::from_secs(4);
+        while Instant::now() < deadline {
+            trigger();
+            let poll_until = (Instant::now() + Duration::from_millis(400)).min(deadline);
+            while Instant::now() < poll_until {
+                let remaining = poll_until.saturating_duration_since(Instant::now());
+                match rx.recv_timeout(remaining) {
+                    Ok(event) => {
+                        if matches_event(event) {
+                            return;
+                        }
+                    }
+                    Err(std::sync::mpsc::RecvTimeoutError::Timeout) => break,
+                    Err(std::sync::mpsc::RecvTimeoutError::Disconnected) => {
+                        panic!("watcher channel disconnected")
+                    }
+                }
             }
         }
+        panic!("matching watcher event received");
     }
 
     #[test]
     fn debouncer_classifies_timeline_db_writes() {
+        let _lock = WATCHER_LOCK.lock().unwrap();
         let dir = tempfile::tempdir().unwrap();
         let (tx, rx): (Sender<FsEvent>, Receiver<FsEvent>) = channel();
         let _debouncer = spawn(vec![dir.path().to_path_buf()], tx).unwrap();
+        let target = dir.path().join("timeline.db");
 
-        std::thread::sleep(Duration::from_millis(50));
-        std::fs::write(dir.path().join("timeline.db"), b"sqlite").unwrap();
-
-        let deadline = std::time::Instant::now() + Duration::from_secs(2);
-        loop {
-            let remaining = deadline.saturating_duration_since(std::time::Instant::now());
-            let event = rx.recv_timeout(remaining).expect("timeline db event received");
-            if matches!(event, FsEvent::TimelineDb { .. }) {
-                break;
-            }
-        }
+        wait_for_matching_event(
+            &rx,
+            || std::fs::write(&target, b"sqlite").unwrap(),
+            |event| matches!(event, FsEvent::TimelineDb { .. }),
+        );
     }
 
     #[test]
     fn debouncer_emits_event_for_nested_writes() {
+        let _lock = WATCHER_LOCK.lock().unwrap();
         // Slices 3+ rely on this: claude-home writes land under nested dirs
         // such as agents/<name>.md. Lock in that the recursive watcher catches
         // them even if notify emits a parent directory event first.
@@ -147,20 +173,17 @@ mod tests {
         std::fs::create_dir_all(&nested).unwrap();
         let (tx, rx): (Sender<FsEvent>, Receiver<FsEvent>) = channel();
         let _debouncer = spawn(vec![dir.path().to_path_buf()], tx).unwrap();
+        let target = nested.join("reviewer.md");
 
-        std::thread::sleep(Duration::from_millis(50));
-        std::fs::write(nested.join("reviewer.md"), "name: reviewer\n").unwrap();
-
-        let deadline = std::time::Instant::now() + Duration::from_secs(2);
-        loop {
-            let remaining = deadline.saturating_duration_since(std::time::Instant::now());
-            let event = rx.recv_timeout(remaining).expect("target file event received");
-            match event {
-                FsEvent::ClaudeHome { path } if path.contains("agents") && path.ends_with("reviewer.md") => break,
-                FsEvent::ClaudeHome { .. } => continue,
+        wait_for_matching_event(
+            &rx,
+            || std::fs::write(&target, "name: reviewer\n").unwrap(),
+            |event| match event {
+                FsEvent::ClaudeHome { path } if path.contains("agents") && path.ends_with("reviewer.md") => true,
+                FsEvent::ClaudeHome { .. } => false,
                 other => panic!("expected ClaudeHome for nested write, got {other:?}"),
-            }
-        }
+            },
+        );
     }
 
     #[test]
