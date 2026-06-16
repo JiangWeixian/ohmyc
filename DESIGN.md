@@ -280,7 +280,7 @@ packages/ui/src/
 
 The visual system above is settled. This section governs **how the app is laid out and operated** — what lives where on the page, what the keyboard does, and which surfaces are the canonical entry points. Visual changes go in the sections above; placement / behavior changes go here.
 
-**Master thesis:** Explorer is the product shell. Timeline is the default activity surface; Agents, Skills, Commands, Plugins, Hooks, MCP, and LSP sit behind the same left navigation. Settings UI was removed on 2026-06-16; lower-level settings read/write APIs remain available for configuration flows that need them. Profiles were archived on 2026-06-16 behind the Git tag `archive/profiles-before-removal-20260616` and are no longer part of the active product.
+**Master thesis:** Explorer is the product shell. Timeline remains the default activity surface; the active Explorer resource tabs are Agents, Commands, Skills, and Plugins. Hooks, MCP, and LSP no longer have top-level UI entries, though lower-level config APIs remain available for configuration flows that need them. Settings UI was removed on 2026-06-16; lower-level settings read/write APIs remain available for configuration flows that need them. Profiles were archived on 2026-06-16 behind the Git tag `archive/profiles-before-removal-20260616` and are no longer part of the active product.
 
 ### Default route
 - Landing route is `/explore/timeline`.
@@ -313,7 +313,7 @@ The header renders the breadcrumb, Explorer-only source switcher, and command pa
 
 ### Explorer view rules
 - **Card grid:** uniform 2-column grid. No `featured` variant — every card has equal weight. Featured-card emphasis was a holdover from a different IA and undermines scanability.
-- **Environment Summary:** rendered **only on the Plugins tab**. It is plugin-specific; on Hooks / MCP / LSP it was decorative noise.
+- **Plugins page:** starts directly with the Plugins section header and inventory cards. The former Environment summary was removed because workspace-level Hooks/MCP/LSP counts are no longer part of the top-level Explorer IA.
 - **Skeletons:** removed for first paint. The Explorer reads from local config files — load is fast enough that skeletons flash and create perceived jank. Show content directly; if a future async source is added, reintroduce a single subtle pulse, not the multi-row skeleton.
 
 ### Wireframe reference
@@ -349,6 +349,7 @@ The header renders the breadcrumb, Explorer-only source switcher, and command pa
 | 2026-05-13 | EntityCard takes provider-supplied `badges`; per-entity-type switch removed | Schema branching belonged in the provider, not the card. Origin chip on the card header is `entity.origins.join(' · ')` so shared skills (claude · opencode · agents) read at a glance |
 | 2026-06-16 | Profiles archived and removed from product/backend surfaces | The restore point is Git tag `archive/profiles-before-removal-20260616`; user `$OHMYC_HOME/profiles` data is left untouched but no longer read or maintained |
 | 2026-06-16 | Settings UI removed from Explorer and ⌘K surfaces | Settings page entry points and components were deleted; `g s` now maps only to Skills. Lower-level settings APIs remain for non-page configuration flows |
+| 2026-06-16 | Sidebar Explorer tabs reduced to Agents, Commands, Skills, Plugins; Plugins Environment summary removed | The management surface now centers on the four core resource inventories while Timeline remains the activity entry. Hooks/MCP/LSP remain lower-level config capabilities without top-level UI chrome |
 
 ## Migration Checklist
 
