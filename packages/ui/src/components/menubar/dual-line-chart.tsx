@@ -18,7 +18,7 @@ import {
   type ChartConfig,
   ChartContainer,
   ChartTooltip,
-} from '@/components/ui/chart'
+} from '@/components/chart'
 
 import type { HeatmapPoint } from '@/hooks/use-timeline'
 

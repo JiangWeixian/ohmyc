@@ -15,8 +15,8 @@ import {
 } from 'react-router-dom'
 import { Toaster } from 'sonner'
 
+import { CommandPalette, CommandPaletteProvider } from './components/command-palette'
 import { MenubarPage } from './components/menubar/menubar-page'
-import { CommandPalette, CommandPaletteProvider } from './components/ui/command-palette'
 import { Explorer } from './explorer'
 import { useAgents } from './hooks/use-agents'
 import { useCommands } from './hooks/use-commands'
