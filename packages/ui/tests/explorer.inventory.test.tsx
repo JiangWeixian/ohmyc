@@ -165,4 +165,18 @@ describe('Explorer inventory views', () => {
 
     expect(screen.queryByText('Environment')).not.toBeInTheDocument()
   })
+
+  it('treats /explore/settings as an invalid tab and falls back to timeline content', () => {
+    renderWithProviders(
+      <Routes>
+        <Route path="/explore/:tab" element={<Explorer />} />
+      </Routes>,
+      { route: '/explore/settings' },
+    )
+
+    expect(document.body.textContent).toContain('Timeline')
+    expect(document.body.textContent).not.toContain('Settings panel')
+    expect(document.body.textContent).not.toContain('General')
+    expect(document.body.textContent).not.toContain('Configure your general settings')
+  })
 })

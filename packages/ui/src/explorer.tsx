@@ -18,7 +18,6 @@ import { EntityCard } from './components/entity-card'
 import { EntityDetail } from './components/entity-detail'
 import { Header } from './components/header'
 import { SectionHeader } from './components/section-header'
-import { SettingsLayout } from './components/settings/settings-layout'
 import { Sidebar, type SidebarSection } from './components/sidebar'
 import { TimelineView } from './components/timeline/timeline-view'
 import {
@@ -501,7 +500,6 @@ export function Explorer({ viewSwitcher }: ExplorerProperties) {
                 emptyMessage: 'No LSP servers configured in .lsp.json',
               })
             )}
-            {activeSection === 'settings' && <SettingsLayout />}
             {activeSection === 'plugins' && renderPlugins()}
             {activeSection === 'claude-md' && renderPlaceholder()}
           </div>
