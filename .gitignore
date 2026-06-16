@@ -49,6 +49,8 @@ log/
 
 # Coverage
 coverage/
+lcov.info
+cov-html/
 
 # Rust build artifacts
 target/
