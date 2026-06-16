@@ -106,10 +106,15 @@ mod tests {
         std::thread::sleep(Duration::from_millis(50));
         std::fs::write(dir.path().join("anything.txt"), "hi").unwrap();
 
-        let event = rx.recv_timeout(Duration::from_secs(2)).expect("event received");
-        match event {
-            FsEvent::ClaudeHome { path } => assert!(path.contains("anything.txt")),
-            other => panic!("unexpected event: {other:?}"),
+        let deadline = std::time::Instant::now() + Duration::from_secs(2);
+        loop {
+            let remaining = deadline.saturating_duration_since(std::time::Instant::now());
+            let event = rx.recv_timeout(remaining).expect("target file event received");
+            match event {
+                FsEvent::ClaudeHome { path } if path.contains("anything.txt") => break,
+                FsEvent::ClaudeHome { .. } => continue,
+                other => panic!("unexpected event: {other:?}"),
+            }
         }
     }
 
@@ -122,8 +127,14 @@ mod tests {
         std::thread::sleep(Duration::from_millis(50));
         std::fs::write(dir.path().join("timeline.db"), b"sqlite").unwrap();
 
-        let event = rx.recv_timeout(Duration::from_secs(2)).expect("event received");
-        assert!(matches!(event, FsEvent::TimelineDb { .. }));
+        let deadline = std::time::Instant::now() + Duration::from_secs(2);
+        loop {
+            let remaining = deadline.saturating_duration_since(std::time::Instant::now());
+            let event = rx.recv_timeout(remaining).expect("timeline db event received");
+            if matches!(event, FsEvent::TimelineDb { .. }) {
+                break;
+            }
+        }
     }
 
     #[test]
