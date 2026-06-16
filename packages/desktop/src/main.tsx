@@ -17,7 +17,7 @@ const bodyStyle = document.body.style
  * (`index.html`). We branch on the window label here:
  *  - `popover` → transparent body, rounded-corner mask, render <Menubar />.
  *  - `main`    → opaque body, normal scroll, render full <App /> with
- *                initial route seeded to `/timeline`.
+ *                initial route seeded to `/explore/timeline`.
  */
 const label = getCurrentWebviewWindow().label
 
@@ -26,7 +26,7 @@ if (label === 'main') {
   bodyStyle.background = 'var(--bg-marketing)'
 
   if (globalThis.location.pathname === '/') {
-    globalThis.history.replaceState(null, '', '/timeline')
+    globalThis.history.replaceState(null, '', '/explore/timeline')
   }
 
   const queryClient = new QueryClient({
