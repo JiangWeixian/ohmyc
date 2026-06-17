@@ -1,6 +1,3 @@
-[submodule "vendor/uitripled"]
-	path = vendor/uitripled
-	url = git@github.com:moumen-soliman/uitripled.git
-[submodule "vendor/opencode-sentry-monitor"]
-	path = vendor/opencode-sentry-monitor
-	url = https://github.com/stolinski/opencode-sentry-monitor.git
+[submodule "vendor/react-bits"]
+	path = vendor/react-bits
+	url = https://github.com/DavidHDev/react-bits.git
