@@ -16,6 +16,7 @@ import { Toaster } from 'sonner'
 
 import { CommandPalette, CommandPaletteProvider } from './components/command-palette'
 import { MenubarPage } from './components/menubar/menubar-page'
+import { MonitorSpikeView } from './components/monitor-spike/monitor-spike-view'
 import { Explorer } from './explorer'
 import { useAgents } from './hooks/use-agents'
 import { useCommands } from './hooks/use-commands'
@@ -115,6 +116,7 @@ function AppLayout() {
   return (
     <div className="h-dvh overflow-hidden bg-[var(--surface-base)] text-[var(--text-primary)]">
       <Routes>
+        <Route path="/explore/monitor-spike" element={<MonitorSpikeView />} />
         <Route path="/explore/:tab" element={<Explorer viewSwitcher={null} />} />
         <Route path="/explore" element={<Navigate to="/explore/timeline" replace />} />
         <Route path="/menubar" element={<MenubarPage />} />
