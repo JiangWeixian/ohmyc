@@ -71,8 +71,13 @@ type LanyardSceneProps = Pick<
   LanyardProps,
   'backImage' | 'frontImage' | 'gravity' | 'imageFit' | 'lanyardImage' | 'lanyardWidth'
 > & {
+  ambientIntensity?: number
+  cardEmissiveIntensity?: number
+  environment?: boolean
   isMobile?: boolean
   origin?: [number, number, number]
+  renderOrder?: number
+  unitScale?: number
 }
 
 export function Lanyard({
@@ -117,6 +122,9 @@ export function Lanyard({
 }
 
 export function LanyardScene({
+  ambientIntensity = Math.PI,
+  cardEmissiveIntensity = 0.08,
+  environment = true,
   isMobile = false,
   gravity = [0, -40, 0],
   frontImage = null,
@@ -125,10 +133,12 @@ export function LanyardScene({
   lanyardImage = null,
   lanyardWidth = 1,
   origin = [0, 0, 0],
+  renderOrder = 0,
+  unitScale = 1,
 }: LanyardSceneProps) {
   return (
     <>
-      <ambientLight intensity={Math.PI} />
+      <ambientLight intensity={ambientIntensity} />
       <Physics gravity={gravity} timeStep={isMobile ? 1 / 30 : 1 / 60}>
         <Band
           isMobile={isMobile}
@@ -138,38 +148,45 @@ export function LanyardScene({
           lanyardImage={lanyardImage}
           lanyardWidth={lanyardWidth}
           origin={origin}
+          cardEmissiveIntensity={cardEmissiveIntensity}
+          renderOrder={renderOrder}
+          unitScale={unitScale}
         />
       </Physics>
-      <Environment blur={0.75}>
-        <Lightformer
-          intensity={2}
-          color="white"
-          position={[0, -1, 5]}
-          rotation={[0, 0, Math.PI / 3]}
-          scale={[100, 0.1, 1]}
-        />
-        <Lightformer
-          intensity={3}
-          color="white"
-          position={[-1, -1, 1]}
-          rotation={[0, 0, Math.PI / 3]}
-          scale={[100, 0.1, 1]}
-        />
-        <Lightformer
-          intensity={3}
-          color="white"
-          position={[1, 1, 1]}
-          rotation={[0, 0, Math.PI / 3]}
-          scale={[100, 0.1, 1]}
-        />
-        <Lightformer
-          intensity={10}
-          color="white"
-          position={[-10, 0, 14]}
-          rotation={[0, Math.PI / 2, Math.PI / 3]}
-          scale={[100, 10, 1]}
-        />
-      </Environment>
+      {environment
+        ? (
+          <Environment blur={0.75}>
+            <Lightformer
+              intensity={2}
+              color="white"
+              position={[0, -1, 5]}
+              rotation={[0, 0, Math.PI / 3]}
+              scale={[100, 0.1, 1]}
+            />
+            <Lightformer
+              intensity={3}
+              color="white"
+              position={[-1, -1, 1]}
+              rotation={[0, 0, Math.PI / 3]}
+              scale={[100, 0.1, 1]}
+            />
+            <Lightformer
+              intensity={3}
+              color="white"
+              position={[1, 1, 1]}
+              rotation={[0, 0, Math.PI / 3]}
+              scale={[100, 0.1, 1]}
+            />
+            <Lightformer
+              intensity={10}
+              color="white"
+              position={[-10, 0, 14]}
+              rotation={[0, Math.PI / 2, Math.PI / 3]}
+              scale={[100, 10, 1]}
+            />
+          </Environment>
+          )
+        : null}
     </>
   )
 }
@@ -184,10 +201,18 @@ interface BandProps {
   lanyardImage?: string | null
   lanyardWidth?: number
   origin?: [number, number, number]
+  cardEmissiveIntensity?: number
+  renderOrder?: number
+  unitScale?: number
 }
 
 type LanyardRigidBody = RapierRigidBody & {
   lerped?: THREE.Vector3
+}
+
+interface DragState {
+  offset: THREE.Vector3
+  plane: THREE.Plane
 }
 
 function Band({
@@ -200,6 +225,9 @@ function Band({
   lanyardImage = null,
   lanyardWidth = 1,
   origin = [0, 0, 0],
+  cardEmissiveIntensity = 0.08,
+  renderOrder = 0,
+  unitScale = 1,
 }: BandProps) {
   const band = useRef<any>(null!)
   const fixed = useRef<RapierRigidBody>(null!)
@@ -294,15 +322,15 @@ function Band({
     () =>
       new THREE.CatmullRomCurve3([new THREE.Vector3(), new THREE.Vector3(), new THREE.Vector3(), new THREE.Vector3()]),
   )
-  const [dragged, drag] = useState<THREE.Vector3 | false>(false)
+  const [dragged, drag] = useState<DragState | false>(false)
   const [hovered, hover] = useState(false)
 
-  useRopeJoint(fixed, j1, [[0, 0, 0], [0, 0, 0], 1])
-  useRopeJoint(j1, j2, [[0, 0, 0], [0, 0, 0], 1])
-  useRopeJoint(j2, j3, [[0, 0, 0], [0, 0, 0], 1])
+  useRopeJoint(fixed, j1, [[0, 0, 0], [0, 0, 0], unitScale])
+  useRopeJoint(j1, j2, [[0, 0, 0], [0, 0, 0], unitScale])
+  useRopeJoint(j2, j3, [[0, 0, 0], [0, 0, 0], unitScale])
   useSphericalJoint(j3, card, [
     [0, 0, 0],
-    [0, 1.45, 0],
+    [0, 1.45 * unitScale, 0],
   ])
 
   useEffect(() => {
@@ -315,18 +343,19 @@ function Band({
   }, [hovered, dragged])
 
   useFrame((state, delta) => {
-    if (dragged && typeof dragged !== 'boolean') {
-      vec.set(state.pointer.x, state.pointer.y, 0.5).unproject(state.camera)
-      dir.copy(vec).sub(state.camera.position).normalize()
-      vec.add(dir.multiplyScalar(state.camera.position.length()))
+    if (dragged) {
+      state.raycaster.setFromCamera(state.pointer, state.camera)
       for (const ref of [card, j1, j2, j3, fixed]) {
         ref.current?.wakeUp()
       }
-      card.current?.setNextKinematicTranslation({
-        x: vec.x - dragged.x,
-        y: vec.y - dragged.y,
-        z: vec.z - dragged.z,
-      })
+      const hit = state.raycaster.ray.intersectPlane(dragged.plane, vec)
+      if (hit) {
+        card.current?.setNextKinematicTranslation({
+          x: hit.x - dragged.offset.x,
+          y: hit.y - dragged.offset.y,
+          z: hit.z - dragged.offset.z,
+        })
+      }
     }
     if (fixed.current) {
       for (const ref of [j1, j2]) {
@@ -350,27 +379,27 @@ function Band({
 
   return (
     <>
-      <group position={[origin[0], origin[1] + 4, origin[2]]}>
+      <group position={[origin[0], origin[1] + 4 * unitScale, origin[2]]} renderOrder={renderOrder}>
         <RigidBody ref={fixed} {...segmentProps} type="fixed" />
-        <RigidBody position={[0.5, 0, 0]} ref={j1} {...segmentProps} type="dynamic">
-          <BallCollider args={[0.1]} />
+        <RigidBody position={[0.5 * unitScale, 0, 0]} ref={j1} {...segmentProps} type="dynamic">
+          <BallCollider args={[0.1 * unitScale]} />
         </RigidBody>
-        <RigidBody position={[1, 0, 0]} ref={j2} {...segmentProps} type="dynamic">
-          <BallCollider args={[0.1]} />
+        <RigidBody position={[unitScale, 0, 0]} ref={j2} {...segmentProps} type="dynamic">
+          <BallCollider args={[0.1 * unitScale]} />
         </RigidBody>
-        <RigidBody position={[1.5, 0, 0]} ref={j3} {...segmentProps} type="dynamic">
-          <BallCollider args={[0.1]} />
+        <RigidBody position={[1.5 * unitScale, 0, 0]} ref={j3} {...segmentProps} type="dynamic">
+          <BallCollider args={[0.1 * unitScale]} />
         </RigidBody>
         <RigidBody
-          position={[2, 0, 0]}
+          position={[2 * unitScale, 0, 0]}
           ref={card}
           {...segmentProps}
           type={dragged ? 'kinematicPosition' : 'dynamic'}
         >
-          <CuboidCollider args={[0.8, 1.125, 0.01]} />
+          <CuboidCollider args={[0.8 * unitScale, 1.125 * unitScale, 0.01 * unitScale]} />
           <group
-            scale={2.25}
-            position={[0, -1.2, -0.05]}
+            scale={2.25 * unitScale}
+            position={[0, -1.2 * unitScale, -0.05 * unitScale]}
             onPointerOver={() => hover(true)}
             onPointerOut={() => hover(false)}
             onPointerUp={(e: any) => {
@@ -379,16 +408,24 @@ function Band({
             }}
             onPointerDown={(e: any) => {
               (e.target as Element).setPointerCapture(e.pointerId)
-              drag(new THREE.Vector3().copy(e.point).sub(vec.copy(card.current.translation())))
+              const camera = e.camera as THREE.Camera
+              camera.getWorldDirection(dir)
+              drag({
+                offset: new THREE.Vector3().copy(e.point).sub(vec.copy(card.current.translation())),
+                plane: new THREE.Plane().setFromNormalAndCoplanarPoint(dir.clone(), e.point),
+              })
             }}
           >
-            <mesh geometry={nodes.card.geometry}>
+            <mesh geometry={nodes.card.geometry} renderOrder={renderOrder}>
               <meshPhysicalMaterial
                 color="#f4f4f2"
                 map={cardMap}
                 map-anisotropy={16}
                 emissive="#ffffff"
-                emissiveIntensity={0.08}
+                emissiveIntensity={cardEmissiveIntensity}
+                transparent={renderOrder > 0}
+                opacity={1}
+                depthWrite={renderOrder <= 0}
                 clearcoat={isMobile ? 0 : 1}
                 clearcoatRoughness={0.15}
                 roughness={0.9}
@@ -396,12 +433,12 @@ function Band({
                 side={THREE.DoubleSide}
               />
             </mesh>
-            <mesh geometry={nodes.clip.geometry} material={materials.metal} material-roughness={0.3} />
-            <mesh geometry={nodes.clamp.geometry} material={materials.metal} />
+            <mesh geometry={nodes.clip.geometry} material={materials.metal} material-roughness={0.3} renderOrder={renderOrder} />
+            <mesh geometry={nodes.clamp.geometry} material={materials.metal} renderOrder={renderOrder} />
           </group>
         </RigidBody>
       </group>
-      <mesh ref={band}>
+      <mesh ref={band} renderOrder={renderOrder}>
         <meshLineGeometry />
         <meshLineMaterial
           args={[]}

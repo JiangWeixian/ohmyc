@@ -1,5 +1,10 @@
 import { BakeShadows, MeshReflectorMaterial } from '@react-three/drei'
-import { Canvas, useFrame } from '@react-three/fiber'
+import {
+  Canvas,
+  createPortal,
+  useFrame,
+  useThree,
+} from '@react-three/fiber'
 import {
   Bloom,
   DepthOfField,
@@ -7,10 +12,16 @@ import {
   ToneMapping,
 } from '@react-three/postprocessing'
 import { easing } from 'maath'
-import { useRef, useState } from 'react'
+import {
+  type ReactNode,
+  useEffect,
+  useRef,
+  useState,
+} from 'react'
 import * as THREE from 'three'
 
 import { Computers, Instances } from './computers-scene'
+import { LanyardScene } from './lanyard'
 
 interface MonitorFocus {
   id: string
@@ -20,6 +31,13 @@ interface MonitorFocus {
 
 export function ComputerBackdrop() {
   const [focusedMonitor, setFocusedMonitor] = useState<MonitorFocus | null>(null)
+  const [isMobile, setIsMobile] = useState(() => globalThis.window !== undefined && window.innerWidth < 768)
+
+  useEffect(() => {
+    const handleResize = () => setIsMobile(window.innerWidth < 768)
+    window.addEventListener('resize', handleResize)
+    return () => window.removeEventListener('resize', handleResize)
+  }, [])
 
   return (
     <div className="absolute inset-0 overflow-hidden">
@@ -72,10 +90,89 @@ export function ComputerBackdrop() {
           <DepthOfField target={[0, 0, 13]} focalLength={0.12} bokehScale={0.65} height={700} />
           <ToneMapping />
         </EffectComposer>
+        <ForegroundLayer>
+          <SceneBackdropBlend />
+          <LanyardScene
+            ambientIntensity={0.4}
+            cardEmissiveIntensity={0.18}
+            environment={false}
+            isMobile={isMobile}
+            gravity={[0, -34, 0]}
+            lanyardWidth={0.48}
+            origin={[1.24, 0.4, 0.8]}
+            renderOrder={20}
+            unitScale={0.38}
+          />
+        </ForegroundLayer>
         <CameraRig focusedMonitor={focusedMonitor} />
         <BakeShadows />
       </Canvas>
     </div>
+  )
+}
+
+function ForegroundLayer({ children }: { children: ReactNode }) {
+  const { gl, camera } = useThree()
+  const [scene] = useState(() => new THREE.Scene())
+
+  useFrame(() => {
+    const autoClear = gl.autoClear
+    // Three foreground passes need to preserve the already-composited scene.
+    // eslint-disable-next-line react-hooks/immutability
+    gl.autoClear = false
+    gl.clearDepth()
+    gl.render(scene, camera)
+    gl.autoClear = autoClear
+  }, 2)
+
+  return createPortal(children, scene, { events: { priority: 3 } })
+}
+
+function SceneBackdropBlend() {
+  return (
+    <mesh frustumCulled={false} renderOrder={10}>
+      <planeGeometry args={[2, 2]} />
+      <shaderMaterial
+        transparent
+        depthTest={false}
+        depthWrite={false}
+        vertexShader={`
+          varying vec2 vUv;
+
+          void main() {
+            vUv = position.xy * 0.5 + 0.5;
+            gl_Position = vec4(position.xy, 0.0, 1.0);
+          }
+        `}
+        fragmentShader={`
+          varying vec2 vUv;
+
+          void main() {
+            vec2 uv = vec2(vUv.x, 1.0 - vUv.y);
+
+            float linearMask = 0.0;
+            if (uv.x < 0.42) {
+              linearMask = mix(0.08, 0.24, smoothstep(0.0, 0.42, uv.x));
+            } else if (uv.x < 0.72) {
+              linearMask = mix(0.24, 0.88, smoothstep(0.42, 0.72, uv.x));
+            } else {
+              linearMask = mix(0.88, 1.0, smoothstep(0.72, 1.0, uv.x));
+            }
+
+            float rightMask = smoothstep(0.6, 0.88, uv.x);
+            float bottomMask = 1.0 - smoothstep(0.0, 0.34, uv.y);
+            float blackAlpha = max(max(linearMask, rightMask), bottomMask);
+
+            float radialDistance = distance(uv, vec2(0.34, 0.38));
+            float whiteAlpha = (1.0 - smoothstep(0.0, 0.28, radialDistance)) * 0.08;
+            float alpha = blackAlpha + whiteAlpha * (1.0 - blackAlpha);
+            vec3 color = mix(vec3(0.0), vec3(1.0), whiteAlpha * (1.0 - blackAlpha) / max(alpha, 0.001));
+
+            gl_FragColor = vec4(color, alpha);
+          }
+        `}
+      />
+    </mesh>
   )
 }
 

@@ -1,24 +1,25 @@
-import { useReducedMotion } from 'framer-motion'
 import { Atom } from 'lucide-react'
 
 import { ComputerBackdrop } from './computer-backdrop'
-import { type MonitorCanvasStat, MonitorForegroundCanvas } from './monitor-foreground-canvas'
 
-const stats: MonitorCanvasStat[] = [
+interface SpikeStat {
+  label: string
+  value: number
+  suffix: string
+  precision?: number
+}
+
+const stats: SpikeStat[] = [
   { label: 'sessions', value: 842, suffix: '' },
   { label: 'tokens', value: 18.4, suffix: 'M', precision: 1 },
   { label: 'last sync', value: 3, suffix: 'm' },
 ]
 
 export function MonitorSpikeView() {
-  const reduceMotion = useReducedMotion()
-
   return (
     <section className="relative h-dvh min-h-[720px] overflow-hidden bg-[var(--bg-marketing)] font-['Geist','Inter_var','Inter',sans-serif] text-[var(--text-primary)] max-md:h-auto max-md:min-h-dvh max-md:overflow-y-auto">
       <ComputerBackdrop />
-      <BackdropBlend />
       <SignalField />
-      <MonitorForegroundCanvas reduceMotion={Boolean(reduceMotion)} stats={stats} />
       <SpikeIsland />
 
       <main className="sr-only">
@@ -36,16 +37,6 @@ export function MonitorSpikeView() {
         </dl>
       </main>
     </section>
-  )
-}
-
-function BackdropBlend() {
-  return (
-    <div aria-hidden="true" className="pointer-events-none absolute inset-0 z-[1]">
-      <div className="absolute inset-0 bg-[radial-gradient(circle_at_34%_38%,rgba(255,255,255,0.08),transparent_28%),linear-gradient(90deg,rgba(8,9,10,0.08)_0%,rgba(8,9,10,0.24)_42%,rgba(8,9,10,0.88)_72%,#08090a_100%)]" />
-      <div className="absolute inset-y-0 right-0 w-[40%] bg-[linear-gradient(90deg,rgba(8,9,10,0),#08090a_70%)]" />
-      <div className="absolute inset-x-0 bottom-0 h-[34%] bg-[linear-gradient(0deg,#08090a,rgba(8,9,10,0))]" />
-    </div>
   )
 }
 
