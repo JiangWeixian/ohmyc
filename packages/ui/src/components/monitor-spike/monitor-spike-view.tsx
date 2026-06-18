@@ -4,21 +4,20 @@ import { Atom } from 'lucide-react'
 import { ComputerBackdrop } from './computer-backdrop'
 // import { Lanyard } from './lanyard'
 
-// Keep these inactive while the computer-background spike is evaluated. They
-// were the previous right-side HTML stats and may come back after the monitor
-// composition direction is settled.
-// interface SpikeStat {
-//   label: string
-//   value: number
-//   suffix: string
-//   precision?: number
-// }
-//
-// const stats: SpikeStat[] = [
-//   { label: 'sessions', value: 842, suffix: '' },
-//   { label: 'tokens', value: 18.4, suffix: 'M', precision: 1 },
-//   { label: 'last sync', value: 3, suffix: 'm' },
-// ]
+// Keep stats in the DOM while the computer-background spike is evaluated. This
+// isolates copy/layout changes from the Three.js material pass.
+interface SpikeStat {
+  label: string
+  value: number
+  suffix: string
+  precision?: number
+}
+
+const stats: SpikeStat[] = [
+  { label: 'sessions', value: 842, suffix: '' },
+  { label: 'tokens', value: 18.4, suffix: 'M', precision: 1 },
+  { label: 'last sync', value: 3, suffix: 'm' },
+]
 
 export function MonitorSpikeView() {
   const reduceMotion = useReducedMotion()
@@ -43,6 +42,33 @@ export function MonitorSpikeView() {
           </div>
           */}
         </motion.div>
+
+        <div className="absolute right-16 top-1/2 z-20 w-full max-w-[420px] -translate-y-1/2 max-xl:right-10 max-xl:max-w-[380px] max-lg:right-8 max-lg:max-w-[340px] max-md:hidden">
+          <motion.div
+            initial={reduceMotion ? false : { opacity: 0, x: 18 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.32, delay: 0.12 }}
+          >
+            <dl className="grid grid-cols-1 gap-8">
+              {stats.map((item, index) => (
+                <motion.div
+                  key={item.label}
+                  className="border-t border-[rgba(255,255,255,0.10)] pt-4"
+                  initial={reduceMotion ? false : { opacity: 0, y: 12 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.24, delay: 0.18 + index * 0.06 }}
+                >
+                  <dt className="font-['Geist_Mono','Berkeley_Mono',ui-monospace,monospace] text-[12px] uppercase tracking-[0.14em] text-[rgba(208,214,224,0.72)]">
+                    {item.label}
+                  </dt>
+                  <dd className="mt-2 font-['Geist_Mono','Berkeley_Mono',ui-monospace,monospace] text-[88px] font-[510] leading-none text-[rgba(247,248,248,0.92)] [font-variant-numeric:tabular-nums] max-xl:text-[78px] max-lg:text-[66px]">
+                    <AnimatedStat value={item.value} precision={item.precision ?? 0} suffix={item.suffix} />
+                  </dd>
+                </motion.div>
+              ))}
+            </dl>
+          </motion.div>
+        </div>
 
         {/*
         <motion.div
@@ -76,22 +102,22 @@ export function MonitorSpikeView() {
   )
 }
 
-// function AnimatedStat({
-//   value,
-//   precision,
-//   suffix,
-// }: {
-//   value: number
-//   precision: number
-//   suffix: string
-// }) {
-//   return (
-//     <>
-//       {value.toFixed(precision)}
-//       {suffix}
-//     </>
-//   )
-// }
+function AnimatedStat({
+  value,
+  precision,
+  suffix,
+}: {
+  value: number
+  precision: number
+  suffix: string
+}) {
+  return (
+    <>
+      {value.toFixed(precision)}
+      {suffix}
+    </>
+  )
+}
 
 function BackdropBlend() {
   return (
