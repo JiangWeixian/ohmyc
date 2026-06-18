@@ -69,8 +69,8 @@ vi.mock('@/hooks/use-plugins', () => ({
   }),
 }))
 
-describe('Explorer inventory views', () => {
-  it('shows Timeline plus only the four core Explorer resource tabs in the sidebar', () => {
+describe('Explorer route views', () => {
+  it('shows the floating navigation island with Signal and Explore groups', () => {
     renderWithProviders(
       <Routes>
         <Route path="/explore/:tab" element={<Explorer />} />
@@ -78,19 +78,57 @@ describe('Explorer inventory views', () => {
       { route: '/explore/plugins' },
     )
 
-    const tabs = [...document.querySelectorAll('[role="tab"]')]
-    const timelineButton = document.querySelector('aside button')
+    const island = screen.getByRole('navigation', { name: 'Primary' })
 
-    expect(timelineButton?.textContent).toBe('Timeline')
-    expect(tabs.map(tab => tab.textContent)).toEqual([
-      'Agents',
-      'Commands',
-      'Skills',
-      'Plugins',
-    ])
-    expect(tabs.map(tab => tab.textContent)).not.toContain('Hooks')
-    expect(tabs.map(tab => tab.textContent)).not.toContain('MCP Servers')
-    expect(tabs.map(tab => tab.textContent)).not.toContain('LSP Servers')
+    expect(island).toHaveTextContent('OhMyC')
+    expect(island).toHaveTextContent('coding monitor')
+    expect(island).toHaveTextContent('Signal')
+    expect(island).toHaveTextContent('Monitor')
+    expect(island).toHaveTextContent('Timeline')
+    expect(island).toHaveTextContent('Explore')
+    expect(island).toHaveTextContent('Agents')
+    expect(island).toHaveTextContent('Commands')
+    expect(island).toHaveTextContent('Skills')
+    expect(island).toHaveTextContent('Plugins')
+
+    expect(document.querySelector('aside')).not.toBeInTheDocument()
+    expect(document.querySelector('main header')).not.toBeInTheDocument()
+  })
+
+  it('collapses the navigation island to a single icon button and expands it again', () => {
+    renderWithProviders(
+      <Routes>
+        <Route path="/explore/:tab" element={<Explorer />} />
+      </Routes>,
+      { route: '/explore/timeline' },
+    )
+
+    const collapseButton = document.querySelector('button[aria-label="Collapse navigation"]')
+    expect(collapseButton).not.toBeNull()
+    fireEvent.click(collapseButton as HTMLElement)
+
+    expect(screen.queryByRole('navigation', { name: 'Primary' })).not.toBeInTheDocument()
+    const expandButton = document.querySelector('button[aria-label="Expand navigation"]')
+    expect(expandButton).not.toBeNull()
+
+    fireEvent.click(expandButton as HTMLElement)
+
+    const timelineLink = document.querySelector('a[href="/explore/timeline"]')
+    expect(timelineLink?.textContent).toContain('Timeline')
+  })
+
+  it('renders Monitor route as a full-bleed personal coding monitor surface', async () => {
+    renderWithProviders(
+      <Routes>
+        <Route path="/explore/:tab" element={<Explorer />} />
+      </Routes>,
+      { route: '/explore/monitor' },
+    )
+
+    expect(screen.getByRole('heading', { name: 'Coding Monitor' })).toBeInTheDocument()
+    expect(screen.getByText('sessions')).toBeInTheDocument()
+    expect(screen.getByText('tokens')).toBeInTheDocument()
+    expect(screen.getByText('last sync')).toBeInTheDocument()
   })
 
   it('shows plugin inventory details without the Environment summary', () => {
@@ -153,11 +191,9 @@ describe('Explorer inventory views', () => {
 
     const main = document.querySelector('main')
     const timelineHeading = document.querySelector('main h1')
-    const breadcrumb = document.querySelector('main header nav')
 
+    expect(screen.getByRole('navigation', { name: 'Primary' })).toHaveTextContent('Timeline')
     expect(timelineHeading?.textContent).toBe('Timeline')
-    expect(breadcrumb?.textContent).toContain('Timeline')
-    expect(breadcrumb?.textContent).not.toContain(removedHeading)
     expect(main?.textContent).not.toContain(removedHeading)
     expect(screen.queryByText(removedEmptyState)).not.toBeInTheDocument()
   })
@@ -174,5 +210,37 @@ describe('Explorer inventory views', () => {
     expect(document.body.textContent).not.toContain('Settings panel')
     expect(document.body.textContent).not.toContain('General')
     expect(document.body.textContent).not.toContain('Configure your general settings')
+  })
+
+  it('keeps resource page internals while changing only the shell', () => {
+    renderWithProviders(
+      <Routes>
+        <Route path="/explore/:tab" element={<Explorer />} />
+      </Routes>,
+      { route: '/explore/plugins' },
+    )
+
+    const main = document.querySelector('main')
+
+    expect(main?.textContent).toContain('Plugins')
+    expect(main?.textContent).toContain('Inspect installed plugins, enabled state, and bundled component counts for the current environment.')
+    expect(main?.textContent).toContain('review-pack')
+    expect(main?.textContent).toContain('Enabled')
+    expect(main?.textContent).toContain('Agents: 1')
+    expect(main?.textContent).toContain('Skills: 1')
+    expect(main?.textContent).toContain('Commands: 1')
+  })
+
+  it('keeps Timeline route owned content inside the new shell', () => {
+    renderWithProviders(
+      <Routes>
+        <Route path="/explore/:tab" element={<Explorer />} />
+      </Routes>,
+      { route: '/explore/timeline' },
+    )
+
+    expect(screen.getByRole('navigation', { name: 'Primary' })).toHaveTextContent('Timeline')
+    expect(document.querySelector('main h1')?.textContent).toBe('Timeline')
+    expect(document.body.textContent).toContain('Every Claude Code session')
   })
 })

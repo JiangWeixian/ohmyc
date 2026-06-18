@@ -21,6 +21,7 @@
   - Navigation is a floating island; collapsed state is one `52-56px` icon badge, not a mini rail.
   - Non-Monitor routes keep their internal layout and information architecture.
   - Monitor is `/explore/monitor`; Timeline remains default at `/explore/timeline`.
+  - The R3F/WebGL evaluation spike uses `/explore/monitor-spike`. Treat `/explore/monitor-lanyard-stats-spike` as a comparison-only spike, not the plan's primary spike route.
   - Stats are display-scale numbers, not cards.
   - Framer Motion owns DOM chrome and DOM count-up; R3F/Drei owns scene physics and in-Canvas motion.
 - Component rule: new interactive controls should prefer existing shadcn-style primitives under `packages/ui/src/components/ui/*` (`Button`, `Select`, `DropdownMenu`, etc.). Use raw elements only when the primitive would be semantically wrong or no local primitive exists; route navigation remains `NavLink`.
@@ -1254,6 +1255,8 @@ git commit -m "test(ui): cover island shell route preservation"
 - Modify: `packages/ui/src/components/monitor/monitor-view.tsx`
 - Create: `packages/ui/src/components/monitor/lanyard-stage.tsx`
 - Optional modify after official docs check: `packages/ui/package.json`, `pnpm-lock.yaml`
+
+**Spike route decision:** Use `/explore/monitor-spike` for the R3F/WebGL Lanyard + monitor stats spike that informs production integration. The temporary `/explore/monitor-lanyard-stats-spike` route is only a comparison surface for layout exploration and should not replace the primary spike route in this plan.
 
 - [ ] **Step 1: Check current React Bits install instructions**
 

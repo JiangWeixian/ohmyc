@@ -26,21 +26,14 @@ function ShortcutHarness() {
 }
 
 describe('useGlobalKeyboardShortcuts', () => {
-  it('maps g then s to Skills from Explorer pages', () => {
-    renderWithProviders(
-      <Routes>
-        <Route path="*" element={<ShortcutHarness />} />
-      </Routes>,
-      { route: '/explore/lsp' },
-    )
-
-    fireEvent.keyDown(document, { key: 'g' })
-    fireEvent.keyDown(document, { key: 's' })
-
-    expect(screen.getByTestId('path')).toHaveTextContent('/explore/skills')
-  })
-
-  it('maps g then s to Skills outside Explorer pages', () => {
+  it.each([
+    ['m', '/explore/monitor'],
+    ['e', '/explore/agents'],
+    ['a', '/explore/agents'],
+    ['s', '/explore/skills'],
+    ['c', '/explore/commands'],
+    ['t', '/explore/timeline'],
+  ])('maps g then %s to %s', (key, expectedPath) => {
     renderWithProviders(
       <Routes>
         <Route path="*" element={<ShortcutHarness />} />
@@ -49,9 +42,9 @@ describe('useGlobalKeyboardShortcuts', () => {
     )
 
     fireEvent.keyDown(document, { key: 'g' })
-    fireEvent.keyDown(document, { key: 's' })
+    fireEvent.keyDown(document, { key })
 
-    expect(screen.getByTestId('path')).toHaveTextContent('/explore/skills')
+    expect(screen.getByTestId('path')).toHaveTextContent(expectedPath)
   })
 
   it('ignores shortcut sequences while an input is focused', () => {

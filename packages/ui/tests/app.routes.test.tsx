@@ -1,4 +1,8 @@
-import { screen, waitFor } from '@testing-library/react'
+import {
+  fireEvent,
+  screen,
+  waitFor,
+} from '@testing-library/react'
 import React from 'react'
 import {
   describe,
@@ -41,6 +45,21 @@ describe('App routes', () => {
 
   it('keeps /explore routed through Explorer', async () => {
     renderWithProviders(<App />, { route: '/explore' })
+
+    await waitFor(() => {
+      expect(screen.getByTestId('explorer-route')).toBeInTheDocument()
+    })
+  })
+
+  it('navigates to Monitor from the command palette', async () => {
+    renderWithProviders(<App />, { route: '/menubar' })
+
+    fireEvent.keyDown(document, { key: 'k', metaKey: true })
+
+    const monitorItem = await screen.findByText('Monitor')
+    expect(screen.getByText('g m')).toBeInTheDocument()
+
+    fireEvent.click(monitorItem)
 
     await waitFor(() => {
       expect(screen.getByTestId('explorer-route')).toBeInTheDocument()

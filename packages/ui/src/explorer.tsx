@@ -8,13 +8,13 @@ import {
   TerminalSquare,
 } from 'lucide-react'
 import { useState } from 'react'
-import { useNavigate, useParams } from 'react-router-dom'
+import { useParams } from 'react-router-dom'
 
 import { EntityCard } from './components/entity-card'
 import { EntityDetail } from './components/entity-detail'
-import { Header } from './components/header'
+import { MonitorView } from './components/monitor/monitor-view'
+import { NavigationIsland } from './components/navigation-island'
 import { SectionHeader } from './components/section-header'
-import { Sidebar, type SidebarSection } from './components/sidebar'
 import { TimelineView } from './components/timeline/timeline-view'
 import {
   type ItemLocator,
@@ -31,15 +31,7 @@ import type {
   Command,
   Skill,
 } from '@ohmyc/shared'
-
-// ═══════════ Sidebar Section Definitions ═══════════
-
-const SECTIONS: SidebarSection[] = [
-  { id: 'agents', label: 'Agents', icon: Bot },
-  { id: 'commands', label: 'Commands', icon: TerminalSquare },
-  { id: 'skills', label: 'Skills', icon: Sparkles },
-  { id: 'plugins', label: 'Plugins', icon: Blocks },
-]
+import type { ReactNode } from 'react'
 
 // Section descriptions
 const SECTION_DESCRIPTIONS: Record<'agents' | 'commands' | 'skills', string> = {
@@ -74,17 +66,20 @@ const ENTITY_CONFIG = {
 
 /** Props for the {@link Explorer} component. */
 interface ExplorerProperties {
-  viewSwitcher?: React.ReactNode
+  viewSwitcher?: ReactNode
 }
 
 /**
  * Main explorer view — renders Timeline plus the core resource tabs:
  * agents, commands, skills, and plugins.
  */
-export function Explorer({ viewSwitcher }: ExplorerProperties) {
+export function Explorer({ viewSwitcher: _viewSwitcher }: ExplorerProperties) {
   const { tab } = useParams<{ tab: string }>()
-  const navigate = useNavigate()
-  const activeSection = tab === 'timeline' || (tab && SECTIONS.some(s => s.id === tab)) ? tab : 'timeline'
+  type ResourceSectionId = 'agents' | 'commands' | 'plugins' | 'skills'
+  type ExplorerTab = ResourceSectionId | 'monitor' | 'timeline'
+
+  const VALID_TABS = new Set<ExplorerTab>(['monitor', 'timeline', 'agents', 'commands', 'skills', 'plugins'])
+  const activeSection: ExplorerTab = tab && VALID_TABS.has(tab as ExplorerTab) ? (tab as ExplorerTab) : 'timeline'
   const [selectedItem, setSelectedItem] = useState<ItemLocator | null>(null)
 
   // Data hooks
@@ -276,25 +271,6 @@ export function Explorer({ viewSwitcher }: ExplorerProperties) {
     )
   }
 
-  // Render under construction placeholder
-  const renderPlaceholder = () => (
-    <div className="panel-subtle flex flex-col items-center justify-center py-20">
-      <div className="mb-5 flex size-14 items-center justify-center rounded-xl border border-[var(--border-standard)] bg-[rgba(255,255,255,0.02)]">
-        <Info size={22} className="text-[var(--text-tertiary)]" />
-      </div>
-      <h2 className="text-[22px] font-semibold tracking-[-0.02em] text-[var(--text-primary)]">
-        Coming soon
-      </h2>
-      <p className="mt-3 max-w-md text-pretty text-center text-[15px] leading-relaxed text-[var(--text-tertiary)]">
-        The{' '}
-        <span className="capitalize text-[var(--text-primary)]">
-          {activeSection.replace('-', ' ')}
-        </span>{' '}
-        section is still in development. It will be available in a future release.
-      </p>
-    </div>
-  )
-
   const renderPlugins = () => {
     return (
     <section>
@@ -382,31 +358,25 @@ export function Explorer({ viewSwitcher }: ExplorerProperties) {
   }
 
   return (
-    <div className="flex h-full min-w-0 font-sans text-[var(--text-primary)]">
-      <Sidebar
-        sections={SECTIONS}
-        activeSection={activeSection}
-        onSectionChange={(id) => {
-          navigate(`/explore/${id}`)
-          setSelectedItem(null)
-        }}
-        headerSlot={viewSwitcher}
-      />
+    <div className="relative h-full min-w-0 overflow-hidden font-sans text-[var(--text-primary)]">
+      <NavigationIsland />
 
-      {/* Main Content */}
-      <main className="relative flex min-w-0 flex-1 flex-col overflow-hidden bg-[var(--bg-marketing)]">
-        <Header />
-        {/* Content */}
-        <div className="flex-1 overflow-y-auto">
-          <div className="mx-auto w-full max-w-6xl p-10">
-            {activeSection === 'timeline' && <TimelineView />}
-            {activeSection === 'agents' && renderEntityList('agents')}
-            {activeSection === 'skills' && renderEntityList('skills')}
-            {activeSection === 'commands' && renderEntityList('commands')}
-            {activeSection === 'plugins' && renderPlugins()}
-            {activeSection === 'claude-md' && renderPlaceholder()}
-          </div>
-        </div>
+      <main className="relative h-full min-w-0 overflow-hidden bg-[var(--bg-marketing)]">
+        {activeSection === 'monitor'
+          ? (
+              <MonitorView />
+            )
+          : (
+              <div className="h-full overflow-y-auto">
+                <div className="mx-auto w-full max-w-6xl p-10 pl-[280px] max-lg:pl-[260px] max-md:px-5 max-md:pt-24">
+                  {activeSection === 'timeline' && <TimelineView />}
+                  {activeSection === 'agents' && renderEntityList('agents')}
+                  {activeSection === 'skills' && renderEntityList('skills')}
+                  {activeSection === 'commands' && renderEntityList('commands')}
+                  {activeSection === 'plugins' && renderPlugins()}
+                </div>
+              </div>
+            )}
       </main>
     </div>
   )
