@@ -1,19 +1,10 @@
-import { motion, useReducedMotion } from 'framer-motion'
+import { useReducedMotion } from 'framer-motion'
 import { Atom } from 'lucide-react'
 
 import { ComputerBackdrop } from './computer-backdrop'
-// import { Lanyard } from './lanyard'
+import { type MonitorCanvasStat, MonitorForegroundCanvas } from './monitor-foreground-canvas'
 
-// Keep stats in the DOM while the computer-background spike is evaluated. This
-// isolates copy/layout changes from the Three.js material pass.
-interface SpikeStat {
-  label: string
-  value: number
-  suffix: string
-  precision?: number
-}
-
-const stats: SpikeStat[] = [
+const stats: MonitorCanvasStat[] = [
   { label: 'sessions', value: 842, suffix: '' },
   { label: 'tokens', value: 18.4, suffix: 'M', precision: 1 },
   { label: 'last sync', value: 3, suffix: 'm' },
@@ -27,95 +18,24 @@ export function MonitorSpikeView() {
       <ComputerBackdrop />
       <BackdropBlend />
       <SignalField />
+      <MonitorForegroundCanvas reduceMotion={Boolean(reduceMotion)} stats={stats} />
       <SpikeIsland />
 
-      <main className="pointer-events-none relative z-10 grid h-full grid-cols-1 items-center px-16 py-10 pl-[244px] max-xl:pl-[216px] max-lg:pl-[108px] max-md:min-h-dvh max-md:px-5 max-md:pb-10 max-md:pl-5 max-md:pt-24">
-        <motion.div
-          className="relative min-h-[680px] max-lg:min-h-[520px] max-md:min-h-[570px]"
-          initial={reduceMotion ? false : { opacity: 0, y: 18 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.4 }}
-        >
-          {/*
-          <div className="absolute inset-x-[-12%] top-[-92px] h-[820px] max-lg:left-[-16%] max-lg:right-auto max-lg:w-[620px] max-md:left-1/2 max-md:top-[-74px] max-md:h-[580px] max-md:w-[420px] max-md:-translate-x-1/2">
-            <Lanyard position={[0, 0, 24]} gravity={[0, -40, 0]} fov={20} transparent lanyardWidth={1} />
-          </div>
-          */}
-        </motion.div>
-
-        <div className="absolute right-16 top-1/2 z-20 w-full max-w-[420px] -translate-y-1/2 max-xl:right-10 max-xl:max-w-[380px] max-lg:right-8 max-lg:max-w-[340px] max-md:hidden">
-          <motion.div
-            initial={reduceMotion ? false : { opacity: 0, x: 18 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ duration: 0.32, delay: 0.12 }}
-          >
-            <dl className="grid grid-cols-1 gap-8">
-              {stats.map((item, index) => (
-                <motion.div
-                  key={item.label}
-                  className="border-t border-[rgba(255,255,255,0.10)] pt-4"
-                  initial={reduceMotion ? false : { opacity: 0, y: 12 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.24, delay: 0.18 + index * 0.06 }}
-                >
-                  <dt className="font-['Geist_Mono','Berkeley_Mono',ui-monospace,monospace] text-[12px] uppercase tracking-[0.14em] text-[rgba(208,214,224,0.72)]">
-                    {item.label}
-                  </dt>
-                  <dd className="mt-2 font-['Geist_Mono','Berkeley_Mono',ui-monospace,monospace] text-[88px] font-[510] leading-none text-[rgba(247,248,248,0.92)] [font-variant-numeric:tabular-nums] max-xl:text-[78px] max-lg:text-[66px]">
-                    <AnimatedStat value={item.value} precision={item.precision ?? 0} suffix={item.suffix} />
-                  </dd>
-                </motion.div>
-              ))}
-            </dl>
-          </motion.div>
-        </div>
-
-        {/*
-        <motion.div
-          className="relative z-20 ml-auto w-full max-w-[460px] max-lg:ml-0 max-lg:max-w-[680px] max-md:max-w-none"
-          initial={reduceMotion ? false : { opacity: 0, x: 18 }}
-          animate={{ opacity: 1, x: 0 }}
-          transition={{ duration: 0.32, delay: 0.12 }}
-        >
-          <dl className="grid grid-cols-1 gap-9 max-lg:grid-cols-3 max-lg:gap-5 max-md:grid-cols-1 max-md:gap-7">
-            {stats.map((item, index) => (
-              <motion.div
-                key={item.label}
-                className="border-t border-[rgba(255,255,255,0.08)] pt-5 max-md:pt-4"
-                initial={reduceMotion ? false : { opacity: 0, y: 12 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.24, delay: 0.18 + index * 0.06 }}
-              >
-                <dt className="font-['Geist_Mono','Berkeley_Mono',ui-monospace,monospace] text-[13px] uppercase tracking-[0.08em] text-[var(--text-tertiary)] max-md:text-[11px]">
-                  {item.label}
-                </dt>
-                <dd className="mt-3 font-['Geist_Mono','Berkeley_Mono',ui-monospace,monospace] text-[112px] font-[510] leading-none tracking-[-0.08em] text-[var(--text-primary)] [font-variant-numeric:tabular-nums] max-xl:text-[96px] max-lg:text-[72px] max-md:text-[76px]">
-                  <AnimatedStat value={item.value} precision={item.precision ?? 0} suffix={item.suffix} />
-                </dd>
-              </motion.div>
-            ))}
-          </dl>
-        </motion.div>
-        */}
+      <main className="sr-only">
+        <h1>Personal Coding Monitor</h1>
+        <dl>
+          {stats.map(item => (
+            <div key={item.label}>
+              <dt>{item.label}</dt>
+              <dd>
+                {item.value.toFixed(item.precision ?? 0)}
+                {item.suffix}
+              </dd>
+            </div>
+          ))}
+        </dl>
       </main>
     </section>
-  )
-}
-
-function AnimatedStat({
-  value,
-  precision,
-  suffix,
-}: {
-  value: number
-  precision: number
-  suffix: string
-}) {
-  return (
-    <>
-      {value.toFixed(precision)}
-      {suffix}
-    </>
   )
 }
 

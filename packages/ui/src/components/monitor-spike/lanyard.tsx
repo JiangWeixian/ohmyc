@@ -67,6 +67,14 @@ interface LanyardProps {
   lanyardWidth?: number
 }
 
+type LanyardSceneProps = Pick<
+  LanyardProps,
+  'backImage' | 'frontImage' | 'gravity' | 'imageFit' | 'lanyardImage' | 'lanyardWidth'
+> & {
+  isMobile?: boolean
+  origin?: [number, number, number]
+}
+
 export function Lanyard({
   position = [0, 0, 30],
   gravity = [0, -40, 0],
@@ -94,49 +102,75 @@ export function Lanyard({
         gl={{ alpha: transparent }}
         onCreated={({ gl }) => gl.setClearColor(new THREE.Color(0x00_00_00), transparent ? 0 : 1)}
       >
-        <ambientLight intensity={Math.PI} />
-        <Physics gravity={gravity} timeStep={isMobile ? 1 / 30 : 1 / 60}>
-          <Band
-            isMobile={isMobile}
-            frontImage={frontImage}
-            backImage={backImage}
-            imageFit={imageFit}
-            lanyardImage={lanyardImage}
-            lanyardWidth={lanyardWidth}
-          />
-        </Physics>
-        <Environment blur={0.75}>
-          <Lightformer
-            intensity={2}
-            color="white"
-            position={[0, -1, 5]}
-            rotation={[0, 0, Math.PI / 3]}
-            scale={[100, 0.1, 1]}
-          />
-          <Lightformer
-            intensity={3}
-            color="white"
-            position={[-1, -1, 1]}
-            rotation={[0, 0, Math.PI / 3]}
-            scale={[100, 0.1, 1]}
-          />
-          <Lightformer
-            intensity={3}
-            color="white"
-            position={[1, 1, 1]}
-            rotation={[0, 0, Math.PI / 3]}
-            scale={[100, 0.1, 1]}
-          />
-          <Lightformer
-            intensity={10}
-            color="white"
-            position={[-10, 0, 14]}
-            rotation={[0, Math.PI / 2, Math.PI / 3]}
-            scale={[100, 10, 1]}
-          />
-        </Environment>
+        <LanyardScene
+          isMobile={isMobile}
+          gravity={gravity}
+          frontImage={frontImage}
+          backImage={backImage}
+          imageFit={imageFit}
+          lanyardImage={lanyardImage}
+          lanyardWidth={lanyardWidth}
+        />
       </Canvas>
     </div>
+  )
+}
+
+export function LanyardScene({
+  isMobile = false,
+  gravity = [0, -40, 0],
+  frontImage = null,
+  backImage = null,
+  imageFit = 'cover',
+  lanyardImage = null,
+  lanyardWidth = 1,
+  origin = [0, 0, 0],
+}: LanyardSceneProps) {
+  return (
+    <>
+      <ambientLight intensity={Math.PI} />
+      <Physics gravity={gravity} timeStep={isMobile ? 1 / 30 : 1 / 60}>
+        <Band
+          isMobile={isMobile}
+          frontImage={frontImage}
+          backImage={backImage}
+          imageFit={imageFit}
+          lanyardImage={lanyardImage}
+          lanyardWidth={lanyardWidth}
+          origin={origin}
+        />
+      </Physics>
+      <Environment blur={0.75}>
+        <Lightformer
+          intensity={2}
+          color="white"
+          position={[0, -1, 5]}
+          rotation={[0, 0, Math.PI / 3]}
+          scale={[100, 0.1, 1]}
+        />
+        <Lightformer
+          intensity={3}
+          color="white"
+          position={[-1, -1, 1]}
+          rotation={[0, 0, Math.PI / 3]}
+          scale={[100, 0.1, 1]}
+        />
+        <Lightformer
+          intensity={3}
+          color="white"
+          position={[1, 1, 1]}
+          rotation={[0, 0, Math.PI / 3]}
+          scale={[100, 0.1, 1]}
+        />
+        <Lightformer
+          intensity={10}
+          color="white"
+          position={[-10, 0, 14]}
+          rotation={[0, Math.PI / 2, Math.PI / 3]}
+          scale={[100, 10, 1]}
+        />
+      </Environment>
+    </>
   )
 }
 
@@ -149,6 +183,7 @@ interface BandProps {
   imageFit?: 'contain' | 'cover'
   lanyardImage?: string | null
   lanyardWidth?: number
+  origin?: [number, number, number]
 }
 
 type LanyardRigidBody = RapierRigidBody & {
@@ -164,6 +199,7 @@ function Band({
   imageFit = 'cover',
   lanyardImage = null,
   lanyardWidth = 1,
+  origin = [0, 0, 0],
 }: BandProps) {
   const band = useRef<any>(null!)
   const fixed = useRef<RapierRigidBody>(null!)
@@ -314,7 +350,7 @@ function Band({
 
   return (
     <>
-      <group position={[0, 4, 0]}>
+      <group position={[origin[0], origin[1] + 4, origin[2]]}>
         <RigidBody ref={fixed} {...segmentProps} type="fixed" />
         <RigidBody position={[0.5, 0, 0]} ref={j1} {...segmentProps} type="dynamic">
           <BallCollider args={[0.1]} />
