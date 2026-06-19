@@ -1,5 +1,3 @@
-/* eslint-disable import/no-extraneous-dependencies */
-
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 
@@ -28,6 +26,20 @@ export default defineWorkspace([
         '@tauri-apps/api/core': path.resolve(dirname, 'tests/test/stubs/tauri-api-core.ts'),
         '@tauri-apps/api/event': path.resolve(dirname, 'tests/test/stubs/tauri-api-event.ts'),
       },
+    },
+    optimizeDeps: {
+      include: [
+        '@radix-ui/react-dialog',
+        '@radix-ui/react-dropdown-menu',
+        '@radix-ui/react-select',
+        '@radix-ui/react-slot',
+        '@radix-ui/react-tabs',
+        'class-variance-authority',
+        'clsx',
+        'framer-motion',
+        'lucide-react',
+        'tailwind-merge',
+      ],
     },
     test: {
       name: 'storybook',

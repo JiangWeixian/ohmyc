@@ -1,5 +1,3 @@
-/* eslint-disable import/no-default-export */
-
 import '../src/globals.css'
 
 import type { Preview } from '@storybook/react-vite'
