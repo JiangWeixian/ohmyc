@@ -89,4 +89,32 @@ describe('CommandPalette', () => {
     const dialog = input.closest('[data-motion-preset]')
     expect(dialog).toHaveAttribute('data-motion-preset', 'instant')
   })
+
+  it('uses a wider responsive dialog width and truncates long command labels', () => {
+    render(
+      <CommandPaletteProvider>
+        <CommandPalette
+          commands={[
+            {
+              id: 'long',
+              label: 'Open the very long generated command name without squeezing the shortcut column',
+              shortcut: 'meta+shift+p',
+              action: vi.fn(),
+            },
+          ]}
+        />
+      </CommandPaletteProvider>,
+    )
+
+    fireEvent.keyDown(document, { key: 'k', metaKey: true })
+
+    const input = screen.getByPlaceholderText('Search commands...')
+    const dialog = input.closest('[data-motion-preset]')
+    expect(dialog).toHaveClass('w-[calc(100vw-32px)]')
+    expect(dialog).toHaveClass('max-w-[720px]')
+    expect(dialog).toHaveClass('lg:w-[720px]')
+
+    expect(screen.getByText('Open the very long generated command name without squeezing the shortcut column')).toHaveClass('min-w-0', 'truncate')
+    expect(screen.getByText('meta+shift+p')).toHaveClass('shrink-0')
+  })
 })

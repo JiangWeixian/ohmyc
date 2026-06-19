@@ -141,10 +141,7 @@ describe('Explorer route views', () => {
       { route: '/explore/monitor' },
     )
 
-    expect(screen.getByRole('heading', { name: 'Coding Monitor' })).toBeInTheDocument()
-    expect(screen.getByText('sessions')).toBeInTheDocument()
-    expect(screen.getByText('tokens')).toBeInTheDocument()
-    expect(screen.getByText('last sync')).toBeInTheDocument()
+    expect(screen.getByTestId('monitor-spike-route')).toBeInTheDocument()
     expect(screen.queryByTestId('explorer-content-shell')).not.toBeInTheDocument()
   })
 

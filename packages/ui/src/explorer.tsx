@@ -12,7 +12,7 @@ import { useLocation, useParams } from 'react-router-dom'
 
 import { EntityCard } from './components/entity-card'
 import { EntityDetail } from './components/entity-detail'
-import { MonitorView } from './components/monitor/monitor-view'
+import { MonitorSpikeView } from './components/monitor-spike/monitor-spike-view'
 import { NavigationIsland } from './components/navigation-island'
 import { SectionHeader } from './components/section-header'
 import { TimelineView } from './components/timeline/timeline-view'
@@ -372,7 +372,7 @@ export function Explorer({ viewSwitcher: _viewSwitcher }: ExplorerProperties) {
       <main className="relative h-full min-w-0 overflow-hidden bg-[var(--bg-marketing)]">
         {activeSection === 'monitor'
           ? (
-              <MonitorView />
+              <MonitorSpikeView />
             )
           : (
               <div className="h-full overflow-y-auto">
