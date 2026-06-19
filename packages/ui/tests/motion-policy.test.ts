@@ -44,4 +44,20 @@ describe('motion policy', () => {
     expect(design).toContain('Command palette open/close is instant or opacity-only')
     expect(design).toContain('Reduced motion removes transform, slide, blur, count-up, parallax, and smooth-scroll movement')
   })
+
+  it('does not use transition-all in UI primitives or shell controls', () => {
+    const files = [
+      '../src/components/ui/button.tsx',
+      '../src/components/ui/badge.tsx',
+      '../src/components/ui/switch.tsx',
+      '../src/components/ui/tabs.tsx',
+      '../src/components/uitripled/native-dialog.tsx',
+      '../src/components/command-palette-trigger.tsx',
+      '../src/components/config-section.tsx',
+    ]
+
+    for (const file of files) {
+      expect(readSource(file), file).not.toContain('transition-all')
+    }
+  })
 })

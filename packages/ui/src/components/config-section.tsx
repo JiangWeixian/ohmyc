@@ -26,7 +26,7 @@ function ConfigEntryCard({ name, data, icon: Icon, iconColor, source = 'local', 
   return (
     <Card className="panel p-6 transition-smooth hover:border-[var(--border-hover)] hover:shadow-[var(--shadow-sm)]">
       <div className="mb-5 flex items-center gap-3">
-        <div className="flex size-10 items-center justify-center rounded-[var(--radius-md)] border border-[var(--border-default)] bg-[var(--surface-panel)] transition-all duration-300 hover:border-[var(--border-hover)]">
+        <div className="flex size-10 items-center justify-center rounded-[var(--radius-md)] border border-[var(--border-default)] bg-[var(--surface-panel)] transition-colors duration-150 ease-out hover:border-[var(--border-hover)]">
           <Icon size={16} className={iconColor} />
         </div>
         <h3 className="text-[15px] font-semibold tracking-[-0.01em] text-[var(--text-primary)]">{name}</h3>
