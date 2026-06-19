@@ -2,7 +2,12 @@ import { Command } from 'cmdk'
 import { Search } from 'lucide-react'
 import React, { useEffect, useState } from 'react'
 
-import { NativeDialog, NativeDialogContent } from '@/components/uitripled/native-dialog'
+import {
+  NativeDialog,
+  NativeDialogContent,
+  NativeDialogDescription,
+  NativeDialogTitle,
+} from '@/components/uitripled/native-dialog'
 import { cn } from '@/lib/utils'
 
 interface CommandItem {
@@ -89,6 +94,10 @@ export function CommandPalette({ commands, placeholder = 'Search commands...' }:
       }}
     >
       <NativeDialogContent motionPreset="instant" className="w-[calc(100vw-32px)] max-w-[720px] gap-0 overflow-hidden rounded-[var(--radius-xl)] border-[var(--border-default)] bg-[var(--surface-overlay)] p-0 sm:w-[calc(100vw-64px)] lg:w-[720px]">
+        <NativeDialogTitle className="sr-only">Command palette</NativeDialogTitle>
+        <NativeDialogDescription className="sr-only">
+          Search and run OhMyC navigation and command actions.
+        </NativeDialogDescription>
         <Command className="[&_[cmdk-group-heading]]:text-[11px] [&_[cmdk-group-heading]]:font-medium [&_[cmdk-group-heading]]:text-[var(--text-tertiary)] [&_[cmdk-group-heading]]:uppercase [&_[cmdk-group-heading]]:tracking-wide [&_[cmdk-group-heading]]:px-4 [&_[cmdk-group-heading]]:py-2">
           {/* Search Input */}
           <div className="flex items-center gap-3 px-4 py-3 border-b border-[var(--border-default)]">
