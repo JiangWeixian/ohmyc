@@ -177,6 +177,32 @@ describe('Explorer route views', () => {
     expect(screen.getByText('ask')).toBeInTheDocument()
   })
 
+  it('clears resource detail selection when navigating between island routes', async () => {
+    renderWithProviders(
+      <Routes>
+        <Route path="/explore/:tab" element={<Explorer />} />
+      </Routes>,
+      { route: '/explore/agents' },
+    )
+
+    fireEvent.click(screen.getByText('opencode-agent'))
+
+    expect(screen.getByText('permission.edit')).toBeInTheDocument()
+
+    const pluginsLink = document.querySelector('a[href="/explore/plugins"]')
+    expect(pluginsLink).not.toBeNull()
+    fireEvent.click(pluginsLink as HTMLElement)
+
+    expect(screen.getByText('review-pack')).toBeInTheDocument()
+
+    const agentsLink = document.querySelector('a[href="/explore/agents"]')
+    expect(agentsLink).not.toBeNull()
+    fireEvent.click(agentsLink as HTMLElement)
+
+    expect(screen.queryByText('permission.edit')).not.toBeInTheDocument()
+    expect(screen.getByText('opencode-agent')).toBeInTheDocument()
+  })
+
   it.each([
     ['/explore/hooks', 'Hooks', 'No hooks configured in settings.json'],
     ['/explore/mcp', 'MCP Servers', 'No MCP servers configured in .mcp.json'],

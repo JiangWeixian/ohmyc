@@ -8,7 +8,7 @@ import {
   TerminalSquare,
 } from 'lucide-react'
 import { useState } from 'react'
-import { useParams } from 'react-router-dom'
+import { useLocation, useParams } from 'react-router-dom'
 
 import { EntityCard } from './components/entity-card'
 import { EntityDetail } from './components/entity-detail'
@@ -75,12 +75,17 @@ interface ExplorerProperties {
  */
 export function Explorer({ viewSwitcher: _viewSwitcher }: ExplorerProperties) {
   const { tab } = useParams<{ tab: string }>()
+  const location = useLocation()
   type ResourceSectionId = 'agents' | 'commands' | 'plugins' | 'skills'
   type ExplorerTab = ResourceSectionId | 'monitor' | 'timeline'
 
   const VALID_TABS = new Set<ExplorerTab>(['monitor', 'timeline', 'agents', 'commands', 'skills', 'plugins'])
   const activeSection: ExplorerTab = tab && VALID_TABS.has(tab as ExplorerTab) ? (tab as ExplorerTab) : 'timeline'
-  const [selectedItem, setSelectedItem] = useState<ItemLocator | null>(null)
+  const [selectedItemState, setSelectedItemState] = useState<{
+    item: ItemLocator
+    locationKey: string
+  } | null>(null)
+  const selectedItem = selectedItemState?.locationKey === location.key ? selectedItemState.item : null
 
   // Data hooks
   const { data: agents, isError: agentsError } = useAgents()
@@ -210,7 +215,7 @@ export function Explorer({ viewSwitcher: _viewSwitcher }: ExplorerProperties) {
           description={description}
           content={selectedEntity.content}
           meta={meta}
-          onBack={() => setSelectedItem(null)}
+          onBack={() => setSelectedItemState(null)}
           scope={selectedEntity.scope}
         />
       )
@@ -245,11 +250,14 @@ export function Explorer({ viewSwitcher: _viewSwitcher }: ExplorerProperties) {
                 origins={entity.origins}
                 renderBadges={entity.badges}
                 onClick={() =>
-                  setSelectedItem({
-                    name: entity.id,
-                    source: entity.source,
-                    pluginId: entity.pluginId,
-                    scope: entity.scope,
+                  setSelectedItemState({
+                    item: {
+                      name: entity.id,
+                      source: entity.source,
+                      pluginId: entity.pluginId,
+                      scope: entity.scope,
+                    },
+                    locationKey: location.key,
                   })}
               />
             ))}
