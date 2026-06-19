@@ -22,6 +22,7 @@ export default defineConfig({
     },
   },
   test: {
+    name: 'unit',
     environment: 'jsdom',
     globals: true,
     setupFiles: ['./tests/test/setup.ts'],
