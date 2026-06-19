@@ -1,4 +1,8 @@
-import { motion, useReducedMotion } from 'framer-motion'
+import {
+  AnimatePresence,
+  motion,
+  useReducedMotion,
+} from 'framer-motion'
 import {
   Activity,
   Blocks,
@@ -41,6 +45,16 @@ const EXPLORE_ITEMS: IslandItem[] = [
   { id: 'plugins', label: 'Plugins', to: '/explore/plugins', icon: Blocks },
 ]
 
+const SHELL_TRANSITION = {
+  duration: 0.22,
+  ease: [0.22, 1, 0.36, 1],
+} as const
+
+const CONTENT_TRANSITION = {
+  duration: 0.16,
+  ease: [0.25, 1, 0.5, 1],
+} as const
+
 export function NavigationIsland() {
   const [collapsed, setCollapsed] = useState(false)
   const reduceMotion = useReducedMotion()
@@ -76,94 +90,113 @@ export function NavigationIsland() {
     }
   }
 
-  if (collapsed) {
-    return (
-      <motion.div
-        className="fixed left-[18px] top-[18px] z-40 max-sm:left-[14px] max-sm:top-[14px]"
-        whileHover={reduceMotion ? undefined : { scale: 1.02 }}
-        transition={{ duration: 0.18 }}
-      >
-        <Button
-          ref={expandButtonRef}
-          type="button"
-          variant="ghost"
-          size="icon-lg"
-          aria-label="Expand navigation"
-          aria-controls="primary-navigation-island"
-          aria-expanded={false}
-          onClick={() => updateCollapsed(false)}
-          className={cn(
-            'size-14 rounded-[14px] border border-[rgba(255,255,255,0.05)] bg-[rgba(15,16,17,0.72)]',
-            'text-[var(--text-primary)] [box-shadow:0_0_0_0.5px_rgba(255,255,255,0.10),0_8px_30px_rgba(0,0,0,0.38),0_24px_60px_rgba(0,0,0,0.22)]',
-            '[backdrop-filter:saturate(180%)_blur(24px)] [-webkit-backdrop-filter:saturate(180%)_blur(24px)]',
-            'hover:bg-[rgba(255,255,255,0.04)]',
-          )}
-        >
-          <Code2 size={20} aria-hidden="true" />
-        </Button>
-      </motion.div>
-    )
-  }
-
   return (
-    <motion.nav
-      id="primary-navigation-island"
-      aria-label="Primary"
-      className={cn(
-        'fixed left-[18px] top-[18px] z-40 flex h-[calc(100dvh-36px)] w-[220px] flex-col overflow-hidden rounded-[14px]',
-        'border border-[rgba(255,255,255,0.05)] bg-[rgba(15,16,17,0.72)]',
-        'p-3 [box-shadow:0_0_0_0.5px_rgba(255,255,255,0.10),0_8px_30px_rgba(0,0,0,0.38),0_24px_60px_rgba(0,0,0,0.22)]',
-        '[backdrop-filter:saturate(180%)_blur(24px)] [-webkit-backdrop-filter:saturate(180%)_blur(24px)]',
-        'max-sm:left-[14px] max-sm:top-[14px] max-sm:h-[calc(100dvh-28px)] max-sm:w-[216px]',
-      )}
-      initial={reduceMotion ? false : { opacity: 0.92, scale: 0.98 }}
-      animate={{ opacity: 1, scale: 1 }}
-      transition={{ duration: 0.2 }}
-    >
-      <div className="mb-5 flex min-h-11 items-start justify-between gap-3">
-        <div className="min-w-0 px-1">
-          <div className="truncate text-[14px] font-[590] text-[var(--text-primary)]">OhMyC</div>
-          <div className="truncate font-mono text-[10px] uppercase tracking-[0.04em] text-[var(--text-tertiary)]">
-            coding monitor
-          </div>
-        </div>
-        <Button
-          ref={collapseButtonRef}
-          type="button"
-          variant="ghost"
-          size="icon"
-          aria-label="Collapse navigation"
-          aria-controls="primary-navigation-island"
-          aria-expanded={true}
-          onClick={() => updateCollapsed(true)}
-          className="size-8 shrink-0 rounded-lg text-[var(--text-tertiary)] hover:bg-[rgba(255,255,255,0.03)] hover:text-[var(--text-primary)]"
-        >
-          <PanelLeftClose size={15} aria-hidden="true" />
-        </Button>
-      </div>
+    <AnimatePresence initial={false} mode="sync">
+      {collapsed
+        ? (
+            <motion.div
+              key="collapsed"
+              layout
+              layoutId="primary-navigation-island-shell"
+              className="fixed left-[18px] top-[18px] z-40 max-sm:left-[14px] max-sm:top-[14px]"
+              initial={reduceMotion ? false : { opacity: 0, scale: 0.96, filter: 'blur(4px)' }}
+              animate={{ opacity: 1, scale: 1, filter: 'blur(0px)' }}
+              exit={reduceMotion ? { opacity: 0 } : { opacity: 0, scale: 0.98, filter: 'blur(3px)' }}
+              whileHover={reduceMotion ? undefined : { scale: 1.02 }}
+              transition={SHELL_TRANSITION}
+            >
+              <Button
+                ref={expandButtonRef}
+                type="button"
+                variant="ghost"
+                size="icon-lg"
+                aria-label="Expand navigation"
+                aria-controls="primary-navigation-island"
+                aria-expanded={false}
+                onClick={() => updateCollapsed(false)}
+                className={cn(
+                  'size-14 rounded-[14px] border border-[rgba(255,255,255,0.05)] bg-[rgba(15,16,17,0.72)]',
+                  'text-[var(--text-primary)] [box-shadow:0_0_0_0.5px_rgba(255,255,255,0.10),0_8px_30px_rgba(0,0,0,0.38),0_24px_60px_rgba(0,0,0,0.22)]',
+                  '[backdrop-filter:saturate(180%)_blur(24px)] [-webkit-backdrop-filter:saturate(180%)_blur(24px)]',
+                  'hover:bg-[rgba(255,255,255,0.04)]',
+                )}
+              >
+                <Code2 size={20} aria-hidden="true" />
+              </Button>
+            </motion.div>
+          )
+        : (
+            <motion.nav
+              key="expanded"
+              layout
+              layoutId="primary-navigation-island-shell"
+              id="primary-navigation-island"
+              aria-label="Primary"
+              className={cn(
+                'fixed left-[18px] top-[18px] z-40 flex h-[calc(100dvh-36px)] w-[220px] flex-col overflow-hidden rounded-[14px]',
+                'border border-[rgba(255,255,255,0.05)] bg-[rgba(15,16,17,0.72)]',
+                'p-3 [box-shadow:0_0_0_0.5px_rgba(255,255,255,0.10),0_8px_30px_rgba(0,0,0,0.38),0_24px_60px_rgba(0,0,0,0.22)]',
+                '[backdrop-filter:saturate(180%)_blur(24px)] [-webkit-backdrop-filter:saturate(180%)_blur(24px)]',
+                'max-sm:left-[14px] max-sm:top-[14px] max-sm:h-[calc(100dvh-28px)] max-sm:w-[216px]',
+              )}
+              initial={reduceMotion ? false : { opacity: 0, x: -6, filter: 'blur(4px)' }}
+              animate={{ opacity: 1, x: 0, filter: 'blur(0px)' }}
+              exit={reduceMotion ? { opacity: 0 } : { opacity: 0, x: -4, filter: 'blur(3px)' }}
+              transition={SHELL_TRANSITION}
+            >
+              <motion.div
+                className="flex h-full flex-col"
+                initial={reduceMotion ? false : { opacity: 0, x: -6 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ ...CONTENT_TRANSITION, delay: 0.04 }}
+              >
+                <div className="mb-5 flex min-h-11 items-start justify-between gap-3">
+                  <div className="min-w-0 px-1">
+                    <div className="truncate text-[14px] font-[590] text-[var(--text-primary)]">OhMyC</div>
+                    <div className="truncate font-mono text-[10px] uppercase tracking-[0.04em] text-[var(--text-tertiary)]">
+                      coding monitor
+                    </div>
+                  </div>
+                  <Button
+                    ref={collapseButtonRef}
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    aria-label="Collapse navigation"
+                    aria-controls="primary-navigation-island"
+                    aria-expanded={true}
+                    onClick={() => updateCollapsed(true)}
+                    className="size-8 shrink-0 rounded-lg text-[var(--text-tertiary)] hover:bg-[rgba(255,255,255,0.03)] hover:text-[var(--text-primary)]"
+                  >
+                    <PanelLeftClose size={15} aria-hidden="true" />
+                  </Button>
+                </div>
 
-      <IslandGroup label="Signal" items={SIGNAL_ITEMS} onNavigate={handleNavigate} />
-      <IslandGroup label="Explore" items={EXPLORE_ITEMS} className="mt-4" onNavigate={handleNavigate} />
+                <IslandGroup label="Signal" items={SIGNAL_ITEMS} onNavigate={handleNavigate} />
+                <IslandGroup label="Explore" items={EXPLORE_ITEMS} className="mt-4" onNavigate={handleNavigate} />
 
-      <Button
-        type="button"
-        variant="ghost"
-        onClick={open}
-        className={cn(
-          'mt-auto flex h-8 w-full items-center justify-between rounded-md border border-[rgba(255,255,255,0.08)]',
-          'bg-[rgba(255,255,255,0.02)] px-2.5 text-[12px] text-[var(--text-tertiary)]',
-          'transition-colors hover:bg-[rgba(255,255,255,0.04)] hover:text-[var(--text-secondary)]',
-        )}
-      >
-        <span className="flex items-center gap-2">
-          <Search size={13} aria-hidden="true" />
-          Command
-        </span>
-        <kbd className="rounded border border-[rgba(255,255,255,0.08)] px-1.5 py-0.5 text-[10px] text-[var(--text-quaternary)]">
-          Cmd K
-        </kbd>
-      </Button>
-    </motion.nav>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  onClick={open}
+                  className={cn(
+                    'mt-auto flex h-8 w-full items-center justify-between rounded-md border border-[rgba(255,255,255,0.08)]',
+                    'bg-[rgba(255,255,255,0.02)] px-2.5 text-[12px] text-[var(--text-tertiary)]',
+                    'transition-colors hover:bg-[rgba(255,255,255,0.04)] hover:text-[var(--text-secondary)]',
+                  )}
+                >
+                  <span className="flex items-center gap-2">
+                    <Search size={13} aria-hidden="true" />
+                    Command
+                  </span>
+                  <kbd className="rounded border border-[rgba(255,255,255,0.08)] px-1.5 py-0.5 text-[10px] text-[var(--text-quaternary)]">
+                    Cmd K
+                  </kbd>
+                </Button>
+              </motion.div>
+            </motion.nav>
+          )}
+    </AnimatePresence>
   )
 }
 

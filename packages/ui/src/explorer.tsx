@@ -376,12 +376,17 @@ export function Explorer({ viewSwitcher: _viewSwitcher }: ExplorerProperties) {
             )
           : (
               <div className="h-full overflow-y-auto">
-                <div className="mx-auto w-full max-w-6xl p-10 pl-[280px] max-lg:pl-[260px] max-md:px-5 max-md:pt-24">
-                  {activeSection === 'timeline' && <TimelineView />}
-                  {activeSection === 'agents' && renderEntityList('agents')}
-                  {activeSection === 'skills' && renderEntityList('skills')}
-                  {activeSection === 'commands' && renderEntityList('commands')}
-                  {activeSection === 'plugins' && renderPlugins()}
+                <div
+                  data-testid="explorer-content-shell"
+                  className="min-h-full w-full px-10 pb-12 pl-[280px] pt-10 max-lg:pl-[260px] max-md:px-5 max-md:pb-8 max-md:pt-24"
+                >
+                  <div className="w-full max-w-6xl">
+                    {activeSection === 'timeline' && <TimelineView />}
+                    {activeSection === 'agents' && renderEntityList('agents')}
+                    {activeSection === 'skills' && renderEntityList('skills')}
+                    {activeSection === 'commands' && renderEntityList('commands')}
+                    {activeSection === 'plugins' && renderPlugins()}
+                  </div>
                 </div>
               </div>
             )}

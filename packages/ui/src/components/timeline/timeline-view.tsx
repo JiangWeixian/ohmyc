@@ -28,7 +28,7 @@ import { cn } from '@/lib/utils'
  */
 export function TimelineView() {
   // ── Filter state ─────────────────────────────────────────────────
-  const currentYear = new Date().getFullYear()
+  const [currentYear] = useState(() => new Date().getFullYear())
   const [metric, setMetric] = useState<'activity' | 'tokens'>('activity')
   const [project, setProject] = useState<string | undefined>()
   const [year, setYear] = useState<number>(currentYear)
@@ -59,7 +59,7 @@ export function TimelineView() {
   // present in the backend data (e.g. after a data reset or year-list refresh).
   useEffect(() => {
     if (years && years.length > 0 && !years.includes(year)) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect, react-hooks-extra/set-state-in-effect
+      // eslint-disable-next-line react/set-state-in-effect, react-hooks/set-state-in-effect, react-hooks-extra/set-state-in-effect, react-naming-convention/set-state-in-effect
       setYear(years.at(-1)!)
     }
   }, [years, year])
@@ -89,11 +89,11 @@ export function TimelineView() {
   const yearOptions = years ?? [currentYear]
 
   return (
-    <div className="mx-auto w-full max-w-[920px] px-14 py-10">
+    <div className="w-full max-w-[920px]">
       <h1 className="mb-1 text-[24px] font-[590] tracking-[-0.2px] text-[var(--text-primary)]">
         Timeline
       </h1>
-      <p className="mb-7 max-w-[640px] text-[14px] text-[var(--text-tertiary)]">
+      <p className="mb-7 max-w-screen-sm text-[14px] text-[var(--text-tertiary)]">
         Every Claude Code session you've run, across every project. Auto-synced via the Stop hook.
       </p>
 
@@ -173,7 +173,7 @@ export function TimelineView() {
         {eventsLoading || !events
           ? (
               <div
-                className="my-3 border-y border-[var(--border-subtle)] py-[14px] px-3 text-[12px] text-[var(--text-tertiary)]"
+                className="my-3 border-y border-[var(--border-subtle)] px-3 py-[14px] text-[12px] text-[var(--text-tertiary)]"
                 style={{ fontFamily: 'Berkeley Mono, ui-monospace, SF Mono, Menlo, monospace' }}
               >
                 Loading…
@@ -242,7 +242,7 @@ function CtrlSelect({
   options: { value: string; label: string }[]
 }) {
   return (
-    <label className="relative inline-flex items-center gap-2 rounded-md border border-[var(--border-default)] bg-[rgba(255,255,255,0.02)] px-3 py-[7px] text-[12px] font-[510] text-[var(--text-secondary)] hover:border-[var(--border-hover)] transition-colors">
+    <label className="relative inline-flex items-center gap-2 rounded-md border border-[var(--border-default)] bg-[rgba(255,255,255,0.02)] px-3 py-[7px] text-[12px] font-[510] text-[var(--text-secondary)] transition-colors hover:border-[var(--border-hover)]">
       <span className="text-[var(--text-tertiary)]">{label}</span>
       <span className="text-[var(--text-primary)]">
         {options.find(o => o.value === value)?.label ?? '—'}

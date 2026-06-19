@@ -115,7 +115,7 @@ On dark surfaces, elevation is communicated through background luminance steps, 
   - Medium: 200ms — page transitions
   - Long: 300ms — modals
 - **Framer Motion scope:** `framer-motion` is allowed for DOM/UI state transitions: navigation island expand/collapse, command palette and dialog entrance, route opacity handoff, entity detail open/close, and DOM count-up numbers when stats render outside Canvas. Do not use Framer for WebGL scene physics.
-- **Navigation island motion:** expanded/collapsed state may animate width, opacity, blur, and active indicator over 180-220ms. The collapsed icon badge can use a subtle hover/focus fade or scale up to `1.02`; avoid bounce, springy overshoot, or mini-rail choreography.
+- **Navigation island motion:** expanded/collapsed state uses a shared-layout morph over 180-220ms with opacity and a bounded blur/focus pull. Expanded content may fade/slide in by 4-6px after the shell begins moving. The collapsed icon badge can use a subtle hover/focus fade or scale up to `1.02`; avoid bounce, springy overshoot, list choreography, or a collapsed mini rail. Reduced motion disables the slide/blur and keeps the state change immediate.
 - **No broad layout choreography:** existing Timeline/Library internals should not animate lists, heatmap cells, card grids, or route layout as decoration. State changes stay instant or short-fade for clarity.
 - **React Bits / WebGL exception:** The Monitor page may use a single interactive 3D object or shader-like background layer when it reinforces personal identity. R3F/Drei owns Lanyard motion, 3D text, particles, orbital traces, bloom/depth effects, and in-Canvas numeric animation. Keep the rest of the chrome calm, monochrome, and data-first.
 - **Reduced motion:** honor `prefers-reduced-motion`; disable count-up, parallax, particles, and nonessential transitions.
@@ -346,6 +346,7 @@ There is no standard header chrome. Breadcrumbs, source switchers, search trigge
 
 ### Explorer view rules
 - **Default shell:** every route uses the navigation island plus route-owned content. Do not wrap all pages in a shared `max-w-6xl p-10` shell.
+- **Island-aware content offset:** non-Monitor routes start from the workspace to the right of the expanded navigation island (`~280px` desktop, `~260px` tablet) with normal top/right/bottom page padding. The route content is left-aligned within that workspace; do not use the old header-era `mx-auto` centering shell that recenters content across the whole viewport.
 - **Monitor:** full-bleed stage under the floating island.
 - **Existing route migration scope:** Timeline, Agents, Commands, Skills, and Plugins keep their existing internal layout and information architecture. The shell migration removes the global header, replaces the docked sidebar with the floating navigation island, and preserves each route's current page body structure.
 - **Timeline:** keep the current Timeline internals: title/description, controls bar, heatmap card, recent activity header, and event list. The route itself becomes headerless and the island overlays outside the page body.

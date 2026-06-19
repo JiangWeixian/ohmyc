@@ -51,7 +51,7 @@ export function EntityDetail({
       animate={{ opacity: 1, x: 0 }}
       exit={{ opacity: 0, x: -12 }}
       transition={{ duration: 0.18, ease: 'easeOut' }}
-      className="mx-auto size-full max-w-[920px]"
+      className="size-full max-w-[920px]"
     >
       <button
         onClick={onBack}

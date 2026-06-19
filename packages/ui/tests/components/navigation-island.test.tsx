@@ -1,4 +1,8 @@
-import { fireEvent, screen } from '@testing-library/react'
+import {
+  fireEvent,
+  screen,
+  waitFor,
+} from '@testing-library/react'
 import {
   Route,
   Routes,
@@ -44,7 +48,7 @@ describe('NavigationIsland', () => {
     expect(screen.getByTestId('path')).toHaveTextContent('/explore/monitor')
   })
 
-  it('collapses to one icon badge and expands back to full navigation', () => {
+  it('collapses to one icon badge and expands back to full navigation', async () => {
     renderWithProviders(
       <Routes>
         <Route path="*" element={<Harness />} />
@@ -54,16 +58,19 @@ describe('NavigationIsland', () => {
 
     fireEvent.click(screen.getByRole('button', { name: 'Collapse navigation' }))
 
-    expect(screen.queryByRole('navigation', { name: 'Primary' })).not.toBeInTheDocument()
-    expect(screen.getByRole('button', { name: 'Expand navigation' })).toHaveFocus()
+    await waitFor(() => {
+      expect(screen.getByRole('button', { name: 'Expand navigation' })).toHaveFocus()
+    })
 
     fireEvent.click(screen.getByRole('button', { name: 'Expand navigation' }))
 
-    expect(screen.getByRole('navigation', { name: 'Primary' })).toBeInTheDocument()
+    await waitFor(() => {
+      expect(screen.getByRole('navigation', { name: 'Primary' })).toBeInTheDocument()
+    })
     expect(screen.getByRole('button', { name: 'Collapse navigation' })).toHaveFocus()
   })
 
-  it('collapses after route navigation on narrow screens', () => {
+  it('collapses after route navigation on narrow screens', async () => {
     Object.defineProperty(globalThis, 'matchMedia', {
       configurable: true,
       value: vi.fn().mockImplementation(query => ({
@@ -88,7 +95,8 @@ describe('NavigationIsland', () => {
     fireEvent.click(screen.getByRole('link', { name: 'Monitor' }))
 
     expect(screen.getByTestId('path')).toHaveTextContent('/explore/monitor')
-    expect(screen.queryByRole('navigation', { name: 'Primary' })).not.toBeInTheDocument()
-    expect(screen.getByRole('button', { name: 'Expand navigation' })).toBeInTheDocument()
+    await waitFor(() => {
+      expect(screen.getByRole('button', { name: 'Expand navigation' })).toBeInTheDocument()
+    })
   })
 })

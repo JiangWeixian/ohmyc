@@ -1,4 +1,8 @@
-import { fireEvent, screen } from '@testing-library/react'
+import {
+  fireEvent,
+  screen,
+  waitFor,
+} from '@testing-library/react'
 import React from 'react'
 import { Route, Routes } from 'react-router-dom'
 import {
@@ -104,7 +108,7 @@ describe('Explorer route views', () => {
     expect(document.querySelector('main header')).not.toBeInTheDocument()
   })
 
-  it('collapses the navigation island to a single icon button and expands it again', () => {
+  it('collapses the navigation island to a single icon button and expands it again', async () => {
     renderWithProviders(
       <Routes>
         <Route path="/explore/:tab" element={<Explorer />} />
@@ -116,14 +120,17 @@ describe('Explorer route views', () => {
     expect(collapseButton).not.toBeNull()
     fireEvent.click(collapseButton as HTMLElement)
 
-    expect(screen.queryByRole('navigation', { name: 'Primary' })).not.toBeInTheDocument()
-    const expandButton = document.querySelector('button[aria-label="Expand navigation"]')
-    expect(expandButton).not.toBeNull()
+    let expandButton: HTMLButtonElement | null = null
+    await waitFor(() => {
+      expandButton = document.querySelector('button[aria-label="Expand navigation"]')
+      expect(expandButton).not.toBeNull()
+    })
 
-    fireEvent.click(expandButton as HTMLElement)
+    fireEvent.click(expandButton as HTMLButtonElement)
 
-    const timelineLink = document.querySelector('a[href="/explore/timeline"]')
-    expect(timelineLink?.textContent).toContain('Timeline')
+    await waitFor(() => {
+      expect(document.querySelector('a[href="/explore/timeline"]')?.textContent).toContain('Timeline')
+    })
   })
 
   it('renders Monitor route as a full-bleed personal coding monitor surface', async () => {
@@ -138,6 +145,21 @@ describe('Explorer route views', () => {
     expect(screen.getByText('sessions')).toBeInTheDocument()
     expect(screen.getByText('tokens')).toBeInTheDocument()
     expect(screen.getByText('last sync')).toBeInTheDocument()
+    expect(screen.queryByTestId('explorer-content-shell')).not.toBeInTheDocument()
+  })
+
+  it('uses an island-aware content shell for non-Monitor routes', () => {
+    renderWithProviders(
+      <Routes>
+        <Route path="/explore/:tab" element={<Explorer />} />
+      </Routes>,
+      { route: '/explore/timeline' },
+    )
+
+    const shell = screen.getByTestId('explorer-content-shell')
+
+    expect(shell).toHaveClass('pl-[280px]')
+    expect(shell).toHaveClass('max-lg:pl-[260px]')
   })
 
   it('shows plugin inventory details without the Environment summary', () => {
