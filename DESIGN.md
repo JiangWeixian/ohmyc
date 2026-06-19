@@ -114,6 +114,10 @@ On dark surfaces, elevation is communicated through background luminance steps, 
   - Short: 150ms — hover states
   - Medium: 200ms — page transitions
   - Long: 300ms — modals
+- **Reusable motion tokens:** use `--motion-ease-out: cubic-bezier(0.23, 1, 0.32, 1)` for entering/exiting UI, `--motion-ease-in-out: cubic-bezier(0.77, 0, 0.175, 1)` for on-screen movement, `--motion-fast: 120ms`, `--motion-short: 160ms`, and `--motion-medium: 200ms`.
+- **Do not use `transition-all` for reusable UI primitives.** Specify exact properties: `color`, `background-color`, `border-color`, `opacity`, and `transform`. Avoid animating `box-shadow`, `width`, `height`, `padding`, `margin`, `top`, or `left`.
+- **Command palette open/close is instant or opacity-only.** `⌘K` / Ctrl+K is a high-frequency keyboard surface; it must not scale, slide, blur, or wait behind dialog choreography.
+- **Reduced motion removes transform, slide, blur, count-up, parallax, and smooth-scroll movement.** Keep opacity/color transitions only when they help comprehension.
 - **Framer Motion scope:** `framer-motion` is allowed for DOM/UI state transitions: navigation island expand/collapse, command palette and dialog entrance, route opacity handoff, entity detail open/close, and DOM count-up numbers when stats render outside Canvas. Do not use Framer for WebGL scene physics.
 - **Navigation island motion:** expanded/collapsed state uses a shared-layout morph over 180-220ms with opacity and a bounded blur/focus pull. Expanded content may fade/slide in by 4-6px after the shell begins moving. The collapsed icon badge can use a subtle hover/focus fade or scale up to `1.02`; avoid bounce, springy overshoot, list choreography, or a collapsed mini rail. Reduced motion disables the slide/blur and keeps the state change immediate.
 - **No broad layout choreography:** existing Timeline/Library internals should not animate lists, heatmap cells, card grids, or route layout as decoration. State changes stay instant or short-fade for clarity.
@@ -130,7 +134,7 @@ On dark surfaces, elevation is communicated through background luminance steps, 
 - Hover:
   - Background: `rgba(255,255,255,0.04)`
   - Border: `rgba(255,255,255,0.12)`
-  - Transition: `transition-all duration-150 ease-out`
+  - Transition: `background-color, border-color 160ms var(--motion-ease-out)`
 - Icon box:
   - Size: `w-10 h-10` (40px)
   - Border-radius: `rounded-lg` (10px)
@@ -397,6 +401,7 @@ There is no standard header chrome. Breadcrumbs, source switchers, search trigge
 | 2026-06-17 | Existing non-Monitor routes keep their internal layout | Headerless island is a shell migration for Timeline, Agents, Commands, Skills, and Plugins. Their controls, grids, cards, detail panels, and timeline structure should not be redesigned in the same change |
 | 2026-06-17 | Collapsed navigation island is a single icon badge | A collapsed mini rail still feels like product chrome. One lucide-react placeholder icon keeps the page quiet now and can be swapped for the brand icon later |
 | 2026-06-17 | Use Framer Motion for DOM chrome, not WebGL scene motion | The AI monitor needs motion to feel alive, but the boundary matters: Framer handles island/dialog/route/count-up UI, while R3F/Drei handles Lanyard, particles, 3D text, and scene physics |
+| 2026-06-19 | Tighten UI motion policy around high-frequency surfaces | Command palette and repeated library interactions should feel immediate; reusable primitives specify exact animated properties, and reduced motion removes transform/scroll/count-up movement |
 
 ## Do's and Don'ts
 
