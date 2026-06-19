@@ -1,9 +1,7 @@
-// Animated button with spring hover/tap, loading pulse, and optional glow effect.
-// Wraps the shadcn Button with framer-motion micro-interactions.
+// Button wrapper with loading state and restrained press feedback.
 
 'use client'
 
-import { motion, useReducedMotion } from 'framer-motion'
 import { Loader2 } from 'lucide-react'
 
 import { Button } from '@/components/ui/button'
@@ -12,7 +10,7 @@ import { cn } from '@/lib/utils'
 import type { ButtonProps } from '@/components/ui/button'
 import type { ReactNode } from 'react'
 
-/** Props for the animated NativeButton component. */
+/** Props for the NativeButton component. */
 export interface NativeButtonProps extends ButtonProps {
   children: ReactNode
   loading?: boolean
@@ -25,75 +23,33 @@ const NativeButton = ({
   size = 'lg',
   children,
   loading = false,
-  glow = false,
+  glow: _glow = false,
   disabled,
   ...properties
 }: NativeButtonProps) => {
-  const shouldReduceMotion = useReducedMotion()
-
-  const buttonContent = (
-    <>
-      {loading && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
-      <motion.span
-        className={cn('flex items-center gap-2')}
-/** Pulsing opacity while loading signals activity without jarring layout shifts. */
-        animate={
-          loading
-            ? { opacity: shouldReduceMotion ? 1 : [1, 0.5, 1] }
-            : { opacity: 1 }
-        }
-        transition={
-          loading && !shouldReduceMotion
-            ? { duration: 1, repeat: Infinity, ease: 'easeInOut' }
-            : { duration: 0.2 }
-        }
-      >
-        {children}
-      </motion.span>
-    </>
-  )
-
-  // Glassmorphism base: layered shadows and conditional glow produce
-  // depth without heavy backgrounds, keeping the button feel translucent.
-  const glassmorphismClassName = cn(
-    'cursor-pointer h-12 rounded-md px-7 text-sm relative overflow-hidden',
-    !glow && 'shadow-md hover:shadow-lg',
-    glow
-    && 'shadow-lg shadow-primary/20 hover:shadow-primary/40 transition-[box-shadow,background-color,color,opacity] duration-200',
+  const buttonClassName = cn(
+    'relative h-12 cursor-pointer overflow-hidden rounded-md px-7 text-sm',
+    'transition-[color,background-color,border-color,opacity,transform] duration-150 ease-out',
+    'active:scale-[0.97]',
     variant === 'outline' && 'text-foreground/80 hover:bg-foreground/5',
-    (disabled || loading) && 'opacity-50 cursor-not-allowed grayscale',
+    (disabled || loading) && 'cursor-not-allowed opacity-50 grayscale active:scale-100',
     className,
   )
 
   return (
-    <motion.div
-      whileHover={
-        !disabled && !loading && !shouldReduceMotion ? { scale: 1.02 } : {}
-      }
-      whileTap={
-        !disabled && !loading && !shouldReduceMotion ? { scale: 0.98 } : {}
-      }
-      // Spring physics give a tactile "press" feel — stiff spring + low damping
-      // keeps the motion quick and snappy rather than floaty.
-      transition={{ type: 'spring', stiffness: 400, damping: 17 }}
-      className="relative block w-fit"
+    <Button
+      variant={variant}
+      size={size}
+      className={buttonClassName}
+      disabled={disabled || loading}
+      aria-busy={loading}
+      {...properties}
     >
-      // Radial glow layer: a blurred primary-tinted div behind the button
-      // that fades in on hover, creating a soft halo effect.
-      {glow && !disabled && !loading && (
-        <div className="absolute inset-0 rounded-full bg-primary/20 blur-xl opacity-0 hover:opacity-100 transition-opacity duration-500" />
-      )}
-      <Button
-        variant={variant}
-        size={size}
-        className={glassmorphismClassName}
-        disabled={disabled || loading}
-        aria-busy={loading}
-        {...properties}
-      >
-        {buttonContent}
-      </Button>
-    </motion.div>
+      {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+      <span className="flex items-center gap-2">
+        {children}
+      </span>
+    </Button>
   )
 }
 
