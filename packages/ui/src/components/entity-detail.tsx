@@ -1,6 +1,6 @@
 // Detail view for a single entity — renders frontmatter meta strip + markdown body
 // with back navigation and optional edit/delete actions.
-import { motion } from 'framer-motion'
+import { motion, useReducedMotion } from 'framer-motion'
 import {
   ChevronLeft,
   Pencil,
@@ -44,13 +44,37 @@ export function EntityDetail({
 }: EntityDetailProperties) {
   // Project-scoped entities cannot be edited from this UI
   const isReadOnly = scope === 'project'
+  const reduceMotion = useReducedMotion()
+  const pageMotion = reduceMotion
+    ? {
+        initial: { opacity: 0 },
+        animate: { opacity: 1 },
+        exit: { opacity: 0 },
+        transition: { duration: 0.12, ease: [0.23, 1, 0.32, 1] },
+      }
+    : {
+        initial: { opacity: 0, transform: 'translateX(8px)' },
+        animate: { opacity: 1, transform: 'translateX(0px)' },
+        exit: { opacity: 0, transform: 'translateX(-8px)' },
+        transition: { duration: 0.18, ease: [0.23, 1, 0.32, 1] },
+      }
+  const blockMotion = reduceMotion
+    ? {
+        initial: { opacity: 0 },
+        animate: { opacity: 1 },
+        transition: { duration: 0.12, ease: [0.23, 1, 0.32, 1] },
+      }
+    : {
+        initial: { opacity: 0, transform: 'translateY(6px)' },
+        animate: { opacity: 1, transform: 'translateY(0px)' },
+        transition: { duration: 0.16, ease: [0.23, 1, 0.32, 1] },
+      }
 
   return (
     <motion.div
-      initial={{ opacity: 0, x: 12 }}
-      animate={{ opacity: 1, x: 0 }}
-      exit={{ opacity: 0, x: -12 }}
-      transition={{ duration: 0.18, ease: 'easeOut' }}
+      {...pageMotion}
+      data-testid="entity-detail-motion"
+      data-motion-role="entity-detail"
       className="size-full max-w-[920px]"
     >
       <button
@@ -70,9 +94,7 @@ export function EntityDetail({
 
       {/* Document header — frontmatter strip */}
       <motion.div
-        initial={{ opacity: 0, y: 8 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.18, ease: 'easeOut' }}
+        {...blockMotion}
         className="mb-6 rounded-[var(--radius-lg)] border border-[var(--border-default)] bg-white/[0.02] px-7 py-6"
       >
         <div className="flex items-start justify-between gap-4">
@@ -135,7 +157,7 @@ export function EntityDetail({
       <motion.article
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
-        transition={{ duration: 0.18, delay: 0.05, ease: 'easeOut' }}
+        transition={{ duration: 0.16, delay: reduceMotion ? 0 : 0.04, ease: [0.23, 1, 0.32, 1] }}
         className="rounded-[var(--radius-lg)] border border-[var(--border-default)] bg-white/[0.02] p-9"
       >
         <MarkdownRenderer content={content} />
