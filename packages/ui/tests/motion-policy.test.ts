@@ -60,4 +60,18 @@ describe('motion policy', () => {
       expect(readSource(file), file).not.toContain('transition-all')
     }
   })
+
+  it('uses reduced-motion variants for scroll, select, and dropdown motion', () => {
+    expect(readSource('../src/components/timeline/timeline-view.tsx')).toContain('(prefers-reduced-motion: reduce)')
+    expect(readSource('../src/components/ui/select.tsx')).toContain('motion-reduce:data-[state=open]:animate-none')
+    expect(readSource('../src/components/ui/dropdown-menu.tsx')).toContain('motion-reduce:data-[state=open]:animate-none')
+  })
+
+  it('does not use Framer x/y shorthand in Monitor DOM motion', () => {
+    const monitor = readSource('../src/components/monitor/monitor-view.tsx')
+
+    expect(monitor).not.toMatch(/\bx:\s/)
+    expect(monitor).not.toMatch(/\by:\s/)
+    expect(monitor).toContain("transform: 'translate")
+  })
 })

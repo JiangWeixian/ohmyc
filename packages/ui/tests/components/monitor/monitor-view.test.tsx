@@ -83,4 +83,19 @@ describe('MonitorView', () => {
       await screen.findByText('Timeline signal unavailable. Monitor will update after the next successful sync.'),
     ).toBeInTheDocument()
   })
+
+  it('renders final stat values when reduced motion is requested', async () => {
+    const now = Date.now()
+    setMockHandler('timeline.status', async () => ({ sessionCount: 3, lastSyncAt: now }))
+    setMockHandler('timeline.events', async () => ({
+      days: [
+        { day: '2026-06-19', session_count: 3, turn_count: 12, token_count: 42_000, project_groups: [] },
+      ],
+    }))
+
+    renderWithProviders(<MonitorView />)
+
+    expect(await screen.findByText('42.0k')).toBeInTheDocument()
+    expect(screen.getByText('3')).toBeInTheDocument()
+  })
 })

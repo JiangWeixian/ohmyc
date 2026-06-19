@@ -82,7 +82,9 @@ export function TimelineView() {
     // Scroll to that day heading
     const node = eventsRef.current?.querySelector(`[data-day="${date}"]`)
     if (node) {
-      ;(node as HTMLElement).scrollIntoView({ behavior: 'smooth', block: 'start' })
+      const reduceMotion = typeof globalThis.matchMedia === 'function'
+        && globalThis.matchMedia('(prefers-reduced-motion: reduce)').matches
+      ;(node as HTMLElement).scrollIntoView({ behavior: reduceMotion ? 'auto' : 'smooth', block: 'start' })
     }
   }
 

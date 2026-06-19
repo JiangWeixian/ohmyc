@@ -21,18 +21,18 @@ export function MonitorView() {
 
       <div className="relative grid h-full min-h-[720px] grid-cols-[minmax(420px,1fr)_minmax(360px,520px)] items-center gap-10 px-20 py-16 pl-[300px] max-xl:grid-cols-1 max-xl:items-end max-xl:pl-[280px] max-lg:px-8 max-lg:pl-[260px] max-md:min-h-[780px] max-md:px-5 max-md:pb-12 max-md:pt-28">
         <motion.div
-          initial={reduceMotion ? false : { opacity: 0, y: 12 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.3 }}
+          initial={reduceMotion ? false : { opacity: 0, transform: 'translateY(12px)' }}
+          animate={{ opacity: 1, transform: 'translateY(0px)' }}
+          transition={{ duration: reduceMotion ? 0 : 0.24, ease: [0.23, 1, 0.32, 1] }}
         >
           <LanyardStage />
         </motion.div>
 
         <motion.div
           className="relative z-10 max-w-[520px]"
-          initial={reduceMotion ? false : { opacity: 0, x: 18 }}
-          animate={{ opacity: 1, x: 0 }}
-          transition={{ duration: 0.34, delay: 0.05 }}
+          initial={reduceMotion ? false : { opacity: 0, transform: 'translateX(18px)' }}
+          animate={{ opacity: 1, transform: 'translateX(0px)' }}
+          transition={{ duration: reduceMotion ? 0 : 0.26, delay: reduceMotion ? 0 : 0.04, ease: [0.23, 1, 0.32, 1] }}
         >
           <p className={statsClassName}>Personal signal</p>
           <h1 id="monitor-title" className="mt-3 text-[52px] font-[510] leading-none tracking-[-0.8px] text-[var(--text-primary)] max-md:text-[40px]">
