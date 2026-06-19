@@ -34,6 +34,8 @@ export default defineWorkspace([
         '@radix-ui/react-select',
         '@radix-ui/react-slot',
         '@radix-ui/react-tabs',
+        '@lobehub/icons/es/Claude',
+        '@lobehub/icons/es/OpenCode',
         '@tanstack/react-query',
         'class-variance-authority',
         'clsx',
