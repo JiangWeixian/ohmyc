@@ -44,6 +44,7 @@ export default defineWorkspace([
         'lucide-react',
         'react-markdown',
         'react-router-dom',
+        'recharts',
         'remark-gfm',
         'storybook/test',
         'tailwind-merge',
