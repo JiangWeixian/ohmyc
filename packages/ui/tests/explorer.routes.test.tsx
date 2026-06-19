@@ -9,6 +9,7 @@ import {
 } from 'vitest'
 
 import { renderWithProviders } from './test/render-with-providers'
+import { App } from '@/app'
 import { Explorer } from '@/explorer'
 
 const opencodeAgentFixture = {
@@ -67,6 +68,14 @@ vi.mock('@/hooks/use-plugins', () => ({
     isLoading: false,
     isError: false,
   }),
+}))
+
+vi.mock('@/components/monitor-spike/monitor-spike-view', () => ({
+  MonitorSpikeView: () => <div data-testid="monitor-spike-route">Monitor spike route</div>,
+}))
+
+vi.mock('@/components/monitor-spike/lanyard-stats-spike-view', () => ({
+  LanyardStatsSpikeView: () => <div data-testid="lanyard-stats-spike-route">Lanyard stats spike route</div>,
 }))
 
 describe('Explorer route views', () => {
@@ -268,5 +277,19 @@ describe('Explorer route views', () => {
     expect(screen.getByRole('navigation', { name: 'Primary' })).toHaveTextContent('Timeline')
     expect(document.querySelector('main h1')?.textContent).toBe('Timeline')
     expect(document.body.textContent).toContain('Every Claude Code session')
+  })
+})
+
+describe('Explorer spike routes', () => {
+  it('renders the monitor spike route', () => {
+    renderWithProviders(<App />, { route: '/explore/monitor-spike' })
+
+    expect(screen.getByTestId('monitor-spike-route')).toBeInTheDocument()
+  })
+
+  it('renders the lanyard stats spike route', () => {
+    renderWithProviders(<App />, { route: '/explore/monitor-lanyard-stats-spike' })
+
+    expect(screen.getByTestId('lanyard-stats-spike-route')).toBeInTheDocument()
   })
 })

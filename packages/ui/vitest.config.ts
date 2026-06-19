@@ -45,6 +45,7 @@ export default defineConfig({
         'dist/',
         'src/components/ui/**',
         'src/components/uitripled/**',
+        'src/components/monitor-spike/**',
         '**/*.d.ts',
         '**/*.config.*',
       ],

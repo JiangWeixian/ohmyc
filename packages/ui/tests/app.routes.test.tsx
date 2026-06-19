@@ -26,6 +26,14 @@ vi.mock('@/components/menubar/menubar-page', () => ({
   MenubarPage: () => <div data-testid="menubar-route">Menubar route</div>,
 }))
 
+vi.mock('@/components/monitor-spike/monitor-spike-view', () => ({
+  MonitorSpikeView: () => <div data-testid="monitor-spike-route">Monitor spike route</div>,
+}))
+
+vi.mock('@/components/monitor-spike/lanyard-stats-spike-view', () => ({
+  LanyardStatsSpikeView: () => <div data-testid="lanyard-stats-spike-route">Lanyard stats spike route</div>,
+}))
+
 vi.mock('@/hooks/use-agents', () => ({
   useAgents: () => ({ data: [] }),
 }))
