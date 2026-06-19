@@ -21,6 +21,19 @@ const config: StorybookConfig = {
     options: {},
   },
   async viteFinal(config) {
+    config.plugins = [
+      ...(config.plugins ?? []),
+      {
+        name: 'storybook-file-url-resolver',
+        enforce: 'pre',
+        resolveId(id) {
+          if (id.startsWith('file://')) {
+            return fileURLToPath(id)
+          }
+          return null
+        },
+      },
+    ]
     config.assetsInclude = [
       ...(Array.isArray(config.assetsInclude) ? config.assetsInclude : []),
       '**/*.glb',
