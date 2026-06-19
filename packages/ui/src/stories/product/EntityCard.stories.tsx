@@ -31,6 +31,15 @@ export default meta
 type Story = StoryObj<typeof meta>
 
 export const Variants: Story = {
+  args: {
+    icon: Bot,
+    iconAccentVar: '--text-primary',
+    title: 'review-agent',
+    description: entityDescriptions.short,
+    origins: entityOrigins,
+    renderBadges: entityBadges,
+    onClick: () => {},
+  },
   render: () => (
     <>
       <EntityCard icon={Bot} iconAccentVar="--text-primary" title="review-agent" description={entityDescriptions.short} origins={entityOrigins} renderBadges={entityBadges} onClick={() => {}} />

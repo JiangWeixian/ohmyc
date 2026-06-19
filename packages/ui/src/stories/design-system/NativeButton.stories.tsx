@@ -13,6 +13,9 @@ export default meta
 type Story = StoryObj<typeof meta>
 
 export const States: Story = {
+  args: {
+    children: 'Default',
+  },
   render: () => (
     <div className="flex flex-wrap items-center gap-3">
       <NativeButton>Default</NativeButton>

@@ -30,9 +30,17 @@ export default meta
 type Story = StoryObj<typeof meta>
 
 export const Line: Story = {
+  args: {
+    value: 'line',
+    onChange: () => {},
+  },
   render: () => <StatefulSwitch initial="line" />,
 }
 
 export const Heatmap: Story = {
+  args: {
+    value: 'heatmap',
+    onChange: () => {},
+  },
   render: () => <StatefulSwitch initial="heatmap" />,
 }

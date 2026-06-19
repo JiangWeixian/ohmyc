@@ -28,6 +28,9 @@ export default meta
 type Story = StoryObj<typeof meta>
 
 export const OpenWithCommands: Story = {
+  args: {
+    commands: commandPaletteCommands,
+  },
   render: () => <OpenPalette />,
   play: async ({ canvasElement }) => {
     fireEvent.keyDown(canvasElement.ownerDocument, { key: 'k', metaKey: true })
@@ -36,6 +39,9 @@ export const OpenWithCommands: Story = {
 }
 
 export const Empty: Story = {
+  args: {
+    commands: [],
+  },
   render: () => <OpenPalette commands={[]} />,
   play: async ({ canvasElement }) => {
     fireEvent.keyDown(canvasElement.ownerDocument, { key: 'k', metaKey: true })
