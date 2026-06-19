@@ -57,11 +57,19 @@ const CONTENT_TRANSITION = {
 
 export function NavigationIsland() {
   const [collapsed, setCollapsed] = useState(false)
-  const reduceMotion = useReducedMotion()
+  const hookReduceMotion = useReducedMotion()
+  const reduceMotion = hookReduceMotion
+    || (
+      typeof globalThis.matchMedia === 'function'
+      && globalThis.matchMedia('(prefers-reduced-motion: reduce)').matches
+    )
   const { open } = useCommandPalette()
   const hasToggledRef = useRef(false)
   const expandButtonRef = useRef<HTMLButtonElement>(null)
   const collapseButtonRef = useRef<HTMLButtonElement>(null)
+  const motionMode = reduceMotion ? 'reduced' : 'full'
+  const shellLayout = !reduceMotion
+  const shellLayoutId = reduceMotion ? undefined : 'primary-navigation-island-shell'
 
   useEffect(() => {
     if (!hasToggledRef.current) {
@@ -96,13 +104,14 @@ export function NavigationIsland() {
         ? (
             <motion.div
               key="collapsed"
-              layout
-              layoutId="primary-navigation-island-shell"
+              layout={shellLayout}
+              layoutId={shellLayoutId}
+              data-motion-mode={motionMode}
               className="fixed left-[18px] top-[18px] z-40 max-sm:left-[14px] max-sm:top-[14px]"
               initial={reduceMotion ? false : { opacity: 0, scale: 0.96, filter: 'blur(4px)' }}
               animate={{ opacity: 1, scale: 1, filter: 'blur(0px)' }}
               exit={reduceMotion ? { opacity: 0 } : { opacity: 0, scale: 0.98, filter: 'blur(3px)' }}
-              whileHover={reduceMotion ? undefined : { scale: 1.02 }}
+              whileHover={undefined}
               transition={SHELL_TRANSITION}
             >
               <Button
@@ -119,6 +128,7 @@ export function NavigationIsland() {
                   'text-[var(--text-primary)] [box-shadow:0_0_0_0.5px_rgba(255,255,255,0.10),0_8px_30px_rgba(0,0,0,0.38),0_24px_60px_rgba(0,0,0,0.22)]',
                   '[backdrop-filter:saturate(180%)_blur(24px)] [-webkit-backdrop-filter:saturate(180%)_blur(24px)]',
                   'hover:bg-[rgba(255,255,255,0.04)]',
+                  'motion-safe:transition-transform motion-safe:duration-150 motion-safe:ease-out [@media(hover:hover)_and_(pointer:fine)]:hover:scale-[1.02]',
                 )}
               >
                 <Code2 size={20} aria-hidden="true" />
@@ -128,8 +138,9 @@ export function NavigationIsland() {
         : (
             <motion.nav
               key="expanded"
-              layout
-              layoutId="primary-navigation-island-shell"
+              layout={shellLayout}
+              layoutId={shellLayoutId}
+              data-motion-mode={motionMode}
               id="primary-navigation-island"
               aria-label="Primary"
               className={cn(

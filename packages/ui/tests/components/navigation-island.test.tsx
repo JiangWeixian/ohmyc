@@ -99,4 +99,29 @@ describe('NavigationIsland', () => {
       expect(screen.getByRole('button', { name: 'Expand navigation' })).toBeInTheDocument()
     })
   })
+
+  it('marks the shell as reduced motion when the user prefers reduced motion', () => {
+    Object.defineProperty(globalThis, 'matchMedia', {
+      configurable: true,
+      value: vi.fn().mockImplementation(query => ({
+        matches: query === '(prefers-reduced-motion: reduce)',
+        media: query,
+        onchange: null,
+        addListener: vi.fn(),
+        removeListener: vi.fn(),
+        addEventListener: vi.fn(),
+        removeEventListener: vi.fn(),
+        dispatchEvent: vi.fn(),
+      })),
+    })
+
+    renderWithProviders(
+      <Routes>
+        <Route path="*" element={<Harness />} />
+      </Routes>,
+      { route: '/explore/timeline' },
+    )
+
+    expect(screen.getByRole('navigation', { name: 'Primary' })).toHaveAttribute('data-motion-mode', 'reduced')
+  })
 })
