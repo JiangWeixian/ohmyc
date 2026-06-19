@@ -8,6 +8,7 @@ import {
 } from 'lucide-react'
 
 import { MarkdownRenderer } from './markdown-renderer'
+import { Button } from '@/components/ui/button'
 
 const motionEaseOut = [0.23, 1, 0.32, 1] as const
 
@@ -113,26 +114,30 @@ export function EntityDetail({
             <div className="flex shrink-0 gap-1.5">
               {onEdit
                 ? (
-                <button
+                <Button
                   type="button"
                   onClick={onEdit}
-                  className="transition-smooth inline-flex items-center gap-1.5 rounded-[var(--radius-sm)] border border-[var(--border-default)] bg-white/[0.04] px-2.5 py-1.5 text-[12px] font-medium text-[var(--text-primary)] hover:bg-white/[0.08]"
+                  variant="outline"
+                  size="sm"
+                  className="rounded-[var(--radius-sm)] border-[var(--border-default)] bg-white/[0.04] text-[var(--text-primary)] hover:bg-white/[0.08]"
                 >
                   <Pencil size={12} />
                   Edit
-                </button>
+                </Button>
                   )
                 : null}
               {onDelete
                 ? (
-                <button
+                <Button
                   type="button"
                   onClick={onDelete}
                   aria-label="Delete"
-                  className="transition-smooth inline-flex size-[28px] items-center justify-center rounded-[var(--radius-sm)] border border-[var(--border-default)] bg-white/[0.04] text-[var(--text-tertiary)] hover:bg-white/[0.08] hover:text-[var(--text-primary)]"
+                  variant="outline"
+                  size="icon-sm"
+                  className="rounded-[var(--radius-sm)] border-[var(--border-default)] bg-white/[0.04] text-[var(--text-tertiary)] hover:bg-white/[0.08] hover:text-[var(--text-primary)]"
                 >
                   <Trash2 size={12} />
-                </button>
+                </Button>
                   )
                 : null}
             </div>
