@@ -75,4 +75,18 @@ describe('CommandPalette', () => {
     expect(screen.getByText('⇧')).toBeInTheDocument()
     expect(screen.getByText('k')).toBeInTheDocument()
   })
+
+  it('uses instant motion for the high-frequency keyboard palette', () => {
+    render(
+      <CommandPaletteProvider>
+        <CommandPalette commands={[{ id: 'one', label: 'One', action: vi.fn() }]} />
+      </CommandPaletteProvider>,
+    )
+
+    fireEvent.keyDown(document, { key: 'k', metaKey: true })
+
+    const input = screen.getByPlaceholderText('Search commands...')
+    const dialog = input.closest('[data-motion-preset]')
+    expect(dialog).toHaveAttribute('data-motion-preset', 'instant')
+  })
 })

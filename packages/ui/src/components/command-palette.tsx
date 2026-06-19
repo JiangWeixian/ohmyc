@@ -88,7 +88,7 @@ export function CommandPalette({ commands, placeholder = 'Search commands...' }:
         }
       }}
     >
-      <NativeDialogContent className="p-0 gap-0 max-w-xl overflow-hidden bg-[var(--surface-overlay)] border-[var(--border-default)] rounded-[var(--radius-xl)]">
+      <NativeDialogContent motionPreset="instant" className="p-0 gap-0 max-w-xl overflow-hidden bg-[var(--surface-overlay)] border-[var(--border-default)] rounded-[var(--radius-xl)]">
         <Command className="[&_[cmdk-group-heading]]:text-[11px] [&_[cmdk-group-heading]]:font-medium [&_[cmdk-group-heading]]:text-[var(--text-tertiary)] [&_[cmdk-group-heading]]:uppercase [&_[cmdk-group-heading]]:tracking-wide [&_[cmdk-group-heading]]:px-4 [&_[cmdk-group-heading]]:py-2">
           {/* Search Input */}
           <div className="flex items-center gap-3 px-4 py-3 border-b border-[var(--border-default)]">
