@@ -1,8 +1,8 @@
 // Root application component — sets up routing, command palette, and global keyboard shortcuts.
 import {
   Activity,
-  Atom,
   Bot,
+  Code2,
   Search,
   Sparkles,
   TerminalSquare,
@@ -38,7 +38,7 @@ function AppCommandPalette() {
       id: 'goto-monitor',
       label: 'Monitor',
       shortcut: 'g m',
-      icon: <Atom size={14} />,
+      icon: <Code2 size={14} />,
       category: 'Go to',
       action: () => navigate('/explore/monitor'),
     },

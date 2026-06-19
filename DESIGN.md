@@ -139,24 +139,26 @@ On dark surfaces, elevation is communicated through background luminance steps, 
 ### Navigation Island
 - Default shell: floating, collapsible island. No primary route uses a full-height docked sidebar or standard top header.
 - Position: `top: 18px`, `left: 18px` on desktop. On narrow screens, keep the collapsed island at `top: 14px`, `left: 14px`.
-- Expanded width: `216-224px`. Collapsed size: a single `52-56px` square icon badge, not a mini navigation rail. Use a `lucide-react` placeholder icon until the brand icon is ready.
+- Expanded size: `216-224px` wide and `calc(100dvh - 36px)` tall on desktop, leaving the same 18px top/bottom/left breathing room. Collapsed size: a single `52-56px` square icon badge, not a mini navigation rail. Use a `lucide-react` placeholder icon until the brand icon is ready.
 - Background: `rgba(15,16,17,0.72)` with backdrop blur around `20-24px`.
-- Border: `1px solid rgba(255,255,255,0.08)`.
+- Border: low-opacity edge definition, preferably a `0.5px` ring/shadow plus at most `1px rgba(255,255,255,0.05)` border. Use macOS-style vibrancy with `saturate(180%) blur(20-24px)`.
 - Border-radius: `14px` outer, `8px` inner controls.
-- Shadow: subtle deep shadow only for island separation, e.g. `0 28px 80px rgba(0,0,0,0.38)`.
+- Shadow: layered macOS floating-panel shadow for separation, e.g. `0 0 0 0.5px rgba(255,255,255,0.10)`, `0 8px 30px rgba(0,0,0,0.38)`, `0 24px 60px rgba(0,0,0,0.22)`.
 - Brand:
   - Title: `OhMyC`
   - Subtitle: `coding monitor` in Berkeley Mono, uppercase, `10px`, `text-tertiary`.
+  - Expanded state uses text only on the left plus the collapse icon button on the right. Do not show a leading brand placeholder icon while expanded.
 - Section headers:
   - Text: `11px / 510 / uppercase / text-tertiary`
   - Suggested groups: `Signal` (`Monitor`, `Timeline`) and `Explore` (`Agents`, `Commands`, `Skills`, `Plugins`).
+- Command palette trigger sits at the bottom of the expanded island, not directly after the navigation groups.
 - Nav items:
-  - Height: `36px`
+  - Height: `32px`
   - Padding: `0 10px`
   - Border-radius: `8px`
   - Gap: `10px`
   - Nav items are hidden when collapsed. The collapsed state shows only a single icon badge; clicking it expands the full island.
-  - Collapsed icon: use a `lucide-react` placeholder such as `Atom`, `Orbit`, or `Code2` if available in the installed lucide version. Replace only this icon with the brand mark later.
+  - Collapsed icon: use a neutral lucide.dev coding placeholder such as `Code2` if available in the installed lucide version. Avoid `Atom` or other React-like marks; replace only this icon with the brand mark later.
 - Active state:
   - Background: `rgba(255,255,255,0.08)`
   - Text: `#f7f8f8`

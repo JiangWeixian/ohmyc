@@ -1,9 +1,9 @@
 import { motion, useReducedMotion } from 'framer-motion'
 import {
   Activity,
-  Atom,
   Blocks,
   Bot,
+  Code2,
   PanelLeftClose,
   Search,
   Sparkles,
@@ -30,7 +30,7 @@ interface IslandItem {
 }
 
 const SIGNAL_ITEMS: IslandItem[] = [
-  { id: 'monitor', label: 'Monitor', to: '/explore/monitor', icon: Atom },
+  { id: 'monitor', label: 'Monitor', to: '/explore/monitor', icon: Code2 },
   { id: 'timeline', label: 'Timeline', to: '/explore/timeline', icon: Activity },
 ]
 
@@ -93,12 +93,13 @@ export function NavigationIsland() {
           aria-expanded={false}
           onClick={() => updateCollapsed(false)}
           className={cn(
-            'size-14 rounded-[14px] border border-[rgba(255,255,255,0.08)] bg-[rgba(15,16,17,0.72)]',
-            'text-[var(--text-primary)] shadow-[0_28px_80px_rgba(0,0,0,0.38)] backdrop-blur-2xl',
+            'size-14 rounded-[14px] border border-[rgba(255,255,255,0.05)] bg-[rgba(15,16,17,0.72)]',
+            'text-[var(--text-primary)] [box-shadow:0_0_0_0.5px_rgba(255,255,255,0.10),0_8px_30px_rgba(0,0,0,0.38),0_24px_60px_rgba(0,0,0,0.22)]',
+            '[backdrop-filter:saturate(180%)_blur(24px)] [-webkit-backdrop-filter:saturate(180%)_blur(24px)]',
             'hover:bg-[rgba(255,255,255,0.04)]',
           )}
         >
-          <Atom size={20} aria-hidden="true" />
+          <Code2 size={20} aria-hidden="true" />
         </Button>
       </motion.div>
     )
@@ -109,25 +110,21 @@ export function NavigationIsland() {
       id="primary-navigation-island"
       aria-label="Primary"
       className={cn(
-        'fixed left-[18px] top-[18px] z-40 w-[220px] overflow-hidden rounded-[14px]',
-        'border border-[rgba(255,255,255,0.08)] bg-[rgba(15,16,17,0.72)]',
-        'p-3 shadow-[0_28px_80px_rgba(0,0,0,0.38)] backdrop-blur-2xl',
-        'max-sm:left-[14px] max-sm:top-[14px] max-sm:w-[216px]',
+        'fixed left-[18px] top-[18px] z-40 flex h-[calc(100dvh-36px)] w-[220px] flex-col overflow-hidden rounded-[14px]',
+        'border border-[rgba(255,255,255,0.05)] bg-[rgba(15,16,17,0.72)]',
+        'p-3 [box-shadow:0_0_0_0.5px_rgba(255,255,255,0.10),0_8px_30px_rgba(0,0,0,0.38),0_24px_60px_rgba(0,0,0,0.22)]',
+        '[backdrop-filter:saturate(180%)_blur(24px)] [-webkit-backdrop-filter:saturate(180%)_blur(24px)]',
+        'max-sm:left-[14px] max-sm:top-[14px] max-sm:h-[calc(100dvh-28px)] max-sm:w-[216px]',
       )}
       initial={reduceMotion ? false : { opacity: 0.92, scale: 0.98 }}
       animate={{ opacity: 1, scale: 1 }}
       transition={{ duration: 0.2 }}
     >
-      <div className="mb-4 flex items-start justify-between gap-3">
-        <div className="flex min-w-0 items-center gap-3">
-          <div className="flex size-9 shrink-0 items-center justify-center rounded-[10px] border border-[rgba(255,255,255,0.08)] bg-[rgba(255,255,255,0.02)]">
-            <Atom size={17} className="text-[var(--text-secondary)]" aria-hidden="true" />
-          </div>
-          <div className="min-w-0">
-            <div className="truncate text-[14px] font-[590] text-[var(--text-primary)]">OhMyC</div>
-            <div className="truncate font-mono text-[10px] uppercase tracking-[0.04em] text-[var(--text-tertiary)]">
-              coding monitor
-            </div>
+      <div className="mb-5 flex min-h-11 items-start justify-between gap-3">
+        <div className="min-w-0 px-1">
+          <div className="truncate text-[14px] font-[590] text-[var(--text-primary)]">OhMyC</div>
+          <div className="truncate font-mono text-[10px] uppercase tracking-[0.04em] text-[var(--text-tertiary)]">
+            coding monitor
           </div>
         </div>
         <Button
@@ -153,7 +150,7 @@ export function NavigationIsland() {
         variant="ghost"
         onClick={open}
         className={cn(
-          'mt-4 flex h-9 w-full items-center justify-between rounded-lg border border-[rgba(255,255,255,0.08)]',
+          'mt-auto flex h-8 w-full items-center justify-between rounded-md border border-[rgba(255,255,255,0.08)]',
           'bg-[rgba(255,255,255,0.02)] px-2.5 text-[12px] text-[var(--text-tertiary)]',
           'transition-colors hover:bg-[rgba(255,255,255,0.04)] hover:text-[var(--text-secondary)]',
         )}
@@ -194,9 +191,9 @@ function IslandGroup({
             onClick={onNavigate}
             className={({ isActive }) =>
               cn(
-                'flex h-9 items-center gap-2.5 rounded-lg px-2.5 text-[13px] font-[510] transition-colors',
+                'flex h-8 items-center gap-2 rounded-md px-2.5 text-[13px] font-[510] transition-colors',
                 isActive
-                  ? 'bg-[rgba(255,255,255,0.08)] text-[var(--text-primary)]'
+                  ? 'bg-[rgba(255,255,255,0.08)] text-[var(--text-primary)] shadow-[inset_0_0_0_0.5px_rgba(255,255,255,0.06)]'
                   : 'text-[var(--text-secondary)] hover:bg-[rgba(255,255,255,0.03)] hover:text-[var(--text-primary)]',
               )}
           >

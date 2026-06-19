@@ -1,4 +1,15 @@
 
+## Product context
+
+**Before any product, UX, or voice decision, read [PRODUCT.md](./PRODUCT.md).** It is the source of truth for:
+
+- **Register:** `product` — OhMyC is a personal Coding Monitor (developer dashboard), not a marketing site
+- Who uses it, the job to be done, brand personality, and anti-references
+- Strategic design principles (the monitor not the manager; darkness as native medium; one identity surface; signal over dashboard; calibrated craft)
+- Accessibility commitment: WCAG 2.1 AA + mandatory `prefers-reduced-motion` + WebGL accessible fallbacks
+
+DESIGN.md governs how it *looks*; PRODUCT.md governs *what it is and why*. When voice/strategy and visuals conflict, PRODUCT.md wins on strategic decisions and DESIGN.md wins on visual ones.
+
 ## Design system
 
 **Before any visual or UI work, read [DESIGN.md](./DESIGN.md).** It is the source of truth for:

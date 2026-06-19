@@ -1,4 +1,4 @@
-import { Atom } from 'lucide-react'
+import { Code2 } from 'lucide-react'
 
 import { ComputerBackdrop } from './computer-backdrop'
 
@@ -48,7 +48,7 @@ function SpikeIsland() {
     >
       <div className="flex items-center justify-center">
         <div className="flex size-9 shrink-0 items-center justify-center rounded-[10px] border border-[rgba(255,255,255,0.08)] bg-[rgba(255,255,255,0.02)]">
-          <Atom size={17} aria-hidden="true" />
+          <Code2 size={17} aria-hidden="true" />
         </div>
       </div>
     </nav>
@@ -58,8 +58,8 @@ function SpikeIsland() {
 function SignalField() {
   return (
     <div aria-hidden="true" className="pointer-events-none absolute inset-0 z-[2] overflow-hidden">
-      <div className="absolute inset-0 opacity-[0.15] [background-image:linear-gradient(rgba(255,255,255,0.08)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.08)_1px,transparent_1px)] [background-size:72px_72px]" />
-      <div className="absolute left-[18%] top-[18%] h-px w-[58vw] rotate-[-12deg] bg-[linear-gradient(90deg,transparent,rgba(255,255,255,0.16),transparent)]" />
+      <div className="absolute inset-0 opacity-15 [background-image:linear-gradient(rgba(255,255,255,0.08)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.08)_1px,transparent_1px)] [background-size:72px_72px]" />
+      <div className="absolute left-[18%] top-[18%] h-px w-[58vw] -rotate-12 bg-[linear-gradient(90deg,transparent,rgba(255,255,255,0.16),transparent)]" />
       <div className="absolute left-[12%] top-[64%] h-px w-[52vw] rotate-[9deg] bg-[linear-gradient(90deg,transparent,rgba(255,255,255,0.10),transparent)]" />
     </div>
   )
