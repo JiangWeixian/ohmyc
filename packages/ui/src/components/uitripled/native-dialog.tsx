@@ -16,6 +16,8 @@ import { cn } from '@/lib/utils'
 
 type NativeDialogMotionPreset = 'dialog' | 'instant'
 
+const motionEaseOut = [0.23, 1, 0.32, 1] as const
+
 /** Uncontrolled dialog root — opens/closes via trigger interaction. */
 const NativeDialog = DialogPrimitive.Root
 
@@ -40,7 +42,7 @@ const NativeDialogOverlay = React.forwardRef<
       initial={{ opacity: instant ? 1 : 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: instant ? 1 : 0 }}
-      transition={{ duration: instant ? 0 : 0.12, ease: [0.23, 1, 0.32, 1] }}
+      transition={{ duration: instant ? 0 : 0.12, ease: motionEaseOut }}
       className={cn(
         'fixed inset-0 z-50 bg-black/20 backdrop-blur-sm',
         className,
@@ -57,7 +59,7 @@ const NativeDialogContent = React.forwardRef<
     motionPreset?: NativeDialogMotionPreset
   }
 >(({ className, children, motionPreset = 'dialog', ...properties }, reference) => {
-  const reduceMotion = useReducedMotion()
+  const reduceMotion = useReducedMotion() ?? false
   const instant = motionPreset === 'instant' || reduceMotion
   const motionState = instant
     ? {
@@ -70,7 +72,7 @@ const NativeDialogContent = React.forwardRef<
         initial: { opacity: 0, scale: 0.95, filter: 'blur(8px)' },
         animate: { opacity: 1, scale: 1, filter: 'blur(0px)' },
         exit: { opacity: 0, scale: 0.97, filter: 'blur(6px)' },
-        transition: { duration: 0.2, ease: [0.23, 1, 0.32, 1] },
+        transition: { duration: 0.2, ease: motionEaseOut },
       }
 
   return (

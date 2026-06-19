@@ -13,6 +13,8 @@ import type {
   SessionRow,
 } from '@/hooks/use-timeline'
 
+const motionEaseOut = [0.23, 1, 0.32, 1] as const
+
 // ── Agent glyph components ────────────────────────────────────────
 
 // Map agent_name → lobehub Mono icon component.
@@ -290,7 +292,7 @@ function ProjectRollup({
   const sessions = group.sessions
   const firstStart = sessions.at(-1)?.started_at ?? 0
   const lastEnd = sessions[0]?.ended_at ?? 0
-  const reduceMotion = useReducedMotion()
+  const reduceMotion = useReducedMotion() ?? false
   const sessionGroupMotion = reduceMotion
     ? {
         initial: { opacity: 1 },
@@ -302,7 +304,7 @@ function ProjectRollup({
         initial: { opacity: 0, transform: 'translateY(-4px)' },
         animate: { opacity: 1, transform: 'translateY(0px)' },
         exit: { opacity: 0, transform: 'translateY(-2px)' },
-        transition: { duration: 0.14, ease: [0.23, 1, 0.32, 1] },
+        transition: { duration: 0.14, ease: motionEaseOut },
       }
   return (
     <div>

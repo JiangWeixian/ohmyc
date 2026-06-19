@@ -6,9 +6,10 @@ import { AnimatedNumber, useMonitorStats } from './monitor-stats'
 import type { ReactNode } from 'react'
 
 const statsClassName = 'font-mono text-[11px] uppercase tracking-[0.04em] text-[var(--text-tertiary)]'
+const motionEaseOut = [0.23, 1, 0.32, 1] as const
 
 export function MonitorView() {
-  const reduceMotion = useReducedMotion()
+  const reduceMotion = useReducedMotion() ?? false
   const { stats, isLoading, isError, isEmpty } = useMonitorStats()
 
   return (
@@ -23,7 +24,7 @@ export function MonitorView() {
         <motion.div
           initial={reduceMotion ? false : { opacity: 0, transform: 'translateY(12px)' }}
           animate={{ opacity: 1, transform: 'translateY(0px)' }}
-          transition={{ duration: reduceMotion ? 0 : 0.24, ease: [0.23, 1, 0.32, 1] }}
+          transition={{ duration: reduceMotion ? 0 : 0.24, ease: motionEaseOut }}
         >
           <LanyardStage />
         </motion.div>
@@ -32,7 +33,7 @@ export function MonitorView() {
           className="relative z-10 max-w-[520px]"
           initial={reduceMotion ? false : { opacity: 0, transform: 'translateX(18px)' }}
           animate={{ opacity: 1, transform: 'translateX(0px)' }}
-          transition={{ duration: reduceMotion ? 0 : 0.26, delay: reduceMotion ? 0 : 0.04, ease: [0.23, 1, 0.32, 1] }}
+          transition={{ duration: reduceMotion ? 0 : 0.26, delay: reduceMotion ? 0 : 0.04, ease: motionEaseOut }}
         >
           <p className={statsClassName}>Personal signal</p>
           <h1 id="monitor-title" className="mt-3 text-[52px] font-[510] leading-none tracking-[-0.8px] text-[var(--text-primary)] max-md:text-[40px]">
