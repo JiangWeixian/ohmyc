@@ -1,0 +1,2996 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="source-file" content="docs/superpowers/plans/2026-06-19-ui-storybook.md">
+  <title>UI Storybook Implementation Plan</title>
+  <style>
+:root {
+  --bg: #f5f5f7;
+  --chrome: #000000;
+  --surface: #ffffff;
+  --surface-2: #fafafc;
+  --surface-3: #f0f0f0;
+  --tile-dark: #272729;
+  --tile-dark-2: #2a2a2c;
+  --border: #e0e0e0;
+  --border-soft: #f0f0f0;
+  --text: #1d1d1f;
+  --text-dim: #333333;
+  --text-faint: #7a7a7a;
+  --text-on-dark: #ffffff;
+  --accent: #0066cc;
+  --accent-hover: #0071e3;
+  --accent-on-dark: #2997ff;
+  --accent-soft: rgba(0, 102, 204, 0.08);
+  --code-bg: #fafafc;
+  --highlight: rgba(0, 102, 204, 0.08);
+  --shadow-float: 0 18px 50px rgba(0,0,0,0.12);
+  --shadow-image: 0 18px 38px rgba(0,0,0,0.18);
+  --scrollbar-thumb: rgba(60, 60, 67, 0.28);
+  --scrollbar-thumb-hover: rgba(60, 60, 67, 0.46);
+  --scrollbar-thumb-active: rgba(60, 60, 67, 0.58);
+  --scrollbar-track: transparent;
+  --font-primary: "SF Pro Text", "SF Pro Display", -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+  --font-display: "SF Pro Display", "SF Pro Text", -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+  --font-mono: "SF Mono", ui-monospace, SFMono-Regular, Menlo, Monaco, monospace;
+  --green: #1a7f37;
+  --green-soft: rgba(26, 127, 55, 0.08);
+  --blue: #0066cc;
+  --blue-soft: rgba(0, 102, 204, 0.08);
+  --yellow: #9a6700;
+  --yellow-soft: rgba(154, 103, 0, 0.1);
+  --comment-highlight-bg: #ffd60a;
+  --comment-highlight-text: #111111;
+  --orange: #bc4c00;
+  --orange-soft: rgba(188, 76, 0, 0.1);
+}
+
+[data-theme="dark"] {
+  --bg: #000000;
+  --chrome: #000000;
+  --surface: #1d1d1f;
+  --surface-2: #272729;
+  --surface-3: #2a2a2c;
+  --tile-dark: #252527;
+  --tile-dark-2: #2a2a2c;
+  --border: #333333;
+  --border-soft: #2a2a2c;
+  --text: #ffffff;
+  --text-dim: #cccccc;
+  --text-faint: #8f8f94;
+  --text-on-dark: #ffffff;
+  --accent: #2997ff;
+  --accent-hover: #46a6ff;
+  --accent-on-dark: #2997ff;
+  --accent-soft: rgba(41, 151, 255, 0.14);
+  --code-bg: #111113;
+  --highlight: rgba(41, 151, 255, 0.12);
+  --shadow-float: 0 18px 50px rgba(0,0,0,0.35);
+  --shadow-image: 0 18px 44px rgba(0,0,0,0.45);
+  --scrollbar-thumb: rgba(235, 235, 245, 0.26);
+  --scrollbar-thumb-hover: rgba(235, 235, 245, 0.42);
+  --scrollbar-thumb-active: rgba(235, 235, 245, 0.56);
+  --scrollbar-track: transparent;
+  --green: #34c759;
+  --green-soft: rgba(52, 199, 89, 0.14);
+  --blue: #2997ff;
+  --blue-soft: rgba(41, 151, 255, 0.14);
+  --yellow: #ffd60a;
+  --yellow-soft: rgba(255, 214, 10, 0.14);
+  --comment-highlight-bg: #ffd60a;
+  --comment-highlight-text: #111111;
+  --orange: #ff9f0a;
+  --orange-soft: rgba(255, 159, 10, 0.14);
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+* {
+  scrollbar-color: transparent transparent;
+  scrollbar-width: thin;
+}
+*:hover,
+*:focus-within {
+  scrollbar-color: var(--scrollbar-thumb) transparent;
+}
+*::-webkit-scrollbar {
+  width: 12px;
+  height: 12px;
+  background: transparent;
+}
+*::-webkit-scrollbar-track,
+*::-webkit-scrollbar-track-piece {
+  border: 0;
+  background: transparent;
+}
+*::-webkit-scrollbar-button {
+  display: none;
+  width: 0;
+  height: 0;
+  background: transparent;
+}
+*::-webkit-scrollbar-thumb {
+  min-height: 44px;
+  border: 4px solid transparent;
+  border-radius: 999px;
+  background: transparent;
+  background-clip: content-box;
+  transition: background-color 0.15s;
+}
+*:hover::-webkit-scrollbar-thumb,
+*:focus-within::-webkit-scrollbar-thumb {
+  background: var(--scrollbar-thumb);
+  background-clip: content-box;
+}
+*:hover::-webkit-scrollbar-thumb:hover,
+*:focus-within::-webkit-scrollbar-thumb:hover {
+  background: var(--scrollbar-thumb-hover);
+  background-clip: content-box;
+}
+*:hover::-webkit-scrollbar-thumb:active,
+*:focus-within::-webkit-scrollbar-thumb:active {
+  background: var(--scrollbar-thumb-active);
+  background-clip: content-box;
+}
+*::-webkit-scrollbar-corner {
+  background: transparent;
+}
+
+html {
+  scroll-padding-top: 78px;
+}
+
+html, body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font-primary);
+  font-feature-settings: "calt", "kern", "liga";
+  letter-spacing: 0;
+  font-weight: 400;
+  line-height: 1.47;
+  font-size: 17px;
+  -webkit-font-smoothing: antialiased;
+}
+
+a { color: var(--accent); text-decoration: none; }
+a:hover { color: var(--accent-hover); text-decoration: underline; }
+code, pre { font-family: var(--font-mono); }
+
+.topbar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  height: 44px;
+  padding: 0 max(18px, calc((100vw - 1440px) / 2 + 28px));
+  background: rgba(0,0,0,0.92);
+  color: var(--text-on-dark);
+  backdrop-filter: saturate(180%) blur(18px);
+}
+
+.theme-toggle {
+  background: transparent;
+  border: 0;
+  color: rgba(255,255,255,0.9);
+  border-radius: 999px;
+  padding: 5px 10px;
+  font-family: var(--font-primary);
+  font-size: 12px;
+  line-height: 1;
+  cursor: pointer;
+  transition: color 0.15s, background 0.15s;
+}
+
+.theme-toggle:hover {
+  background: rgba(255,255,255,0.1);
+  color: #ffffff;
+}
+
+.container {
+  width: 100%;
+  max-width: 1488px;
+  margin: 0 auto;
+  padding: 76px 28px 120px;
+}
+
+.page-layout {
+  display: grid;
+  grid-template-columns: minmax(164px, 210px) minmax(0, 1fr) minmax(232px, 300px);
+  gap: 32px;
+  align-items: start;
+}
+
+#content {
+  min-width: 0;
+  overflow-wrap: break-word;
+  background: var(--surface);
+  border: 1px solid var(--border-soft);
+  border-radius: 8px;
+  padding: clamp(34px, 5vw, 80px);
+}
+
+h1 {
+  max-width: 880px;
+  margin-bottom: 22px;
+  font-family: var(--font-display);
+  font-size: clamp(38px, 5vw, 56px);
+  font-weight: 600;
+  line-height: 1.07;
+  letter-spacing: 0;
+}
+
+h2 {
+  margin-top: 72px;
+  margin-bottom: 18px;
+  padding-top: 6px;
+  font-family: var(--font-display);
+  font-size: clamp(30px, 3vw, 40px);
+  font-weight: 600;
+  line-height: 1.1;
+  letter-spacing: 0;
+}
+
+h2::after {
+  content: "";
+  display: block;
+  width: 44px;
+  height: 2px;
+  margin-top: 16px;
+  background: var(--accent);
+}
+
+h3 {
+  margin-top: 44px;
+  margin-bottom: 12px;
+  font-family: var(--font-display);
+  font-size: 24px;
+  font-weight: 600;
+  line-height: 1.25;
+  letter-spacing: 0;
+}
+
+h4 {
+  margin-top: 32px;
+  margin-bottom: 10px;
+  font-size: 17px;
+  font-weight: 600;
+  line-height: 1.24;
+}
+
+p {
+  max-width: 760px;
+  margin-bottom: 17px;
+  color: var(--text-dim);
+  line-height: 1.47;
+}
+
+p strong,
+li strong {
+  color: var(--text);
+  font-weight: 600;
+}
+
+ul, ol {
+  max-width: 780px;
+  margin-bottom: 18px;
+  padding-left: 28px;
+  color: var(--text-dim);
+}
+
+li {
+  margin-bottom: 8px;
+  line-height: 1.47;
+}
+
+.task-list {
+  list-style: none;
+  padding-left: 0;
+}
+
+.task-list li {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 5px 0;
+}
+
+.task-list input[type="checkbox"] {
+  appearance: none;
+  -webkit-appearance: none;
+  width: 18px;
+  height: 18px;
+  margin-top: 3px;
+  flex-shrink: 0;
+  cursor: pointer;
+  position: relative;
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  background: var(--surface);
+}
+
+.task-list input[type="checkbox"]:checked {
+  background: var(--accent);
+  border-color: var(--accent);
+}
+
+.task-list input[type="checkbox"]:checked::after {
+  content: "\2713";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 12px;
+  color: #ffffff;
+  font-weight: 700;
+}
+
+blockquote {
+  max-width: 820px;
+  margin: 24px 0;
+  padding: 18px 24px;
+  border-left: 2px solid var(--accent);
+  background: var(--surface-2);
+  color: var(--text-dim);
+}
+
+blockquote p {
+  margin-bottom: 0;
+  color: inherit;
+}
+
+.admonition {
+  max-width: 820px;
+  margin: 24px 0;
+  padding: 18px 22px;
+  border: 1px solid var(--border-soft);
+  border-left: 3px solid;
+  background: var(--surface-2);
+  border-radius: 8px;
+}
+
+.admonition-title {
+  margin-bottom: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1.29;
+  letter-spacing: 0;
+}
+
+.admonition p {
+  margin-bottom: 0;
+  font-size: 15px;
+}
+
+.admonition-note { border-left-color: var(--blue); background: var(--blue-soft); }
+.admonition-note .admonition-title { color: var(--blue); }
+.admonition-warning { border-left-color: var(--yellow); background: var(--yellow-soft); }
+.admonition-warning .admonition-title { color: var(--yellow); }
+.admonition-tip { border-left-color: var(--green); background: var(--green-soft); }
+.admonition-tip .admonition-title { color: var(--green); }
+.admonition-caution { border-left-color: var(--orange); background: var(--orange-soft); }
+.admonition-caution .admonition-title { color: var(--orange); }
+
+table {
+  width: 100%;
+  margin: 26px 0;
+  border-collapse: collapse;
+  font-size: 14px;
+  line-height: 1.43;
+}
+
+th, td {
+  padding: 12px 15px;
+  text-align: left;
+  border-bottom: 1px solid var(--border-soft);
+}
+
+th {
+  color: var(--text);
+  background: var(--surface-2);
+  font-weight: 600;
+}
+
+td {
+  color: var(--text-dim);
+}
+
+tr:hover td {
+  background: var(--surface-2);
+}
+
+code:not(pre code) {
+  padding: 2px 6px;
+  border: 1px solid var(--border-soft);
+  border-radius: 5px;
+  background: var(--surface-2);
+  color: var(--accent);
+  font-family: var(--font-mono);
+  font-size: 13px;
+}
+
+pre {
+  margin: 24px 0;
+  padding: 22px;
+  overflow-x: auto;
+  position: relative;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--code-bg);
+}
+
+pre code {
+  color: var(--text);
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+.code-lang {
+  position: absolute;
+  top: 10px;
+  right: 12px;
+  padding: 3px 8px;
+  border: 1px solid var(--border-soft);
+  border-radius: 999px;
+  background: var(--surface);
+  color: var(--text-faint);
+  font-family: var(--font-mono);
+  font-size: 10px;
+  line-height: 1;
+  text-transform: uppercase;
+}
+
+.copy-btn {
+  position: absolute;
+  top: 8px;
+  right: 78px;
+  padding: 5px 10px;
+  border: 0;
+  border-radius: 999px;
+  background: var(--text);
+  color: var(--surface);
+  font-family: var(--font-primary);
+  font-size: 12px;
+  line-height: 1;
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity 0.15s, background 0.15s;
+}
+
+pre:hover .copy-btn { opacity: 1; }
+.copy-btn:hover { background: var(--accent); }
+
+.tok-keyword { color: #cf222e; }
+.tok-string { color: #0a3069; }
+.tok-function { color: #8250df; }
+.tok-comment { color: #8b949e; font-style: italic; }
+.tok-type { color: #0550ae; }
+.tok-variable { color: #953800; }
+.tok-number { color: #0550ae; }
+.tok-tag { color: #116329; }
+.tok-attr { color: #0550ae; }
+.tok-punctuation { color: #6e7781; }
+.tok-selector { color: #6639ba; }
+.tok-property { color: #0550ae; }
+.tok-value { color: #0a3069; }
+
+[data-theme="dark"] .tok-keyword { color: #ff7b72; }
+[data-theme="dark"] .tok-string { color: #a5d6ff; }
+[data-theme="dark"] .tok-function { color: #d2a8ff; }
+[data-theme="dark"] .tok-comment { color: #8b949e; font-style: italic; }
+[data-theme="dark"] .tok-type { color: #79c0ff; }
+[data-theme="dark"] .tok-variable { color: #ffa657; }
+[data-theme="dark"] .tok-number { color: #79c0ff; }
+[data-theme="dark"] .tok-tag { color: #7ee787; }
+[data-theme="dark"] .tok-attr { color: #79c0ff; }
+[data-theme="dark"] .tok-punctuation { color: #8b949e; }
+[data-theme="dark"] .tok-selector { color: #7ee787; }
+[data-theme="dark"] .tok-property { color: #79c0ff; }
+[data-theme="dark"] .tok-value { color: #a5d6ff; }
+
+hr {
+  max-width: 820px;
+  margin: 48px 0;
+  border: none;
+  border-top: 1px solid var(--border);
+}
+
+.toc-sidebar,
+.comments-panel {
+  position: sticky;
+  top: 68px;
+  max-height: calc(100vh - 84px);
+  overflow-y: auto;
+}
+
+.toc-sidebar nav,
+.comments-panel {
+  padding: 14px 0;
+}
+
+.toc-sidebar-title,
+.comments-panel-title {
+  margin-bottom: 12px;
+  color: var(--text-faint);
+  font-size: 12px;
+  font-weight: 400;
+  line-height: 1;
+}
+
+.toc-sidebar ul {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.toc-sidebar li { margin: 0; }
+
+.toc-sidebar a {
+  display: block;
+  padding: 6px 10px;
+  color: var(--text-faint);
+  border-radius: 8px;
+  font-size: 13px;
+  line-height: 1.35;
+  text-decoration: none;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  transition: color 0.15s, background 0.15s;
+}
+
+.toc-sidebar a:hover {
+  color: var(--text-dim);
+  background: var(--surface-2);
+}
+
+.toc-sidebar a.active {
+  color: var(--accent);
+  background: var(--accent-soft);
+  font-weight: 400;
+}
+
+.toc-sidebar .toc-h3 a {
+  padding-left: 24px;
+  font-size: 12px;
+}
+
+/* ===== SHIKI DUAL THEME ===== */
+.shiki-wrapper { position: relative; }
+.shiki-wrapper pre.shiki-dark { display: none; }
+.shiki-wrapper pre.shiki-light { display: block; }
+[data-theme="dark"] .shiki-wrapper pre.shiki-dark { display: block; }
+[data-theme="dark"] .shiki-wrapper pre.shiki-light { display: none; }
+.shiki-wrapper pre {
+  margin: 0;
+  padding: 0 !important;
+  border: none !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+/* ===== COMMENT SYSTEM ===== */
+.comment-tooltip {
+  position: absolute;
+  z-index: 300;
+  padding: 6px 12px;
+  border-radius: 999px;
+  background: var(--accent);
+  color: #ffffff;
+  font-size: 12px;
+  font-weight: 400;
+  line-height: 1;
+  cursor: pointer;
+  white-space: nowrap;
+  box-shadow: var(--shadow-float);
+  transition: background 0.15s;
+}
+
+.comment-tooltip:hover { background: var(--accent-hover); }
+
+.comment-popover {
+  position: absolute;
+  z-index: 400;
+  width: 340px;
+  padding: 16px;
+  border: 1px solid var(--border);
+  border-radius: 11px;
+  background: var(--surface);
+  box-shadow: var(--shadow-float);
+}
+
+.comment-popover-loc {
+  margin-bottom: 8px;
+  color: var(--text-faint);
+  font-family: var(--font-mono);
+  font-size: 11px;
+}
+
+.comment-popover-preview {
+  max-height: 80px;
+  overflow-y: auto;
+  margin-bottom: 12px;
+  padding: 8px 12px;
+  border: 1px solid var(--border-soft);
+  border-radius: 8px;
+  background: var(--surface-2);
+  color: var(--text-dim);
+  font-size: 13px;
+  line-height: 1.5;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.comment-popover-input {
+  width: 100%;
+  min-height: 70px;
+  padding: 10px 12px;
+  resize: vertical;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface);
+  color: var(--text);
+  font-family: var(--font-primary);
+  font-size: 14px;
+  line-height: 1.5;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+
+.comment-popover-input:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-soft);
+}
+
+.comment-popover-input::placeholder { color: var(--text-faint); }
+
+.comment-popover-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.comment-popover-cancel,
+.comment-popover-add {
+  padding: 7px 15px;
+  border-radius: 999px;
+  font-family: var(--font-primary);
+  font-size: 14px;
+  font-weight: 400;
+  line-height: 1;
+  cursor: pointer;
+  transition: color 0.15s, background 0.15s;
+}
+
+.comment-popover-cancel {
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--accent);
+}
+
+.comment-popover-cancel:hover { color: var(--accent-hover); }
+
+.comment-popover-add {
+  border: 0;
+  background: var(--accent);
+  color: #ffffff;
+}
+
+.comment-popover-add:hover { background: var(--accent-hover); }
+
+.comment-highlight {
+  padding: 1px 2px;
+  border-radius: 2px;
+  border-bottom: 2px solid rgba(17, 17, 17, 0.32);
+  background: var(--comment-highlight-bg);
+  color: var(--comment-highlight-text);
+  cursor: pointer;
+  transition: box-shadow 0.15s, outline-color 0.15s;
+}
+
+.comment-highlight.active {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+  box-shadow: 0 0 0 4px var(--accent-soft);
+}
+
+.comment-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  margin-left: 3px;
+  border-radius: 999px;
+  background: var(--accent);
+  color: #ffffff;
+  font-size: 10px;
+  font-weight: 600;
+  line-height: 1;
+  cursor: pointer;
+  vertical-align: middle;
+  transition: box-shadow 0.15s, transform 0.15s;
+}
+
+.comment-badge.active {
+  box-shadow: 0 0 0 4px var(--accent-soft);
+  transform: translateY(-1px);
+}
+
+.comment-card {
+  position: relative;
+  overflow: hidden;
+  border: 1px solid var(--border-soft);
+  border-radius: 8px;
+  background: var(--surface);
+  transition: border-color 0.15s, background 0.15s;
+}
+
+.comment-card.active {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+}
+
+.comment-card-header {
+  display: block;
+  padding: 10px 34px 10px 12px;
+  border-bottom: 1px solid var(--border-soft);
+  color: var(--text-faint);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  line-height: 1.4;
+}
+
+.comment-card-location {
+  overflow-wrap: anywhere;
+  white-space: normal;
+}
+
+.comment-card-delete {
+  position: absolute;
+  top: 8px;
+  right: 9px;
+  z-index: 1;
+  opacity: 0;
+  pointer-events: none;
+  border: 0;
+  background: none;
+  color: var(--text-faint);
+  font-size: 16px;
+  line-height: 1;
+  cursor: pointer;
+  transition: opacity 0.15s, color 0.15s;
+}
+
+.comment-card:hover .comment-card-delete,
+.comment-card:focus-within .comment-card-delete {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.comment-card-delete:hover {
+  color: var(--accent);
+}
+
+.comment-card-body {
+  padding: 10px 12px 12px;
+  color: var(--text);
+  font-size: 13px;
+  font-weight: 400;
+  line-height: 1.5;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.comment-card-preview {
+  max-height: 48px;
+  overflow: hidden;
+  margin: 10px 12px 12px;
+  padding: 2px 0 2px 10px;
+  border-left: 3px solid var(--accent);
+  color: var(--text-faint);
+  font-family: var(--font-mono);
+  font-style: italic;
+  font-size: 11px;
+  line-height: 1.4;
+}
+
+.comments-panel {
+  display: flex;
+  flex-direction: column;
+}
+
+.comments-panel-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.comments-panel-actions {
+  display: flex;
+  gap: 6px;
+}
+
+.comments-panel-btn {
+  padding: 5px 9px;
+  border: 1px solid var(--border-soft);
+  border-radius: 999px;
+  background: var(--surface);
+  color: var(--text-faint);
+  font-family: var(--font-primary);
+  font-size: 11px;
+  font-weight: 400;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.comments-panel-btn:hover {
+  color: var(--accent);
+  border-color: var(--accent);
+}
+
+.comments-panel-empty {
+  padding: 24px 0;
+  color: var(--text-faint);
+  font-size: 12px;
+  text-align: center;
+}
+
+.comments-panel-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.comment-card-automated {
+  border-color: var(--border);
+  background: var(--surface);
+}
+
+.comment-card-meta-row {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 0 12px 12px;
+}
+
+.comment-card-reviewer {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  color: var(--text-faint);
+}
+
+.comment-card-reviewer-icon {
+  display: block;
+  width: 18px;
+  height: 18px;
+}
+
+.comment-card-reviewer-fallback {
+  font-family: var(--font-primary);
+  font-size: 10px;
+  font-weight: 600;
+  line-height: 1;
+}
+
+.comment-card-priority,
+.comment-card-unanchored {
+  display: inline-flex;
+  align-items: center;
+  border-radius: 999px;
+  padding: 2px 7px;
+  font-family: var(--font-primary);
+  font-size: 10px;
+  line-height: 1.2;
+  white-space: nowrap;
+}
+
+.comment-card-priority {
+  color: #ffffff;
+  background: var(--accent);
+}
+
+.comment-card-priority.severity-critical,
+.comment-card-priority.severity-high {
+  color: #ffffff;
+  background: var(--accent);
+}
+
+.comment-card-priority.severity-medium {
+  background: var(--accent);
+  color: #ffffff;
+}
+
+.comment-card-priority.severity-low,
+.comment-card-priority.severity-note {
+  background: var(--accent);
+  color: #ffffff;
+}
+
+.comment-card-unanchored {
+  color: var(--text-faint);
+  border: 1px solid var(--border-soft);
+}
+
+.comment-card-title {
+  padding: 10px 12px 0;
+  color: var(--text);
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.35;
+}
+
+.comment-badge-automated {
+  width: auto;
+  min-width: 22px;
+  padding: 0 6px;
+}
+
+img {
+  max-width: 100%;
+  height: auto;
+  margin: 28px 0;
+  border-radius: 0;
+  box-shadow: var(--shadow-image);
+}
+
+@media (max-width: 1180px) {
+  .page-layout { grid-template-columns: minmax(0, 1fr); }
+  .toc-sidebar,
+  .comments-panel { display: none; }
+  #content { padding: clamp(28px, 6vw, 54px); }
+}
+
+@media (max-width: 700px) {
+  html, body { font-size: 16px; }
+  .container { padding: 64px 14px 88px; }
+  .topbar { padding: 0 14px; }
+  #content { padding: 28px 18px; }
+  h1 { font-size: 36px; }
+  h2 { margin-top: 54px; font-size: 30px; }
+  h3 { font-size: 22px; }
+  pre { padding: 18px 14px; }
+  .copy-btn { opacity: 1; }
+}
+
+  </style>
+</head>
+<body>
+  <nav class="topbar">
+    <button class="theme-toggle" id="theme-toggle" aria-label="Toggle theme">Dark</button>
+  </nav>
+  <div class="container">
+    <div class="page-layout">
+<aside class="toc-sidebar">
+  <nav>
+    <div class="toc-sidebar-title">On this page</div>
+    <ul>
+      <li><a href="#references">References</a></li>
+      <li><a href="#file-structure">File Structure</a></li>
+      <li><a href="#task-1-install-storybook-and-add-the-config-skeleton">Task 1: Install Storybook And Add The Config Skeleton</a></li>
+      <li><a href="#task-2-add-shared-storybook-decorators-and-fixtures">Task 2: Add Shared Storybook Decorators And Fixtures</a></li>
+      <li><a href="#task-3-add-design-system-stories">Task 3: Add Design-System Stories</a></li>
+      <li><a href="#task-4-add-product-component-stories">Task 4: Add Product Component Stories</a></li>
+      <li><a href="#task-5-add-timeline-stories">Task 5: Add Timeline Stories</a></li>
+      <li><a href="#task-6-add-menubar-stories">Task 6: Add Menubar Stories</a></li>
+      <li><a href="#task-7-add-monitor-spike-story-and-final-storybook-metadata">Task 7: Add Monitor Spike Story And Final Storybook Metadata</a></li>
+      <li><a href="#task-8-final-verification">Task 8: Final Verification</a></li>
+      <li><a href="#self-review">Self-Review</a></li>
+    </ul>
+  </nav>
+</aside>
+      <article id="content">
+<h1 data-source-line="1">UI Storybook Implementation Plan</h1>
+<blockquote data-source-line="3"><p data-source-line="3"><strong>For agentic workers:</strong> REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (<code>- [ ]</code>) syntax for tracking.</p></blockquote>
+<p data-source-line="5"><strong>Goal:</strong> Add Storybook to <code>packages/ui</code> as a design-system documentation surface and a Storybook Vitest addon test foundation for core OhMyC UI components.</p>
+<p data-source-line="7"><strong>Architecture:</strong> Keep Storybook owned by <code>packages/ui</code>, with <code>.storybook</code> config, local story fixtures, and focused decorators that provide dark theme, router, React Query, and mock transport only where needed. Use Storybook's React Vite framework and Vitest addon; add a Vitest 3 workspace project named <code>storybook</code> so story tests run separately from the existing jsdom unit tests.</p>
+<p data-source-line="9"><strong>Tech Stack:</strong> React 19, Vite 5, TypeScript, Tailwind CSS, Storybook React Vite, Storybook docs/a11y/Vitest addon, Vitest 3 browser mode, Playwright Chromium, React Query.</p>
+<hr data-source-line="11">
+<h2 data-source-line="13" id="references">References</h2>
+<ul data-source-line="15"><li data-source-line="15">Storybook React Vite docs: https://storybook.js.org/docs/get-started/frameworks/react-vite</li><li data-source-line="16">Storybook Vitest addon docs: https://storybook.js.org/docs/writing-tests/integrations/vitest-addon</li><li data-source-line="17">Storybook testing in CI docs: https://storybook.js.org/docs/writing-tests/in-ci</li></ul>
+<h2 data-source-line="19" id="file-structure">File Structure</h2>
+<ul data-source-line="21"><li data-source-line="21">Modify: <code>packages/ui/package.json</code></li><li data-source-line="22">Add Storybook scripts and dev dependencies.</li><li data-source-line="23">Create: <code>packages/ui/.storybook/main.ts</code></li><li data-source-line="24">Story discovery, addons, Vite aliases, GLB assets, and Tauri stubs.</li><li data-source-line="25">Create: <code>packages/ui/.storybook/preview.tsx</code></li><li data-source-line="26">Global CSS import, dark preview parameters, and global story decorator shell.</li><li data-source-line="27">Create: <code>packages/ui/.storybook/vitest.setup.ts</code></li><li data-source-line="28">Browser-test setup for jest-dom, layout mocks, transport reset, and Tauri stubs.</li><li data-source-line="29">Create: <code>packages/ui/vitest.workspace.ts</code></li><li data-source-line="30">Adds a <code>storybook</code> Vitest project using Storybook's Vitest addon and Playwright browser mode.</li><li data-source-line="31">Modify: <code>packages/ui/tsconfig.json</code></li><li data-source-line="32">Include <code>.storybook</code> and <code>src/stories</code> TypeScript files.</li><li data-source-line="33">Create: <code>packages/ui/src/stories/decorators/storybook-decorators.tsx</code></li><li data-source-line="34">Local Storybook decorators for React Query, router, mock transport, dark canvas, and menubar frame.</li><li data-source-line="35">Create: <code>packages/ui/src/stories/fixtures/entities.ts</code></li><li data-source-line="36">Agent, skill, command, and badge fixtures.</li><li data-source-line="37">Create: <code>packages/ui/src/stories/fixtures/timeline.ts</code></li><li data-source-line="38">Heatmap, event list, timeline query, and menubar fixture data.</li><li data-source-line="39">Create: <code>packages/ui/src/stories/fixtures/commands.tsx</code></li><li data-source-line="40">Command palette command fixtures with icons and long labels.</li><li data-source-line="41">Create: <code>packages/ui/src/stories/test/Smoke.stories.tsx</code></li><li data-source-line="42">First minimal story to prove Storybook configuration works.</li><li data-source-line="43">Create: <code>packages/ui/src/stories/design-system/*.stories.tsx</code></li><li data-source-line="44">Design-system stories for Button, Badge, Input, Tabs, Select, DropdownMenu, NativeDialog, and NativeButton.</li><li data-source-line="45">Create: <code>packages/ui/src/stories/product/*.stories.tsx</code></li><li data-source-line="46">Product stories for CommandPalette, NavigationIsland, EntityCard, EntityDetail, ContributionGraph, EventList, and TimelineView.</li><li data-source-line="47">Create: <code>packages/ui/src/stories/menubar/*.stories.tsx</code></li><li data-source-line="48">Menubar stories for ViewSwitch, DualLineChart, RecentHeatmap, and MenubarPage.</li><li data-source-line="49">Create: <code>packages/ui/src/stories/product/MonitorSpikeView.stories.tsx</code></li><li data-source-line="50">Monitor spike story with browser-test-safe tags.</li></ul>
+<h2 data-source-line="52" id="task-1-install-storybook-and-add-the-config-skeleton">Task 1: Install Storybook And Add The Config Skeleton</h2>
+<p data-source-line="54"><strong>Files:</strong></p>
+<ul data-source-line="55"><li data-source-line="55">Modify: <code>packages/ui/package.json</code></li><li data-source-line="56">Modify: <code>pnpm-lock.yaml</code></li><li data-source-line="57">Modify: <code>packages/ui/tsconfig.json</code></li><li data-source-line="58">Create: <code>packages/ui/.storybook/main.ts</code></li><li data-source-line="59">Create: <code>packages/ui/.storybook/preview.tsx</code></li><li data-source-line="60">Create: <code>packages/ui/.storybook/vitest.setup.ts</code></li><li data-source-line="61">Create: <code>packages/ui/vitest.workspace.ts</code></li><li data-source-line="62">Create: <code>packages/ui/src/stories/test/Smoke.stories.tsx</code></li><li data-source-line="64">[ ] <strong>Step 1: Verify Storybook scripts are missing</strong></li></ul>
+<p data-source-line="66">Run:</p>
+<pre data-source-line="68"><code class="language-bash">pnpm --filter @ohmyc/ui storybook</code><span class="code-lang">bash</span><button class="copy-btn">Copy</button></pre>
+<p data-source-line="72">Expected: FAIL with a pnpm message indicating the <code>storybook</code> script is missing.</p>
+<ul class="task-list" data-source-line="74"><li data-source-line="74"><input type="checkbox"> <span><strong>Step 2: Install Storybook dependencies</strong></span></li></ul>
+<p data-source-line="76">Run:</p>
+<pre data-source-line="78"><code class="language-bash">pnpm --filter @ohmyc/ui add -D storybook @storybook/react-vite @storybook/addon-docs @storybook/addon-a11y @storybook/addon-vitest @storybook/test @vitest/browser playwright</code><span class="code-lang">bash</span><button class="copy-btn">Copy</button></pre>
+<p data-source-line="82">Expected: dependencies install and <code>packages/ui/package.json</code> plus <code>pnpm-lock.yaml</code> change.</p>
+<ul class="task-list" data-source-line="84"><li data-source-line="84"><input type="checkbox"> <span><strong>Step 3: Install the Chromium browser used by Vitest browser mode</strong></span></li></ul>
+<p data-source-line="86">Run:</p>
+<pre data-source-line="88"><code class="language-bash">pnpm --filter @ohmyc/ui exec playwright install chromium</code><span class="code-lang">bash</span><button class="copy-btn">Copy</button></pre>
+<p data-source-line="92">Expected: Playwright reports Chromium is installed or already present.</p>
+<ul class="task-list" data-source-line="94"><li data-source-line="94"><input type="checkbox"> <span><strong>Step 4: Update <code>packages/ui/package.json</code> scripts</strong></span></li></ul>
+<p data-source-line="96">Edit <code>packages/ui/package.json</code> so the <code>scripts</code> object includes these exact entries while keeping the existing scripts:</p>
+<pre data-source-line="98"><code class="language-json">{
+  "build": "tsc &amp;&amp; vite build",
+  "build-storybook": "storybook build",
+  "dev": "vite --host 127.0.0.1",
+  "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
+  "preview": "vite preview",
+  "storybook": "storybook dev -p 6006",
+  "test": "vitest run --config vitest.config.ts",
+  "test:coverage": "vitest run --config vitest.config.ts --coverage",
+  "test:storybook": "vitest --project=storybook --run"
+}</code><span class="code-lang">json</span><button class="copy-btn">Copy</button></pre>
+<ul class="task-list" data-source-line="112"><li data-source-line="112"><input type="checkbox"> <span><strong>Step 5: Create <code>packages/ui/.storybook/main.ts</code></strong></span></li></ul>
+<p data-source-line="114">Create the file with this content:</p>
+<pre data-source-line="116"><code class="language-ts">import path from 'node:path'
+import { fileURLToPath } from 'node:url'
+
+import type { StorybookConfig } from '@storybook/react-vite'
+
+const rootDir = path.dirname(fileURLToPath(import.meta.url))
+const packageRoot = path.resolve(rootDir, '..')
+
+const config: StorybookConfig = {
+  stories: [
+    '../src/stories/**/*.mdx',
+    '../src/stories/**/*.stories.@(ts|tsx)',
+  ],
+  addons: [
+    '@storybook/addon-docs',
+    '@storybook/addon-a11y',
+    '@storybook/addon-vitest',
+  ],
+  framework: {
+    name: '@storybook/react-vite',
+    options: {},
+  },
+  async viteFinal(config) {
+    config.assetsInclude = [
+      ...(Array.isArray(config.assetsInclude) ? config.assetsInclude : []),
+      '**/*.glb',
+    ]
+    config.resolve = {
+      ...config.resolve,
+      alias: {
+        ...(Array.isArray(config.resolve?.alias) ? {} : config.resolve?.alias),
+        '@': path.resolve(packageRoot, 'src'),
+        '@tauri-apps/api/core': path.resolve(packageRoot, 'tests/test/stubs/tauri-api-core.ts'),
+        '@tauri-apps/api/event': path.resolve(packageRoot, 'tests/test/stubs/tauri-api-event.ts'),
+      },
+    }
+    config.server = {
+      ...config.server,
+      proxy: {
+        ...(config.server?.proxy ?? {}),
+        '/api': 'http://127.0.0.1:3000',
+      },
+    }
+    return config
+  },
+}
+
+export default config</code><span class="code-lang">ts</span><button class="copy-btn">Copy</button></pre>
+<ul class="task-list" data-source-line="167"><li data-source-line="167"><input type="checkbox"> <span><strong>Step 6: Create <code>packages/ui/.storybook/preview.tsx</code></strong></span></li></ul>
+<p data-source-line="169">Create the file with this content:</p>
+<pre data-source-line="171"><code class="language-tsx">import '../src/globals.css'
+
+import type { Preview } from '@storybook/react-vite'
+
+const preview: Preview = {
+  parameters: {
+    backgrounds: {
+      default: 'OhMyC dark',
+      values: [
+        { name: 'OhMyC dark', value: '#08090a' },
+        { name: 'Panel', value: '#0f1011' },
+      ],
+    },
+    controls: {
+      matchers: {
+        color: /(background|color)$/i,
+        date: /Date$/i,
+      },
+    },
+    layout: 'centered',
+    options: {
+      storySort: {
+        order: ['Design System', 'Product', 'Menubar', 'Test'],
+      },
+    },
+  },
+  decorators: [
+    Story =&gt; (
+      &lt;div className="min-h-screen bg-[var(--bg-marketing)] p-8 font-sans text-[var(--text-primary)]"&gt;
+        &lt;Story /&gt;
+      &lt;/div&gt;
+    ),
+  ],
+}
+
+export default preview</code><span class="code-lang">tsx</span><button class="copy-btn">Copy</button></pre>
+<ul class="task-list" data-source-line="210"><li data-source-line="210"><input type="checkbox"> <span><strong>Step 7: Create <code>packages/ui/.storybook/vitest.setup.ts</code></strong></span></li></ul>
+<p data-source-line="212">Create the file with this content:</p>
+<pre data-source-line="214"><code class="language-ts">import '@testing-library/jest-dom/vitest'
+
+import { afterEach, beforeAll } from 'vitest'
+
+import { resetMock } from '../src/lib/transport/mock'
+import { resetTransportForTests } from '../src/lib/transport'
+
+beforeAll(() =&gt; {
+  const originalGetBCR = Element.prototype.getBoundingClientRect
+  Element.prototype.getBoundingClientRect = function () {
+    return {
+      x: 0,
+      y: 0,
+      width: 720,
+      height: 360,
+      top: 0,
+      left: 0,
+      right: 720,
+      bottom: 360,
+      toJSON: () =&gt; ({}),
+    } as DOMRect
+  }
+  return () =&gt; {
+    Element.prototype.getBoundingClientRect = originalGetBCR
+  }
+})
+
+afterEach(() =&gt; {
+  resetMock()
+  resetTransportForTests()
+})</code><span class="code-lang">ts</span><button class="copy-btn">Copy</button></pre>
+<ul class="task-list" data-source-line="248"><li data-source-line="248"><input type="checkbox"> <span><strong>Step 8: Create <code>packages/ui/vitest.workspace.ts</code></strong></span></li></ul>
+<p data-source-line="250">Create the file with this content:</p>
+<pre data-source-line="252"><code class="language-ts">import path from 'node:path'
+import { fileURLToPath } from 'node:url'
+
+import { storybookTest } from '@storybook/addon-vitest/vitest-plugin'
+import { defineWorkspace } from 'vitest/config'
+
+const dirname = path.dirname(fileURLToPath(import.meta.url))
+
+export default defineWorkspace([
+  './vitest.config.ts',
+  {
+    extends: './vite.config.ts',
+    plugins: [
+      storybookTest({
+        configDir: path.join(dirname, '.storybook'),
+        storybookScript: 'pnpm --filter @ohmyc/ui storybook -- --no-open',
+        tags: {
+          include: ['test'],
+          exclude: ['experimental'],
+        },
+      }),
+    ],
+    resolve: {
+      alias: {
+        '@': path.resolve(dirname, 'src'),
+        '@tauri-apps/api/core': path.resolve(dirname, 'tests/test/stubs/tauri-api-core.ts'),
+        '@tauri-apps/api/event': path.resolve(dirname, 'tests/test/stubs/tauri-api-event.ts'),
+      },
+    },
+    test: {
+      name: 'storybook',
+      browser: {
+        enabled: true,
+        provider: 'playwright',
+        headless: true,
+        instances: [{ browser: 'chromium' }],
+      },
+      setupFiles: ['./.storybook/vitest.setup.ts'],
+    },
+  },
+])</code><span class="code-lang">ts</span><button class="copy-btn">Copy</button></pre>
+<ul class="task-list" data-source-line="296"><li data-source-line="296"><input type="checkbox"> <span><strong>Step 9: Update <code>packages/ui/tsconfig.json</code> include</strong></span></li></ul>
+<p data-source-line="298">Replace:</p>
+<pre data-source-line="300"><code class="language-json">"include": ["src"]</code><span class="code-lang">json</span><button class="copy-btn">Copy</button></pre>
+<p data-source-line="304">with:</p>
+<pre data-source-line="306"><code class="language-json">"include": ["src", ".storybook", "vitest.workspace.ts"]</code><span class="code-lang">json</span><button class="copy-btn">Copy</button></pre>
+<ul class="task-list" data-source-line="310"><li data-source-line="310"><input type="checkbox"> <span><strong>Step 10: Create <code>packages/ui/src/stories/test/Smoke.stories.tsx</code></strong></span></li></ul>
+<p data-source-line="312">Create the directory and file with this content:</p>
+<pre data-source-line="314"><code class="language-tsx">import type { Meta, StoryObj } from '@storybook/react-vite'
+
+const meta = {
+  title: 'Test/Smoke',
+  tags: ['test'],
+  render: () =&gt; (
+    &lt;div className="rounded-lg border border-[var(--border-default)] bg-white/[0.02] px-4 py-3 text-[var(--text-primary)]"&gt;
+      Storybook is wired to OhMyC UI.
+    &lt;/div&gt;
+  ),
+} satisfies Meta
+
+export default meta
+
+type Story = StoryObj&lt;typeof meta&gt;
+
+export const Default: Story = {}</code><span class="code-lang">tsx</span><button class="copy-btn">Copy</button></pre>
+<ul class="task-list" data-source-line="334"><li data-source-line="334"><input type="checkbox"> <span><strong>Step 11: Run Storybook build</strong></span></li></ul>
+<p data-source-line="336">Run:</p>
+<pre data-source-line="338"><code class="language-bash">pnpm --filter @ohmyc/ui build-storybook</code><span class="code-lang">bash</span><button class="copy-btn">Copy</button></pre>
+<p data-source-line="342">Expected: PASS and Storybook writes a static build.</p>
+<ul class="task-list" data-source-line="344"><li data-source-line="344"><input type="checkbox"> <span><strong>Step 12: Run Storybook Vitest addon tests</strong></span></li></ul>
+<p data-source-line="346">Run:</p>
+<pre data-source-line="348"><code class="language-bash">pnpm --filter @ohmyc/ui test:storybook</code><span class="code-lang">bash</span><button class="copy-btn">Copy</button></pre>
+<p data-source-line="352">Expected: PASS with the smoke story rendered in Chromium.</p>
+<ul class="task-list" data-source-line="354"><li data-source-line="354"><input type="checkbox"> <span><strong>Step 13: Run existing UI tests</strong></span></li></ul>
+<p data-source-line="356">Run:</p>
+<pre data-source-line="358"><code class="language-bash">pnpm --filter @ohmyc/ui test</code><span class="code-lang">bash</span><button class="copy-btn">Copy</button></pre>
+<p data-source-line="362">Expected: PASS. Existing Radix Dialog accessibility warnings may still print.</p>
+<ul class="task-list" data-source-line="364"><li data-source-line="364"><input type="checkbox"> <span><strong>Step 14: Commit</strong></span></li></ul>
+<pre data-source-line="366"><code class="language-bash">git add packages/ui/package.json pnpm-lock.yaml packages/ui/tsconfig.json packages/ui/.storybook/main.ts packages/ui/.storybook/preview.tsx packages/ui/.storybook/vitest.setup.ts packages/ui/vitest.workspace.ts packages/ui/src/stories/test/Smoke.stories.tsx
+git commit -m "chore: add storybook test harness"</code><span class="code-lang">bash</span><button class="copy-btn">Copy</button></pre>
+<h2 data-source-line="371" id="task-2-add-shared-storybook-decorators-and-fixtures">Task 2: Add Shared Storybook Decorators And Fixtures</h2>
+<p data-source-line="373"><strong>Files:</strong></p>
+<ul data-source-line="374"><li data-source-line="374">Create: <code>packages/ui/src/stories/decorators/storybook-decorators.tsx</code></li><li data-source-line="375">Create: <code>packages/ui/src/stories/fixtures/entities.ts</code></li><li data-source-line="376">Create: <code>packages/ui/src/stories/fixtures/commands.tsx</code></li><li data-source-line="377">Create: <code>packages/ui/src/stories/fixtures/timeline.ts</code></li><li data-source-line="379">[ ] <strong>Step 1: Create <code>packages/ui/src/stories/decorators/storybook-decorators.tsx</code></strong></li></ul>
+<p data-source-line="381">Create the file with this content:</p>
+<pre data-source-line="383"><code class="language-tsx">import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import { MemoryRouter } from 'react-router-dom'
+
+import { __setTransportForTests } from '@/lib/transport'
+import { resetMock, setMockHandler } from '@/lib/transport/mock'
+
+import type { Decorator } from '@storybook/react-vite'
+import type { ReactNode } from 'react'
+
+export function createStoryQueryClient() {
+  return new QueryClient({
+    defaultOptions: {
+      queries: {
+        retry: false,
+        refetchOnWindowFocus: false,
+        staleTime: Number.POSITIVE_INFINITY,
+      },
+    },
+  })
+}
+
+export const withDarkCanvas: Decorator = Story =&gt; (
+  &lt;div className="min-h-screen bg-[var(--bg-marketing)] p-8 font-sans text-[var(--text-primary)]"&gt;
+    &lt;Story /&gt;
+  &lt;/div&gt;
+)
+
+export const withQueryClient: Decorator = Story =&gt; (
+  &lt;QueryClientProvider client={createStoryQueryClient()}&gt;
+    &lt;Story /&gt;
+  &lt;/QueryClientProvider&gt;
+)
+
+export const withRouter = (initialEntries: string[] = ['/explore/timeline']): Decorator =&gt; Story =&gt; (
+  &lt;MemoryRouter initialEntries={initialEntries}&gt;
+    &lt;Story /&gt;
+  &lt;/MemoryRouter&gt;
+)
+
+export function withMockTransport(installHandlers: () =&gt; void): Decorator {
+  return (Story) =&gt; {
+    resetMock()
+    __setTransportForTests('mock')
+    installHandlers()
+    return &lt;Story /&gt;
+  }
+}
+
+export function installTimelineHandlers({
+  years,
+  projects,
+  heatmap,
+  events,
+  status,
+}: {
+  years: number[]
+  projects: string[]
+  heatmap: Array&lt;{ date: string; value: number }&gt;
+  events: unknown
+  status: { sessionCount: number; lastSyncAt: number | null }
+}) {
+  setMockHandler('timeline.years', async () =&gt; ({ years }))
+  setMockHandler('timeline.projects', async () =&gt; ({ projects }))
+  setMockHandler('timeline.heatmap', async () =&gt; ({ data: heatmap }))
+  setMockHandler('timeline.events', async () =&gt; events)
+  setMockHandler('timeline.status', async () =&gt; status)
+}
+
+export function StorySurface({ children, width = 920 }: { children: ReactNode; width?: number }) {
+  return (
+    &lt;div
+      className="rounded-xl border border-[var(--border-default)] bg-[rgba(255,255,255,0.02)] p-6"
+      style={{ width }}
+    &gt;
+      {children}
+    &lt;/div&gt;
+  )
+}
+
+export function MenubarFrame({ children }: { children: ReactNode }) {
+  return (
+    &lt;div className="rounded-[18px] bg-[#050607] p-8"&gt;
+      &lt;div className="h-[304px] w-[390px] overflow-hidden rounded-[12px] border border-white/10 bg-[rgba(25,26,27,0.45)] shadow-[0_24px_80px_rgba(0,0,0,0.45)]"&gt;
+        {children}
+      &lt;/div&gt;
+    &lt;/div&gt;
+  )
+}</code><span class="code-lang">tsx</span><button class="copy-btn">Copy</button></pre>
+<ul class="task-list" data-source-line="474"><li data-source-line="474"><input type="checkbox"> <span><strong>Step 2: Create <code>packages/ui/src/stories/fixtures/entities.ts</code></strong></span></li></ul>
+<p data-source-line="476">Create the file with this content:</p>
+<pre data-source-line="478"><code class="language-ts">import type { Origin, RenderBadge } from '@ohmyc/shared'
+
+export const entityOrigins = ['claude', 'opencode'] satisfies Origin[]
+
+export const entityBadges = [
+  { kind: 'model', label: 'opus' },
+  { kind: 'tool', label: 'bash' },
+] satisfies RenderBadge[]
+
+export const entityMeta = [
+  { label: 'scope', value: 'project' },
+  { label: 'source', value: 'opencode' },
+  { label: 'mode', value: 'primary' },
+  { label: 'permission.edit', value: 'deny' },
+  { label: 'permission.bash', value: 'ask' },
+]
+
+export const entityMarkdown = `# Review agent
+
+Use this agent when a change needs a focused implementation review.
+
+- Check behavior against the request
+- Inspect error handling and state boundaries
+- Call out missing tests
+`
+
+export const entityDescriptions = {
+  short: 'Reviews implementation changes before they land.',
+  long: 'Reviews implementation changes across product-critical UI surfaces, checks data flow boundaries, and keeps feedback focused on behavior, visual regressions, and missing tests.',
+}</code><span class="code-lang">ts</span><button class="copy-btn">Copy</button></pre>
+<ul class="task-list" data-source-line="511"><li data-source-line="511"><input type="checkbox"> <span><strong>Step 3: Create <code>packages/ui/src/stories/fixtures/commands.tsx</code></strong></span></li></ul>
+<p data-source-line="513">Create the file with this content:</p>
+<pre data-source-line="515"><code class="language-tsx">import {
+  Activity,
+  Bot,
+  Code2,
+  Search,
+  TerminalSquare,
+} from 'lucide-react'
+
+export const commandPaletteCommands = [
+  { id: 'monitor', label: 'Open Monitor', category: 'Go to', shortcut: 'g m', icon: &lt;Code2 size={15} /&gt;, action: () =&gt; {} },
+  { id: 'timeline', label: 'Open Timeline', category: 'Go to', shortcut: 'g t', icon: &lt;Activity size={15} /&gt;, action: () =&gt; {} },
+  { id: 'agents', label: 'Open Agents', category: 'Go to', shortcut: 'g a', icon: &lt;Bot size={15} /&gt;, action: () =&gt; {} },
+  { id: 'commands', label: 'Open Commands', category: 'Go to', shortcut: 'g c', icon: &lt;TerminalSquare size={15} /&gt;, action: () =&gt; {} },
+  { id: 'long', label: 'Open the generated command with a very long name without squeezing the shortcut column', category: 'Commands', shortcut: 'meta+shift+p', icon: &lt;Search size={15} /&gt;, action: () =&gt; {} },
+]</code><span class="code-lang">tsx</span><button class="copy-btn">Copy</button></pre>
+<ul class="task-list" data-source-line="533"><li data-source-line="533"><input type="checkbox"> <span><strong>Step 4: Create <code>packages/ui/src/stories/fixtures/timeline.ts</code></strong></span></li></ul>
+<p data-source-line="535">Create the file with this content:</p>
+<pre data-source-line="537"><code class="language-ts">import type {
+  DayEvents,
+  HeatmapPoint,
+  ProjectGroup,
+  SessionRow,
+} from '@/hooks/use-timeline'
+
+const baseStart = Date.UTC(2026, 5, 19, 9, 0, 0)
+
+function session(overrides: Partial&lt;SessionRow&gt;): SessionRow {
+  return {
+    session_id: overrides.session_id ?? 'session-1',
+    project: overrides.project ?? 'ohmyc',
+    started_at: overrides.started_at ?? baseStart,
+    ended_at: overrides.ended_at ?? baseStart + 12 * 60 * 1000,
+    duration_ms: overrides.duration_ms ?? 12 * 60 * 1000,
+    turns: overrides.turns ?? 8,
+    tokens_input: overrides.tokens_input ?? 12_000,
+    tokens_output: overrides.tokens_output ?? 4300,
+    tokens_cached: overrides.tokens_cached ?? 2000,
+    summary: overrides.summary ?? 'Polished the monitor route and motion details',
+    summary_source: overrides.summary_source ?? 'generated',
+    transcript_path: overrides.transcript_path ?? '/tmp/session.jsonl',
+    last_offset: overrides.last_offset ?? 42,
+    ingested_at: overrides.ingested_at ?? baseStart + 13 * 60 * 1000,
+    model: overrides.model ?? 'claude-opus-4-1',
+    agent_name: overrides.agent_name ?? 'claude',
+  }
+}
+
+export const timelineHeatmap: HeatmapPoint[] = [
+  { date: '2026-01-04', value: 1 },
+  { date: '2026-02-14', value: 4 },
+  { date: '2026-03-20', value: 8 },
+  { date: '2026-04-22', value: 16 },
+  { date: '2026-05-21', value: 32 },
+  { date: '2026-06-19', value: 48 },
+]
+
+export const menubarTokens: HeatmapPoint[] = [
+  { date: '2026-06-15', value: 5000 },
+  { date: '2026-06-16', value: 12_000 },
+  { date: '2026-06-17', value: 8000 },
+  { date: '2026-06-18', value: 22_000 },
+  { date: '2026-06-19', value: 15_000 },
+]
+
+export const menubarSessions: HeatmapPoint[] = [
+  { date: '2026-06-15', value: 1 },
+  { date: '2026-06-16', value: 3 },
+  { date: '2026-06-17', value: 2 },
+  { date: '2026-06-18', value: 5 },
+  { date: '2026-06-19', value: 4 },
+]
+
+const ohmycSessions = [
+  session({ session_id: 'ohmyc-a', summary: 'Wire Storybook fixtures for Timeline', turns: 14 }),
+  session({ session_id: 'ohmyc-b', summary: 'Review command palette layout', started_at: baseStart - 90 * 60 * 1000, turns: 6 }),
+]
+
+const desktopSessions = [
+  session({
+    session_id: 'desktop-a',
+    project: 'ohmyc-desktop',
+    summary: 'Tune menubar heatmap tooltip behavior',
+    agent_name: 'opencode',
+    turns: 9,
+  }),
+]
+
+export const timelineProjectGroups: ProjectGroup[] = [
+  {
+    project: 'ohmyc',
+    sessions: ohmycSessions,
+    session_count: 2,
+    turn_count: 20,
+    token_count: 36_300,
+    tool_count: 7,
+    skill_count: 2,
+    agents: ['claude'],
+  },
+  {
+    project: 'ohmyc-desktop',
+    sessions: desktopSessions,
+    session_count: 1,
+    turn_count: 9,
+    token_count: 18_300,
+    tool_count: 4,
+    skill_count: 1,
+    agents: ['opencode'],
+  },
+]
+
+export const timelineDays: DayEvents[] = [
+  {
+    day: '2026-06-19',
+    projectGroups: timelineProjectGroups,
+    session_count: 3,
+    turn_count: 29,
+    token_count: 54_600,
+  },
+]
+
+export const timelineEventsResponse = {
+  days: timelineDays,
+}
+
+export const emptyTimelineEventsResponse = {
+  days: [],
+}</code><span class="code-lang">ts</span><button class="copy-btn">Copy</button></pre>
+<ul class="task-list" data-source-line="650"><li data-source-line="650"><input type="checkbox"> <span><strong>Step 5: Run TypeScript build to verify fixtures and decorators type-check</strong></span></li></ul>
+<p data-source-line="652">Run:</p>
+<pre data-source-line="654"><code class="language-bash">pnpm --filter @ohmyc/ui build</code><span class="code-lang">bash</span><button class="copy-btn">Copy</button></pre>
+<p data-source-line="658">Expected: PASS.</p>
+<ul class="task-list" data-source-line="660"><li data-source-line="660"><input type="checkbox"> <span><strong>Step 6: Commit</strong></span></li></ul>
+<pre data-source-line="662"><code class="language-bash">git add packages/ui/src/stories/decorators/storybook-decorators.tsx packages/ui/src/stories/fixtures/entities.ts packages/ui/src/stories/fixtures/commands.tsx packages/ui/src/stories/fixtures/timeline.ts
+git commit -m "test: add storybook fixtures and decorators"</code><span class="code-lang">bash</span><button class="copy-btn">Copy</button></pre>
+<h2 data-source-line="667" id="task-3-add-design-system-stories">Task 3: Add Design-System Stories</h2>
+<p data-source-line="669"><strong>Files:</strong></p>
+<ul data-source-line="670"><li data-source-line="670">Create: <code>packages/ui/src/stories/design-system/Button.stories.tsx</code></li><li data-source-line="671">Create: <code>packages/ui/src/stories/design-system/Badge.stories.tsx</code></li><li data-source-line="672">Create: <code>packages/ui/src/stories/design-system/Input.stories.tsx</code></li><li data-source-line="673">Create: <code>packages/ui/src/stories/design-system/Tabs.stories.tsx</code></li><li data-source-line="674">Create: <code>packages/ui/src/stories/design-system/Select.stories.tsx</code></li><li data-source-line="675">Create: <code>packages/ui/src/stories/design-system/DropdownMenu.stories.tsx</code></li><li data-source-line="676">Create: <code>packages/ui/src/stories/design-system/NativeDialog.stories.tsx</code></li><li data-source-line="677">Create: <code>packages/ui/src/stories/design-system/NativeButton.stories.tsx</code></li><li data-source-line="679">[ ] <strong>Step 1: Create <code>Button.stories.tsx</code></strong></li></ul>
+<p data-source-line="681">Create <code>packages/ui/src/stories/design-system/Button.stories.tsx</code>:</p>
+<pre data-source-line="683"><code class="language-tsx">import { Search, Settings } from 'lucide-react'
+
+import { Button } from '@/components/ui/button'
+
+import type { Meta, StoryObj } from '@storybook/react-vite'
+
+const meta = {
+  title: 'Design System/Button',
+  component: Button,
+  tags: ['test', 'autodocs'],
+  render: args =&gt; &lt;Button {...args} /&gt;,
+} satisfies Meta&lt;typeof Button&gt;
+
+export default meta
+
+type Story = StoryObj&lt;typeof meta&gt;
+
+export const Variants: Story = {
+  render: () =&gt; (
+    &lt;div className="flex flex-wrap items-center gap-3"&gt;
+      &lt;Button&gt;Default&lt;/Button&gt;
+      &lt;Button variant="secondary"&gt;Secondary&lt;/Button&gt;
+      &lt;Button variant="outline"&gt;Outline&lt;/Button&gt;
+      &lt;Button variant="ghost"&gt;Ghost&lt;/Button&gt;
+      &lt;Button variant="destructive"&gt;Destructive&lt;/Button&gt;
+      &lt;Button variant="link"&gt;Link&lt;/Button&gt;
+    &lt;/div&gt;
+  ),
+}
+
+export const Sizes: Story = {
+  render: () =&gt; (
+    &lt;div className="flex flex-wrap items-center gap-3"&gt;
+      &lt;Button size="xs"&gt;Extra small&lt;/Button&gt;
+      &lt;Button size="sm"&gt;Small&lt;/Button&gt;
+      &lt;Button size="default"&gt;Default&lt;/Button&gt;
+      &lt;Button size="lg"&gt;Large&lt;/Button&gt;
+      &lt;Button size="icon" aria-label="Search"&gt;&lt;Search /&gt;&lt;/Button&gt;
+      &lt;Button size="icon-lg" aria-label="Settings"&gt;&lt;Settings /&gt;&lt;/Button&gt;
+    &lt;/div&gt;
+  ),
+}
+
+export const Disabled: Story = {
+  args: {
+    children: 'Disabled',
+    disabled: true,
+  },
+}</code><span class="code-lang">tsx</span><button class="copy-btn">Copy</button></pre>
+<ul class="task-list" data-source-line="735"><li data-source-line="735"><input type="checkbox"> <span><strong>Step 2: Create the remaining design-system stories</strong></span></li></ul>
+<p data-source-line="737">Create <code>packages/ui/src/stories/design-system/Badge.stories.tsx</code>:</p>
+<pre data-source-line="739"><code class="language-tsx">import { Badge } from '@/components/ui/badge'
+
+import type { Meta, StoryObj } from '@storybook/react-vite'
+
+const meta = {
+  title: 'Design System/Badge',
+  component: Badge,
+  tags: ['test', 'autodocs'],
+} satisfies Meta&lt;typeof Badge&gt;
+
+export default meta
+
+type Story = StoryObj&lt;typeof meta&gt;
+
+export const Variants: Story = {
+  render: () =&gt; (
+    &lt;div className="flex flex-wrap gap-2"&gt;
+      &lt;Badge&gt;Default&lt;/Badge&gt;
+      &lt;Badge variant="secondary"&gt;Secondary&lt;/Badge&gt;
+      &lt;Badge variant="outline"&gt;Outline&lt;/Badge&gt;
+      &lt;Badge variant="destructive"&gt;Destructive&lt;/Badge&gt;
+      &lt;Badge&gt;claude · opencode&lt;/Badge&gt;
+    &lt;/div&gt;
+  ),
+}</code><span class="code-lang">tsx</span><button class="copy-btn">Copy</button></pre>
+<p data-source-line="767">Create <code>packages/ui/src/stories/design-system/Input.stories.tsx</code>:</p>
+<pre data-source-line="769"><code class="language-tsx">import { Input } from '@/components/ui/input'
+
+import type { Meta, StoryObj } from '@storybook/react-vite'
+
+const meta = {
+  title: 'Design System/Input',
+  component: Input,
+  tags: ['test', 'autodocs'],
+} satisfies Meta&lt;typeof Input&gt;
+
+export default meta
+
+type Story = StoryObj&lt;typeof meta&gt;
+
+export const States: Story = {
+  render: () =&gt; (
+    &lt;div className="grid w-[360px] gap-3"&gt;
+      &lt;Input placeholder="Search commands..." /&gt;
+      &lt;Input value="readonly value" readOnly /&gt;
+      &lt;Input placeholder="Disabled input" disabled /&gt;
+      &lt;Input aria-invalid placeholder="Invalid input" /&gt;
+    &lt;/div&gt;
+  ),
+}</code><span class="code-lang">tsx</span><button class="copy-btn">Copy</button></pre>
+<p data-source-line="796">Create <code>packages/ui/src/stories/design-system/Tabs.stories.tsx</code>:</p>
+<pre data-source-line="798"><code class="language-tsx">import {
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger,
+} from '@/components/ui/tabs'
+
+import type { Meta, StoryObj } from '@storybook/react-vite'
+
+const meta = {
+  title: 'Design System/Tabs',
+  component: Tabs,
+  tags: ['test', 'autodocs'],
+} satisfies Meta&lt;typeof Tabs&gt;
+
+export default meta
+
+type Story = StoryObj&lt;typeof meta&gt;
+
+export const Default: Story = {
+  render: () =&gt; (
+    &lt;Tabs defaultValue="activity" className="w-[420px]"&gt;
+      &lt;TabsList&gt;
+        &lt;TabsTrigger value="activity"&gt;Activity&lt;/TabsTrigger&gt;
+        &lt;TabsTrigger value="tokens"&gt;Tokens&lt;/TabsTrigger&gt;
+        &lt;TabsTrigger value="sessions"&gt;Sessions&lt;/TabsTrigger&gt;
+      &lt;/TabsList&gt;
+      &lt;TabsContent value="activity"&gt;Activity view content&lt;/TabsContent&gt;
+      &lt;TabsContent value="tokens"&gt;Token view content&lt;/TabsContent&gt;
+      &lt;TabsContent value="sessions"&gt;Session view content&lt;/TabsContent&gt;
+    &lt;/Tabs&gt;
+  ),
+}</code><span class="code-lang">tsx</span><button class="copy-btn">Copy</button></pre>
+<p data-source-line="834">Create <code>packages/ui/src/stories/design-system/Select.stories.tsx</code>:</p>
+<pre data-source-line="836"><code class="language-tsx">import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
+
+import type { Meta, StoryObj } from '@storybook/react-vite'
+
+const meta = {
+  title: 'Design System/Select',
+  component: Select,
+  tags: ['test', 'autodocs'],
+} satisfies Meta&lt;typeof Select&gt;
+
+export default meta
+
+type Story = StoryObj&lt;typeof meta&gt;
+
+export const Open: Story = {
+  render: () =&gt; (
+    &lt;Select defaultValue="tokens" open&gt;
+      &lt;SelectTrigger className="w-[220px]"&gt;
+        &lt;SelectValue placeholder="Metric" /&gt;
+      &lt;/SelectTrigger&gt;
+      &lt;SelectContent&gt;
+        &lt;SelectItem value="activity"&gt;Activity&lt;/SelectItem&gt;
+        &lt;SelectItem value="tokens"&gt;Tokens&lt;/SelectItem&gt;
+        &lt;SelectItem value="turns"&gt;Turns&lt;/SelectItem&gt;
+      &lt;/SelectContent&gt;
+    &lt;/Select&gt;
+  ),
+}</code><span class="code-lang">tsx</span><button class="copy-btn">Copy</button></pre>
+<p data-source-line="873">Create <code>packages/ui/src/stories/design-system/DropdownMenu.stories.tsx</code>:</p>
+<pre data-source-line="875"><code class="language-tsx">import { MoreHorizontal } from 'lucide-react'
+
+import { Button } from '@/components/ui/button'
+import {
+  DropdownMenu,
+  DropdownMenuCheckboxItem,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuShortcut,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
+
+import type { Meta, StoryObj } from '@storybook/react-vite'
+
+const meta = {
+  title: 'Design System/DropdownMenu',
+  component: DropdownMenu,
+  tags: ['test', 'autodocs'],
+} satisfies Meta&lt;typeof DropdownMenu&gt;
+
+export default meta
+
+type Story = StoryObj&lt;typeof meta&gt;
+
+export const Open: Story = {
+  render: () =&gt; (
+    &lt;DropdownMenu open&gt;
+      &lt;DropdownMenuTrigger asChild&gt;
+        &lt;Button variant="ghost" size="icon" aria-label="Open menu"&gt;
+          &lt;MoreHorizontal /&gt;
+        &lt;/Button&gt;
+      &lt;/DropdownMenuTrigger&gt;
+      &lt;DropdownMenuContent className="w-48"&gt;
+        &lt;DropdownMenuLabel&gt;Actions&lt;/DropdownMenuLabel&gt;
+        &lt;DropdownMenuItem&gt;Open&lt;DropdownMenuShortcut&gt;⌘O&lt;/DropdownMenuShortcut&gt;&lt;/DropdownMenuItem&gt;
+        &lt;DropdownMenuItem&gt;Copy path&lt;DropdownMenuShortcut&gt;⌘C&lt;/DropdownMenuShortcut&gt;&lt;/DropdownMenuItem&gt;
+        &lt;DropdownMenuSeparator /&gt;
+        &lt;DropdownMenuCheckboxItem checked&gt;Show archived&lt;/DropdownMenuCheckboxItem&gt;
+        &lt;DropdownMenuItem variant="destructive"&gt;Delete&lt;/DropdownMenuItem&gt;
+      &lt;/DropdownMenuContent&gt;
+    &lt;/DropdownMenu&gt;
+  ),
+}</code><span class="code-lang">tsx</span><button class="copy-btn">Copy</button></pre>
+<p data-source-line="923">Create <code>packages/ui/src/stories/design-system/NativeDialog.stories.tsx</code>:</p>
+<pre data-source-line="925"><code class="language-tsx">import { Button } from '@/components/ui/button'
+import {
+  NativeDialog,
+  NativeDialogContent,
+  NativeDialogDescription,
+  NativeDialogFooter,
+  NativeDialogHeader,
+  NativeDialogTitle,
+} from '@/components/uitripled/native-dialog'
+
+import type { Meta, StoryObj } from '@storybook/react-vite'
+
+const meta = {
+  title: 'Design System/NativeDialog',
+  component: NativeDialog,
+  tags: ['test', 'autodocs'],
+} satisfies Meta&lt;typeof NativeDialog&gt;
+
+export default meta
+
+type Story = StoryObj&lt;typeof meta&gt;
+
+export const Open: Story = {
+  render: () =&gt; (
+    &lt;NativeDialog open&gt;
+      &lt;NativeDialogContent className="bg-[var(--surface-overlay)] text-[var(--text-primary)]"&gt;
+        &lt;NativeDialogHeader&gt;
+          &lt;NativeDialogTitle&gt;Delete command&lt;/NativeDialogTitle&gt;
+          &lt;NativeDialogDescription&gt;
+            This shows the dialog chrome, title, description, and footer actions.
+          &lt;/NativeDialogDescription&gt;
+        &lt;/NativeDialogHeader&gt;
+        &lt;NativeDialogFooter&gt;
+          &lt;Button variant="ghost"&gt;Cancel&lt;/Button&gt;
+          &lt;Button variant="destructive"&gt;Delete&lt;/Button&gt;
+        &lt;/NativeDialogFooter&gt;
+      &lt;/NativeDialogContent&gt;
+    &lt;/NativeDialog&gt;
+  ),
+}</code><span class="code-lang">tsx</span><button class="copy-btn">Copy</button></pre>
+<p data-source-line="968">Create <code>packages/ui/src/stories/design-system/NativeButton.stories.tsx</code>:</p>
+<pre data-source-line="970"><code class="language-tsx">import { NativeButton } from '@/components/uitripled/native-button'
+
+import type { Meta, StoryObj } from '@storybook/react-vite'
+
+const meta = {
+  title: 'Design System/NativeButton',
+  component: NativeButton,
+  tags: ['test', 'autodocs'],
+} satisfies Meta&lt;typeof NativeButton&gt;
+
+export default meta
+
+type Story = StoryObj&lt;typeof meta&gt;
+
+export const States: Story = {
+  render: () =&gt; (
+    &lt;div className="flex flex-wrap items-center gap-3"&gt;
+      &lt;NativeButton&gt;Default&lt;/NativeButton&gt;
+      &lt;NativeButton variant="outline"&gt;Outline&lt;/NativeButton&gt;
+      &lt;NativeButton loading&gt;Loading&lt;/NativeButton&gt;
+      &lt;NativeButton disabled&gt;Disabled&lt;/NativeButton&gt;
+    &lt;/div&gt;
+  ),
+}</code><span class="code-lang">tsx</span><button class="copy-btn">Copy</button></pre>
+<ul class="task-list" data-source-line="997"><li data-source-line="997"><input type="checkbox"> <span><strong>Step 3: Run Storybook tests</strong></span></li></ul>
+<p data-source-line="999">Run:</p>
+<pre data-source-line="1001"><code class="language-bash">pnpm --filter @ohmyc/ui test:storybook</code><span class="code-lang">bash</span><button class="copy-btn">Copy</button></pre>
+<p data-source-line="1005">Expected: PASS.</p>
+<ul class="task-list" data-source-line="1007"><li data-source-line="1007"><input type="checkbox"> <span><strong>Step 4: Run Storybook build</strong></span></li></ul>
+<p data-source-line="1009">Run:</p>
+<pre data-source-line="1011"><code class="language-bash">pnpm --filter @ohmyc/ui build-storybook</code><span class="code-lang">bash</span><button class="copy-btn">Copy</button></pre>
+<p data-source-line="1015">Expected: PASS.</p>
+<ul class="task-list" data-source-line="1017"><li data-source-line="1017"><input type="checkbox"> <span><strong>Step 5: Commit</strong></span></li></ul>
+<pre data-source-line="1019"><code class="language-bash">git add packages/ui/src/stories/design-system
+git commit -m "docs: add design system stories"</code><span class="code-lang">bash</span><button class="copy-btn">Copy</button></pre>
+<h2 data-source-line="1024" id="task-4-add-product-component-stories">Task 4: Add Product Component Stories</h2>
+<p data-source-line="1026"><strong>Files:</strong></p>
+<ul data-source-line="1027"><li data-source-line="1027">Create: <code>packages/ui/src/stories/product/CommandPalette.stories.tsx</code></li><li data-source-line="1028">Create: <code>packages/ui/src/stories/product/NavigationIsland.stories.tsx</code></li><li data-source-line="1029">Create: <code>packages/ui/src/stories/product/EntityCard.stories.tsx</code></li><li data-source-line="1030">Create: <code>packages/ui/src/stories/product/EntityDetail.stories.tsx</code></li><li data-source-line="1032">[ ] <strong>Step 1: Create <code>CommandPalette.stories.tsx</code></strong></li></ul>
+<p data-source-line="1034">Create <code>packages/ui/src/stories/product/CommandPalette.stories.tsx</code>:</p>
+<pre data-source-line="1036"><code class="language-tsx">import { fireEvent, within } from '@storybook/test'
+
+import { CommandPalette, CommandPaletteProvider } from '@/components/command-palette'
+import { commandPaletteCommands } from '@/stories/fixtures/commands'
+
+import type { Meta, StoryObj } from '@storybook/react-vite'
+
+function OpenPalette({ commands = commandPaletteCommands }: { commands?: typeof commandPaletteCommands }) {
+  return (
+    &lt;CommandPaletteProvider&gt;
+      &lt;button type="button" className="sr-only" data-testid="open-command-palette"&gt;
+        Open command palette
+      &lt;/button&gt;
+      &lt;CommandPalette commands={commands} /&gt;
+    &lt;/CommandPaletteProvider&gt;
+  )
+}
+
+const meta = {
+  title: 'Product/CommandPalette',
+  component: CommandPalette,
+  tags: ['test', 'autodocs'],
+  parameters: { layout: 'fullscreen' },
+} satisfies Meta&lt;typeof CommandPalette&gt;
+
+export default meta
+
+type Story = StoryObj&lt;typeof meta&gt;
+
+export const OpenWithCommands: Story = {
+  render: () =&gt; &lt;OpenPalette /&gt;,
+  play: async ({ canvasElement }) =&gt; {
+    fireEvent.keyDown(canvasElement.ownerDocument, { key: 'k', metaKey: true })
+    await within(canvasElement.ownerDocument.body).findByPlaceholderText('Search commands...')
+  },
+}
+
+export const Empty: Story = {
+  render: () =&gt; &lt;OpenPalette commands={[]} /&gt;,
+  play: async ({ canvasElement }) =&gt; {
+    fireEvent.keyDown(canvasElement.ownerDocument, { key: 'k', metaKey: true })
+    await within(canvasElement.ownerDocument.body).findByText('No commands found')
+  },
+}</code><span class="code-lang">tsx</span><button class="copy-btn">Copy</button></pre>
+<ul class="task-list" data-source-line="1083"><li data-source-line="1083"><input type="checkbox"> <span><strong>Step 2: Create <code>NavigationIsland.stories.tsx</code></strong></span></li></ul>
+<p data-source-line="1085">Create <code>packages/ui/src/stories/product/NavigationIsland.stories.tsx</code>:</p>
+<pre data-source-line="1087"><code class="language-tsx">import { fireEvent, within } from '@storybook/test'
+
+import { CommandPaletteProvider } from '@/components/command-palette'
+import { NavigationIsland } from '@/components/navigation-island'
+import { withRouter } from '@/stories/decorators/storybook-decorators'
+
+import type { Meta, StoryObj } from '@storybook/react-vite'
+
+const meta = {
+  title: 'Product/NavigationIsland',
+  component: NavigationIsland,
+  tags: ['test', 'autodocs'],
+  decorators: [
+    withRouter(['/explore/timeline']),
+    Story =&gt; (
+      &lt;CommandPaletteProvider&gt;
+        &lt;div className="h-[720px] w-[980px] bg-[var(--bg-marketing)]"&gt;
+          &lt;Story /&gt;
+        &lt;/div&gt;
+      &lt;/CommandPaletteProvider&gt;
+    ),
+  ],
+  parameters: { layout: 'fullscreen' },
+} satisfies Meta&lt;typeof NavigationIsland&gt;
+
+export default meta
+
+type Story = StoryObj&lt;typeof meta&gt;
+
+export const Expanded: Story = {}
+
+export const Collapsed: Story = {
+  play: async ({ canvasElement }) =&gt; {
+    const body = within(canvasElement.ownerDocument.body)
+    const collapse = await body.findByRole('button', { name: 'Collapse navigation' })
+    fireEvent.click(collapse)
+    await body.findByRole('button', { name: 'Expand navigation' })
+  },
+}</code><span class="code-lang">tsx</span><button class="copy-btn">Copy</button></pre>
+<ul class="task-list" data-source-line="1129"><li data-source-line="1129"><input type="checkbox"> <span><strong>Step 3: Create <code>EntityCard.stories.tsx</code></strong></span></li></ul>
+<p data-source-line="1131">Create <code>packages/ui/src/stories/product/EntityCard.stories.tsx</code>:</p>
+<pre data-source-line="1133"><code class="language-tsx">import {
+  Bot,
+  Sparkles,
+  TerminalSquare,
+} from 'lucide-react'
+
+import { EntityCard } from '@/components/entity-card'
+import {
+  entityBadges,
+  entityDescriptions,
+  entityOrigins,
+} from '@/stories/fixtures/entities'
+
+import type { Meta, StoryObj } from '@storybook/react-vite'
+
+const meta = {
+  title: 'Product/EntityCard',
+  component: EntityCard,
+  tags: ['test', 'autodocs'],
+  decorators: [
+    Story =&gt; (
+      &lt;div className="grid w-[860px] grid-cols-2 gap-5"&gt;
+        &lt;Story /&gt;
+      &lt;/div&gt;
+    ),
+  ],
+} satisfies Meta&lt;typeof EntityCard&gt;
+
+export default meta
+
+type Story = StoryObj&lt;typeof meta&gt;
+
+export const Variants: Story = {
+  render: () =&gt; (
+    &lt;&gt;
+      &lt;EntityCard icon={Bot} iconAccentVar="--text-primary" title="review-agent" description={entityDescriptions.short} origins={entityOrigins} renderBadges={entityBadges} onClick={() =&gt; {}} /&gt;
+      &lt;EntityCard icon={Sparkles} iconAccentVar="--text-secondary" title="animation-review" description={entityDescriptions.long} origins={['claude']} onClick={() =&gt; {}} /&gt;
+      &lt;EntityCard icon={TerminalSquare} iconAccentVar="--text-tertiary" title="/ship" description="Runs the project shipping checklist." origins={['opencode']} onClick={() =&gt; {}} /&gt;
+    &lt;/&gt;
+  ),
+}</code><span class="code-lang">tsx</span><button class="copy-btn">Copy</button></pre>
+<ul class="task-list" data-source-line="1177"><li data-source-line="1177"><input type="checkbox"> <span><strong>Step 4: Create <code>EntityDetail.stories.tsx</code></strong></span></li></ul>
+<p data-source-line="1179">Create <code>packages/ui/src/stories/product/EntityDetail.stories.tsx</code>:</p>
+<pre data-source-line="1181"><code class="language-tsx">import { EntityDetail } from '@/components/entity-detail'
+import { entityMarkdown, entityMeta } from '@/stories/fixtures/entities'
+
+import type { Meta, StoryObj } from '@storybook/react-vite'
+
+const meta = {
+  title: 'Product/EntityDetail',
+  component: EntityDetail,
+  tags: ['test', 'autodocs'],
+  decorators: [
+    Story =&gt; (
+      &lt;div className="w-[920px]"&gt;
+        &lt;Story /&gt;
+      &lt;/div&gt;
+    ),
+  ],
+} satisfies Meta&lt;typeof EntityDetail&gt;
+
+export default meta
+
+type Story = StoryObj&lt;typeof meta&gt;
+
+export const Editable: Story = {
+  args: {
+    title: 'agents',
+    name: 'review-agent',
+    description: 'A focused review agent for implementation changes.',
+    content: entityMarkdown,
+    meta: entityMeta,
+    onBack: () =&gt; {},
+    onEdit: () =&gt; {},
+    onDelete: () =&gt; {},
+  },
+}
+
+export const ProjectReadOnly: Story = {
+  args: {
+    title: 'agents',
+    name: 'project-review-agent',
+    description: 'A project-scoped agent surfaced as view-only.',
+    content: entityMarkdown,
+    meta: entityMeta,
+    onBack: () =&gt; {},
+    scope: 'project',
+  },
+}</code><span class="code-lang">tsx</span><button class="copy-btn">Copy</button></pre>
+<ul class="task-list" data-source-line="1230"><li data-source-line="1230"><input type="checkbox"> <span><strong>Step 5: Run Storybook tests</strong></span></li></ul>
+<p data-source-line="1232">Run:</p>
+<pre data-source-line="1234"><code class="language-bash">pnpm --filter @ohmyc/ui test:storybook</code><span class="code-lang">bash</span><button class="copy-btn">Copy</button></pre>
+<p data-source-line="1238">Expected: PASS.</p>
+<ul class="task-list" data-source-line="1240"><li data-source-line="1240"><input type="checkbox"> <span><strong>Step 6: Commit</strong></span></li></ul>
+<pre data-source-line="1242"><code class="language-bash">git add packages/ui/src/stories/product/CommandPalette.stories.tsx packages/ui/src/stories/product/NavigationIsland.stories.tsx packages/ui/src/stories/product/EntityCard.stories.tsx packages/ui/src/stories/product/EntityDetail.stories.tsx
+git commit -m "docs: add product component stories"</code><span class="code-lang">bash</span><button class="copy-btn">Copy</button></pre>
+<h2 data-source-line="1247" id="task-5-add-timeline-stories">Task 5: Add Timeline Stories</h2>
+<p data-source-line="1249"><strong>Files:</strong></p>
+<ul data-source-line="1250"><li data-source-line="1250">Create: <code>packages/ui/src/stories/product/ContributionGraph.stories.tsx</code></li><li data-source-line="1251">Create: <code>packages/ui/src/stories/product/EventList.stories.tsx</code></li><li data-source-line="1252">Create: <code>packages/ui/src/stories/product/TimelineView.stories.tsx</code></li><li data-source-line="1254">[ ] <strong>Step 1: Create <code>ContributionGraph.stories.tsx</code></strong></li></ul>
+<p data-source-line="1256">Create <code>packages/ui/src/stories/product/ContributionGraph.stories.tsx</code>:</p>
+<pre data-source-line="1258"><code class="language-tsx">import { ContributionGraph } from '@/components/timeline/contribution-graph'
+import { timelineHeatmap } from '@/stories/fixtures/timeline'
+
+import type { Meta, StoryObj } from '@storybook/react-vite'
+
+const meta = {
+  title: 'Product/Timeline/ContributionGraph',
+  component: ContributionGraph,
+  tags: ['test', 'autodocs'],
+} satisfies Meta&lt;typeof ContributionGraph&gt;
+
+export default meta
+
+type Story = StoryObj&lt;typeof meta&gt;
+
+export const Activity: Story = {
+  args: {
+    year: 2026,
+    metric: 'sessions',
+    data: timelineHeatmap,
+    onSelectDay: () =&gt; {},
+  },
+}
+
+export const Tokens: Story = {
+  args: {
+    year: 2026,
+    metric: 'tokens',
+    data: timelineHeatmap,
+    onSelectDay: () =&gt; {},
+  },
+}</code><span class="code-lang">tsx</span><button class="copy-btn">Copy</button></pre>
+<ul class="task-list" data-source-line="1293"><li data-source-line="1293"><input type="checkbox"> <span><strong>Step 2: Create <code>EventList.stories.tsx</code></strong></span></li></ul>
+<p data-source-line="1295">Create <code>packages/ui/src/stories/product/EventList.stories.tsx</code>:</p>
+<pre data-source-line="1297"><code class="language-tsx">import { EventList } from '@/components/timeline/event-list'
+import { timelineDays } from '@/stories/fixtures/timeline'
+
+import type { Meta, StoryObj } from '@storybook/react-vite'
+
+const meta = {
+  title: 'Product/Timeline/EventList',
+  component: EventList,
+  tags: ['test', 'autodocs'],
+  decorators: [
+    Story =&gt; (
+      &lt;div className="w-[980px]"&gt;
+        &lt;Story /&gt;
+      &lt;/div&gt;
+    ),
+  ],
+} satisfies Meta&lt;typeof EventList&gt;
+
+export default meta
+
+type Story = StoryObj&lt;typeof meta&gt;
+
+export const Populated: Story = {
+  args: {
+    days: timelineDays,
+  },
+}
+
+export const Empty: Story = {
+  args: {
+    days: [],
+  },
+}</code><span class="code-lang">tsx</span><button class="copy-btn">Copy</button></pre>
+<ul class="task-list" data-source-line="1333"><li data-source-line="1333"><input type="checkbox"> <span><strong>Step 3: Create <code>TimelineView.stories.tsx</code></strong></span></li></ul>
+<p data-source-line="1335">Create <code>packages/ui/src/stories/product/TimelineView.stories.tsx</code>:</p>
+<pre data-source-line="1337"><code class="language-tsx">import { TimelineView } from '@/components/timeline/timeline-view'
+import {
+  installTimelineHandlers,
+  withMockTransport,
+  withQueryClient,
+} from '@/stories/decorators/storybook-decorators'
+import {
+  timelineEventsResponse,
+  timelineHeatmap,
+} from '@/stories/fixtures/timeline'
+
+import type { Meta, StoryObj } from '@storybook/react-vite'
+
+const populatedHandlers = () =&gt; installTimelineHandlers({
+  years: [2026],
+  projects: ['ohmyc', 'ohmyc-desktop'],
+  heatmap: timelineHeatmap,
+  events: timelineEventsResponse,
+  status: { sessionCount: 3, lastSyncAt: Date.UTC(2026, 5, 19, 12, 0, 0) },
+})
+
+const meta = {
+  title: 'Product/Timeline/TimelineView',
+  component: TimelineView,
+  tags: ['test', 'autodocs'],
+  decorators: [
+    withQueryClient,
+    withMockTransport(populatedHandlers),
+    Story =&gt; (
+      &lt;div className="h-[760px] w-[1120px] overflow-y-auto"&gt;
+        &lt;Story /&gt;
+      &lt;/div&gt;
+    ),
+  ],
+  parameters: { layout: 'fullscreen' },
+} satisfies Meta&lt;typeof TimelineView&gt;
+
+export default meta
+
+type Story = StoryObj&lt;typeof meta&gt;
+
+export const Populated: Story = {}</code><span class="code-lang">tsx</span><button class="copy-btn">Copy</button></pre>
+<ul class="task-list" data-source-line="1382"><li data-source-line="1382"><input type="checkbox"> <span><strong>Step 4: Run Storybook tests and build</strong></span></li></ul>
+<p data-source-line="1384">Run:</p>
+<pre data-source-line="1386"><code class="language-bash">pnpm --filter @ohmyc/ui test:storybook
+pnpm --filter @ohmyc/ui build-storybook</code><span class="code-lang">bash</span><button class="copy-btn">Copy</button></pre>
+<p data-source-line="1391">Expected: both commands PASS.</p>
+<ul class="task-list" data-source-line="1393"><li data-source-line="1393"><input type="checkbox"> <span><strong>Step 5: Commit</strong></span></li></ul>
+<pre data-source-line="1395"><code class="language-bash">git add packages/ui/src/stories/product/ContributionGraph.stories.tsx packages/ui/src/stories/product/EventList.stories.tsx packages/ui/src/stories/product/TimelineView.stories.tsx
+git commit -m "docs: add timeline stories"</code><span class="code-lang">bash</span><button class="copy-btn">Copy</button></pre>
+<h2 data-source-line="1400" id="task-6-add-menubar-stories">Task 6: Add Menubar Stories</h2>
+<p data-source-line="1402"><strong>Files:</strong></p>
+<ul data-source-line="1403"><li data-source-line="1403">Create: <code>packages/ui/src/stories/menubar/ViewSwitch.stories.tsx</code></li><li data-source-line="1404">Create: <code>packages/ui/src/stories/menubar/DualLineChart.stories.tsx</code></li><li data-source-line="1405">Create: <code>packages/ui/src/stories/menubar/RecentHeatmap.stories.tsx</code></li><li data-source-line="1406">Create: <code>packages/ui/src/stories/menubar/MenubarPage.stories.tsx</code></li><li data-source-line="1408">[ ] <strong>Step 1: Create <code>ViewSwitch.stories.tsx</code></strong></li></ul>
+<p data-source-line="1410">Create <code>packages/ui/src/stories/menubar/ViewSwitch.stories.tsx</code>:</p>
+<pre data-source-line="1412"><code class="language-tsx">import { useState } from 'react'
+
+import { ViewSwitch, type MenubarView } from '@/components/menubar/view-switch'
+import { MenubarFrame } from '@/stories/decorators/storybook-decorators'
+
+import type { Meta, StoryObj } from '@storybook/react-vite'
+
+function StatefulSwitch({ initial }: { initial: MenubarView }) {
+  const [value, setValue] = useState&lt;MenubarView&gt;(initial)
+  return &lt;ViewSwitch value={value} onChange={setValue} /&gt;
+}
+
+const meta = {
+  title: 'Menubar/ViewSwitch',
+  component: ViewSwitch,
+  tags: ['test', 'autodocs'],
+  decorators: [
+    Story =&gt; (
+      &lt;MenubarFrame&gt;
+        &lt;div className="flex justify-end p-6"&gt;
+          &lt;Story /&gt;
+        &lt;/div&gt;
+      &lt;/MenubarFrame&gt;
+    ),
+  ],
+} satisfies Meta&lt;typeof ViewSwitch&gt;
+
+export default meta
+
+type Story = StoryObj&lt;typeof meta&gt;
+
+export const Line: Story = {
+  render: () =&gt; &lt;StatefulSwitch initial="line" /&gt;,
+}
+
+export const Heatmap: Story = {
+  render: () =&gt; &lt;StatefulSwitch initial="heatmap" /&gt;,
+}</code><span class="code-lang">tsx</span><button class="copy-btn">Copy</button></pre>
+<ul class="task-list" data-source-line="1453"><li data-source-line="1453"><input type="checkbox"> <span><strong>Step 2: Create chart and heatmap stories</strong></span></li></ul>
+<p data-source-line="1455">Create <code>packages/ui/src/stories/menubar/DualLineChart.stories.tsx</code>:</p>
+<pre data-source-line="1457"><code class="language-tsx">import { DualLineChart } from '@/components/menubar/dual-line-chart'
+import { MenubarFrame } from '@/stories/decorators/storybook-decorators'
+import { menubarSessions, menubarTokens } from '@/stories/fixtures/timeline'
+
+import type { Meta, StoryObj } from '@storybook/react-vite'
+
+const meta = {
+  title: 'Menubar/DualLineChart',
+  component: DualLineChart,
+  tags: ['test', 'autodocs'],
+  decorators: [
+    Story =&gt; (
+      &lt;MenubarFrame&gt;
+        &lt;div className="p-6"&gt;
+          &lt;Story /&gt;
+        &lt;/div&gt;
+      &lt;/MenubarFrame&gt;
+    ),
+  ],
+} satisfies Meta&lt;typeof DualLineChart&gt;
+
+export default meta
+
+type Story = StoryObj&lt;typeof meta&gt;
+
+export const Populated: Story = {
+  args: {
+    tokens: menubarTokens,
+    sessions: menubarSessions,
+  },
+}</code><span class="code-lang">tsx</span><button class="copy-btn">Copy</button></pre>
+<p data-source-line="1491">Create <code>packages/ui/src/stories/menubar/RecentHeatmap.stories.tsx</code>:</p>
+<pre data-source-line="1493"><code class="language-tsx">import { RecentHeatmap } from '@/components/menubar/recent-heatmap'
+import { MenubarFrame } from '@/stories/decorators/storybook-decorators'
+import { menubarSessions, menubarTokens } from '@/stories/fixtures/timeline'
+
+import type { Meta, StoryObj } from '@storybook/react-vite'
+
+const meta = {
+  title: 'Menubar/RecentHeatmap',
+  component: RecentHeatmap,
+  tags: ['test', 'autodocs'],
+  decorators: [
+    Story =&gt; (
+      &lt;MenubarFrame&gt;
+        &lt;div className="p-6"&gt;
+          &lt;Story /&gt;
+        &lt;/div&gt;
+      &lt;/MenubarFrame&gt;
+    ),
+  ],
+} satisfies Meta&lt;typeof RecentHeatmap&gt;
+
+export default meta
+
+type Story = StoryObj&lt;typeof meta&gt;
+
+export const Populated: Story = {
+  args: {
+    tokens: menubarTokens,
+    sessions: menubarSessions,
+  },
+}
+
+export const Empty: Story = {
+  args: {
+    tokens: [],
+    sessions: [],
+  },
+}</code><span class="code-lang">tsx</span><button class="copy-btn">Copy</button></pre>
+<ul class="task-list" data-source-line="1534"><li data-source-line="1534"><input type="checkbox"> <span><strong>Step 3: Create <code>MenubarPage.stories.tsx</code></strong></span></li></ul>
+<p data-source-line="1536">Create <code>packages/ui/src/stories/menubar/MenubarPage.stories.tsx</code>:</p>
+<pre data-source-line="1538"><code class="language-tsx">import { fireEvent, within } from '@storybook/test'
+
+import { MenubarPage } from '@/components/menubar/menubar-page'
+import {
+  installTimelineHandlers,
+  MenubarFrame,
+  withMockTransport,
+  withQueryClient,
+} from '@/stories/decorators/storybook-decorators'
+import { menubarTokens } from '@/stories/fixtures/timeline'
+
+import type { Meta, StoryObj } from '@storybook/react-vite'
+
+const populatedHandlers = () =&gt; installTimelineHandlers({
+  years: [2026],
+  projects: ['ohmyc'],
+  heatmap: menubarTokens,
+  events: { days: [] },
+  status: { sessionCount: 9, lastSyncAt: Date.UTC(2026, 5, 19, 12, 0, 0) },
+})
+
+const emptyHandlers = () =&gt; installTimelineHandlers({
+  years: [2026],
+  projects: [],
+  heatmap: [],
+  events: { days: [] },
+  status: { sessionCount: 0, lastSyncAt: null },
+})
+
+const meta = {
+  title: 'Menubar/MenubarPage',
+  component: MenubarPage,
+  tags: ['test', 'autodocs'],
+  decorators: [
+    withQueryClient,
+    Story =&gt; (
+      &lt;MenubarFrame&gt;
+        &lt;Story /&gt;
+      &lt;/MenubarFrame&gt;
+    ),
+  ],
+} satisfies Meta&lt;typeof MenubarPage&gt;
+
+export default meta
+
+type Story = StoryObj&lt;typeof meta&gt;
+
+export const LineView: Story = {
+  decorators: [withMockTransport(populatedHandlers)],
+}
+
+export const HeatmapView: Story = {
+  decorators: [withMockTransport(populatedHandlers)],
+  play: async ({ canvasElement }) =&gt; {
+    const canvas = within(canvasElement)
+    const heatmap = await canvas.findByRole('tab', { name: 'Heatmap view' })
+    fireEvent.click(heatmap)
+  },
+}
+
+export const NoActivity: Story = {
+  decorators: [withMockTransport(emptyHandlers)],
+}</code><span class="code-lang">tsx</span><button class="copy-btn">Copy</button></pre>
+<ul class="task-list" data-source-line="1604"><li data-source-line="1604"><input type="checkbox"> <span><strong>Step 4: Run Storybook tests and build</strong></span></li></ul>
+<p data-source-line="1606">Run:</p>
+<pre data-source-line="1608"><code class="language-bash">pnpm --filter @ohmyc/ui test:storybook
+pnpm --filter @ohmyc/ui build-storybook</code><span class="code-lang">bash</span><button class="copy-btn">Copy</button></pre>
+<p data-source-line="1613">Expected: both commands PASS.</p>
+<ul class="task-list" data-source-line="1615"><li data-source-line="1615"><input type="checkbox"> <span><strong>Step 5: Commit</strong></span></li></ul>
+<pre data-source-line="1617"><code class="language-bash">git add packages/ui/src/stories/menubar
+git commit -m "docs: add menubar stories"</code><span class="code-lang">bash</span><button class="copy-btn">Copy</button></pre>
+<h2 data-source-line="1622" id="task-7-add-monitor-spike-story-and-final-storybook-metadata">Task 7: Add Monitor Spike Story And Final Storybook Metadata</h2>
+<p data-source-line="1624"><strong>Files:</strong></p>
+<ul data-source-line="1625"><li data-source-line="1625">Create: <code>packages/ui/src/stories/product/MonitorSpikeView.stories.tsx</code></li><li data-source-line="1626">Create: <code>packages/ui/src/stories/Intro.mdx</code></li><li data-source-line="1628">[ ] <strong>Step 1: Create <code>MonitorSpikeView.stories.tsx</code></strong></li></ul>
+<p data-source-line="1630">Create <code>packages/ui/src/stories/product/MonitorSpikeView.stories.tsx</code>:</p>
+<pre data-source-line="1632"><code class="language-tsx">import { MonitorSpikeView } from '@/components/monitor-spike/monitor-spike-view'
+
+import type { Meta, StoryObj } from '@storybook/react-vite'
+
+const meta = {
+  title: 'Product/MonitorSpikeView',
+  component: MonitorSpikeView,
+  tags: ['test', 'autodocs'],
+  parameters: {
+    layout: 'fullscreen',
+  },
+} satisfies Meta&lt;typeof MonitorSpikeView&gt;
+
+export default meta
+
+type Story = StoryObj&lt;typeof meta&gt;
+
+export const Default: Story = {}</code><span class="code-lang">tsx</span><button class="copy-btn">Copy</button></pre>
+<ul class="task-list" data-source-line="1653"><li data-source-line="1653"><input type="checkbox"> <span><strong>Step 2: Create <code>packages/ui/src/stories/Intro.mdx</code></strong></span></li></ul>
+<p data-source-line="1655">Create the file with this content:</p>
+<pre data-source-line="1657"><code class="language-mdx">import { Meta } from '@storybook/blocks'
+
+&lt;Meta title="OhMyC/Intro" /&gt;
+
+# OhMyC UI
+
+Storybook documents the `packages/ui` design system and key product surfaces.
+
+This first version focuses on:
+
+- Monochrome dark UI primitives.
+- Product-critical surfaces such as command search, navigation, timeline, and monitor.
+- Menubar popover UI from `packages/ui/src/components/menubar`.
+- Storybook Vitest addon coverage for stable story render and interaction checks.
+
+Chromatic is intentionally not configured in this version. Stories use fixed
+fixtures so they can become visual-regression inputs later.</code><span class="code-lang">mdx</span><button class="copy-btn">Copy</button></pre>
+<ul class="task-list" data-source-line="1677"><li data-source-line="1677"><input type="checkbox"> <span><strong>Step 3: Run Storybook tests and build</strong></span></li></ul>
+<p data-source-line="1679">Run:</p>
+<pre data-source-line="1681"><code class="language-bash">pnpm --filter @ohmyc/ui test:storybook
+pnpm --filter @ohmyc/ui build-storybook</code><span class="code-lang">bash</span><button class="copy-btn">Copy</button></pre>
+<p data-source-line="1686">Expected: both commands PASS. If <code>MonitorSpikeView</code> fails in browser tests because WebGL assets cannot initialize, set <code>tags: ['!test', 'experimental']</code> only on <code>Default</code> and re-run <code>test:storybook</code>; keep <code>build-storybook</code> passing.</p>
+<ul class="task-list" data-source-line="1688"><li data-source-line="1688"><input type="checkbox"> <span><strong>Step 4: Commit</strong></span></li></ul>
+<pre data-source-line="1690"><code class="language-bash">git add packages/ui/src/stories/product/MonitorSpikeView.stories.tsx packages/ui/src/stories/Intro.mdx
+git commit -m "docs: add monitor storybook entry"</code><span class="code-lang">bash</span><button class="copy-btn">Copy</button></pre>
+<h2 data-source-line="1695" id="task-8-final-verification">Task 8: Final Verification</h2>
+<p data-source-line="1697"><strong>Files:</strong></p>
+<ul data-source-line="1698"><li data-source-line="1698">No new files.</li><li data-source-line="1699">Verify all Storybook and UI commands.</li><li data-source-line="1701">[ ] <strong>Step 1: Run Storybook build</strong></li></ul>
+<p data-source-line="1703">Run:</p>
+<pre data-source-line="1705"><code class="language-bash">pnpm --filter @ohmyc/ui build-storybook</code><span class="code-lang">bash</span><button class="copy-btn">Copy</button></pre>
+<p data-source-line="1709">Expected: PASS.</p>
+<ul class="task-list" data-source-line="1711"><li data-source-line="1711"><input type="checkbox"> <span><strong>Step 2: Run Storybook Vitest addon tests</strong></span></li></ul>
+<p data-source-line="1713">Run:</p>
+<pre data-source-line="1715"><code class="language-bash">pnpm --filter @ohmyc/ui test:storybook</code><span class="code-lang">bash</span><button class="copy-btn">Copy</button></pre>
+<p data-source-line="1719">Expected: PASS.</p>
+<ul class="task-list" data-source-line="1721"><li data-source-line="1721"><input type="checkbox"> <span><strong>Step 3: Run existing UI tests</strong></span></li></ul>
+<p data-source-line="1723">Run:</p>
+<pre data-source-line="1725"><code class="language-bash">pnpm --filter @ohmyc/ui test</code><span class="code-lang">bash</span><button class="copy-btn">Copy</button></pre>
+<p data-source-line="1729">Expected: PASS.</p>
+<ul class="task-list" data-source-line="1731"><li data-source-line="1731"><input type="checkbox"> <span><strong>Step 4: Run UI build</strong></span></li></ul>
+<p data-source-line="1733">Run:</p>
+<pre data-source-line="1735"><code class="language-bash">pnpm --filter @ohmyc/ui build</code><span class="code-lang">bash</span><button class="copy-btn">Copy</button></pre>
+<p data-source-line="1739">Expected: PASS.</p>
+<ul class="task-list" data-source-line="1741"><li data-source-line="1741"><input type="checkbox"> <span><strong>Step 5: Check lint status without blocking on existing tooling crash</strong></span></li></ul>
+<p data-source-line="1743">Run:</p>
+<pre data-source-line="1745"><code class="language-bash">pnpm --filter @ohmyc/ui lint</code><span class="code-lang">bash</span><button class="copy-btn">Copy</button></pre>
+<p data-source-line="1749">Expected: Either PASS, or the known existing <code>eslint-plugin-tailwindcss</code> / ESLint 10 <code>context.getSourceCode is not a function</code> crash. If lint fails with any new source-file issue in Storybook files, fix it before finishing.</p>
+<ul class="task-list" data-source-line="1751"><li data-source-line="1751"><input type="checkbox"> <span><strong>Step 6: Inspect git status</strong></span></li></ul>
+<p data-source-line="1753">Run:</p>
+<pre data-source-line="1755"><code class="language-bash">git status --short</code><span class="code-lang">bash</span><button class="copy-btn">Copy</button></pre>
+<p data-source-line="1759">Expected: clean working tree after the task commits.</p>
+<h2 data-source-line="1761" id="self-review">Self-Review</h2>
+<p data-source-line="1763"><strong>Spec coverage:</strong> This plan covers <code>packages/ui</code> local Storybook ownership, docs/a11y/Vitest addon, no Chromatic, no preview HTML, shared decorators, deterministic fixtures, design-system stories, product stories, Timeline stories, Menubar UI stories, MonitorSpike story, and final Storybook/UI verification.</p>
+<p data-source-line="1765"><strong>Placeholder scan:</strong> No <code>TBD</code>, <code>TODO</code>, "implement later", or unresolved placeholder instructions remain. The only conditional branch is a concrete WebGL fallback for <code>MonitorSpikeView</code> story testing with an exact tag change.</p>
+<p data-source-line="1767"><strong>Type consistency:</strong> Storybook files use <code>Meta</code> and <code>StoryObj</code> from <code>@storybook/react-vite</code>, decorators use Storybook's <code>Decorator</code> type, timeline fixtures match <code>HeatmapPoint</code>, <code>SessionRow</code>, <code>ProjectGroup</code>, and <code>DayEvents</code>, and the Storybook Vitest project name matches the <code>test:storybook</code> script.</p>
+      </article>
+    </div>
+  </div>
+  <script>
+window.__AUTOMATED_REVIEW_COMMENTS__ = [{"id":"A1","reviewer":"codex","severity":"high","title":"Invalid RenderBadge fixture kinds","startLine":483,"endLine":486,"selectedText":"{ kind: 'model', label: 'opus' },","comment":"`RenderBadge.kind` in the current shared type is `mono | pill`, so `model` and `tool` will fail TypeScript in Task 2. Change these fixture values to valid `RenderBadge` kinds, or explicitly include a preceding shared-type change in the plan."},{"id":"A2","reviewer":"codex","severity":"medium","title":"Missing required design context step","startLine":52,"endLine":62,"selectedText":"Task 1: Install Storybook And Add The Config Skeleton","comment":"The plan starts implementation without telling workers to read `PRODUCT.md` and `DESIGN.md`, even though this repo requires those before product, UX, or visual work. Add an initial step before Storybook/story creation to read both files and treat conflicts as doc-first changes."},{"id":"A3","reviewer":"codex","severity":"medium","title":"Menubar fixtures will age out","startLine":577,"endLine":590,"selectedText":"{ date: '2026-06-15', value: 5000 },","comment":"The menubar components derive their visible range from the runtime date, but these fixtures use fixed June 2026 dates. Stories may become blank when the plan is executed later. Freeze `Date` in Storybook tests/stories or generate the fixture dates relative to the current 16-week window."},{"id":"A4","reviewer":"codex","severity":"medium","title":"MDX import dependency is not declared","startLine":1658,"endLine":1658,"selectedText":"import { Meta } from '@storybook/blocks'","comment":"`Intro.mdx` imports `@storybook/blocks`, but the dependency install step does not add that package directly. With pnpm strict resolution this can break `build-storybook`. Add `@storybook/blocks` to the Task 1 dev dependency install list or avoid importing it directly."},{"id":"A5","reviewer":"opencode","severity":"high","title":"Missing @lobehub Vite inlining workaround in Storybook config","startLine":139,"endLine":160,"selectedText":"async viteFinal(config) {","comment":"The existing vitest.config.ts inlines /@lobehub\\/(ui|icons)/ because lobehub ships ESM Node can't load directly. event-list.tsx imports @lobehub/icons, so every story rendering EventList/TimelineView/MenubarPage (Tasks 5-6) pulls lobehub through Vite. Neither .storybook/main.ts viteFinal nor the storybook vitest project adds optimizeDeps.include / ssr.noExternal / server.deps.inline for @lobehub. build-storybook and test:storybook will very likely fail with the same JSON-import error. Fix: add config.optimizeDeps.include for @lobehub/ui and @lobehub/icons, and mirror the server.deps.inline pattern from the existing vitest.config.ts."},{"id":"A6","reviewer":"opencode","severity":"medium","title":"getBoundingClientRect override harms fidelity in real Chromium browser mode","startLine":222,"endLine":240,"selectedText":"Element.prototype.getBoundingClientRect = function () {","comment":"This mock is helpful in jsdom, but the storybook Vitest project runs in Playwright Chromium where getBoundingClientRect works natively. Forcing every element to a fixed 720x360 rect breaks positioning math for Radix portals (Select, DropdownMenu, NativeDialog), Recharts (DualLineChart), and ContributionGraph hover coordinates. Drop the BCR override in browser mode or gate it behind an environment check so it only applies under jsdom."},{"id":"A7","reviewer":"opencode","severity":"medium","title":"Vague edit instruction for MonitorSpikeView WebGL fallback","startLine":1686,"endLine":1686,"selectedText":"If MonitorSpikeView fails in browser tests because WebGL assets cannot initialize, set tags: ['!test', 'experimental'] only on Default and re-run test:storybook","comment":"The instruction doesn't specify the exact code change. An executing agent could mutate Default.tags, convert it to an object literal, or replace the meta-level tags, each with different semantics around autodocs inheritance. Also ['!test', 'experimental'] does not carry autodocs, so the story would drop out of docs. Specify the concrete edit, e.g. append Default.tags = ['!test', 'experimental', 'autodocs'] after the export, and state the expected outcomes after the change."},{"id":"A8","reviewer":"opencode","severity":"medium","title":"Storybook (and addon) versions are unpinned, risking API drift","startLine":79,"endLine":79,"selectedText":"pnpm --filter @ohmyc/ui add -D storybook @storybook/react-vite @storybook/addon-docs @storybook/addon-a11y @storybook/addon-vitest @storybook/test @vitest/browser playwright","comment":"No version specifiers are given. storybook resolves to latest; the plan hard-codes assumptions that have churned between Storybook 8 and 9 (storybookTest from @storybook/addon-vitest/vitest-plugin, Meta/StoryObj/Preview/Decorator from @storybook/react-vite, import { Meta } from '@storybook/blocks'). A mismatched major version will fail Task 1 Steps 11-12 with no recovery path. Pin a known-compatible version range (e.g. storybook@^9) across all @storybook/* packages, or add an explicit Step 0 that checks the installed version against the APIs used."},{"id":"A9","reviewer":"opencode","severity":"low","title":"test script is silently modified, contradicting keeping the existing scripts","startLine":96,"endLine":110,"selectedText":"\"test\": \"vitest run --config vitest.config.ts\",","comment":"The current script in packages/ui/package.json is \"test\": \"vitest run\" (no --config). The step rewrites it to vitest run --config vitest.config.ts. Behaviorally near-equivalent, but the wording \"while keeping the existing scripts\" misrepresents a modification as preservation, making review diffing harder. Either keep test byte-identical or explicitly note that --config is being added and why."},{"id":"A10","reviewer":"opencode","severity":"low","title":"File Structure summary disagrees with Step 9 on tsconfig.json include","startLine":32,"endLine":32,"selectedText":"Include `.storybook` and `src/stories` TypeScript files.","comment":"The File Structure blurb says to include .storybook and src/stories, but src/stories is already covered by the existing include: [src], and Step 9 actually adds [src, .storybook, vitest.workspace.ts] — it does not add src/stories and it does add vitest.workspace.ts, which the summary omits. Update the summary to match Step 9."},{"id":"A11","reviewer":"opencode","severity":"note","title":"Exported helpers/fixtures are never referenced by any story","startLine":405,"endLine":409,"selectedText":"export const withDarkCanvas: Decorator = Story => ( ... )","comment":"withDarkCanvas, StorySurface, and emptyTimelineEventsResponse are created and exported but no story in Tasks 3-7 uses them (the global decorator in preview.tsx already provides the dark canvas, so withDarkCanvas is redundant). The lint step runs with --max-warnings 0; unused exports may or may not trip the ESLint config but are dead weight. Either wire each into at least one story or drop them from Task 2."},{"id":"A12","reviewer":"opencode","severity":"note","title":"CI integration is referenced but never wired","startLine":17,"endLine":17,"selectedText":"Storybook testing in CI docs: https://storybook.js.org/docs/writing-tests/in-ci","comment":"The References section links the CI docs and the goal statement frames this as a test foundation, but no task adds test:storybook or build-storybook to any GitHub Actions workflow. If CI wiring is intentionally out of scope, say so explicitly in the Self-Review; otherwise add a Task that updates the relevant workflow so the new test:storybook script actually runs on PRs."}];
+  </script>
+  <script>
+async function initShiki() {
+  const codeBlocks = document.querySelectorAll('pre code[class*="language-"]');
+  if (codeBlocks.length === 0) return;
+
+  const { createHighlighter } = await import('https://esm.sh/shiki');
+  const highlighter = await createHighlighter({
+    themes: ['github-light', 'github-dark'],
+    langs: ['typescript', 'python', 'bash', 'css', 'html', 'json', 'yaml', 'rust', 'go', 'sql', 'markdown', 'jsx', 'tsx', 'diff']
+  });
+
+  codeBlocks.forEach(block => {
+    const lang = Array.from(block.classList)
+      .find(c => c.startsWith('language-'))
+      ?.replace('language-', '') || 'text';
+    
+    if (lang === 'mermaid') return;
+    if (lang === 'text') return;
+
+    try {
+      if (!highlighter.getLoadedLanguages().includes(lang)) return;
+      const darkHtml = highlighter.codeToHtml(block.textContent, { lang, theme: 'github-dark' });
+      const lightHtml = highlighter.codeToHtml(block.textContent, { lang, theme: 'github-light' });
+
+      const wrapper = document.createElement('div');
+      wrapper.className = 'shiki-wrapper';
+      wrapper.innerHTML = darkHtml;
+      wrapper.querySelector('pre')?.classList.add('shiki-dark');
+      const lightPre = document.createElement('pre');
+      lightPre.className = 'shiki-light';
+      lightPre.innerHTML = new DOMParser().parseFromString(lightHtml, 'text/html').querySelector('pre')?.innerHTML || '';
+      wrapper.appendChild(lightPre);
+
+      const pre = block.parentElement;
+      const langLabel = pre.querySelector('.code-lang');
+      const copyBtn = pre.querySelector('.copy-btn');
+      pre.innerHTML = '';
+      if (langLabel) pre.appendChild(langLabel);
+      if (copyBtn) pre.appendChild(copyBtn);
+      pre.appendChild(wrapper);
+    } catch (e) {}
+  });
+}
+
+function initMermaid() {
+  const mermaidBlocks = document.querySelectorAll('pre.mermaid');
+  if (mermaidBlocks.length === 0) return;
+
+  import('https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs').then(mermaid => {
+    mermaid.default.initialize({
+      startOnLoad: false,
+      theme: 'dark',
+      themeVariables: {
+        darkMode: true,
+        background: '#1d1d1f',
+        primaryColor: '#272729',
+        primaryTextColor: '#ffffff',
+        primaryBorderColor: '#333333',
+        lineColor: '#cccccc',
+        secondaryColor: '#2a2a2c',
+        tertiaryColor: '#000000'
+      }
+    });
+    mermaid.default.run({ nodes: mermaidBlocks });
+  });
+}
+
+var roughAnnotate = null;
+var roughNotationLoad = null;
+
+function loadRoughNotation() {
+  if (roughNotationLoad) return roughNotationLoad;
+  roughNotationLoad = import('https://unpkg.com/rough-notation?module')
+    .then(function(mod) {
+      roughAnnotate = mod.annotate;
+      return roughAnnotate;
+    })
+    .catch(function() {
+      roughAnnotate = null;
+      return null;
+    });
+  return roughNotationLoad;
+}
+
+function applyRoughAnnotation(el, options) {
+  if (!el) return;
+  loadRoughNotation().then(function(annotate) {
+    if (!annotate || !document.body.contains(el)) return;
+    try {
+      var annotation = annotate(el, {
+        type: options && options.type ? options.type : 'highlight',
+        color: options && options.color ? options.color : 'var(--comment-highlight-bg)',
+        animate: options && Object.prototype.hasOwnProperty.call(options, 'animate') ? options.animate : true,
+        multiline: true
+      });
+      annotation.show();
+    } catch (err) {}
+  });
+}
+
+function initCommentSystem() {
+  var meta = document.querySelector('meta[name="source-file"]');
+  var sourceFile = meta ? meta.content : '';
+  if (!sourceFile) return;
+
+  var comments = seedAutomatedComments();
+  var nextId = 1;
+  var tooltip = null;
+  var popover = null;
+  var article = document.getElementById('content');
+  var layout = document.querySelector('.page-layout');
+
+  var panel = document.createElement('aside');
+  panel.className = 'comments-panel';
+
+  function seedAutomatedComments() {
+    var raw = Array.isArray(window.__AUTOMATED_REVIEW_COMMENTS__)
+      ? window.__AUTOMATED_REVIEW_COMMENTS__
+      : [];
+    return raw.map(function(c, index) {
+      return {
+        id: c.id || ('A' + (index + 1)),
+        source: 'automated',
+        reviewer: c.reviewer || 'reviewer',
+        severity: c.severity || 'note',
+        title: c.title || 'Automated review comment',
+        startLine: parseInt(c.startLine, 10) || 0,
+        endLine: parseInt(c.endLine, 10) || parseInt(c.startLine, 10) || 0,
+        selectedText: c.selectedText || '',
+        comment: c.comment || '',
+        unanchored: Boolean(c.unanchored)
+      };
+    });
+  }
+
+  function displayId(c) {
+    return String(c.id);
+  }
+
+  function commentLocation(c) {
+    var start = c.startLine || 0;
+    var end = c.endLine || start;
+    return sourceFile + ':' + start + (start !== end ? '-' + end : '');
+  }
+
+  function severityClass(c) {
+    return 'severity-' + String(c.severity || 'note').toLowerCase();
+  }
+
+  var reviewerIcons = {
+    claudecode: '<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path clip-rule="evenodd" d="M20.998 10.949H24v3.102h-3v3.028h-1.487V20H18v-2.921h-1.487V20H15v-2.921H9V20H7.488v-2.921H6V20H4.487v-2.921H3V14.05H0V10.95h3V5h17.998v5.949zM6 10.949h1.488V8.102H6v2.847zm10.51 0H18V8.102h-1.49v2.847z" fill="#D97757" fill-rule="evenodd"></path></svg>',
+    geminicli: '<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M0 4.391A4.391 4.391 0 014.391 0h15.217A4.391 4.391 0 0124 4.391v15.217A4.391 4.391 0 0119.608 24H4.391A4.391 4.391 0 010 19.608V4.391z" fill="url(#lobe-icons-gemini-cli-_R_0_)"></path><path clip-rule="evenodd" d="M19.74 1.444a2.816 2.816 0 012.816 2.816v15.48a2.816 2.816 0 01-2.816 2.816H4.26a2.816 2.816 0 01-2.816-2.816V4.26A2.816 2.816 0 014.26 1.444h15.48zM7.236 8.564l7.752 3.728-7.752 3.727v2.802l9.557-4.596v-3.866L7.236 5.763v2.801z" fill="#1E1E2E" fill-rule="evenodd"></path><defs><linearGradient gradientUnits="userSpaceOnUse" id="lobe-icons-gemini-cli-_R_0_" x1="24" x2="0" y1="6.587" y2="16.494"><stop stop-color="#EE4D5D"></stop><stop offset=".328" stop-color="#B381DD"></stop><stop offset=".476" stop-color="#207CFE"></stop></linearGradient></defs></svg>',
+    codex: '<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M19.503 0H4.496A4.496 4.496 0 000 4.496v15.007A4.496 4.496 0 004.496 24h15.007A4.496 4.496 0 0024 19.503V4.496A4.496 4.496 0 0019.503 0z" fill="#fff"></path><path d="M9.064 3.344a4.578 4.578 0 012.285-.312c1 .115 1.891.54 2.673 1.275.01.01.024.017.037.021a.09.09 0 00.043 0 4.55 4.55 0 013.046.275l.047.022.116.057a4.581 4.581 0 012.188 2.399c.209.51.313 1.041.315 1.595a4.24 4.24 0 01-.134 1.223.123.123 0 00.03.115c.594.607.988 1.33 1.183 2.17.289 1.425-.007 2.71-.887 3.854l-.136.166a4.548 4.548 0 01-2.201 1.388.123.123 0 00-.081.076c-.191.551-.383 1.023-.74 1.494-.9 1.187-2.222 1.846-3.711 1.838-1.187-.006-2.239-.44-3.157-1.302a.107.107 0 00-.105-.024c-.388.125-.78.143-1.204.138a4.441 4.441 0 01-1.945-.466 4.544 4.544 0 01-1.61-1.335c-.152-.202-.303-.392-.414-.617a5.81 5.81 0 01-.37-.961 4.582 4.582 0 01-.014-2.298.124.124 0 00.006-.056.085.085 0 00-.027-.048 4.467 4.467 0 01-1.034-1.651 3.896 3.896 0 01-.251-1.192 5.189 5.189 0 01.141-1.6c.337-1.112.982-1.985 1.933-2.618.212-.141.413-.251.601-.33.215-.089.43-.164.646-.227a.098.098 0 00.065-.066 4.51 4.51 0 01.829-1.615 4.535 4.535 0 011.837-1.388zm3.482 10.565a.637.637 0 000 1.272h3.636a.637.637 0 100-1.272h-3.636zM8.462 9.23a.637.637 0 00-1.106.631l1.272 2.224-1.266 2.136a.636.636 0 101.095.649l1.454-2.455a.636.636 0 00.005-.64L8.462 9.23z" fill="url(#lobe-icons-codex-_R_0_)"></path><defs><linearGradient gradientUnits="userSpaceOnUse" id="lobe-icons-codex-_R_0_" x1="12" x2="12" y1="3" y2="21"><stop stop-color="#B1A7FF"></stop><stop offset=".5" stop-color="#7A9DFF"></stop><stop offset="1" stop-color="#3941FF"></stop></linearGradient></defs></svg>',
+    opencode: '<svg fill="#8f8f94" fill-rule="evenodd" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M16 6H8v12h8V6zm4 16H4V2h16v20z"></path></svg>',
+    qwen: '<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M12.604 1.34c.393.69.784 1.382 1.174 2.075a.18.18 0 00.157.091h5.552c.174 0 .322.11.446.327l1.454 2.57c.19.337.24.478.024.837-.26.43-.513.864-.76 1.3l-.367.658c-.106.196-.223.28-.04.512l2.652 4.637c.172.301.111.494-.043.77-.437.785-.882 1.564-1.335 2.34-.159.272-.352.375-.68.37-.777-.016-1.552-.01-2.327.016a.099.099 0 00-.081.05 575.097 575.097 0 01-2.705 4.74c-.169.293-.38.363-.725.364-.997.003-2.002.004-3.017.002a.537.537 0 01-.465-.271l-1.335-2.323a.09.09 0 00-.083-.049H4.982c-.285.03-.553-.001-.805-.092l-1.603-2.77a.543.543 0 01-.002-.54l1.207-2.12a.198.198 0 000-.197 550.951 550.951 0 01-1.875-3.272l-.79-1.395c-.16-.31-.173-.496.095-.965.465-.813.927-1.625 1.387-2.436.132-.234.304-.334.584-.335a338.3 338.3 0 012.589-.001.124.124 0 00.107-.063l2.806-4.895a.488.488 0 01.422-.246c.524-.001 1.053 0 1.583-.006L11.704 1c.341-.003.724.032.9.34zm-3.432.403a.06.06 0 00-.052.03L6.254 6.788a.157.157 0 01-.135.078H3.253c-.056 0-.07.025-.041.074l5.81 10.156c.025.042.013.062-.034.063l-2.795.015a.218.218 0 00-.2.116l-1.32 2.31c-.044.078-.021.118.068.118l5.716.008c.046 0 .08.02.104.061l1.403 2.454c.046.081.092.082.139 0l5.006-8.76.783-1.382a.055.055 0 01.096 0l1.424 2.53a.122.122 0 00.107.062l2.763-.02a.04.04 0 00.035-.02.041.041 0 000-.04l-2.9-5.086a.108.108 0 010-.113l.293-.507 1.12-1.977c.024-.041.012-.062-.035-.062H9.2c-.059 0-.073-.026-.043-.077l1.434-2.505a.107.107 0 000-.114L9.225 1.774a.06.06 0 00-.053-.031zm6.29 8.02c.046 0 .058.02.034.06l-.832 1.465-2.613 4.585a.056.056 0 01-.05.029.058.058 0 01-.05-.029L8.498 9.841c-.02-.034-.01-.052.028-.054l.216-.012 6.722-.012z" fill="url(#lobe-icons-qwen-_R_0_)" fill-rule="nonzero"></path><defs><linearGradient id="lobe-icons-qwen-_R_0_" x1="0%" x2="100%" y1="0%" y2="0%"><stop offset="0%" stop-color="#6336E7" stop-opacity=".84"></stop><stop offset="100%" stop-color="#6F69F7" stop-opacity=".84"></stop></linearGradient></defs></svg>'
+  };
+
+  function reviewerKey(reviewer) {
+    var key = String(reviewer || '').toLowerCase().replace(/[^a-z0-9]/g, '');
+    if (key === 'claude' || key === 'claudecode') return 'claudecode';
+    if (key === 'gemini' || key === 'geminicli') return 'geminicli';
+    if (key === 'qwen' || key === 'qwencode') return 'qwen';
+    if (key === 'openai' || key === 'codex') return 'codex';
+    if (key === 'opencode') return 'opencode';
+    return key;
+  }
+
+  function reviewerLabel(reviewer) {
+    var key = reviewerKey(reviewer);
+    var labels = {
+      claudecode: 'Claude Code',
+      geminicli: 'Gemini CLI',
+      codex: 'Codex',
+      opencode: 'OpenCode',
+      qwen: 'Qwen Code'
+    };
+    return labels[key] || String(reviewer || 'Reviewer');
+  }
+
+  function reviewerFallback(reviewer) {
+    return escapeHtml(String(reviewer || 'R').trim().charAt(0).toUpperCase() || 'R');
+  }
+
+  function automatedUser(c) {
+    if (c.source !== 'automated') return '';
+    var label = reviewerLabel(c.reviewer);
+    var svg = reviewerIcons[reviewerKey(c.reviewer)];
+    var icon = svg
+      ? '<img class="comment-card-reviewer-icon" src="data:image/svg+xml,' + encodeURIComponent(svg) + '" alt="">'
+      : '<span class="comment-card-reviewer-fallback">' + reviewerFallback(c.reviewer) + '</span>';
+    return '<span class="comment-card-reviewer" title="' + escapeHtml(label) + '" aria-label="' + escapeHtml(label) + '">' + icon + '</span>';
+  }
+
+  function automatedMeta(c, unanchored) {
+    if (c.source !== 'automated') return '';
+    return '<div class="comment-card-meta-row">' +
+      automatedUser(c) +
+      '<span class="comment-card-priority ' + severityClass(c) + '">priority: ' + escapeHtml(c.severity || 'note') + '</span>' +
+      unanchored +
+    '</div>';
+  }
+
+  applyAutomatedCommentAnchors();
+  renderPanel();
+  layout.appendChild(panel);
+
+  function renderPanel() {
+    var count = comments.length;
+    panel.innerHTML =
+      '<div class="comments-panel-header">' +
+        '<div class="comments-panel-title">Comments' + (count > 0 ? ' (' + count + ')' : '') + '</div>' +
+        (count > 0 ? '<div class="comments-panel-actions">' +
+          '<button class="comments-panel-btn" data-action="copy">Copy All</button>' +
+          '<button class="comments-panel-btn" data-action="clear">Clear</button>' +
+        '</div>' : '') +
+      '</div>' +
+      (count === 0
+        ? '<div class="comments-panel-empty">Select text to comment</div>'
+        : '<div class="comments-panel-list">' + comments.map(renderCard).join('') + '</div>');
+
+    panel.querySelectorAll('.comment-card-delete').forEach(function(btn) {
+      btn.addEventListener('click', function() {
+        deleteComment(btn.dataset.id);
+      });
+    });
+    panel.querySelectorAll('.comment-card').forEach(function(card) {
+      card.addEventListener('click', function(e) {
+        if (e.target.closest('.comment-card-delete')) return;
+        scrollToBadge(card.dataset.id);
+      });
+    });
+    var copyBtn = panel.querySelector('[data-action="copy"]');
+    if (copyBtn) copyBtn.addEventListener('click', copyAll);
+    var clearBtn = panel.querySelector('[data-action="clear"]');
+    if (clearBtn) clearBtn.addEventListener('click', clearAll);
+  }
+
+  function renderCard(c) {
+    var loc = commentLocation(c);
+    var preview = c.selectedText ? c.selectedText.split('\n')[0].slice(0, 60) : '';
+    var title = c.source === 'automated' && c.title
+      ? '<div class="comment-card-title">' + escapeHtml(c.title) + '</div>'
+      : '';
+    var unanchored = c.unanchored ? '<span class="comment-card-unanchored">unanchored</span>' : '';
+    var meta = automatedMeta(c, unanchored);
+    return '<div class="comment-card ' + (c.source === 'automated' ? 'comment-card-automated' : '') + '" data-id="' + displayId(c) + '">' +
+      '<div class="comment-card-header">' +
+        '<span class="comment-card-location">#' + displayId(c) + ' ' + loc + '</span>' +
+        '<button class="comment-card-delete" data-id="' + displayId(c) + '">&times;</button>' +
+      '</div>' +
+      title +
+      '<div class="comment-card-body">' + escapeHtml(c.comment) + '</div>' +
+      (preview ? '<div class="comment-card-preview">' + escapeHtml(preview) + '</div>' : '') +
+      meta +
+    '</div>';
+  }
+
+  function scrollToBadge(id) {
+    var badge = document.querySelector('span.comment-badge[data-comment-id="' + id + '"]');
+    if (badge) badge.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    setActiveComment(id);
+  }
+
+  function setActiveComment(id) {
+    id = String(id);
+    document.querySelectorAll('mark.comment-highlight, span.comment-badge').forEach(function(el) {
+      el.classList.toggle('active', el.dataset.commentId === id);
+    });
+    panel.querySelectorAll('.comment-card').forEach(function(card) {
+      card.classList.toggle('active', card.dataset.id === id);
+    });
+  }
+
+  function scrollToCard(id) {
+    var card = panel.querySelector('.comment-card[data-id="' + id + '"]');
+    if (card) card.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    setActiveComment(id);
+  }
+
+  function bindSourceActivator(el, id) {
+    if (!el) return;
+    el.setAttribute('role', 'button');
+    el.tabIndex = 0;
+    el.addEventListener('click', function(e) {
+      e.stopPropagation();
+      scrollToCard(id);
+    });
+    el.addEventListener('keydown', function(e) {
+      if (e.key !== 'Enter' && e.key !== ' ') return;
+      e.preventDefault();
+      scrollToCard(id);
+    });
+  }
+
+  function canUseRoughNotation(el) {
+    return !el.closest('table, pre, code');
+  }
+
+  function sourceLineOf(el) {
+    return el && el.dataset && el.dataset.sourceLine
+      ? parseInt(el.dataset.sourceLine, 10)
+      : null;
+  }
+
+  function findAnchorForComment(c) {
+    var blocks = Array.from(article.querySelectorAll('[data-source-line]'));
+    var exact = blocks.find(function(el) {
+      return sourceLineOf(el) === c.startLine;
+    });
+    if (exact) return exact;
+
+    var inRange = blocks.find(function(el) {
+      var line = sourceLineOf(el);
+      return line && line >= c.startLine && line <= c.endLine;
+    });
+    if (inRange) return inRange;
+
+    c.unanchored = true;
+    return blocks.find(function(el) {
+      var line = sourceLineOf(el);
+      return line && line > c.endLine;
+    }) || null;
+  }
+
+  function findTextNode(root, text) {
+    if (!text) return null;
+    var walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
+    var node;
+    while ((node = walker.nextNode())) {
+      var index = node.nodeValue.indexOf(text);
+      if (index !== -1) return { node: node, index: index };
+    }
+    return null;
+  }
+
+  function wrapMatchedQuote(anchor, c) {
+    if (!c.selectedText || !canUseRoughNotation(anchor)) return null;
+    var firstLine = c.selectedText.split('\n').map(function(line) {
+      return line.trim();
+    }).find(Boolean);
+    if (!firstLine) return null;
+
+    var match = findTextNode(anchor, firstLine);
+    if (!match) return null;
+
+    var range = document.createRange();
+    range.setStart(match.node, match.index);
+    range.setEnd(match.node, match.index + firstLine.length);
+    var mark = document.createElement('mark');
+    mark.className = 'comment-highlight comment-highlight-automated';
+    mark.dataset.commentId = displayId(c);
+    try {
+      range.surroundContents(mark);
+      bindSourceActivator(mark, displayId(c));
+      applyRoughAnnotation(mark, { animate: false });
+      return mark;
+    } catch (err) {
+      return null;
+    }
+  }
+
+  function createBadge(c) {
+    var badge = document.createElement('span');
+    badge.className = 'comment-badge comment-badge-automated';
+    badge.textContent = displayId(c);
+    badge.dataset.commentId = displayId(c);
+    bindSourceActivator(badge, displayId(c));
+    return badge;
+  }
+
+  function applyAutomatedCommentAnchors() {
+    comments.filter(function(c) {
+      return c.source === 'automated';
+    }).forEach(function(c) {
+      var anchor = findAnchorForComment(c);
+      if (!anchor) {
+        c.unanchored = true;
+        return;
+      }
+
+      var mark = wrapMatchedQuote(anchor, c);
+      var badge = createBadge(c);
+      if (mark) mark.after(badge);
+      else anchor.appendChild(badge);
+    });
+  }
+
+  document.addEventListener('selectionchange', function() {
+    var sel = window.getSelection();
+    if (!sel || sel.isCollapsed || !sel.toString().trim()) { hideTooltip(); return; }
+    if (!sel.rangeCount) { hideTooltip(); return; }
+    var range = sel.getRangeAt(0);
+    if (!article.contains(range.commonAncestorContainer)) { hideTooltip(); return; }
+    if (popover) return;
+    var startLine = findLine(range.startContainer);
+    var endLine = findLine(range.endContainer);
+    if (!startLine && !endLine) { hideTooltip(); return; }
+    showTooltip(range);
+  });
+
+  function findLine(node) {
+    var el = node.nodeType === 3 ? node.parentElement : node;
+    while (el && el !== document.body) {
+      if (el.dataset && el.dataset.sourceLine) return parseInt(el.dataset.sourceLine, 10);
+      el = el.parentElement;
+    }
+    return null;
+  }
+
+  function showTooltip(range) {
+    hideTooltip();
+    var rect = range.getBoundingClientRect();
+    var el = document.createElement('div');
+    el.className = 'comment-tooltip';
+    el.textContent = 'Comment';
+    el.style.left = Math.max(8, rect.left + rect.width / 2 - 36 + window.scrollX) + 'px';
+    el.style.top = (rect.top + window.scrollY - 36) + 'px';
+    document.body.appendChild(el);
+    tooltip = el;
+    el.addEventListener('mousedown', function(e) {
+      e.preventDefault();
+      e.stopPropagation();
+      hideTooltip();
+      showPopover();
+    });
+  }
+
+  function hideTooltip() {
+    if (tooltip) { tooltip.remove(); tooltip = null; }
+  }
+
+  function showPopover() {
+    hidePopover();
+    var sel = window.getSelection();
+    if (!sel || sel.isCollapsed || !sel.rangeCount) return;
+    var range = sel.getRangeAt(0);
+    var startLine = findLine(range.startContainer) || 0;
+    var endLine = findLine(range.endContainer) || startLine;
+    var text = sel.toString().trim();
+    var rect = range.getBoundingClientRect();
+    var loc = sourceFile + ':' + startLine + (startLine !== endLine ? '-' + endLine : '');
+
+    var el = document.createElement('div');
+    el.className = 'comment-popover';
+    el.innerHTML =
+      '<div class="comment-popover-loc">' + loc + '</div>' +
+      '<div class="comment-popover-preview">' + escapeHtml(text.slice(0, 200)) + (text.length > 200 ? '...' : '') + '</div>' +
+      '<textarea class="comment-popover-input" placeholder="Write your comment..." rows="3"></textarea>' +
+      '<div class="comment-popover-actions">' +
+        '<button class="comment-popover-cancel">Cancel</button>' +
+        '<button class="comment-popover-add">Add</button>' +
+      '</div>';
+    el.style.left = Math.max(8, Math.min(rect.left + window.scrollX, window.innerWidth - 360)) + 'px';
+    el.style.top = (rect.bottom + 8 + window.scrollY) + 'px';
+    document.body.appendChild(el);
+    popover = el;
+
+    var input = el.querySelector('.comment-popover-input');
+    input.focus();
+
+    function addComment() {
+      var commentText = input.value.trim();
+      if (!commentText) return;
+      var id = nextId++;
+      comments.push({ id: id, startLine: startLine, endLine: endLine, selectedText: text, comment: commentText });
+      try {
+        var mark = document.createElement('mark');
+        mark.className = 'comment-highlight';
+        mark.dataset.commentId = id;
+        range.surroundContents(mark);
+        var badge = document.createElement('span');
+        badge.className = 'comment-badge';
+        badge.textContent = id;
+        badge.dataset.commentId = id;
+        mark.after(badge);
+        applyRoughAnnotation(mark, { animate: true });
+        bindSourceActivator(mark, id);
+        bindSourceActivator(badge, id);
+      } catch (err) {}
+      sel.removeAllRanges();
+      renderPanel();
+      hidePopover();
+    }
+
+    el.querySelector('.comment-popover-add').addEventListener('click', addComment);
+    el.querySelector('.comment-popover-cancel').addEventListener('click', hidePopover);
+    input.addEventListener('keydown', function(e) {
+      if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') addComment();
+      if (e.key === 'Escape') hidePopover();
+    });
+  }
+
+  function hidePopover() {
+    if (popover) { popover.remove(); popover = null; }
+  }
+
+  function deleteComment(id) {
+    id = String(id);
+    var idx = comments.findIndex(function(x) { return String(x.id) === id; });
+    if (idx === -1) return;
+    comments.splice(idx, 1);
+    var mark = document.querySelector('mark[data-comment-id="' + id + '"]');
+    var badge = document.querySelector('span.comment-badge[data-comment-id="' + id + '"]');
+    if (mark) {
+      var parent = mark.parentNode;
+      while (mark.firstChild) parent.insertBefore(mark.firstChild, mark);
+      mark.remove();
+    }
+    if (badge) badge.remove();
+    renderPanel();
+  }
+
+  function clearAll() {
+    var ids = comments.map(function(c) { return c.id; });
+    ids.forEach(function(id) { deleteComment(id); });
+  }
+
+  function copyAll() {
+    var parts = comments.map(function(c) {
+      var loc = c.startLine === c.endLine
+        ? sourceFile + ':' + c.startLine
+        : sourceFile + ':' + c.startLine + '-' + c.endLine;
+      var lines = c.selectedText.split('\n').slice(0, 5);
+      if (c.selectedText.split('\n').length > 5) lines.push('...');
+      var quoted = lines.map(function(l) { return '> ' + l; }).join('\n');
+      return '@' + loc + '\n\n' + quoted + '\n\n' + c.comment;
+    });
+    navigator.clipboard.writeText(parts.join('\n\n---\n\n')).then(function() {
+      var btn = panel.querySelector('[data-action="copy"]');
+      if (btn) {
+        btn.textContent = 'Copied!';
+        setTimeout(function() { renderPanel(); }, 1500);
+      }
+    });
+  }
+
+  function escapeHtml(text) {
+    var div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+  }
+}
+
+function initThemeToggle() {
+  const toggle = document.getElementById('theme-toggle');
+  const html = document.documentElement;
+
+  const saved = localStorage.getItem('md-preview-theme');
+  if (saved) {
+    html.setAttribute('data-theme', saved);
+    toggle.textContent = saved === 'dark' ? 'Light' : 'Dark';
+  } else {
+    const systemTheme = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+    html.setAttribute('data-theme', systemTheme);
+    toggle.textContent = systemTheme === 'dark' ? 'Light' : 'Dark';
+  }
+
+  toggle.addEventListener('click', () => {
+    const current = html.getAttribute('data-theme');
+    const next = current === 'dark' ? 'light' : 'dark';
+    html.setAttribute('data-theme', next);
+    toggle.textContent = next === 'dark' ? 'Light' : 'Dark';
+    localStorage.setItem('md-preview-theme', next);
+  });
+}
+
+function initTocScroll() {
+  const tocLinks = document.querySelectorAll('.toc-sidebar a');
+  const headings = document.querySelectorAll('article h2[id], article h3[id]');
+  if (tocLinks.length === 0 || headings.length === 0) return;
+
+  let active = null;
+  function updateToc() {
+    const top = 80;
+    let current = null;
+    for (const h of headings) {
+      if (h.getBoundingClientRect().top <= top) current = h;
+    }
+    if (current && current !== active) {
+      active = current;
+      tocLinks.forEach(a => {
+        a.classList.toggle('active', a.getAttribute('href') === '#' + current.id);
+      });
+      history.replaceState(null, '', '#' + current.id);
+    }
+  }
+
+  let ticking = false;
+  window.addEventListener('scroll', () => {
+    if (ticking) return;
+    ticking = true;
+    requestAnimationFrame(() => { updateToc(); ticking = false; });
+  }, { passive: true });
+  updateToc();
+}
+
+function initCopyButtons() {
+  document.querySelectorAll('.copy-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const pre = btn.closest('pre');
+      const code = pre.querySelector('code') || pre.querySelector('.shiki-wrapper');
+      const text = code ? code.textContent : '';
+      navigator.clipboard.writeText(text).then(() => {
+        btn.textContent = 'Copied!';
+        setTimeout(() => btn.textContent = 'Copy', 1500);
+      });
+    });
+  });
+}
+
+initThemeToggle();
+initTocScroll();
+initCopyButtons();
+initShiki();
+initMermaid();
+initCommentSystem();
+
+  </script>
+</body>
+</html>
