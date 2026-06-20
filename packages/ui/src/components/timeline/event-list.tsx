@@ -3,6 +3,7 @@
 
 import Claude from '@lobehub/icons/es/Claude'
 import OpenCode from '@lobehub/icons/es/OpenCode'
+import { motion, useReducedMotion } from 'framer-motion'
 import { ChevronRight } from 'lucide-react'
 import { useMemo, useState } from 'react'
 
@@ -11,6 +12,8 @@ import type {
   ProjectGroup,
   SessionRow,
 } from '@/hooks/use-timeline'
+
+const motionEaseOut = [0.23, 1, 0.32, 1] as const
 
 // ── Agent glyph components ────────────────────────────────────────
 
@@ -289,6 +292,20 @@ function ProjectRollup({
   const sessions = group.sessions
   const firstStart = sessions.at(-1)?.started_at ?? 0
   const lastEnd = sessions[0]?.ended_at ?? 0
+  const reduceMotion = useReducedMotion() ?? false
+  const sessionGroupMotion = reduceMotion
+    ? {
+        initial: { opacity: 1 },
+        animate: { opacity: 1 },
+        exit: { opacity: 1 },
+        transition: { duration: 0 },
+      }
+    : {
+        initial: { opacity: 0, transform: 'translateY(-4px)' },
+        animate: { opacity: 1, transform: 'translateY(0px)' },
+        exit: { opacity: 0, transform: 'translateY(-2px)' },
+        transition: { duration: 0.14, ease: motionEaseOut },
+      }
   return (
     <div>
       <div
@@ -341,14 +358,17 @@ function ProjectRollup({
         </span>
       </div>
       {open && (
-        <div
+        <motion.div
+          {...sessionGroupMotion}
+          data-testid={`timeline-session-group-${group.project}`}
+          data-motion-role="timeline-session-group"
           className="mb-2"
           style={{ margin: '2px 0 8px 28px', paddingLeft: 16, borderLeft: '1px solid var(--border-subtle)' }}
         >
           {sessions.map(s => (
             <SessionItem key={s.session_id} session={s} bucket={bucket} />
           ))}
-        </div>
+        </motion.div>
       )}
     </div>
   )

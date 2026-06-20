@@ -84,6 +84,7 @@ describe('EventList', () => {
     expect(screen.getByText('(no summary)')).toBeInTheDocument()
     expect(screen.getByText('claude-opus')).toBeInTheDocument()
     expect(document.body.textContent).toContain('3.5M tokens')
+    expect(screen.getByTestId('timeline-session-group-alpha')).toHaveAttribute('data-motion-role', 'timeline-session-group')
   })
 
   it('collapses and expands project rollups with click and keyboard', () => {

@@ -2,6 +2,7 @@
 import {
   Activity,
   Bot,
+  Code2,
   Search,
   Sparkles,
   TerminalSquare,
@@ -16,6 +17,8 @@ import { Toaster } from 'sonner'
 
 import { CommandPalette, CommandPaletteProvider } from './components/command-palette'
 import { MenubarPage } from './components/menubar/menubar-page'
+import { LanyardStatsSpikeView } from './components/monitor-spike/lanyard-stats-spike-view'
+import { MonitorSpikeView } from './components/monitor-spike/monitor-spike-view'
 import { Explorer } from './explorer'
 import { useAgents } from './hooks/use-agents'
 import { useCommands } from './hooks/use-commands'
@@ -31,6 +34,14 @@ function AppCommandPalette() {
   const { data: commands } = useCommands()
 
   const goToCommands = [
+    {
+      id: 'goto-monitor',
+      label: 'Monitor',
+      shortcut: 'g m',
+      icon: <Code2 size={14} />,
+      category: 'Go to',
+      action: () => navigate('/explore/monitor'),
+    },
     {
       id: 'goto-agents',
       label: 'Agents',
@@ -115,6 +126,8 @@ function AppLayout() {
   return (
     <div className="h-dvh overflow-hidden bg-[var(--surface-base)] text-[var(--text-primary)]">
       <Routes>
+        <Route path="/explore/monitor-lanyard-stats-spike" element={<LanyardStatsSpikeView />} />
+        <Route path="/explore/monitor-spike" element={<MonitorSpikeView />} />
         <Route path="/explore/:tab" element={<Explorer viewSwitcher={null} />} />
         <Route path="/explore" element={<Navigate to="/explore/timeline" replace />} />
         <Route path="/menubar" element={<MenubarPage />} />

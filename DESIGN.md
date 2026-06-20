@@ -1,19 +1,21 @@
 # Design System — OhMyC
 
 ## Product Context
-- **What this is:** CLI tool with WebUI for managing Claude Code and opencode configuration files (agents, skills, commands, plugins, hooks, MCP/LSP, settings, and activity)
-- **Who it's for:** Developers using Claude Code who want visual management of their agent configs
-- **Space/industry:** Developer tools / AI agent management
+- **What this is:** Personal Coding Monitor with a WebUI for seeing AI-assisted coding activity, momentum, and local agent resources in one profile-like surface.
+- **Who it's for:** Developers using Claude Code and related coding agents who want a memorable personal monitor for their own work patterns.
+- **Space/industry:** Developer tools / personal AI coding analytics
 - **Project type:** Web app (dark-themed dashboard)
 
 ## Aesthetic Direction
 - **Direction:** Monochrome dark — precision engineering aesthetic
 - **Decoration level:** Minimal
-- **Mood:** Serious developer tool. Dense but readable. No fluff. No color.
-- **Reference:** Linear (monochrome variant), GitHub dark mode, Vercel dashboard
+- **Mood:** Serious personal monitor. Dense but readable, with one memorable AI-native identity surface.
+- **Reference:** GitHub profile contribution graph, Linear (monochrome variant), Vercel dashboard, React Bits interaction craft
 
 ## Philosophy
 Darkness as the native medium. Content emerges from near-black backgrounds through carefully calibrated luminance steps. No chromatic accents — the only "color" is the gradation from white to black.
+
+The product should be remembered as a **personal Coding Monitor**, not a generic configuration manager. Configuration inventory still exists, but the first mental image is a profile-like activity cockpit: identity, stats, momentum, and recent coding signal.
 
 ## Typography
 - **Primary:** Inter Variable with OpenType features `"cv01", "ss03"` enabled globally
@@ -40,7 +42,7 @@ Darkness as the native medium. Content emerges from near-black backgrounds throu
 - **Approach:** Pure monochrome — zero chromatic colors
 - **Backgrounds:**
   - Marketing/Deep: `#08090a` — page background
-  - Panel: `#0f1011` — sidebar, panels
+  - Panel: `#0f1011` — navigation island, panels
   - Surface: `#191a1b` — elevated cards, dropdowns
   - Secondary: `#28282c` — hover states, lightest dark
 - **Text:**
@@ -90,7 +92,7 @@ Darkness as the native medium. Content emerges from near-black backgrounds throu
   - `rounded-sm`: 2px — badges, toolbar buttons
   - `rounded-md`: 6px — buttons, inputs
   - `rounded-lg`: 8px — cards, dropdowns
-  - `rounded-xl`: 12px — panels, featured cards
+  - `rounded-xl`: 12px — large panels, major surfaces
   - `rounded-full`: 9999px — pills, chips
 
 ## Depth & Elevation
@@ -102,7 +104,7 @@ On dark surfaces, elevation is communicated through background luminance steps, 
 - **Level 4 (Dialog):** `#191a1b` bg + multi-layer shadow stack
 
 ## Motion
-- **Approach:** Minimal-functional
+- **Approach:** Minimal-functional by default; intentional monitor motion for identity surfaces
 - **Easing:**
   - Enter: ease-out (150ms)
   - Exit: ease-in (200ms)
@@ -112,7 +114,15 @@ On dark surfaces, elevation is communicated through background luminance steps, 
   - Short: 150ms — hover states
   - Medium: 200ms — page transitions
   - Long: 300ms — modals
-- **No layout animations** — instant state changes for clarity
+- **Reusable motion tokens:** use `--motion-ease-out: cubic-bezier(0.23, 1, 0.32, 1)` for entering/exiting UI, `--motion-ease-in-out: cubic-bezier(0.77, 0, 0.175, 1)` for on-screen movement, `--motion-fast: 120ms`, `--motion-short: 160ms`, and `--motion-medium: 200ms`.
+- **Do not use `transition-all` for reusable UI primitives.** Specify exact properties: `color`, `background-color`, `border-color`, `opacity`, and `transform`. Avoid animating `box-shadow`, `width`, `height`, `padding`, `margin`, `top`, or `left`.
+- **Command palette open/close is instant or opacity-only.** `⌘K` / Ctrl+K is a high-frequency keyboard surface; it must not scale, slide, blur, or wait behind dialog choreography.
+- **Reduced motion removes transform, slide, blur, count-up, parallax, and smooth-scroll movement.** Keep opacity/color transitions only when they help comprehension.
+- **Framer Motion scope:** `framer-motion` is allowed for DOM/UI state transitions: navigation island expand/collapse, command palette and dialog entrance, route opacity handoff, entity detail open/close, and DOM count-up numbers when stats render outside Canvas. Do not use Framer for WebGL scene physics.
+- **Navigation island motion:** expanded/collapsed state uses a shared-layout morph over 180-220ms with opacity and a bounded blur/focus pull. Expanded content may fade/slide in by 4-6px after the shell begins moving. The collapsed icon badge can use a subtle hover/focus fade or scale up to `1.02`; avoid bounce, springy overshoot, list choreography, or a collapsed mini rail. Reduced motion disables the slide/blur and keeps the state change immediate.
+- **No broad layout choreography:** existing Timeline/Library internals should not animate lists, heatmap cells, card grids, or route layout as decoration. State changes stay instant or short-fade for clarity.
+- **React Bits / WebGL exception:** The Monitor page may use a single interactive 3D object or shader-like background layer when it reinforces personal identity. R3F/Drei owns Lanyard motion, 3D text, particles, orbital traces, bloom/depth effects, and in-Canvas numeric animation. Keep the rest of the chrome calm, monochrome, and data-first.
+- **Reduced motion:** honor `prefers-reduced-motion`; disable count-up, parallax, particles, and nonessential transitions.
 
 ## Component Specs
 
@@ -124,40 +134,48 @@ On dark surfaces, elevation is communicated through background luminance steps, 
 - Hover:
   - Background: `rgba(255,255,255,0.04)`
   - Border: `rgba(255,255,255,0.12)`
-  - Transition: `transition-all duration-150 ease-out`
+  - Transition: `background-color, border-color 160ms var(--motion-ease-out)`
 - Icon box:
   - Size: `w-10 h-10` (40px)
   - Border-radius: `rounded-lg` (10px)
   - Background: `#f7f8f8` or `#d0d6e0` (inverted text)
 
-### Sidebar
-- Width: `w-60` (240px)
-- Background: `#0f1011`
-- Border: `border-r border-rgba(255,255,255,0.05)`
+### Navigation Island
+- Default shell: floating, collapsible island. No primary route uses a full-height docked sidebar or standard top header.
+- Position: `top: 18px`, `left: 18px` on desktop. On narrow screens, keep the collapsed island at `top: 14px`, `left: 14px`.
+- Expanded size: `216-224px` wide and `calc(100dvh - 36px)` tall on desktop, leaving the same 18px top/bottom/left breathing room. Collapsed size: a single `52-56px` square icon badge, not a mini navigation rail. Use a `lucide-react` placeholder icon until the brand icon is ready.
+- Background: `rgba(15,16,17,0.72)` with backdrop blur around `20-24px`.
+- Border: low-opacity edge definition, preferably a `0.5px` ring/shadow plus at most `1px rgba(255,255,255,0.05)` border. Use macOS-style vibrancy with `saturate(180%) blur(20-24px)`.
+- Border-radius: `14px` outer, `8px` inner controls.
+- Shadow: layered macOS floating-panel shadow for separation, e.g. `0 0 0 0.5px rgba(255,255,255,0.10)`, `0 8px 30px rgba(0,0,0,0.38)`, `0 24px 60px rgba(0,0,0,0.22)`.
+- Brand:
+  - Title: `OhMyC`
+  - Subtitle: `coding monitor` in Berkeley Mono, uppercase, `10px`, `text-tertiary`.
+  - Expanded state uses text only on the left plus the collapse icon button on the right. Do not show a leading brand placeholder icon while expanded.
 - Section headers:
-  - Text: `text-[13px] font-medium text-[#8a8f98]`
-  - Padding: `px-4 pt-3 pb-2`
+  - Text: `11px / 510 / uppercase / text-tertiary`
+  - Suggested groups: `Signal` (`Monitor`, `Timeline`) and `Explore` (`Agents`, `Commands`, `Skills`, `Plugins`).
+- Command palette trigger sits at the bottom of the expanded island, not directly after the navigation groups.
 - Nav items:
-  - Padding: `px-3 py-2`
-  - Border-radius: `rounded-md` (6px)
-  - Gap: `gap-2.5`
+  - Height: `32px`
+  - Padding: `0 10px`
+  - Border-radius: `8px`
+  - Gap: `10px`
+  - Nav items are hidden when collapsed. The collapsed state shows only a single icon badge; clicking it expands the full island.
+  - Collapsed icon: use a neutral lucide.dev coding placeholder such as `Code2` if available in the installed lucide version. Avoid `Atom` or other React-like marks; replace only this icon with the brand mark later.
 - Active state:
   - Background: `rgba(255,255,255,0.08)`
   - Text: `#f7f8f8`
-  - Instant — no animation
+  - Instant or short fade only. No sliding nav animation.
 - Hover state:
   - Background: `rgba(255,255,255,0.03)`
 
 ### Header
-- Height: `h-16` (64px)
-- Background: `#0f1011`
-- Border: `border-b border-rgba(255,255,255,0.05)`
-- Search input:
-  - Width: `w-60` (240px)
-  - Height: `h-9` (36px)
-  - Border-radius: `rounded-md` (6px)
-  - Background: `rgba(255,255,255,0.02)`
-  - Border: `1px solid rgba(255,255,255,0.08)`
+The standard top header is retired. Do not render a global 64px header on Monitor, Timeline, Agents, Commands, Skills, or Plugins.
+
+- Command palette remains available through `⌘K` / Ctrl+K and may also appear as a compact island action.
+- Route-specific controls live in the page body near the content they affect.
+- Source filtering, when needed, moves into the relevant page's controls instead of occupying persistent chrome.
 
 ### Button
 - **Primary:**
@@ -190,7 +208,7 @@ On dark surfaces, elevation is communicated through background luminance steps, 
   - Border: none
 
 ### Timeline
-Sidebar entry sits in Explorer's sidebar under the `Activity` group (lucide `Activity` icon — heartbeat line). Timeline is the default route at `/explore/timeline`.
+Timeline entry sits in the navigation island under the `Signal` group. Timeline is the default route at `/explore/timeline`.
 
 - **Page layout (top to bottom):**
   - Controls bar: metric toggle (`Activity | Tokens`), Project filter, Year picker, right-aligned summary meta (`N sessions · N turns · N tokens` in Berkeley Mono `text-quaternary`).
@@ -251,74 +269,100 @@ Sidebar entry sits in Explorer's sidebar under the `Activity` group (lucide `Act
   - Empty (no sessions ever): centered card, "No Claude Code sessions yet. Run a Claude Code session in any project and your activity will show up here."
   - Filter empty: inline `text-tertiary` Berkeley Mono row with `border-subtle` top and bottom — `No sessions match the current filters. [Reset filters]`.
 
+### Monitor
+Monitor entry sits in the navigation island under the `Signal` group above Timeline. Monitor is available at `/explore/monitor`; Timeline remains the default route at `/explore/timeline`.
+
+- **Purpose:** Make OhMyC memorable as the user's personal Coding Monitor. The page should feel closer to a GitHub profile for AI coding activity than to a configuration dashboard.
+- **Composition:** Lanyard-left, stats-right signal surface inside the headerless island shell:
+  - Do not render any standard app header above the WebGL stage.
+  - The navigation island floats over the stage and may collapse to a single icon badge to give the WebGL scene more room.
+  - Left/center-left: React Bits Lanyard/WebGL identity object as the page's primary subject, large enough to define the route.
+  - Right: display-scale animated stats stack, not cards. Use big numeric type with small labels (`842 / sessions`, `18.4M / tokens`, `3m / last sync`).
+  - Background: orbital traces and faint activity signal support the Lanyard/stats relationship, but should not compete with the numeric stack.
+  - Surrounding field: AI-native telemetry should read as signal, not dashboard. Use sparse nodes, orbital traces, terminal fragments, model/session pulses, faint activity particles, and animated numeric readouts.
+- **Stats:** Pull from Timeline data first, but expose only 2-3 numbers on this page. The rest belongs on Timeline. Preferred treatment is large typographic stats (`842 sessions`, `18.4M tokens`, `sync 3m`) with animated number transitions. Project pulse and activity density should be visualized as ambient signal fields, not boxed widgets.
+- **Visual rules:** The page theme is the Lanyard stage. Explorer chrome stays monochrome; the central WebGL stage may use a very deep black-violet/graphite tone when it matches the React Bits Lanyard component, but avoid bright purple/blue AI cliches, orbs, bokeh blobs, and marketing hero copy.
+- **Implementation posture:** HTML mockups are layout references only. The real visual decision should happen in a small R3F/Drei spike because DOM mockups cannot show 3D text depth, Rapier dragging, Billboard behavior, bloom/depth effects, or Lanyard/stats occlusion.
+- **3D scene split:** Put Lanyard, display-scale stats, animated numeric transitions, orbital traces, particles, and signal text inside the React Three Fiber canvas when the spike proves this reads better. Use DOM only for Explorer chrome, command palette, route controls, accessible fallback labels, and stats count-up if Canvas typography creates readability or implementation friction.
+- **Interaction:** The Lanyard may be draggable/physics-driven. Stats should animate as kinetic typography in the scene. Data controls should remain conventional and compact; do not replace Timeline's detailed filtering on this page.
+- **Monitor navigation island:** The Monitor navigation island should identify `OhMyC` and expose only essential navigation: Monitor, Timeline, Agents, Commands, Skills, Plugins, plus command palette access. Expanded width targets `216-224px`; collapsed state is only a `52-56px` icon badge using a temporary `lucide-react` icon. Use rounded 12px corners, subtle border, translucent panel background, and no full-height page rail or collapsed mini rail. Later brand-icon replacement should touch only the collapsed badge icon and expanded brand mark.
+
 ## File Structure
 
 ```
 packages/ui/src/
+├── app.tsx              # Top-level routes
+├── explorer.tsx         # Current Explorer route shell + route rendering
 ├── globals.css          # Design tokens + spacing scale
 ├── components/
-│   ├── ui/
-│   │   ├── card.tsx     # Standardized Card
-│   │   ├── sidebar-nav.tsx  # Navigation component
-│   │   ├── search-input.tsx # Consistent search
-│   │   └── pill.tsx     # Badge/pill component
-│   ├── Explorer/
-│   │   ├── index.tsx    # Main layout + routing
-│   │   ├── Sidebar.tsx  # Navigation sidebar
-│   │   ├── ContentArea.tsx  # Header + content
-│   │   ├── EntityList.tsx   # Grid of cards
-│   │   ├── EntityDetail.tsx # Detail view
-│   │   ├── EnvironmentSummary.tsx # Stats row
-│   │   └── ConfigSection.tsx    # Config views
-│   └── Timeline/
-│       ├── index.tsx        # Main timeline view
-│       ├── ContributionGraph.tsx # GitHub-style grid
-│       └── EventList.tsx    # Chronological events
+│   ├── sidebar.tsx      # Current navigation component; target is floating island
+│   ├── header.tsx       # Retired global header; remove from primary route shell
+│   ├── command-palette.tsx
+│   ├── command-palette-trigger.tsx # Optional island trigger, not header chrome
+│   ├── section-header.tsx
+│   ├── entity-card.tsx
+│   ├── entity-detail.tsx
+│   ├── source-switcher.tsx # Move into page-body controls when used
+│   ├── timeline/
+│   │   ├── timeline-view.tsx
+│   │   ├── contribution-graph.tsx
+│   │   └── event-list.tsx
+│   └── ui/              # Shared primitives
 ```
 
 ## Layout & Interaction
 
 The visual system above is settled. This section governs **how the app is laid out and operated** — what lives where on the page, what the keyboard does, and which surfaces are the canonical entry points. Visual changes go in the sections above; placement / behavior changes go here.
 
-**Master thesis:** Explorer is the product shell. Timeline remains the default activity surface; the active Explorer resource tabs are Agents, Commands, Skills, and Plugins. Hooks, MCP, and LSP no longer have top-level UI entries, though lower-level config APIs remain available for configuration flows that need them. Settings UI was removed on 2026-06-16; lower-level settings read/write APIs remain available for configuration flows that need them. Profiles were archived on 2026-06-16 behind the Git tag `archive/profiles-before-removal-20260616` and are no longer part of the active product.
+**Master thesis:** OhMyC uses a headerless personal monitor shell. A floating collapsible navigation island is the only persistent chrome; every primary route renders its own content full-height underneath it. Monitor owns the memorable first impression, Timeline remains the detailed activity surface, and Agents, Commands, Skills, and Plugins remain the resource library. Hooks, MCP, and LSP no longer have top-level UI entries, though lower-level config APIs remain available for configuration flows that need them. Settings UI was removed on 2026-06-16; lower-level settings read/write APIs remain available for configuration flows that need them. Profiles were archived on 2026-06-16 behind the Git tag `archive/profiles-before-removal-20260616` and are no longer part of the active product.
 
 ### Default route
 - Landing route is `/explore/timeline`.
 - The wildcard fallback (`*`) also redirects to `/explore/timeline`.
-- Rationale: Timeline gives immediate evidence that OhMyC is connected to the user's local activity, while Explorer remains the canonical management shell for configuration surfaces.
+- Rationale: Timeline gives immediate evidence that OhMyC is connected to the user's local activity. Monitor becomes the memorable identity surface, while Agents, Commands, Skills, and Plugins remain resource library routes.
 
 ### Command palette (primary action surface)
-- **Placement:** A pill button sits in the header. It replaces inert search inputs.
-- **Pill anatomy:** `[search icon 14] Search... [⌘K]`
-  - Width: `w-60` (240px)
-  - Height: `h-9` (36px)
-  - Border-radius: `rounded-md` (6px)
+- **Placement:** No persistent header pill. The command palette is always available through ⌘K/Ctrl+K. If a visible trigger is needed, render it as a compact action inside the navigation island, not in a global top bar.
+- **Visible trigger anatomy (optional):** `[search icon 14] [⌘K]`
+  - Height: `32-36px`
+  - Border-radius: `8px`
   - Background: `rgba(255,255,255,0.02)`
   - Border: `1px solid rgba(255,255,255,0.08)`
-  - Right-aligned `⌘K` keycap: `11px / weight 510 / text-quaternary`, `1px solid rgba(255,255,255,0.08)` border, `rounded-sm`
-  - **Visually a search input; behaviorally a button** — clicking opens the palette.
-- **Open behavior:** ⌘K (or Ctrl+K) anywhere, or click the pill. Opens a centered dialog at Level 4 elevation (`#191a1b` + dialog shadow stack), 640px wide, max-height 480px, with backdrop dim `rgba(0,0,0,0.6)`.
+  - Keycap: `11px / weight 510 / text-quaternary`, `1px solid rgba(255,255,255,0.08)` border, `rounded-sm`
+- **Open behavior:** ⌘K (or Ctrl+K) anywhere, or click the optional island trigger. Opens a centered dialog at Level 4 elevation (`#191a1b` + dialog shadow stack), 640px wide, max-height 480px, with backdrop dim `rgba(0,0,0,0.6)`.
 - **Command groups (in order):**
-  1. **Go to** — `Agents`, `Skills`, `Commands`, `Timeline`
+  1. **Go to** — `Monitor`, `Agents`, `Skills`, `Commands`, `Timeline`
   2. **Search** — typed-in token searches across agents, skills, and commands
 - **Keyboard map (inside palette):** ↑/↓ navigate, ↵ run, Esc close.
 - **Global keyboard map (when palette is closed):**
+  - `g m` — go to Monitor
   - `g a` — go to Agents
   - `g s` — go to Skills
   - `g c` — go to Commands
   - These bindings are silent when focus is in a text input.
 
 ### Header chrome
-The header renders the breadcrumb, Explorer-only source switcher, and command palette trigger. Profiles chrome is not rendered. If a route needs a contextual action, it goes in the page body, not the header.
+There is no standard header chrome. Breadcrumbs, source switchers, search triggers, and contextual actions must not create a persistent top bar.
+
+- Breadcrumbs are optional page-body metadata, not global chrome.
+- Source switchers move into page controls on Library/Timeline surfaces when they are needed.
+- Monitor should stay headerless and full-bleed so the R3F/Drei stage owns the first impression.
 
 ### Explorer view rules
+- **Default shell:** every route uses the navigation island plus route-owned content. Do not wrap all pages in a shared `max-w-6xl p-10` shell.
+- **Island-aware content offset:** non-Monitor routes start from the workspace to the right of the expanded navigation island (`~280px` desktop, `~260px` tablet) with normal top/right/bottom page padding. The route content is left-aligned within that workspace; do not use the old header-era `mx-auto` centering shell that recenters content across the whole viewport.
+- **Monitor:** full-bleed stage under the floating island.
+- **Existing route migration scope:** Timeline, Agents, Commands, Skills, and Plugins keep their existing internal layout and information architecture. The shell migration removes the global header, replaces the docked sidebar with the floating navigation island, and preserves each route's current page body structure.
+- **Timeline:** keep the current Timeline internals: title/description, controls bar, heatmap card, recent activity header, and event list. The route itself becomes headerless and the island overlays outside the page body.
+- **Library pages:** Agents, Commands, Skills, and Plugins keep their current SectionHeader, two-column EntityCard grid, detail views, empty states, and page-body controls. Do not redesign these pages while migrating the shell.
 - **Card grid:** uniform 2-column grid. No `featured` variant — every card has equal weight. Featured-card emphasis was a holdover from a different IA and undermines scanability.
 - **Plugins page:** starts directly with the Plugins section header and inventory cards. The former Environment summary was removed because workspace-level Hooks/MCP/LSP counts are no longer part of the top-level Explorer IA.
 - **Skeletons:** removed for first paint. The Explorer reads from local config files — load is fast enough that skeletons flash and create perceived jank. Show content directly; if a future async source is added, reintroduce a single subtle pulse, not the multi-row skeleton.
 
 ### Wireframe reference
 - **Layout & Interaction wireframe index:** `~/.gstack/projects/JiangWeixian-claudeui/designs/layout-interaction-20260426/index.html` — historical per-screen files. Profiles-related screens are archived references only after the 2026-06-16 removal.
-- **Timeline wireframe:** `~/.gstack/projects/JiangWeixian-claudeui/designs/timeline-20260430/wireframe.html` — single Timeline screen: sidebar entry, controls bar, 53×7 heatmap, day/project/session event list.
+- **Coding Monitor mockup:** `~/.gstack/projects/JiangWeixian-claudeui/designs/coding-monitor-20260617/index.html` — active design direction for `/explore/monitor`: headerless full-bleed WebGL stage, floating collapsible navigation island, left/center-left React Bits Lanyard, right-side display-scale animated stats, sparse orbital signal field, and compact activity strip.
+- **Timeline wireframe:** `~/.gstack/projects/JiangWeixian-claudeui/designs/timeline-20260430/wireframe.html` — single Timeline screen: navigation entry, controls bar, 53×7 heatmap, day/project/session event list.
 - Open the relevant wireframe before changing the surfaces it covers — placement is settled there, not in this doc.
 
 ## Decisions Log
@@ -326,64 +370,38 @@ The header renders the breadcrumb, Explorer-only source switcher, and command pa
 | Date | Decision | Rationale |
 |------|----------|-----------|
 | 2026-04-25 | Spacing: Tailwind classes | User prefers Tailwind over CSS variables for spacing |
-| 2026-04-25 | Timeline icon: Mini graph | Shows live activity preview in sidebar |
-| 2026-04-25 | Cards: Featured variant | Important items span 2 columns for emphasis |
+| 2026-04-25 | Timeline icon: Mini graph | Superseded by 2026-06-17 navigation island grouping. Timeline still needs a recognizable activity icon, but the old sidebar-specific preview treatment is retired |
+| 2026-04-25 | Cards: Featured variant | Superseded by 2026-04-26 uniform-grid decision. Featured-card emphasis was an IA holdover and is no longer active |
 | 2026-04-25 | Dark theme only | App is developer tool, dark is standard |
-| 2026-04-25 | No sidebar animation | Instant active state is clearer |
+| 2026-04-25 | No sidebar animation | Superseded by 2026-06-17 navigation island shell. The active-state principle remains: use instant or short fades, no sliding nav animation |
 | 2026-04-25 | Monochrome palette | User requested dark + gray only, no accent colors |
 | 2026-04-25 | Primary button: white | Inverted style for maximum contrast |
 | 2026-04-25 | Relaxed letter-spacing | User found aggressive tracking too tight |
-| 2026-04-26 | ⌘K is the primary action surface | Wire the existing CommandPaletteProvider; replace inert header search inputs with the palette pill |
+| 2026-04-26 | ⌘K is the primary action surface | Superseded by 2026-06-17 headerless island shell for visible placement. The CommandPaletteProvider remains the primary action surface, but any visible trigger belongs inside the navigation island |
 | 2026-04-26 | Drop Explorer `featured` card variant | Equal-weight 2-col grid scans faster; emphasis was IA holdover |
-| 2026-04-26 | Environment Summary on Plugins tab only | Plugin-specific stats; was decorative on Hooks/MCP/LSP |
+| 2026-04-26 | Environment Summary on Plugins tab only | Superseded by 2026-06-16 Plugins Environment summary removal. Plugin pages now start directly with the section header and inventory cards |
 | 2026-04-26 | Remove first-paint skeletons in Explorer | Local config reads are fast; skeleton flash creates perceived jank |
 | 2026-04-26 | Reverse earlier "Featured variant" decision | Superseded by 2026-04-26 uniform-grid decision above |
-| 2026-05-01 | Timeline lives under new sidebar group `Activity` | Same Explorer shell, activity first — discoverable without duplicating IA |
+| 2026-05-01 | Timeline lives under new sidebar group `Activity` | Superseded by 2026-06-17 `Signal` group in the navigation island. The activity-first rationale still holds, but the old Explorer sidebar grouping is retired |
 | 2026-05-01 | Heatmap metric toggle = `Activity \| Tokens` (not Sessions/Turns/Tokens) | Activity is composite (sessions + turns); turns dominate naturally and that's the better intensity signal. Tooltip surfaces both numbers |
 | 2026-05-01 | Heatmap range filter is a Year picker, not date-range presets | 53×7 grid is fundamentally a calendar year; arbitrary windows break the shape. Picker only lists years with activity |
 | 2026-05-01 | Rollup and session meta lines show counts only (`N tools · N skills`), no names | Comma-separated names blow up row width and force truncation; counts give the same signal at a fraction of the visual cost. Names belong in a future hover/detail surface |
 | 2026-05-01 | Expanded sessions use 28px indent + 1px `border-subtle` left rail, no connector lines | Vertical connectors read as gantt-energy; the rail is enough to communicate child-of-rollup |
 | 2026-05-01 | Day headings sticky with fade-to-bg gradient under them | Content slides under the heading without a hard rule; matches the "no decoration" rule for chrome separations |
 | 2026-05-01 | first_message summaries wrap in typographic quotes; auto summaries render plain | The quote marks are the trust signal — readers know unquoted text is a generated title and quoted text is what the user actually typed |
-| 2026-05-13 | Header gains Explorer-only Source switcher next to the ⌘K pill | Default = all sources, persisted to `localStorage` as `ohmyc.sources`. Last-on guard prevents zero-state. Exception to header-chrome-uniformity rule because filter is Explorer-specific |
+| 2026-05-13 | Header gains Explorer-only Source switcher next to the ⌘K pill | Superseded by 2026-06-17 headerless island shell. Source filters now belong in page-body controls, not persistent chrome |
 | 2026-05-13 | EntityCard takes provider-supplied `badges`; per-entity-type switch removed | Schema branching belonged in the provider, not the card. Origin chip on the card header is `entity.origins.join(' · ')` so shared skills (claude · opencode · agents) read at a glance |
 | 2026-06-16 | Profiles archived and removed from product/backend surfaces | The restore point is Git tag `archive/profiles-before-removal-20260616`; user `$OHMYC_HOME/profiles` data is left untouched but no longer read or maintained |
 | 2026-06-16 | Settings UI removed from Explorer and ⌘K surfaces | Settings page entry points and components were deleted; `g s` now maps only to Skills. Lower-level settings APIs remain for non-page configuration flows |
-| 2026-06-16 | Sidebar Explorer tabs reduced to Agents, Commands, Skills, Plugins; Plugins Environment summary removed | The management surface now centers on the four core resource inventories while Timeline remains the activity entry. Hooks/MCP/LSP remain lower-level config capabilities without top-level UI chrome |
-
-## Migration Checklist
-
-### Phase 1: Design Tokens
-- [ ] Update globals.css with new monochrome palette
-- [ ] Add Inter Variable font with cv01, ss03 features
-- [ ] Verify all existing colors map to new system
-
-### Phase 2: Card Component
-- [ ] Create `components/ui/card.tsx`
-- [ ] Update EntityCard with new spacing
-- [ ] Update all card instances
-
-### Phase 3: Sidebar
-- [ ] Redesign with grayscale active states
-- [ ] Add section grouping
-- [ ] Remove animation
-
-### Phase 4: Header + Search
-- [ ] Widen search to 240px
-- [ ] Clean breadcrumb styling
-- [ ] Set header height to 64px
-
-### Phase 5: Component Split
-- [ ] Split Explorer.tsx
-- [ ] Move each section to own file
-- [ ] Verify no functionality lost
-
-### Phase 6: Timeline
-- [ ] Create TimelineEvent interface
-- [ ] Build ContributionGraph (grayscale)
-- [ ] Build EventList
-- [ ] Add route and sidebar entry
-- [ ] Connect to mock data
+| 2026-06-16 | Explorer resource tabs reduced to Agents, Commands, Skills, Plugins; Plugins Environment summary removed | The resource library now centers on the four core inventories while Timeline remains an activity route. Hooks/MCP/LSP remain lower-level config capabilities without top-level UI chrome |
+| 2026-06-17 | Product positioning shifts to personal Coding Monitor | OhMyC should be remembered as an AI coding activity/profile surface first; resource management remains available but is no longer the product's primary mental model |
+| 2026-06-17 | Add `/explore/monitor` as the memorable Activity entry | Monitor can use a React Bits Lanyard/WebGL identity object plus compact stats. Timeline remains the default detailed route at `/explore/timeline` |
+| 2026-06-17 | Monitor route is headerless with a collapsible navigation island | Removing the header gives the WebGL stage room to own first impression; the floating island keeps navigation available without making the page feel like an Explorer dashboard |
+| 2026-06-17 | All primary routes use the headerless navigation island shell | The app should feel like a personal monitor workspace, not an Explorer dashboard. Timeline and Library pages keep readable content constraints inside their page body, but no route gets the old global header |
+| 2026-06-17 | Existing non-Monitor routes keep their internal layout | Headerless island is a shell migration for Timeline, Agents, Commands, Skills, and Plugins. Their controls, grids, cards, detail panels, and timeline structure should not be redesigned in the same change |
+| 2026-06-17 | Collapsed navigation island is a single icon badge | A collapsed mini rail still feels like product chrome. One lucide-react placeholder icon keeps the page quiet now and can be swapped for the brand icon later |
+| 2026-06-17 | Use Framer Motion for DOM chrome, not WebGL scene motion | The AI monitor needs motion to feel alive, but the boundary matters: Framer handles island/dialog/route/count-up UI, while R3F/Drei handles Lanyard, particles, 3D text, and scene physics |
+| 2026-06-19 | Tighten UI motion policy around high-frequency surfaces | Command palette and repeated library interactions should feel immediate; reusable primitives specify exact animated properties, and reduced motion removes transform/scroll/count-up movement |
 
 ## Do's and Don'ts
 

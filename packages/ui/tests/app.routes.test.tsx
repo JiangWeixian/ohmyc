@@ -1,5 +1,10 @@
-import { screen, waitFor } from '@testing-library/react'
+import {
+  fireEvent,
+  screen,
+  waitFor,
+} from '@testing-library/react'
 import React from 'react'
+import { useLocation } from 'react-router-dom'
 import {
   describe,
   expect,
@@ -11,11 +16,22 @@ import { renderWithProviders } from './test/render-with-providers'
 import { App } from '@/app'
 
 vi.mock('@/explorer', () => ({
-  Explorer: () => <div data-testid="explorer-route">Explorer route</div>,
+  Explorer: () => {
+    const location = useLocation()
+    return <div data-testid="explorer-route">{location.pathname}</div>
+  },
 }))
 
 vi.mock('@/components/menubar/menubar-page', () => ({
   MenubarPage: () => <div data-testid="menubar-route">Menubar route</div>,
+}))
+
+vi.mock('@/components/monitor-spike/monitor-spike-view', () => ({
+  MonitorSpikeView: () => <div data-testid="monitor-spike-route">Monitor spike route</div>,
+}))
+
+vi.mock('@/components/monitor-spike/lanyard-stats-spike-view', () => ({
+  LanyardStatsSpikeView: () => <div data-testid="lanyard-stats-spike-route">Lanyard stats spike route</div>,
 }))
 
 vi.mock('@/hooks/use-agents', () => ({
@@ -44,6 +60,21 @@ describe('App routes', () => {
 
     await waitFor(() => {
       expect(screen.getByTestId('explorer-route')).toBeInTheDocument()
+    })
+  })
+
+  it('navigates to Monitor from the command palette', async () => {
+    renderWithProviders(<App />, { route: '/menubar' })
+
+    fireEvent.keyDown(document, { key: 'k', metaKey: true })
+
+    const monitorItem = await screen.findByText('Monitor')
+    expect(screen.getByText('g m')).toBeInTheDocument()
+
+    fireEvent.click(monitorItem)
+
+    await waitFor(() => {
+      expect(screen.getByTestId('explorer-route')).toHaveTextContent('/explore/monitor')
     })
   })
 })

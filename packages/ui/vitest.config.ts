@@ -8,6 +8,7 @@ const rootDir = fileURLToPath(new URL('.', import.meta.url))
 
 export default defineConfig({
   plugins: [react()],
+  assetsInclude: ['**/*.glb'],
   resolve: {
     alias: {
       '@': path.resolve(rootDir, 'src'),
@@ -21,6 +22,7 @@ export default defineConfig({
     },
   },
   test: {
+    name: 'unit',
     environment: 'jsdom',
     globals: true,
     setupFiles: ['./tests/test/setup.ts'],
@@ -44,6 +46,7 @@ export default defineConfig({
         'dist/',
         'src/components/ui/**',
         'src/components/uitripled/**',
+        'src/components/monitor-spike/**',
         '**/*.d.ts',
         '**/*.config.*',
       ],

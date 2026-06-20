@@ -1,0 +1,14 @@
+# OhMyC UI
+
+Storybook documents the `packages/ui` design system and key product surfaces.
+
+This first version focuses on:
+
+- Monochrome dark UI primitives.
+- Product-critical surfaces such as command search, navigation, timeline, and monitor.
+- Menubar popover UI from `packages/ui/src/components/menubar`.
+- Storybook Vitest addon coverage for stable story render and interaction checks.
+
+Chromatic is intentionally not configured in this version. Stories use local
+fixtures, with menubar heatmap dates generated relative to the current day so
+runtime date windows keep rendering data.

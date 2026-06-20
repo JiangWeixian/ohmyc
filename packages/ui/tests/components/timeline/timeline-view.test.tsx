@@ -1,4 +1,9 @@
-import { fireEvent, waitFor } from '@testing-library/react'
+import {
+  fireEvent,
+  screen,
+  waitFor,
+} from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
 import {
   afterEach,
   beforeEach,
@@ -90,27 +95,36 @@ describe('TimelineView', () => {
     expect(container.textContent).toContain('earlier sessions truncated')
   })
 
-  it('switches heatmap metric and project filters through the controls', async () => {
-    const { capturedHeatmapArgs } = installTimelineHandlers()
+  it('switches heatmap metric, project, and year filters through accessible controls', async () => {
+    const user = userEvent.setup()
+    const { capturedHeatmapArgs, currentYear } = installTimelineHandlers()
 
-    const { container } = renderWithProviders(<TimelineView />)
+    renderWithProviders(<TimelineView />)
     await waitFor(() => {
-      expect(container.textContent).toContain('Timeline work')
+      expect(screen.getByText('Timeline work')).toBeInTheDocument()
     })
 
-    const tokensButton = [...container.querySelectorAll('button')]
-      .find(button => button.textContent === 'Tokens')
+    const tokensButton = screen.getByText('Tokens').closest('button')
     expect(tokensButton).toBeDefined()
     fireEvent.click(tokensButton!)
     await waitFor(() => {
       expect(capturedHeatmapArgs.some(args => (args as { metric?: string }).metric === 'tokens')).toBe(true)
     })
 
-    const selects = container.querySelectorAll('select')
-    expect(selects).toHaveLength(2)
-    fireEvent.change(selects[0], { target: { value: 'beta' } })
+    const projectSelect = screen.getByLabelText('Project')
+    expect(projectSelect).toHaveAttribute('role', 'combobox')
+    await user.click(projectSelect)
+    await user.click(await screen.findByText('beta'))
     await waitFor(() => {
       expect(capturedHeatmapArgs.some(args => (args as { project?: string }).project === 'beta')).toBe(true)
+    })
+
+    const yearSelect = screen.getByLabelText('Year')
+    expect(yearSelect).toHaveAttribute('role', 'combobox')
+    await user.click(yearSelect)
+    await user.click(await screen.findByText(String(currentYear - 1)))
+    await waitFor(() => {
+      expect(capturedHeatmapArgs.some(args => (args as { from?: number }).from === Date.UTC(currentYear - 1, 0, 1))).toBe(true)
     })
   })
 })

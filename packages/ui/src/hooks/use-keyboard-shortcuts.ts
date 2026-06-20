@@ -4,8 +4,12 @@ import { useNavigate } from 'react-router-dom'
 
 /**
  * Sets up global `g`-prefixed keyboard navigation:
- * - `g` then `e` → Explorer (Agents)
- * - `g` then `s` → Explorer (Skills)
+ * - `g` then `m` -> Monitor
+ * - `g` then `e` -> Agents (legacy alias)
+ * - `g` then `a` -> Agents
+ * - `g` then `s` -> Skills
+ * - `g` then `c` -> Commands
+ * - `g` then `t` -> Timeline
  *
  * Silently ignored when an input, textarea, or contenteditable is focused.
  */
@@ -48,14 +52,19 @@ export function useGlobalKeyboardShortcuts() {
           gTimeout = null
         }
 
-        if (e.key === 'e') {
-          e.preventDefault()
-          navigate('/explore/agents')
-          return
+        const routes: Record<string, string> = {
+          m: '/explore/monitor',
+          e: '/explore/agents',
+          a: '/explore/agents',
+          s: '/explore/skills',
+          c: '/explore/commands',
+          t: '/explore/timeline',
         }
-        if (e.key === 's') {
+
+        const route = routes[e.key]
+        if (route) {
           e.preventDefault()
-          navigate('/explore/skills')
+          navigate(route)
         }
       }
     }

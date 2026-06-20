@@ -1,6 +1,6 @@
 // Detail view for a single entity — renders frontmatter meta strip + markdown body
 // with back navigation and optional edit/delete actions.
-import { motion } from 'framer-motion'
+import { motion, useReducedMotion } from 'framer-motion'
 import {
   ChevronLeft,
   Pencil,
@@ -8,6 +8,9 @@ import {
 } from 'lucide-react'
 
 import { MarkdownRenderer } from './markdown-renderer'
+import { Button } from '@/components/ui/button'
+
+const motionEaseOut = [0.23, 1, 0.32, 1] as const
 
 /** A single key-value metadata row shown in the frontmatter strip. */
 interface MetaItem {
@@ -44,14 +47,38 @@ export function EntityDetail({
 }: EntityDetailProperties) {
   // Project-scoped entities cannot be edited from this UI
   const isReadOnly = scope === 'project'
+  const reduceMotion = useReducedMotion() ?? false
+  const pageMotion = reduceMotion
+    ? {
+        initial: { opacity: 0 },
+        animate: { opacity: 1 },
+        exit: { opacity: 0 },
+        transition: { duration: 0.12, ease: motionEaseOut },
+      }
+    : {
+        initial: { opacity: 0, transform: 'translateX(8px)' },
+        animate: { opacity: 1, transform: 'translateX(0px)' },
+        exit: { opacity: 0, transform: 'translateX(-8px)' },
+        transition: { duration: 0.18, ease: motionEaseOut },
+      }
+  const blockMotion = reduceMotion
+    ? {
+        initial: { opacity: 0 },
+        animate: { opacity: 1 },
+        transition: { duration: 0.12, ease: motionEaseOut },
+      }
+    : {
+        initial: { opacity: 0, transform: 'translateY(6px)' },
+        animate: { opacity: 1, transform: 'translateY(0px)' },
+        transition: { duration: 0.16, ease: motionEaseOut },
+      }
 
   return (
     <motion.div
-      initial={{ opacity: 0, x: 12 }}
-      animate={{ opacity: 1, x: 0 }}
-      exit={{ opacity: 0, x: -12 }}
-      transition={{ duration: 0.18, ease: 'easeOut' }}
-      className="mx-auto size-full max-w-[920px]"
+      {...pageMotion}
+      data-testid="entity-detail-motion"
+      data-motion-role="entity-detail"
+      className="size-full max-w-[920px]"
     >
       <button
         onClick={onBack}
@@ -70,9 +97,7 @@ export function EntityDetail({
 
       {/* Document header — frontmatter strip */}
       <motion.div
-        initial={{ opacity: 0, y: 8 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.18, ease: 'easeOut' }}
+        {...blockMotion}
         className="mb-6 rounded-[var(--radius-lg)] border border-[var(--border-default)] bg-white/[0.02] px-7 py-6"
       >
         <div className="flex items-start justify-between gap-4">
@@ -89,26 +114,30 @@ export function EntityDetail({
             <div className="flex shrink-0 gap-1.5">
               {onEdit
                 ? (
-                <button
+                <Button
                   type="button"
                   onClick={onEdit}
-                  className="transition-smooth inline-flex items-center gap-1.5 rounded-[var(--radius-sm)] border border-[var(--border-default)] bg-white/[0.04] px-2.5 py-1.5 text-[12px] font-medium text-[var(--text-primary)] hover:bg-white/[0.08]"
+                  variant="outline"
+                  size="sm"
+                  className="rounded-[var(--radius-sm)] border-[var(--border-default)] bg-white/[0.04] text-[var(--text-primary)] hover:bg-white/[0.08]"
                 >
                   <Pencil size={12} />
                   Edit
-                </button>
+                </Button>
                   )
                 : null}
               {onDelete
                 ? (
-                <button
+                <Button
                   type="button"
                   onClick={onDelete}
                   aria-label="Delete"
-                  className="transition-smooth inline-flex size-[28px] items-center justify-center rounded-[var(--radius-sm)] border border-[var(--border-default)] bg-white/[0.04] text-[var(--text-tertiary)] hover:bg-white/[0.08] hover:text-[var(--text-primary)]"
+                  variant="outline"
+                  size="icon-sm"
+                  className="rounded-[var(--radius-sm)] border-[var(--border-default)] bg-white/[0.04] text-[var(--text-tertiary)] hover:bg-white/[0.08] hover:text-[var(--text-primary)]"
                 >
                   <Trash2 size={12} />
-                </button>
+                </Button>
                   )
                 : null}
             </div>
@@ -135,7 +164,7 @@ export function EntityDetail({
       <motion.article
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
-        transition={{ duration: 0.18, delay: 0.05, ease: 'easeOut' }}
+        transition={{ duration: 0.16, delay: reduceMotion ? 0 : 0.04, ease: motionEaseOut }}
         className="rounded-[var(--radius-lg)] border border-[var(--border-default)] bg-white/[0.02] p-9"
       >
         <MarkdownRenderer content={content} />

@@ -11,6 +11,7 @@ jobs:
     name: test
     env:
       CI: true
+      NODE_OPTIONS: --max-old-space-size=4096
 
     strategy:
       matrix:

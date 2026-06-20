@@ -42,6 +42,7 @@ export default defineConfig({
     'import.meta.env.VITE_TRANSPORT': JSON.stringify('tauri'),
   },
   plugins: [react(), uiAliasPlugin()],
+  assetsInclude: ['**/*.glb'],
   clearScreen: false,
   server: {
     port: 1420,

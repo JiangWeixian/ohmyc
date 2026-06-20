@@ -36,6 +36,12 @@
       "skillPath": "skills/docs-code/SKILL.md",
       "computedHash": "e66f5e79434fdfe0d8e5319cb98329be0f168b9ecd3f6e7b7a582179eb1aa4f7"
     },
+    "emil-design-eng": {
+      "source": "emilkowalski/skill",
+      "sourceType": "github",
+      "skillPath": "skills/emil-design-eng/SKILL.md",
+      "computedHash": "8bdf9e4e6de7a4969147bf4828a4ad2c5aacd9fba4b690b250a85e0467ca387d"
+    },
     "fast-commit": {
       "source": "git@github.com:neo-hack/supermario.git",
       "sourceType": "git",
@@ -68,6 +74,11 @@
       "sourceType": "github",
       "computedHash": "8fc355c4aadb7d29c53ca28bc41be3cd6eea765d121e3737c4dc2d0f90a8effa"
     },
+    "macos-design": {
+      "source": "git@github.com:ceorkm/macos-design-skill.git",
+      "sourceType": "git",
+      "computedHash": "c408be5d47d79cb8b1f68d2ec5f3f7a1dc5b8899126c4dc724ac3c4f9a48e535"
+    },
     "minimalist-ui": {
       "source": "Leonxlnx/taste-skill",
       "sourceType": "github",
@@ -88,6 +99,12 @@
       "source": "git@github.com:neo-hack/supermario.git",
       "sourceType": "git",
       "computedHash": "acf5733ac57d245476b4e225a44ff0282cbd42cd9e677bfc4444c475590a9ed8"
+    },
+    "review-animations": {
+      "source": "emilkowalski/skill",
+      "sourceType": "github",
+      "skillPath": "skills/review-animations/SKILL.md",
+      "computedHash": "ca04aaa0a815f05e0910ded8fedbfbdfe0acdec8f52dfbb88277890070d134d4"
     },
     "stitch-design-taste": {
       "source": "Leonxlnx/taste-skill",

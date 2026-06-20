@@ -15,7 +15,7 @@ export function CommandPaletteTrigger() {
         'w-60 h-9 rounded-md border border-[rgba(255,255,255,0.08)] bg-[rgba(255,255,255,0.02)]',
         'flex items-center justify-between px-3 cursor-pointer',
         'hover:bg-[rgba(255,255,255,0.04)] hover:border-[rgba(255,255,255,0.14)]',
-        'transition-all duration-150',
+        'transition-[background-color,border-color,color] duration-150 ease-out',
       )}
     >
       <div className="flex items-center gap-2">
