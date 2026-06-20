@@ -54,7 +54,18 @@ type ComputerInstances = Record<
   InstanceComponent
 >
 
-type ScreenBaseProps = Omit<Parameters<typeof Screen>[0], 'children' | 'id'>
+type ScreenSurfaceProps = Omit<ThreeElements['group'], 'children' | 'id' | 'ref'> & {
+  frame: string
+  panel: string
+  focused?: boolean
+  onFocusMonitor?: (focus: MonitorFocus) => void
+}
+
+type ScreenProps = ScreenSurfaceProps & {
+  id: string
+  children: ReactNode
+  overlay?: ReactNode
+}
 
 const context = createContext<ComputerInstances | null>(null)
 const labelFont = helvetikerBold as unknown as FontData
@@ -333,15 +344,7 @@ function Screen({
   focused,
   onFocusMonitor,
   ...props
-}: ThreeElements['group'] & {
-  id: string
-  frame: string
-  panel: string
-  children: ReactNode
-  overlay?: ReactNode
-  focused?: boolean
-  onFocusMonitor?: (focus: MonitorFocus) => void
-}) {
+}: ScreenProps) {
   const { nodes, materials } = useGLTF(computersGLB) as any
   const groupRef = useRef<THREE.Group>(null)
 
@@ -405,7 +408,7 @@ function ScreenStat({
   accent,
   foreground,
   ...props
-}: ScreenBaseProps & {
+}: ScreenSurfaceProps & {
   id: string
   invert?: boolean
   label: string
@@ -512,7 +515,7 @@ function ScreenGlow({
   invert,
   accent,
   ...props
-}: ScreenBaseProps & {
+}: ScreenSurfaceProps & {
   id: string
   invert?: boolean
   accent?: string
