@@ -1,7 +1,6 @@
 // Timeline view — full-page timeline with metric/project/year filters,
 // contribution heatmap, and expandable event list.
 
-import { ChevronDown } from 'lucide-react'
 import {
   useEffect,
   useMemo,
@@ -11,6 +10,13 @@ import {
 
 import { ContributionGraph } from './contribution-graph'
 import { EventList } from './event-list'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 import {
   type TimelineMetric,
   useTimelineEvents,
@@ -109,7 +115,7 @@ export function TimelineView() {
             { id: 'tokens', label: 'Tokens' },
           ]}
         />
-        <CtrlSelect
+        <TimelineSelect
           label="Project"
           value={project ?? '__all__'}
           onChange={v => setProject(v === '__all__' ? undefined : v)}
@@ -118,7 +124,7 @@ export function TimelineView() {
             ...(projects ?? []).map(p => ({ value: p, label: p })),
           ]}
         />
-        <CtrlSelect
+        <TimelineSelect
           label="Year"
           value={String(year)}
           onChange={v => setYear(Number(v))}
@@ -232,7 +238,7 @@ function Segmented<TValue extends string>({
   )
 }
 
-function CtrlSelect({
+function TimelineSelect({
   label,
   value,
   onChange,
@@ -244,23 +250,31 @@ function CtrlSelect({
   options: { value: string; label: string }[]
 }) {
   return (
-    <label className="relative inline-flex items-center gap-2 rounded-md border border-[var(--border-default)] bg-[rgba(255,255,255,0.02)] px-3 py-[7px] text-[12px] font-[510] text-[var(--text-secondary)] transition-colors hover:border-[var(--border-hover)]">
-      <span className="text-[var(--text-tertiary)]">{label}</span>
-      <span className="text-[var(--text-primary)]">
-        {options.find(o => o.value === value)?.label ?? '—'}
-      </span>
-      <ChevronDown size={12} className="text-[var(--text-tertiary)]" />
-      <select
-        value={value}
-        onChange={e => onChange(e.target.value)}
-        className="absolute inset-0 cursor-pointer opacity-0"
+    <Select value={value} onValueChange={onChange}>
+      <SelectTrigger
+        aria-label={label}
+        size="sm"
+        className="rounded-md border-[var(--border-default)] bg-[rgba(255,255,255,0.02)] px-3 py-[7px] text-[12px] font-[510] text-[var(--text-secondary)] hover:border-[var(--border-hover)] focus-visible:ring-0 data-[state=open]:border-[var(--border-hover)] [&_svg]:size-3"
+      >
+        <span className="text-[var(--text-tertiary)]">{label}</span>
+        <span className="text-[var(--text-primary)]">
+          <SelectValue />
+        </span>
+      </SelectTrigger>
+      <SelectContent
+        align="start"
+        className="border border-[var(--border-default)] bg-[var(--surface-overlay)] text-[var(--text-secondary)] shadow-none ring-0"
       >
         {options.map(o => (
-          <option key={o.value} value={o.value} style={{ background: '#191a1b', color: '#f7f8f8' }}>
+          <SelectItem
+            key={o.value}
+            value={o.value}
+            className="text-[12px] text-[var(--text-secondary)] focus:bg-white/[0.06] focus:text-[var(--text-primary)]"
+          >
             {o.label}
-          </option>
+          </SelectItem>
         ))}
-      </select>
-    </label>
+      </SelectContent>
+    </Select>
   )
 }
