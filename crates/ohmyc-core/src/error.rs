@@ -83,5 +83,4 @@ mod tests {
         let err = ApiError::Conflict("already active".to_string());
         assert_eq!(format!("{err}"), "conflict: already active");
     }
-
 }
