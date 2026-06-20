@@ -75,12 +75,8 @@ describe('motion policy', () => {
     expect(monitor).toContain("transform: 'translate")
   })
 
-  it('keeps NativeButton free of Framer hover and glow motion', () => {
-    const source = readSource('../src/components/uitripled/native-button.tsx')
-
-    expect(source).not.toContain('whileHover')
-    expect(source).not.toContain('whileTap')
-    expect(source).not.toContain('blur-xl')
-    expect(source).toContain('active:scale-[0.97]')
+  it('does not keep the obsolete NativeButton component surface', () => {
+    expect(() => readSource('../src/components/uitripled/native-button.tsx')).toThrow(/ENOENT/)
+    expect(() => readSource('../src/stories/design-system/NativeButton.stories.tsx')).toThrow(/ENOENT/)
   })
 })
