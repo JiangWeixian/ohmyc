@@ -114,19 +114,12 @@ export function TimelineView() {
         <Tabs
           value={metric}
           onValueChange={value => setMetric(value as 'activity' | 'tokens')}
-          className="flex-row gap-0"
         >
-          <TabsList className="h-auto gap-0.5 rounded-md border border-[var(--border-default)] bg-[rgba(255,255,255,0.02)] p-[3px]">
-            <TabsTrigger
-              value="activity"
-              className="h-auto flex-none rounded px-3 py-[6px] text-[12px] font-[510] text-[var(--text-tertiary)] transition-colors hover:text-[var(--text-secondary)] data-[state=active]:border-transparent data-[state=active]:bg-[rgba(255,255,255,0.08)] data-[state=active]:text-[var(--text-primary)] data-[state=active]:shadow-none"
-            >
+          <TabsList>
+            <TabsTrigger value="activity">
               Activity
             </TabsTrigger>
-            <TabsTrigger
-              value="tokens"
-              className="h-auto flex-none rounded px-3 py-[6px] text-[12px] font-[510] text-[var(--text-tertiary)] transition-colors hover:text-[var(--text-secondary)] data-[state=active]:border-transparent data-[state=active]:bg-[rgba(255,255,255,0.08)] data-[state=active]:text-[var(--text-primary)] data-[state=active]:shadow-none"
-            >
+            <TabsTrigger value="tokens">
               Tokens
             </TabsTrigger>
           </TabsList>
@@ -236,7 +229,6 @@ function TimelineSelect({
     <Select value={value} onValueChange={onChange}>
       <SelectTrigger
         aria-label={label}
-        size="sm"
         className="rounded-md border-[var(--border-default)] bg-[rgba(255,255,255,0.02)] px-3 py-[7px] text-[12px] font-[510] text-[var(--text-secondary)] hover:border-[var(--border-hover)] focus-visible:ring-0 data-[state=open]:border-[var(--border-hover)] [&_svg]:size-3"
       >
         <span className="text-[var(--text-tertiary)]">{label}</span>

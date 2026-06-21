@@ -134,4 +134,25 @@ describe('TimelineView', () => {
       expect(capturedHeatmapArgs.some(args => (args as { from?: number }).from === Date.UTC(currentYear - 1, 0, 1))).toBe(true)
     })
   })
+
+  it('uses shared control sizing for the timeline filter row', async () => {
+    installTimelineHandlers()
+
+    renderWithProviders(<TimelineView />)
+    await waitFor(() => {
+      expect(screen.getByText('Timeline work')).toBeInTheDocument()
+    })
+
+    const tabList = screen.getByText('Activity').closest('[role="tablist"]')
+    expect(tabList).not.toBeNull()
+    expect(tabList).not.toHaveClass('h-auto')
+
+    const tokensTab = screen.getByText('Tokens').closest('[role="tab"]')
+    expect(tokensTab).not.toBeNull()
+    expect(tokensTab).not.toHaveClass('h-auto')
+    expect(tokensTab).not.toHaveClass('py-[6px]')
+
+    expect(screen.getByLabelText('Project')).toHaveAttribute('data-size', 'default')
+    expect(screen.getByLabelText('Year')).toHaveAttribute('data-size', 'default')
+  })
 })
