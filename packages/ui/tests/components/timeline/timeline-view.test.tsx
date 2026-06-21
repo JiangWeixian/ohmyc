@@ -104,9 +104,16 @@ describe('TimelineView', () => {
       expect(screen.getByText('Timeline work')).toBeInTheDocument()
     })
 
-    const tokensButton = screen.getByText('Tokens').closest('button')
-    expect(tokensButton).toBeDefined()
-    fireEvent.click(tokensButton!)
+    const activityTab = screen.getByText('Activity').closest('[role="tab"]')
+    expect(activityTab).not.toBeNull()
+    expect(activityTab).toHaveAttribute('aria-selected', 'true')
+
+    const tokensTab = screen.getByText('Tokens').closest('[role="tab"]')
+    expect(tokensTab).not.toBeNull()
+    fireEvent.mouseDown(tokensTab!, { button: 0, ctrlKey: false })
+    await waitFor(() => {
+      expect(tokensTab).toHaveAttribute('aria-selected', 'true')
+    })
     await waitFor(() => {
       expect(capturedHeatmapArgs.some(args => (args as { metric?: string }).metric === 'tokens')).toBe(true)
     })
