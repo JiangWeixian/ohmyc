@@ -142,8 +142,8 @@ On dark surfaces, elevation is communicated through background luminance steps, 
 
 ### Navigation Island
 - Default shell: floating, collapsible island. No primary route uses a full-height docked sidebar or standard top header.
-- Position: `top: 18px`, `left: 18px` on desktop. On narrow screens, keep the collapsed island at `top: 14px`, `left: 14px`.
-- Expanded size: `216-224px` wide and `calc(100dvh - 36px)` tall on desktop, leaving the same 18px top/bottom/left breathing room. Collapsed size: a single `52-56px` square icon badge, not a mini navigation rail. Use a `lucide-react` placeholder icon until the brand icon is ready.
+- Position: `top: 48px`, `left: 18px` on desktop so the island clears native macOS traffic-light controls. On narrow screens, keep the collapsed island at `top: 14px`, `left: 14px` unless the native window chrome is present at that size.
+- Expanded size: `216-224px` wide and `calc(100dvh - 66px)` tall on desktop, preserving roughly 18px bottom breathing room after the traffic-light clearance. Collapsed size: a single `44-48px` square icon badge, not a mini navigation rail. The collapsed badge uses a quiet 16px temporary icon and aligns visually with the route content rhythm rather than the traffic-light row.
 - Background: `rgba(15,16,17,0.72)` with backdrop blur around `20-24px`.
 - Border: low-opacity edge definition, preferably a `0.5px` ring/shadow plus at most `1px rgba(255,255,255,0.05)` border. Use macOS-style vibrancy with `saturate(180%) blur(20-24px)`.
 - Border-radius: `14px` outer, `8px` inner controls.
@@ -403,6 +403,7 @@ There is no standard header chrome. Breadcrumbs, source switchers, search trigge
 | 2026-06-17 | Use Framer Motion for DOM chrome, not WebGL scene motion | The AI monitor needs motion to feel alive, but the boundary matters: Framer handles island/dialog/route/count-up UI, while R3F/Drei handles Lanyard, particles, 3D text, and scene physics |
 | 2026-06-19 | Tighten UI motion policy around high-frequency surfaces | Command palette and repeated library interactions should feel immediate; reusable primitives specify exact animated properties, and reduced motion removes transform/scroll/count-up movement |
 | 2026-06-20 | Monitor stats use sessions, tokens, and turns | Turns are first-class coding activity signal from Timeline event data. They are more directly useful on the identity surface than last-sync metadata, which may be absent or stale |
+| 2026-06-20 | Move navigation island below native macOS traffic lights | The Tauri window now uses native traffic-light controls. A `top: 18px` island collides with that chrome, so desktop expanded/collapsed island states start around 48px and keep content-aligned rhythm |
 
 ## Do's and Don'ts
 
