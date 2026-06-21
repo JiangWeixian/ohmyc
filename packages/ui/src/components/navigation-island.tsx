@@ -107,7 +107,7 @@ export function NavigationIsland() {
               layout={shellLayout}
               layoutId={shellLayoutId}
               data-motion-mode={motionMode}
-              className="fixed left-[18px] top-[18px] z-40 max-sm:left-[14px] max-sm:top-[14px]"
+              className="fixed left-[18px] top-[48px] z-40 max-sm:left-[14px] max-sm:top-[14px]"
               initial={reduceMotion ? false : { opacity: 0, scale: 0.96, filter: 'blur(4px)' }}
               animate={{ opacity: 1, scale: 1, filter: 'blur(0px)' }}
               exit={reduceMotion ? { opacity: 0 } : { opacity: 0, scale: 0.98, filter: 'blur(3px)' }}
@@ -118,20 +118,20 @@ export function NavigationIsland() {
                 ref={expandButtonRef}
                 type="button"
                 variant="ghost"
-                size="icon-lg"
+                size="icon"
                 aria-label="Expand navigation"
                 aria-controls="primary-navigation-island"
                 aria-expanded={false}
                 onClick={() => updateCollapsed(false)}
                 className={cn(
-                  'size-14 rounded-[14px] border border-[rgba(255,255,255,0.05)] bg-[rgba(15,16,17,0.72)]',
+                  'size-12 rounded-[14px] border border-[rgba(255,255,255,0.05)] bg-[rgba(15,16,17,0.72)]',
                   'text-[var(--text-primary)] [box-shadow:0_0_0_0.5px_rgba(255,255,255,0.10),0_8px_30px_rgba(0,0,0,0.38),0_24px_60px_rgba(0,0,0,0.22)]',
                   '[backdrop-filter:saturate(180%)_blur(24px)] [-webkit-backdrop-filter:saturate(180%)_blur(24px)]',
                   'hover:bg-[rgba(255,255,255,0.04)]',
                   'motion-safe:transition-transform motion-safe:duration-150 motion-safe:ease-out [@media(hover:hover)_and_(pointer:fine)]:hover:scale-[1.02]',
                 )}
               >
-                <Code2 size={20} aria-hidden="true" />
+                <Code2 size={16} aria-hidden="true" />
               </Button>
             </motion.div>
           )
@@ -144,7 +144,7 @@ export function NavigationIsland() {
               id="primary-navigation-island"
               aria-label="Primary"
               className={cn(
-                'fixed left-[18px] top-[18px] z-40 flex h-[calc(100dvh-36px)] w-[220px] flex-col overflow-hidden rounded-[14px]',
+                'fixed left-[18px] top-[48px] z-40 flex h-[calc(100dvh-66px)] w-[220px] flex-col overflow-hidden rounded-[14px]',
                 'border border-[rgba(255,255,255,0.05)] bg-[rgba(15,16,17,0.72)]',
                 'p-3 [box-shadow:0_0_0_0.5px_rgba(255,255,255,0.10),0_8px_30px_rgba(0,0,0,0.38),0_24px_60px_rgba(0,0,0,0.22)]',
                 '[backdrop-filter:saturate(180%)_blur(24px)] [-webkit-backdrop-filter:saturate(180%)_blur(24px)]',
