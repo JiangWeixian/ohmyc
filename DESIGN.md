@@ -217,7 +217,7 @@ Timeline entry sits in the navigation island under the `Signal` group. Timeline 
 
 - **Heatmap (contribution graph):**
   - Grid: 53 weeks × 7 days, scoped to the selected calendar year (Jan 1 → Dec 31). Future cells render as bucket 0.
-  - Cell size: 10×10, gap: 4. `border-radius: 2px`.
+  - Cell size is responsive to the card's available width: distribute 53 week columns across the content area after the day-label column, clamped to compact readable squares. Default desktop target is roughly 10-18px cells with a 3-4px gap; cells remain square with `border-radius: 2px`.
   - Day-of-week labels (M / W / F) in `text-quaternary` Berkeley Mono `9px` — present, not loud.
   - Month strip on top in `text-quaternary` Berkeley Mono `10px`, `letter-spacing 0.04em`, uppercase.
   - 5-bucket grayscale luminance, scaled relative to selected metric's distribution:
@@ -232,10 +232,11 @@ Timeline entry sits in the navigation island under the `Signal` group. Timeline 
   - Footer below grid: window caption (`Jan 1 → Dec 31, YYYY`) on the left, `Less … More` legend with 5-cell gradient on the right.
   - Click cell → scrolls event list to that day's heading.
 
-- **Metric toggle (segmented control):**
+- **Metric toggle (Radix Tabs):**
   - Two options: `Activity` (default, composite of `sessions + turns`) and `Tokens`.
+  - Implement with the shared shadcn/Radix Tabs primitive so the control exposes `tablist`/`tab` semantics and `aria-selected` state.
   - Background `rgba(255,255,255,0.02)`, `border-default`, `rounded-md`, `padding 3px`.
-  - Active button: `rgba(255,255,255,0.08)` bg, `text-primary`, `rounded-sm` (4px), `padding 6px 12px`, `12px / 510`.
+  - Active tab: `rgba(255,255,255,0.08)` bg, `text-primary`, `rounded-sm` (4px), `padding 6px 12px`, `12px / 510`.
   - Inactive: transparent bg, `text-tertiary`.
 
 - **Year picker (dropdown):**
@@ -404,6 +405,8 @@ There is no standard header chrome. Breadcrumbs, source switchers, search trigge
 | 2026-06-19 | Tighten UI motion policy around high-frequency surfaces | Command palette and repeated library interactions should feel immediate; reusable primitives specify exact animated properties, and reduced motion removes transform/scroll/count-up movement |
 | 2026-06-20 | Monitor stats use sessions, tokens, and turns | Turns are first-class coding activity signal from Timeline event data. They are more directly useful on the identity surface than last-sync metadata, which may be absent or stale |
 | 2026-06-20 | Move navigation island below native macOS traffic lights | The Tauri window now uses native traffic-light controls. A `top: 18px` island collides with that chrome, so desktop expanded/collapsed island states start around 48px and keep content-aligned rhythm |
+| 2026-06-20 | Timeline metric toggle uses Radix Tabs semantics | The visual treatment stays compact, but Activity/Tokens now exposes native `tablist`/`tab` semantics and selected state through the shared shadcn/Radix primitive |
+| 2026-06-20 | Timeline heatmap fills widened content | The 53-week graph should distribute columns across its card instead of keeping fixed 10px cells centered in a widened layout |
 
 ## Do's and Don'ts
 
