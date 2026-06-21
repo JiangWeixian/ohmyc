@@ -145,10 +145,15 @@ describe('TimelineView', () => {
 
     const tabList = screen.getByText('Activity').closest('[role="tablist"]')
     expect(tabList).not.toBeNull()
+    expect(tabList).toHaveClass('border-[var(--border-default)]')
+    expect(tabList).toHaveClass('bg-[rgba(255,255,255,0.02)]')
     expect(tabList).not.toHaveClass('h-auto')
 
     const tokensTab = screen.getByText('Tokens').closest('[role="tab"]')
     expect(tokensTab).not.toBeNull()
+    expect(tokensTab).toHaveClass('text-[var(--text-tertiary)]')
+    expect(tokensTab).toHaveClass('data-[state=active]:bg-[rgba(255,255,255,0.08)]')
+    expect(tokensTab).toHaveClass('data-[state=active]:text-[var(--text-primary)]')
     expect(tokensTab).not.toHaveClass('h-auto')
     expect(tokensTab).not.toHaveClass('py-[6px]')
 

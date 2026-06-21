@@ -235,7 +235,7 @@ Timeline entry sits in the navigation island under the `Signal` group. Timeline 
 - **Metric toggle (Radix Tabs):**
   - Two options: `Activity` (default, composite of `sessions + turns`) and `Tokens`.
   - Implement with the shared shadcn/Radix Tabs primitive so the control exposes `tablist`/`tab` semantics and `aria-selected` state.
-  - Use the shared Tabs default chrome directly for list/trigger sizing. Do not add Timeline-local `h-auto`, `py-*`, or active-state overrides that make this control drift from the design-system primitive.
+  - Use the shared Tabs default sizing directly, but map the Timeline instance to OhMyC surface colors: `border-default`, `rgba(255,255,255,0.02)` list background, `rgba(255,255,255,0.08)` active tab background, `text-primary` active text. Do not add Timeline-local `h-auto` or `py-*` overrides.
   - Align height with the Project and Year Select triggers in the same row by using the shared default Select size, not `size="sm"`.
 
 - **Year picker (dropdown):**

@@ -115,11 +115,17 @@ export function TimelineView() {
           value={metric}
           onValueChange={value => setMetric(value as 'activity' | 'tokens')}
         >
-          <TabsList>
-            <TabsTrigger value="activity">
+          <TabsList className="border border-[var(--border-default)] bg-[rgba(255,255,255,0.02)] text-[var(--text-tertiary)]">
+            <TabsTrigger
+              value="activity"
+              className="text-[var(--text-tertiary)] hover:text-[var(--text-secondary)] data-[state=active]:border-transparent data-[state=active]:bg-[rgba(255,255,255,0.08)] data-[state=active]:text-[var(--text-primary)] dark:data-[state=active]:border-transparent dark:data-[state=active]:bg-[rgba(255,255,255,0.08)] dark:data-[state=active]:text-[var(--text-primary)]"
+            >
               Activity
             </TabsTrigger>
-            <TabsTrigger value="tokens">
+            <TabsTrigger
+              value="tokens"
+              className="text-[var(--text-tertiary)] hover:text-[var(--text-secondary)] data-[state=active]:border-transparent data-[state=active]:bg-[rgba(255,255,255,0.08)] data-[state=active]:text-[var(--text-primary)] dark:data-[state=active]:border-transparent dark:data-[state=active]:bg-[rgba(255,255,255,0.08)] dark:data-[state=active]:text-[var(--text-primary)]"
+            >
               Tokens
             </TabsTrigger>
           </TabsList>
