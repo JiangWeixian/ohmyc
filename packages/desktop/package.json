@@ -5,6 +5,7 @@
   "private": true,
   "scripts": {
     "dev": "vite",
+    "dev:tauri": "node scripts/dev.mjs",
     "build": "tsc && vite build",
     "preview": "vite preview",
     "tauri": "tauri",
