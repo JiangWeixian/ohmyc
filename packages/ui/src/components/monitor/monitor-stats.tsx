@@ -19,7 +19,7 @@ import {
 export interface MonitorStats {
   sessions: number
   tokens: number
-  lastSyncLabel: string
+  turns: number
   scopeLabel: string
 }
 
@@ -34,8 +34,8 @@ export function useMonitorStats(): {
   const { data: events, isLoading: eventsLoading, isError: eventsError } = useTimelineEvents({})
 
   const stats = useMemo(
-    () => deriveMonitorStats(status, events),
-    [status, events],
+    () => deriveMonitorStats(events),
+    [events],
   )
   const isLoading = statusLoading || eventsLoading
   const isError = statusError || eventsError
@@ -53,41 +53,18 @@ export function useMonitorStats(): {
 }
 
 // eslint-disable-next-line react-refresh/only-export-components
-export function deriveMonitorStats(status?: { lastSyncAt: number | null }, events?: EventsResult): MonitorStats {
+export function deriveMonitorStats(events?: EventsResult): MonitorStats {
   const days = events?.days ?? []
   const sessions = days.reduce((sum, day) => sum + day.session_count, 0)
   const tokens = days.reduce((sum, day) => sum + day.token_count, 0)
+  const turns = days.reduce((sum, day) => sum + day.turn_count, 0)
 
   return {
     sessions,
     tokens,
-    lastSyncLabel: formatLastSync(status?.lastSyncAt ?? null),
+    turns,
     scopeLabel: 'latest timeline window',
   }
-}
-
-// eslint-disable-next-line react-refresh/only-export-components
-export function formatLastSync(lastSyncAt: number | null): string {
-  if (!lastSyncAt) {
-    return 'never'
-  }
-
-  const diffMs = Math.max(0, Date.now() - lastSyncAt)
-  const minutes = Math.floor(diffMs / 60_000)
-  if (minutes < 1) {
-    return 'now'
-  }
-  if (minutes < 60) {
-    return `${minutes}m`
-  }
-
-  const hours = Math.floor(minutes / 60)
-  if (hours < 24) {
-    return `${hours}h`
-  }
-
-  const days = Math.floor(hours / 24)
-  return `${days}d`
 }
 
 // eslint-disable-next-line react-refresh/only-export-components

@@ -20,7 +20,11 @@ import {
 } from 'react'
 import * as THREE from 'three'
 
-import { Computers, Instances } from './computers-scene'
+import {
+  Computers,
+  Instances,
+  type MonitorSceneStats,
+} from './computers-scene'
 import { LanyardScene } from './lanyard'
 
 interface MonitorFocus {
@@ -29,7 +33,7 @@ interface MonitorFocus {
   normal: [number, number, number]
 }
 
-export function ComputerBackdrop() {
+export function ComputerBackdrop({ stats }: { stats: MonitorSceneStats }) {
   const [focusedMonitor, setFocusedMonitor] = useState<MonitorFocus | null>(null)
   const [isMobile, setIsMobile] = useState(() => globalThis.window !== undefined && window.innerWidth < 768)
 
@@ -65,6 +69,7 @@ export function ComputerBackdrop() {
             <Computers
               focusedMonitorId={focusedMonitor?.id ?? null}
               onFocusMonitor={setFocusedMonitor}
+              stats={stats}
               scale={0.5}
             />
           </Instances>

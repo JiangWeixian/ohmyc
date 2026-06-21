@@ -277,10 +277,10 @@ Monitor entry sits in the navigation island under the `Signal` group above Timel
   - Do not render any standard app header above the WebGL stage.
   - The navigation island floats over the stage and may collapse to a single icon badge to give the WebGL scene more room.
   - Left/center-left: React Bits Lanyard/WebGL identity object as the page's primary subject, large enough to define the route.
-  - Right: display-scale animated stats stack, not cards. Use big numeric type with small labels (`842 / sessions`, `18.4M / tokens`, `3m / last sync`).
+  - Right: display-scale animated stats stack, not cards. Use big numeric type with small labels (`842 / sessions`, `18.4M / tokens`, `2.3k / turns`).
   - Background: orbital traces and faint activity signal support the Lanyard/stats relationship, but should not compete with the numeric stack.
   - Surrounding field: AI-native telemetry should read as signal, not dashboard. Use sparse nodes, orbital traces, terminal fragments, model/session pulses, faint activity particles, and animated numeric readouts.
-- **Stats:** Pull from Timeline data first, but expose only 2-3 numbers on this page. The rest belongs on Timeline. Preferred treatment is large typographic stats (`842 sessions`, `18.4M tokens`, `sync 3m`) with animated number transitions. Project pulse and activity density should be visualized as ambient signal fields, not boxed widgets.
+- **Stats:** Pull from Timeline data first, but expose only 2-3 numbers on this page. The rest belongs on Timeline. Preferred treatment is large typographic stats (`842 sessions`, `18.4M tokens`, `2.3k turns`) with animated number transitions. Project pulse and activity density should be visualized as ambient signal fields, not boxed widgets.
 - **Visual rules:** The page theme is the Lanyard stage. Explorer chrome stays monochrome; the central WebGL stage may use a very deep black-violet/graphite tone when it matches the React Bits Lanyard component, but avoid bright purple/blue AI cliches, orbs, bokeh blobs, and marketing hero copy.
 - **Implementation posture:** HTML mockups are layout references only. The real visual decision should happen in a small R3F/Drei spike because DOM mockups cannot show 3D text depth, Rapier dragging, Billboard behavior, bloom/depth effects, or Lanyard/stats occlusion.
 - **3D scene split:** Put Lanyard, display-scale stats, animated numeric transitions, orbital traces, particles, and signal text inside the React Three Fiber canvas when the spike proves this reads better. Use DOM only for Explorer chrome, command palette, route controls, accessible fallback labels, and stats count-up if Canvas typography creates readability or implementation friction.
@@ -402,6 +402,7 @@ There is no standard header chrome. Breadcrumbs, source switchers, search trigge
 | 2026-06-17 | Collapsed navigation island is a single icon badge | A collapsed mini rail still feels like product chrome. One lucide-react placeholder icon keeps the page quiet now and can be swapped for the brand icon later |
 | 2026-06-17 | Use Framer Motion for DOM chrome, not WebGL scene motion | The AI monitor needs motion to feel alive, but the boundary matters: Framer handles island/dialog/route/count-up UI, while R3F/Drei handles Lanyard, particles, 3D text, and scene physics |
 | 2026-06-19 | Tighten UI motion policy around high-frequency surfaces | Command palette and repeated library interactions should feel immediate; reusable primitives specify exact animated properties, and reduced motion removes transform/scroll/count-up movement |
+| 2026-06-20 | Monitor stats use sessions, tokens, and turns | Turns are first-class coding activity signal from Timeline event data. They are more directly useful on the identity surface than last-sync metadata, which may be absent or stale |
 
 ## Do's and Don'ts
 

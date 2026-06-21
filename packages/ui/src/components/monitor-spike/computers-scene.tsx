@@ -90,6 +90,12 @@ interface MonitorFocusProps {
   onFocusMonitor?: (focus: MonitorFocus) => void
 }
 
+export interface MonitorSceneStats {
+  sessions: string
+  tokens: string
+  turns: string
+}
+
 export function Instances({ children, ...props }: Omit<ThreeElements['group'], 'children' | 'ref'> & { children: ReactNode }) {
   const { nodes } = useGLTF(computersGLB) as any
   const instances = useMemo(
@@ -123,8 +129,9 @@ export function Instances({ children, ...props }: Omit<ThreeElements['group'], '
 export function Computers({
   focusedMonitorId = null,
   onFocusMonitor,
+  stats,
   ...props
-}: MonitorFocusProps & ThreeElements['group']) {
+}: MonitorFocusProps & ThreeElements['group'] & { stats: MonitorSceneStats }) {
   const { nodes: n, materials: m } = useGLTF(computersGLB) as any
   const instances = useContext(context)
   if (!instances) {
@@ -289,7 +296,7 @@ export function Computers({
         frame="Object_224"
         panel="Object_225"
         label="sessions"
-        value="842"
+        value={stats.sessions}
         y={1.2}
         position={[-3.9, 4.29, -2.64]}
         rotation={[0, 0.54, 0]}
@@ -301,7 +308,7 @@ export function Computers({
         frame="Object_227"
         panel="Object_228"
         label="tokens"
-        value="18.4M"
+        value={stats.tokens}
         y={1.2}
         position={[0.96, 4.28, -4.2]}
         rotation={[0, -0.65, 0]}
@@ -316,14 +323,14 @@ export function Computers({
         rotation={[0, -Math.PI / 3, 0]}
       />
       <ScreenStat
-        id="sync"
-        focused={focusedMonitorId === 'sync'}
+        id="turns"
+        focused={focusedMonitorId === 'turns'}
         onFocusMonitor={onFocusMonitor}
         invert
         frame="Object_215"
         panel="Object_216"
-        label="last sync"
-        value="3m"
+        label="turns"
+        value={stats.turns}
         y={1.2}
         position={[1.84, 0.38, -1.77]}
         rotation={[0, -Math.PI / 9, 0]}
