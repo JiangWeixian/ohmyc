@@ -24,7 +24,7 @@ interface SpikeStat {
 const stats: SpikeStat[] = [
   { label: 'sessions', value: 842, suffix: '' },
   { label: 'tokens', value: 18.4, suffix: 'M', precision: 1 },
-  { label: 'last sync', value: 3, suffix: 'm' },
+  { label: 'turns', value: 2300, suffix: '' },
 ]
 
 export function LanyardStatsSpikeView() {
@@ -104,7 +104,7 @@ function StatsTextGroup({ isNarrow }: { isNarrow: boolean }) {
 
 function CanvasStatLine({ stat, index, y }: { stat: SpikeStat; index: number; y: number }) {
   const value = useAnimatedStat(stat, index)
-  const fontSize = stat.label === 'last sync' ? 0.74 : 1
+  const fontSize = stat.label.length > 7 ? 0.74 : 1
 
   return (
     <group position={[0, y, 0]}>

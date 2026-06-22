@@ -1,7 +1,13 @@
 // GitHub-style contribution heatmap for timeline activity.
 // Renders a 53-week x 7-day grid with heat-intensity coloring and hover tooltips.
 
-import { useMemo, useState } from 'react'
+import {
+  type CSSProperties,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react'
 
 import type { HeatmapPoint, TimelineMetric } from '@/hooks/use-timeline'
 
@@ -23,6 +29,10 @@ const MONTH_NAMES = [
 const HEAT_CLASSES = ['heat-l0', 'heat-l1', 'heat-l2', 'heat-l3', 'heat-l4'] as const
 
 const DOW_LABELS = ['', 'M', '', 'W', '', 'F', ''] as const
+const WEEK_COUNT = 53
+const DAY_LABEL_WIDTH = 18
+const LABEL_GAP = 4
+const DEFAULT_GRID_WIDTH = 738
 
 // Non-linear bucket thresholds approximate perceptual uniformity — small
 // values spread across more buckets so sparse days remain distinguishable.
@@ -55,19 +65,45 @@ export interface ContributionGraphProps {
   onSelectDay?: (date: string) => void
 }
 
+export function calculateContributionGraphLayout(containerWidth: number) {
+  const graphWidth = Math.max(DEFAULT_GRID_WIDTH, containerWidth - DAY_LABEL_WIDTH - LABEL_GAP)
+  const trackWidth = graphWidth / WEEK_COUNT
+  const cellSize = Math.max(8, Math.min(18, Math.floor(trackWidth * 0.72)))
+  const rowGap = cellSize >= 10 ? 4 : 3
+
+  return { cellSize, rowGap }
+}
+
 /**
  * GitHub-style contribution graph. Cells are colored by heat intensity
  * relative to the maximum value in the dataset. Clicking a cell calls
  * onSelectDay so the parent can scroll the event list to that date.
  */
 export function ContributionGraph({ year, metric, data, onSelectDay }: ContributionGraphProps) {
-  const CELL_SIZE = 10
-  const CELL_GAP = 4
+  const cardRef = useRef<HTMLDivElement | null>(null)
+  const [containerWidth, setContainerWidth] = useState(0)
   const [hover, setHover] = useState<{
     x: number
     y: number
     point: HeatmapPoint
   } | null>(null)
+  const { cellSize, rowGap } = calculateContributionGraphLayout(containerWidth)
+
+  useLayoutEffect(() => {
+    const node = cardRef.current
+    if (!node) {
+      return
+    }
+
+    const updateWidth = () => {
+      setContainerWidth(node.getBoundingClientRect().width)
+    }
+    updateWidth()
+
+    const observer = new ResizeObserver(updateWidth)
+    observer.observe(node)
+    return () => observer.disconnect()
+  }, [])
 
   const valueByDate = useMemo(() => {
     const m = new Map<string, number>()
@@ -97,7 +133,7 @@ export function ContributionGraph({ year, metric, data, onSelectDay }: Contribut
     const firstCell = new Date(yearStart)
     firstCell.setUTCDate(yearStart.getUTCDate() - startDow)
 
-    const totalDays = 53 * 7
+    const totalDays = WEEK_COUNT * 7
     const cellList: { date: string; value: number; inYear: boolean }[] = []
     for (let i = 0; i < totalDays; i++) {
       const d = new Date(firstCell)
@@ -117,7 +153,7 @@ export function ContributionGraph({ year, metric, data, onSelectDay }: Contribut
     // Compute month spans for the top strip.
     const spans: { label: string; weeks: number }[] = []
     let lastMonth = -1
-    for (let w = 0; w < 53; w++) {
+    for (let w = 0; w < WEEK_COUNT; w++) {
       const d = new Date(firstCell)
       d.setUTCDate(firstCell.getUTCDate() + w * 7)
       const m = d.getUTCMonth()
@@ -141,18 +177,28 @@ export function ContributionGraph({ year, metric, data, onSelectDay }: Contribut
   }, [year, valueByDate])
 
   return (
-    <div className="rounded-[10px] border border-[var(--border-default)] bg-[rgba(255,255,255,0.02)] px-[22px] py-[18px]">
+    <div
+      ref={cardRef}
+      data-testid="timeline-heatmap-card"
+      className="rounded-[10px] border border-[var(--border-default)] bg-[rgba(255,255,255,0.02)] px-[22px] py-[18px]"
+      style={{
+        '--heatmap-cell': `${cellSize}px`,
+        '--heatmap-row-gap': `${rowGap}px`,
+      } as CSSProperties}
+    >
       <div
         className="relative"
         style={{
           display: 'grid',
-          gridTemplateColumns: '18px 1fr',
+          gridTemplateColumns: `${DAY_LABEL_WIDTH}px minmax(0, 1fr)`,
           gridTemplateRows: '16px 1fr',
-          gap: CELL_GAP,
+          columnGap: LABEL_GAP,
+          rowGap,
         }}
       >
         {/* Months strip */}
         <div
+          data-testid="timeline-heatmap-months"
           style={{
             gridColumn: 2,
             display: 'flex',
@@ -165,7 +211,7 @@ export function ContributionGraph({ year, metric, data, onSelectDay }: Contribut
           }}
         >
           {monthSpans.map((s, i) => (
-            <span key={i} style={{ flex: `0 0 ${s.weeks * 14}px` }}>{s.label}</span>
+            <span key={i} style={{ flex: `${s.weeks} ${s.weeks} 0`, minWidth: 0 }}>{s.label}</span>
           ))}
         </div>
 
@@ -175,8 +221,8 @@ export function ContributionGraph({ year, metric, data, onSelectDay }: Contribut
             gridColumn: 1,
             gridRow: 2,
             display: 'grid',
-            gridTemplateRows: `repeat(7, ${CELL_SIZE}px)`,
-            gap: CELL_GAP,
+            gridTemplateRows: 'repeat(7, var(--heatmap-cell))',
+            gap: 'var(--heatmap-row-gap)',
             fontSize: 9,
             fontWeight: 510,
             color: 'var(--text-quaternary)',
@@ -186,7 +232,7 @@ export function ContributionGraph({ year, metric, data, onSelectDay }: Contribut
           }}
         >
           {DOW_LABELS.map((label, i) => (
-            <span key={i} style={{ lineHeight: `${CELL_SIZE}px`, height: CELL_SIZE, visibility: label ? 'visible' : 'hidden' }}>
+            <span key={i} style={{ lineHeight: 'var(--heatmap-cell)', height: 'var(--heatmap-cell)', visibility: label ? 'visible' : 'hidden' }}>
               {label}
             </span>
           ))}
@@ -194,14 +240,16 @@ export function ContributionGraph({ year, metric, data, onSelectDay }: Contribut
 
         {/* Cells grid */}
         <div
+          data-testid="timeline-heatmap-grid"
           style={{
             gridColumn: 2,
             gridRow: 2,
             display: 'grid',
-            gridTemplateColumns: `repeat(53, ${CELL_SIZE}px)`,
-            gridTemplateRows: `repeat(7, ${CELL_SIZE}px)`,
+            gridTemplateColumns: `repeat(${WEEK_COUNT}, minmax(0, 1fr))`,
+            gridTemplateRows: 'repeat(7, var(--heatmap-cell))',
             gridAutoFlow: 'column',
-            gap: CELL_GAP,
+            rowGap: 'var(--heatmap-row-gap)',
+            justifyItems: 'center',
           }}
         >
           {cells.map((c, i) => {
@@ -231,8 +279,8 @@ export function ContributionGraph({ year, metric, data, onSelectDay }: Contribut
                 onMouseLeave={() => setHover(null)}
                 className={`heat-cell ${cls}`}
                 style={{
-                  width: CELL_SIZE,
-                  height: CELL_SIZE,
+                  width: 'var(--heatmap-cell)',
+                  height: 'var(--heatmap-cell)',
                   borderRadius: 2,
                   cursor: c.inYear && c.value > 0 ? 'pointer' : 'default',
                 }}
@@ -283,7 +331,7 @@ export function ContributionGraph({ year, metric, data, onSelectDay }: Contribut
           Less
           <span className="inline-flex gap-[3px]">
             {(['heat-l0', 'heat-l1', 'heat-l2', 'heat-l3', 'heat-l4'] as const).map(k => (
-              <span key={k} className={`heat-cell ${k}`} style={{ width: 10, height: 10, borderRadius: 2 }} />
+              <span key={k} className={`heat-cell ${k}`} style={{ width: 'var(--heatmap-cell)', height: 'var(--heatmap-cell)', borderRadius: 2 }} />
             ))}
           </span>
           More

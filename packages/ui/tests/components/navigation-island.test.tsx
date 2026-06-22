@@ -70,6 +70,31 @@ describe('NavigationIsland', () => {
     expect(screen.getByRole('button', { name: 'Collapse navigation' })).toHaveFocus()
   })
 
+  it('clears native macOS traffic lights in expanded and collapsed desktop states', async () => {
+    renderWithProviders(
+      <Routes>
+        <Route path="*" element={<Harness />} />
+      </Routes>,
+      { route: '/explore/timeline' },
+    )
+
+    const expandedIsland = screen.getByRole('navigation', { name: 'Primary' })
+    expect(expandedIsland).toHaveClass('top-[48px]')
+    expect(expandedIsland).toHaveClass('h-[calc(100dvh-66px)]')
+
+    fireEvent.click(screen.getByRole('button', { name: 'Collapse navigation' }))
+
+    let expandButton: HTMLButtonElement | null = null
+    await waitFor(() => {
+      expandButton = screen.getByRole('button', { name: 'Expand navigation' })
+      expect(expandButton).toHaveClass('size-12')
+    })
+
+    expect(expandButton?.closest('div')).toHaveClass('top-[48px]')
+    expect(expandButton?.querySelector('svg')).toHaveAttribute('width', '16')
+    expect(expandButton?.querySelector('svg')).toHaveAttribute('height', '16')
+  })
+
   it('collapses after route navigation on narrow screens', async () => {
     Object.defineProperty(globalThis, 'matchMedia', {
       configurable: true,

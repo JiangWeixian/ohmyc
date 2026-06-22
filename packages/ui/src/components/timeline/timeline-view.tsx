@@ -18,6 +18,11 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import {
+  Tabs,
+  TabsList,
+  TabsTrigger,
+} from '@/components/ui/tabs'
+import {
   type TimelineMetric,
   useTimelineEvents,
   useTimelineHeatmap,
@@ -25,7 +30,6 @@ import {
   useTimelineStatus,
   useTimelineYears,
 } from '@/hooks/use-timeline'
-import { cn } from '@/lib/utils'
 
 /**
  * Top-level timeline page. Owns filter state (metric, project, year),
@@ -107,14 +111,25 @@ export function TimelineView() {
 
       {/* Controls bar */}
       <div className="mb-7 flex items-center gap-2.5">
-        <Segmented
+        <Tabs
           value={metric}
-          onChange={setMetric}
-          options={[
-            { id: 'activity', label: 'Activity' },
-            { id: 'tokens', label: 'Tokens' },
-          ]}
-        />
+          onValueChange={value => setMetric(value as 'activity' | 'tokens')}
+        >
+          <TabsList className="border border-[var(--border-default)] bg-[rgba(255,255,255,0.02)] text-[var(--text-tertiary)]">
+            <TabsTrigger
+              value="activity"
+              className="text-[var(--text-tertiary)] hover:text-[var(--text-secondary)] data-[state=active]:border-transparent data-[state=active]:bg-[rgba(255,255,255,0.08)] data-[state=active]:text-[var(--text-primary)] dark:data-[state=active]:border-transparent dark:data-[state=active]:bg-[rgba(255,255,255,0.08)] dark:data-[state=active]:text-[var(--text-primary)]"
+            >
+              Activity
+            </TabsTrigger>
+            <TabsTrigger
+              value="tokens"
+              className="text-[var(--text-tertiary)] hover:text-[var(--text-secondary)] data-[state=active]:border-transparent data-[state=active]:bg-[rgba(255,255,255,0.08)] data-[state=active]:text-[var(--text-primary)] dark:data-[state=active]:border-transparent dark:data-[state=active]:bg-[rgba(255,255,255,0.08)] dark:data-[state=active]:text-[var(--text-primary)]"
+            >
+              Tokens
+            </TabsTrigger>
+          </TabsList>
+        </Tabs>
         <TimelineSelect
           label="Project"
           value={project ?? '__all__'}
@@ -205,39 +220,6 @@ function formatTokensCompact(n: number): string {
   return String(n)
 }
 
-function Segmented<TValue extends string>({
-  value,
-  onChange,
-  options,
-}: {
-  value: TValue
-  onChange: (v: TValue) => void
-  options: { id: TValue; label: string }[]
-}) {
-  return (
-    <div className="inline-flex items-center gap-0.5 rounded-md border border-[var(--border-default)] bg-[rgba(255,255,255,0.02)] p-[3px]">
-      {options.map((opt) => {
-        const active = value === opt.id
-        return (
-          <button
-            key={opt.id}
-            type="button"
-            onClick={() => onChange(opt.id)}
-            className={cn(
-              'rounded px-3 py-[6px] text-[12px] font-[510] transition-colors',
-              active
-                ? 'bg-[rgba(255,255,255,0.08)] text-[var(--text-primary)]'
-                : 'text-[var(--text-tertiary)] hover:text-[var(--text-secondary)]',
-            )}
-          >
-            {opt.label}
-          </button>
-        )
-      })}
-    </div>
-  )
-}
-
 function TimelineSelect({
   label,
   value,
@@ -253,7 +235,6 @@ function TimelineSelect({
     <Select value={value} onValueChange={onChange}>
       <SelectTrigger
         aria-label={label}
-        size="sm"
         className="rounded-md border-[var(--border-default)] bg-[rgba(255,255,255,0.02)] px-3 py-[7px] text-[12px] font-[510] text-[var(--text-secondary)] hover:border-[var(--border-hover)] focus-visible:ring-0 data-[state=open]:border-[var(--border-hover)] [&_svg]:size-3"
       >
         <span className="text-[var(--text-tertiary)]">{label}</span>

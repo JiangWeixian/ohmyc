@@ -142,8 +142,8 @@ On dark surfaces, elevation is communicated through background luminance steps, 
 
 ### Navigation Island
 - Default shell: floating, collapsible island. No primary route uses a full-height docked sidebar or standard top header.
-- Position: `top: 18px`, `left: 18px` on desktop. On narrow screens, keep the collapsed island at `top: 14px`, `left: 14px`.
-- Expanded size: `216-224px` wide and `calc(100dvh - 36px)` tall on desktop, leaving the same 18px top/bottom/left breathing room. Collapsed size: a single `52-56px` square icon badge, not a mini navigation rail. Use a `lucide-react` placeholder icon until the brand icon is ready.
+- Position: `top: 48px`, `left: 18px` on desktop so the island clears native macOS traffic-light controls. On narrow screens, keep the collapsed island at `top: 14px`, `left: 14px` unless the native window chrome is present at that size.
+- Expanded size: `216-224px` wide and `calc(100dvh - 66px)` tall on desktop, preserving roughly 18px bottom breathing room after the traffic-light clearance. Collapsed size: a single `44-48px` square icon badge, not a mini navigation rail. The collapsed badge uses a quiet 16px temporary icon and aligns visually with the route content rhythm rather than the traffic-light row.
 - Background: `rgba(15,16,17,0.72)` with backdrop blur around `20-24px`.
 - Border: low-opacity edge definition, preferably a `0.5px` ring/shadow plus at most `1px rgba(255,255,255,0.05)` border. Use macOS-style vibrancy with `saturate(180%) blur(20-24px)`.
 - Border-radius: `14px` outer, `8px` inner controls.
@@ -217,7 +217,7 @@ Timeline entry sits in the navigation island under the `Signal` group. Timeline 
 
 - **Heatmap (contribution graph):**
   - Grid: 53 weeks × 7 days, scoped to the selected calendar year (Jan 1 → Dec 31). Future cells render as bucket 0.
-  - Cell size: 10×10, gap: 4. `border-radius: 2px`.
+  - Cell size is responsive to the card's available width: distribute 53 week columns across the content area after the day-label column, clamped to compact readable squares. Default desktop target is roughly 10-18px cells with a 3-4px gap; cells remain square with `border-radius: 2px`.
   - Day-of-week labels (M / W / F) in `text-quaternary` Berkeley Mono `9px` — present, not loud.
   - Month strip on top in `text-quaternary` Berkeley Mono `10px`, `letter-spacing 0.04em`, uppercase.
   - 5-bucket grayscale luminance, scaled relative to selected metric's distribution:
@@ -232,11 +232,11 @@ Timeline entry sits in the navigation island under the `Signal` group. Timeline 
   - Footer below grid: window caption (`Jan 1 → Dec 31, YYYY`) on the left, `Less … More` legend with 5-cell gradient on the right.
   - Click cell → scrolls event list to that day's heading.
 
-- **Metric toggle (segmented control):**
+- **Metric toggle (Radix Tabs):**
   - Two options: `Activity` (default, composite of `sessions + turns`) and `Tokens`.
-  - Background `rgba(255,255,255,0.02)`, `border-default`, `rounded-md`, `padding 3px`.
-  - Active button: `rgba(255,255,255,0.08)` bg, `text-primary`, `rounded-sm` (4px), `padding 6px 12px`, `12px / 510`.
-  - Inactive: transparent bg, `text-tertiary`.
+  - Implement with the shared shadcn/Radix Tabs primitive so the control exposes `tablist`/`tab` semantics and `aria-selected` state.
+  - Use the shared Tabs default sizing directly, but map the Timeline instance to OhMyC surface colors: `border-default`, `rgba(255,255,255,0.02)` list background, `rgba(255,255,255,0.08)` active tab background, `text-primary` active text. Do not add Timeline-local `h-auto` or `py-*` overrides.
+  - Align height with the Project and Year Select triggers in the same row by using the shared default Select size, not `size="sm"`.
 
 - **Year picker (dropdown):**
   - Lists only years with ≥1 session (no empty years).
@@ -277,10 +277,10 @@ Monitor entry sits in the navigation island under the `Signal` group above Timel
   - Do not render any standard app header above the WebGL stage.
   - The navigation island floats over the stage and may collapse to a single icon badge to give the WebGL scene more room.
   - Left/center-left: React Bits Lanyard/WebGL identity object as the page's primary subject, large enough to define the route.
-  - Right: display-scale animated stats stack, not cards. Use big numeric type with small labels (`842 / sessions`, `18.4M / tokens`, `3m / last sync`).
+  - Right: display-scale animated stats stack, not cards. Use big numeric type with small labels (`842 / sessions`, `18.4M / tokens`, `2.3k / turns`).
   - Background: orbital traces and faint activity signal support the Lanyard/stats relationship, but should not compete with the numeric stack.
   - Surrounding field: AI-native telemetry should read as signal, not dashboard. Use sparse nodes, orbital traces, terminal fragments, model/session pulses, faint activity particles, and animated numeric readouts.
-- **Stats:** Pull from Timeline data first, but expose only 2-3 numbers on this page. The rest belongs on Timeline. Preferred treatment is large typographic stats (`842 sessions`, `18.4M tokens`, `sync 3m`) with animated number transitions. Project pulse and activity density should be visualized as ambient signal fields, not boxed widgets.
+- **Stats:** Pull from Timeline data first, but expose only 2-3 numbers on this page. The rest belongs on Timeline. Preferred treatment is large typographic stats (`842 sessions`, `18.4M tokens`, `2.3k turns`) with animated number transitions. Project pulse and activity density should be visualized as ambient signal fields, not boxed widgets.
 - **Visual rules:** The page theme is the Lanyard stage. Explorer chrome stays monochrome; the central WebGL stage may use a very deep black-violet/graphite tone when it matches the React Bits Lanyard component, but avoid bright purple/blue AI cliches, orbs, bokeh blobs, and marketing hero copy.
 - **Implementation posture:** HTML mockups are layout references only. The real visual decision should happen in a small R3F/Drei spike because DOM mockups cannot show 3D text depth, Rapier dragging, Billboard behavior, bloom/depth effects, or Lanyard/stats occlusion.
 - **3D scene split:** Put Lanyard, display-scale stats, animated numeric transitions, orbital traces, particles, and signal text inside the React Three Fiber canvas when the spike proves this reads better. Use DOM only for Explorer chrome, command palette, route controls, accessible fallback labels, and stats count-up if Canvas typography creates readability or implementation friction.
@@ -402,6 +402,10 @@ There is no standard header chrome. Breadcrumbs, source switchers, search trigge
 | 2026-06-17 | Collapsed navigation island is a single icon badge | A collapsed mini rail still feels like product chrome. One lucide-react placeholder icon keeps the page quiet now and can be swapped for the brand icon later |
 | 2026-06-17 | Use Framer Motion for DOM chrome, not WebGL scene motion | The AI monitor needs motion to feel alive, but the boundary matters: Framer handles island/dialog/route/count-up UI, while R3F/Drei handles Lanyard, particles, 3D text, and scene physics |
 | 2026-06-19 | Tighten UI motion policy around high-frequency surfaces | Command palette and repeated library interactions should feel immediate; reusable primitives specify exact animated properties, and reduced motion removes transform/scroll/count-up movement |
+| 2026-06-20 | Monitor stats use sessions, tokens, and turns | Turns are first-class coding activity signal from Timeline event data. They are more directly useful on the identity surface than last-sync metadata, which may be absent or stale |
+| 2026-06-20 | Move navigation island below native macOS traffic lights | The Tauri window now uses native traffic-light controls. A `top: 18px` island collides with that chrome, so desktop expanded/collapsed island states start around 48px and keep content-aligned rhythm |
+| 2026-06-20 | Timeline metric toggle uses Radix Tabs semantics | The visual treatment stays compact, but Activity/Tokens now exposes native `tablist`/`tab` semantics and selected state through the shared shadcn/Radix primitive |
+| 2026-06-20 | Timeline heatmap fills widened content | The 53-week graph should distribute columns across its card instead of keeping fixed 10px cells centered in a widened layout |
 
 ## Do's and Don'ts
 

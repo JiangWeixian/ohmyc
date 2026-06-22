@@ -10,9 +10,15 @@ import {
   vi,
 } from 'vitest'
 
-import { ContributionGraph } from '@/components/timeline/contribution-graph'
+import { calculateContributionGraphLayout, ContributionGraph } from '@/components/timeline/contribution-graph'
 
 describe('ContributionGraph', () => {
+  it('calculates readable square cells while widening the week tracks', () => {
+    expect(calculateContributionGraphLayout(760)).toEqual({ cellSize: 10, rowGap: 4 })
+    expect(calculateContributionGraphLayout(1166)).toEqual({ cellSize: 15, rowGap: 4 })
+    expect(calculateContributionGraphLayout(1800)).toEqual({ cellSize: 18, rowGap: 4 })
+  })
+
   it('renders the year grid, legend, and clickable populated days', () => {
     const onSelectDay = vi.fn()
     render(
@@ -31,6 +37,12 @@ describe('ContributionGraph', () => {
     expect(screen.getByText('Jan 1 → Dec 31, 2026')).toBeInTheDocument()
     expect(document.body.textContent).toContain('Less')
     expect(document.body.textContent).toContain('More')
+    expect(screen.getByTestId('timeline-heatmap-grid')).toHaveStyle({
+      gridTemplateColumns: 'repeat(53, minmax(0, 1fr))',
+    })
+    expect(screen.getByTestId('timeline-heatmap-months').firstElementChild).toHaveStyle({
+      flex: '1 1 0px',
+    })
 
     const populatedDays = screen.getAllByRole('button')
     expect(populatedDays).toHaveLength(2)

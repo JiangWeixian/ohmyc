@@ -46,7 +46,7 @@ export function MonitorView() {
           <dl className="mt-10 space-y-8" aria-busy={isLoading}>
             <MonitorStat label="sessions" value={<AnimatedNumber value={stats.sessions} />} />
             <MonitorStat label="tokens" value={<AnimatedNumber value={stats.tokens} />} />
-            <MonitorStat label="last sync" value={stats.lastSyncLabel} />
+            <MonitorStat label="turns" value={<AnimatedNumber value={stats.turns} />} />
           </dl>
 
           {isLoading

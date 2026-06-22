@@ -1,40 +1,42 @@
 import { Code2 } from 'lucide-react'
+import { useMemo } from 'react'
 
 import { ComputerBackdrop } from './computer-backdrop'
-
-interface SpikeStat {
-  label: string
-  value: number
-  suffix: string
-  precision?: number
-}
-
-const stats: SpikeStat[] = [
-  { label: 'sessions', value: 842, suffix: '' },
-  { label: 'tokens', value: 18.4, suffix: 'M', precision: 1 },
-  { label: 'last sync', value: 3, suffix: 'm' },
-]
+import { formatCompactNumber, useMonitorStats } from '@/components/monitor/monitor-stats'
 
 export function MonitorSpikeView() {
+  const { stats, isError, isLoading } = useMonitorStats()
+  const sceneStats = useMemo(
+    () => ({
+      sessions: formatCompactNumber(stats.sessions),
+      tokens: formatCompactNumber(stats.tokens),
+      turns: formatCompactNumber(stats.turns),
+    }),
+    [stats.sessions, stats.tokens, stats.turns],
+  )
+  const accessibleStats = [
+    { label: 'sessions', value: sceneStats.sessions },
+    { label: 'tokens', value: sceneStats.tokens },
+    { label: 'turns', value: sceneStats.turns },
+  ]
+
   return (
     <section className="relative h-dvh min-h-[720px] overflow-hidden bg-[var(--bg-marketing)] font-['Geist','Inter_var','Inter',sans-serif] text-[var(--text-primary)] max-md:h-auto max-md:min-h-dvh max-md:overflow-y-auto">
-      <ComputerBackdrop />
+      <ComputerBackdrop stats={sceneStats} />
       <SignalField />
       <SpikeIsland />
 
       <main className="sr-only">
         <h1>Personal Coding Monitor</h1>
-        <dl>
-          {stats.map(item => (
+        <dl aria-busy={isLoading}>
+          {accessibleStats.map(item => (
             <div key={item.label}>
               <dt>{item.label}</dt>
-              <dd>
-                {item.value.toFixed(item.precision ?? 0)}
-                {item.suffix}
-              </dd>
+              <dd>{item.value}</dd>
             </div>
           ))}
         </dl>
+        {isError ? <p>Timeline signal unavailable.</p> : null}
       </main>
     </section>
   )

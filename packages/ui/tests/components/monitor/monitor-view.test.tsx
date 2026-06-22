@@ -37,7 +37,7 @@ afterEach(() => {
 })
 
 describe('MonitorView', () => {
-  it('renders display stats from one timeline events window plus status sync time', async () => {
+  it('renders display stats from one timeline events window', async () => {
     const now = Date.now()
     setMockHandler('timeline.status', async () => ({ sessionCount: 842, lastSyncAt: now - 180_000 }))
     setMockHandler('timeline.events', async () => ({
@@ -52,11 +52,11 @@ describe('MonitorView', () => {
       expect(container.textContent).toContain('Coding Monitor')
       expect(container.textContent).toContain('sessions')
       expect(container.textContent).toContain('tokens')
-      expect(container.textContent).toContain('last sync')
+      expect(container.textContent).toContain('turns')
       expect(container.textContent).toContain('latest timeline window')
       expect(container.textContent).toContain('2')
       expect(container.textContent).toContain('18.4M')
-      expect(container.textContent).toContain('3m')
+      expect(container.textContent).toContain('10')
     })
   })
 
@@ -68,7 +68,7 @@ describe('MonitorView', () => {
 
     expect(await screen.findByText('Run a Claude Code session and your activity will appear here.')).toBeInTheDocument()
     expect(screen.getByRole('heading', { name: 'Coding Monitor' })).toBeInTheDocument()
-    expect(screen.getByText('never')).toBeInTheDocument()
+    expect(screen.getByText('turns')).toBeInTheDocument()
   })
 
   it('shows a quiet status message when timeline data is unavailable', async () => {
@@ -97,5 +97,6 @@ describe('MonitorView', () => {
 
     expect(await screen.findByText('42.0k')).toBeInTheDocument()
     expect(screen.getByText('3')).toBeInTheDocument()
+    expect(screen.getByText('12')).toBeInTheDocument()
   })
 })
