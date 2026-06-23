@@ -154,6 +154,73 @@
     --card-clip: none;
     --panel-notch-size: 0px;
   }
+
+  [data-theme='monitor'] {
+    --bg-deep: #050506;
+    --bg-marketing: #08090a;
+    --bg-panel: #0f1011;
+    --bg-surface: #191a1b;
+    --bg-hover: #28282c;
+    --text-primary: #f7f8f8;
+    --text-secondary: #d0d6e0;
+    --text-tertiary: #8a8f98;
+    --text-quaternary: #62666d;
+    --accent-primary: #f7f8f8;
+    --accent-secondary: #f7f8f8;
+    --accent-signal: #f7f8f8;
+    --accent-glow: rgba(247, 248, 248, 0.35);
+    --font-display: 'Inter var', 'Inter', -apple-system, sans-serif;
+    --font-body: 'Inter var', 'Inter', -apple-system, sans-serif;
+    --font-mono: 'Berkeley Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
+    --border-subtle: rgba(255, 255, 255, 0.05);
+    --border-standard: rgba(255, 255, 255, 0.08);
+    --border-primary: #23252a;
+    --border-accent: rgba(255, 255, 255, 0.08);
+    --heat-0: rgba(255, 255, 255, 0.04);
+    --heat-1: rgba(255, 255, 255, 0.15);
+    --heat-2: rgba(255, 255, 255, 0.30);
+    --heat-3: rgba(255, 255, 255, 0.50);
+    --heat-4: rgba(255, 255, 255, 0.78);
+    --scanline-opacity: 0;
+    --vignette-strength: 0;
+    --title-shadow: none;
+    --text-glow: none;
+    --card-clip: none;
+  }
+
+  [data-theme='phosphor'] {
+    --bg-deep: #050506;
+    --bg-marketing: #08090a;
+    --bg-panel: #0f1011;
+    --bg-surface: #191a1b;
+    --bg-hover: #28282c;
+    --text-primary: #f7f8f8;
+    --text-secondary: #d0d6e0;
+    --text-tertiary: #8a8f98;
+    --text-quaternary: #62666d;
+    --accent-primary: #f7f8f8;
+    --accent-secondary: #f7f8f8;
+    --accent-signal: #f7f8f8;
+    --accent-glow: rgba(247, 248, 248, 0.35);
+    --font-display: 'JetBrains Mono', ui-monospace, monospace;
+    --font-body: 'Inter', -apple-system, sans-serif;
+    --font-mono: 'JetBrains Mono', ui-monospace, monospace;
+    --border-subtle: rgba(255, 255, 255, 0.06);
+    --border-standard: rgba(255, 255, 255, 0.10);
+    --border-primary: #2a2c30;
+    --border-accent: rgba(247, 248, 248, 0.18);
+    --heat-0: rgba(255, 255, 255, 0.04);
+    --heat-1: rgba(255, 255, 255, 0.18);
+    --heat-2: rgba(255, 255, 255, 0.35);
+    --heat-3: rgba(255, 255, 255, 0.58);
+    --heat-4: rgba(255, 255, 255, 0.88);
+    --scanline-color: rgba(255, 255, 255, 0.018);
+    --scanline-opacity: 1;
+    --vignette-strength: 0.55;
+    --title-shadow: none;
+    --text-glow: 0 0 8px rgba(247, 248, 248, 0.35);
+    --card-clip: none;
+  }
 }
 
 @layer base {
