@@ -23,7 +23,7 @@ interface MarkdownEditorProperties {
   placeholder?: string
 }
 
-/** Per-instance style overrides specific to the Markdown editor (larger font, Berkeley Mono, line height). */
+/** Per-instance style overrides specific to the Markdown editor (larger font, mono font, line height). */
 const markdownEditorOverlay = EditorView.theme({
   '&': {
     fontSize: '15px',
