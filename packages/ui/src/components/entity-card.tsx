@@ -36,8 +36,8 @@ export function EntityCard({
       onClick={onClick}
       className={cn(
         'group relative cursor-pointer text-left p-7',
-        'bg-[rgba(255,255,255,0.02)] border border-[rgba(255,255,255,0.08)] rounded-lg',
-        'hover:border-[rgba(255,255,255,0.12)] hover:bg-[rgba(255,255,255,0.04)]',
+        'bg-[var(--surface-raised)] border border-[var(--border-standard)] rounded-lg',
+        'hover:border-[var(--border-hover)] hover:bg-[var(--bg-hover)]',
         'transition-colors duration-150',
       )}
     >
