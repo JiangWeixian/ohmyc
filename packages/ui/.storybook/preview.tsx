@@ -24,9 +24,41 @@ const preview: Preview = {
       },
     },
   },
+  globalTypes: {
+    theme: {
+      name: 'Theme',
+      defaultValue: 'phosphor',
+      toolbar: {
+        icon: 'paintbrush',
+        items: [
+          { value: 'monitor', title: 'Monitor' },
+          { value: 'phosphor', title: 'Phosphor Mono' },
+          { value: 'amber', title: 'Amber CRT' },
+          { value: 'retro', title: 'Retro Wave' },
+          { value: 'cyberpunk', title: 'Cyberpunk' },
+        ],
+      },
+    },
+    intensity: {
+      name: 'Intensity',
+      defaultValue: 'expressive',
+      toolbar: {
+        icon: 'photo',
+        items: [
+          { value: 'calm', title: 'Calm' },
+          { value: 'expressive', title: 'Expressive' },
+        ],
+      },
+    },
+  },
   decorators: [
-    Story => (
-      <div className="min-h-screen bg-[var(--bg-marketing)] p-8 font-sans text-[var(--text-primary)]">
+    (Story, context) => (
+      <div
+        data-theme={context.globals.theme}
+        data-intensity={context.globals.intensity}
+        className="min-h-screen bg-[var(--bg-marketing)] p-8 text-[var(--text-primary)]"
+        style={{ fontFamily: 'var(--font-body)' }}
+      >
         <Story />
       </div>
     ),
