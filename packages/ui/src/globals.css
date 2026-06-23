@@ -377,6 +377,31 @@
     letter-spacing: -0.01em;
   }
 
+  body::before {
+    content: '';
+    position: fixed; inset: 0;
+    background: repeating-linear-gradient(to bottom,
+      var(--scanline-color) 0, var(--scanline-color) 1px,
+      transparent 1px, transparent 3px);
+    opacity: var(--scanline-opacity, 0);
+    pointer-events: none; z-index: 9999; mix-blend-mode: screen;
+  }
+  body::after {
+    content: '';
+    position: fixed; inset: 0;
+    background: radial-gradient(ellipse at center, transparent 55%,
+      rgba(0, 0, 0, calc(var(--vignette-strength) * 0.55)));
+    opacity: var(--vignette-strength, 0);
+    pointer-events: none; z-index: 9998;
+  }
+
+  [data-theme='cyberpunk'][data-intensity='expressive'] body::before {
+    background-image: linear-gradient(to right, rgba(252, 238, 10, 0.03) 1px, transparent 1px),
+      linear-gradient(to bottom, rgba(0, 240, 255, 0.03) 1px, transparent 1px);
+    background-size: 32px 32px;
+    opacity: 1; mix-blend-mode: normal;
+  }
+
   #root {
     min-height: 100dvh;
   }
