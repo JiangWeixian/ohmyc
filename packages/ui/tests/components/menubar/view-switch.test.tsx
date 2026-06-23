@@ -1,8 +1,4 @@
-import {
-  fireEvent,
-  render,
-  screen,
-} from '@testing-library/react'
+import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import {
   describe,
@@ -40,10 +36,13 @@ describe('ViewSwitch', () => {
     expect(onChange).toHaveBeenCalledWith('line')
   })
 
-  it('applies secondary color to inactive button on hover', () => {
+  it('exposes the tokenized button class and active data attribute for styling', () => {
     render(<ViewSwitch value="line" onChange={() => {}} />)
+    const lineBtn = screen.getByRole('tab', { name: /line view/i })
     const heatmapBtn = screen.getByRole('tab', { name: /heatmap view/i })
-    fireEvent.mouseEnter(heatmapBtn)
-    expect(heatmapBtn).toHaveStyle({ color: 'var(--text-secondary)' })
+    expect(lineBtn).toHaveClass('menubar-view-button')
+    expect(lineBtn).toHaveAttribute('data-active', 'true')
+    expect(heatmapBtn).toHaveClass('menubar-view-button')
+    expect(heatmapBtn).toHaveAttribute('data-active', 'false')
   })
 })

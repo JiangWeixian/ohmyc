@@ -145,7 +145,7 @@ export function RecentHeatmap({ tokens, sessions }: RecentHeatmapProps) {
   }
 
   return (
-    <div data-heatmap-wrap className="pt-1 relative">
+    <div data-heatmap-wrap className="relative pt-1">
       <div
         className="grid"
         style={{
@@ -172,11 +172,14 @@ export function RecentHeatmap({ tokens, sessions }: RecentHeatmapProps) {
             return (
               <span
                 key={i}
-                className="text-[9px] uppercase whitespace-nowrap text-[var(--text-quaternary)]"
+                className="whitespace-nowrap text-[9px] uppercase"
                 style={{
                   gridColumn: `${label.col + 1} / span ${span}`,
-                  fontFamily: MONO,
-                  letterSpacing: '0.04em',
+                  color: 'var(--heatmap-month-color)',
+                  fontFamily: 'var(--heatmap-month-font)',
+                  fontWeight: 'var(--heatmap-month-weight)',
+                  letterSpacing: 'var(--heatmap-month-letter-spacing)',
+                  textShadow: 'var(--heatmap-month-shadow)',
                   alignSelf: 'center',
                 }}
               >
@@ -199,11 +202,15 @@ export function RecentHeatmap({ tokens, sessions }: RecentHeatmapProps) {
           {dowVisible.map((letter, i) => (
             <span
               key={i}
-              className="text-[9px] text-[var(--text-quaternary)]"
+              className="text-[9px]"
               style={{
-                fontFamily: MONO,
+                color: letter ? 'var(--heatmap-dow-active-color)' : 'var(--heatmap-dow-color)',
+                fontFamily: 'var(--heatmap-dow-font)',
+                fontWeight: 'var(--heatmap-dow-weight)',
+                letterSpacing: 'var(--heatmap-dow-letter-spacing)',
                 lineHeight: `${CELL_SIZE}px`,
                 height: CELL_SIZE,
+                textShadow: letter ? 'var(--heatmap-dow-active-shadow)' : 'none',
               }}
             >
               {letter}
@@ -242,13 +249,12 @@ export function RecentHeatmap({ tokens, sessions }: RecentHeatmapProps) {
 
       {/* footer: range left, Less/More right */}
       <div
-        className="flex items-center justify-between mt-1.5 text-[10px] text-[var(--text-quaternary)]"
-        style={{ fontFamily: MONO }}
+        className="menubar-label mt-2.5 flex items-center justify-between"
       >
         <span data-heatmap-range>{rangeText}</span>
         <span data-heatmap-legend className="inline-flex items-center gap-1.5">
           Less
-          <span className="inline-flex items-center gap-[3px] mx-1.5">
+          <span className="mx-1.5 inline-flex items-center gap-[3px]">
             {HEAT_CLASSES.map((className, i) => (
               <span
                 key={i}
@@ -264,7 +270,7 @@ export function RecentHeatmap({ tokens, sessions }: RecentHeatmapProps) {
       {/* hover tooltip — max-width matches the TT_HALF clamping math (100*2) */}
       {hover && (
         <div
-          className="absolute pointer-events-none z-10 px-2 py-1.5 rounded text-[11px] text-[var(--text-primary)] shadow-lg"
+          className="pointer-events-none absolute z-10 rounded px-2 py-1.5 text-[11px] text-[var(--text-primary)] shadow-lg"
           style={{
             left: hover.x,
             top: hover.y - 8,

@@ -10,6 +10,7 @@ import {
 import {
   Area,
   AreaChart,
+  ReferenceDot,
   XAxis,
   YAxis,
 } from 'recharts'
@@ -51,6 +52,19 @@ function longDate(iso: string): string {
 function shortLabel(iso: string): string {
   const d = new Date(`${iso}T00:00:00Z`)
   return `${MONTH_NAMES[d.getUTCMonth()]} ${d.getUTCDate()}`
+}
+
+function findPeak(points: ChartRow[]): ChartRow | null {
+  if (points.length === 0) {
+    return null
+  }
+  let peak = points[0]
+  for (const point of points) {
+    if (point.tokens > peak.tokens) {
+      peak = point
+    }
+  }
+  return peak
 }
 
 interface ChartRow {
@@ -104,6 +118,7 @@ export function DualLineChart({ tokens, sessions }: DualLineChartProps) {
     () => new Map(sessions.map(p => [p.date, p.value])),
     [sessions],
   )
+  const peak = useMemo(() => findPeak(chartData), [chartData])
 
   return (
     <SessionMapContext.Provider value={sessionMap}>
@@ -117,10 +132,19 @@ export function DualLineChart({ tokens, sessions }: DualLineChartProps) {
           data={chartData}
           margin={{ left: 0, right: 0, top: 8, bottom: 0 }}
         >
-          {/* Axes are hidden (kept for scale/domain only) and there is no grid:
-              the chart reads as a backing sparkline, not a framed plot. The KPI
-              row below carries the actual numbers. */}
-          <XAxis dataKey="date" hide />
+          <defs>
+            <linearGradient id="menubarChartStroke" x1="0%" y1="0%" x2="100%" y2="0%">
+              <stop offset="0%" stopColor="var(--menubar-chart-stroke-start)" />
+              <stop offset="50%" stopColor="var(--menubar-chart-stroke-mid)" />
+              <stop offset="100%" stopColor="var(--menubar-chart-stroke-end)" />
+            </linearGradient>
+            <linearGradient id="menubarChartFill" x1="0%" y1="0%" x2="0%" y2="100%">
+              <stop offset="0%" stopColor="var(--menubar-chart-fill-color)" stopOpacity="var(--menubar-chart-fill-opacity)" />
+              <stop offset="100%" stopColor="var(--menubar-chart-fill-color)" stopOpacity="0" />
+            </linearGradient>
+          </defs>
+          {/* Axes stay hidden: the menubar chart should read as a clean sparkline. */}
+          <XAxis dataKey="iso" hide />
           <YAxis hide width={0} />
           <ChartTooltip
             cursor={{ stroke: 'var(--border-default)' }}
@@ -129,12 +153,26 @@ export function DualLineChart({ tokens, sessions }: DualLineChartProps) {
           <Area
             dataKey="tokens"
             type="natural"
-            stroke="var(--color-tokens)"
-            fill="var(--color-tokens)"
-            fillOpacity={0.12}
-            strokeWidth={1.5}
+            stroke="url(#menubarChartStroke)"
+            fill="url(#menubarChartFill)"
+            fillOpacity={1}
+            strokeWidth={1.75}
             dot={false}
+            style={{ filter: 'var(--menubar-chart-shadow)' }}
           />
+          {peak
+            ? (
+                <ReferenceDot
+                  x={peak.iso}
+                  y={peak.tokens}
+                  r={3}
+                  fill="var(--menubar-chart-peak-color)"
+                  stroke="none"
+                  ifOverflow="extendDomain"
+                  style={{ filter: 'var(--menubar-chart-peak-shadow)' }}
+                />
+              )
+            : null}
         </AreaChart>
       </ChartContainer>
     </SessionMapContext.Provider>

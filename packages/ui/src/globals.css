@@ -161,6 +161,71 @@
     --timeline-stats-sep-color: var(--text-quaternary);
     --timeline-stats-shadow: none;
     --timeline-stats-letter-spacing: 0.02em;
+
+    /* Menubar popover chrome */
+    --menubar-popover-bg: rgba(25, 26, 27, 0.65);
+    --menubar-popover-border: rgba(255, 255, 255, 0.08);
+    --menubar-popover-radius: 0.75rem;
+    --menubar-popover-shadow: 0 1.5rem 3.75rem rgba(0, 0, 0, 0.5), 0 0 0 0.5px rgba(255, 255, 255, 0.04), inset 0 0 0 0.5px rgba(255, 255, 255, 0.03);
+    --menubar-popover-clip: none;
+    --menubar-popover-backdrop: blur(40px) saturate(1.4);
+    --menubar-popover-overlay: repeating-linear-gradient(to bottom, rgba(255, 255, 255, 0.015) 0, rgba(255, 255, 255, 0.015) 1px, transparent 1px, transparent 3px);
+    --menubar-popover-accent: transparent;
+    --menubar-popover-corner: transparent;
+    --menubar-title-prefix: "// ";
+    --menubar-title-font: var(--font-mono);
+    --menubar-title-size: 0.6875rem;
+    --menubar-title-weight: 500;
+    --menubar-title-letter-spacing: 0.10em;
+    --menubar-title-color: var(--text-secondary);
+    --menubar-title-prefix-color: var(--text-quaternary);
+    --menubar-title-shadow: none;
+    --menubar-switch-size: 1.375rem;
+    --menubar-switch-border: transparent;
+    --menubar-switch-radius: 0;
+    --menubar-switch-clip: none;
+    --menubar-switch-color: var(--text-quaternary);
+    --menubar-switch-hover-bg: transparent;
+    --menubar-switch-hover-border: transparent;
+    --menubar-switch-hover-color: var(--text-secondary);
+    --menubar-switch-hover-shadow: none;
+    --menubar-switch-active-bg: transparent;
+    --menubar-switch-active-border: transparent;
+    --menubar-switch-active-color: var(--text-primary);
+    --menubar-switch-active-shadow: drop-shadow(0 0 0.25rem var(--accent-glow));
+    --menubar-chart-bg: linear-gradient(180deg, rgba(255, 255, 255, 0.02) 0%, transparent 100%);
+    --menubar-chart-stroke-start: var(--accent-primary);
+    --menubar-chart-stroke-mid: var(--accent-primary);
+    --menubar-chart-stroke-end: var(--accent-primary);
+    --menubar-chart-fill-color: var(--accent-primary);
+    --menubar-chart-fill-opacity: 0.18;
+    --menubar-chart-shadow: drop-shadow(0 0 0.1875rem var(--accent-glow));
+    --menubar-chart-peak-color: var(--accent-primary);
+    --menubar-chart-peak-shadow: drop-shadow(0 0 0.25rem var(--accent-glow));
+    --menubar-kpi-font: var(--font-mono);
+    --menubar-kpi-size: 1.375rem;
+    --menubar-kpi-weight: 500;
+    --menubar-kpi-letter-spacing: -0.03125rem;
+    --menubar-kpi-line-height: 1;
+    --menubar-kpi-token-color: var(--text-primary);
+    --menubar-kpi-session-color: var(--text-primary);
+    --menubar-kpi-peak-color: var(--accent-primary);
+    --menubar-kpi-token-shadow: none;
+    --menubar-kpi-session-shadow: none;
+    --menubar-kpi-peak-shadow: 0 0 0.375rem var(--accent-glow);
+    --menubar-label-font: var(--font-mono);
+    --menubar-label-size: 0.5625rem;
+    --menubar-label-weight: 500;
+    --menubar-label-letter-spacing: 0.08em;
+    --menubar-label-color: var(--text-quaternary);
+    --menubar-footer-meta-color: var(--text-quaternary);
+    --menubar-open-color: var(--text-secondary);
+    --menubar-open-border: transparent;
+    --menubar-open-bg: transparent;
+    --menubar-open-padding: 0;
+    --menubar-open-clip: none;
+    --menubar-open-shadow: none;
+    --menubar-open-hover-color: var(--text-primary);
     
     /* shadcn token mappings */
     --background: 210 5% 3%;
@@ -217,6 +282,7 @@
     --vignette-strength: 0.55;
     --timeline-title-shadow: 0 0 0.75rem rgba(247, 248, 248, 0.18);
     --text-glow: 0 0 0.5rem rgba(247, 248, 248, 0.35);
+    --menubar-chart-shadow: drop-shadow(0 0 0.1875rem rgba(247, 248, 248, 0.4));
   }
 
   [data-theme='amber'] {
@@ -276,6 +342,38 @@
     --timeline-stats-value-color: var(--accent-primary);
     --timeline-stats-shadow: var(--text-glow);
     --chart-1: 41 100% 50%;
+    --menubar-popover-bg: rgba(20, 14, 0, 0.7);
+    --menubar-popover-border: rgba(255, 176, 0, 0.20);
+    --menubar-popover-shadow: 0 1.5rem 3.75rem rgba(0, 0, 0, 0.6), 0 0 1.875rem rgba(255, 140, 0, 0.08), inset 0 0 0 0.5px rgba(255, 176, 0, 0.05);
+    --menubar-popover-overlay: repeating-linear-gradient(to bottom, rgba(0, 0, 0, 0.14) 0, rgba(0, 0, 0, 0.14) 1px, transparent 1px, transparent 3px), radial-gradient(ellipse at center, transparent 50%, rgba(0, 0, 0, 0.4) 100%);
+    --menubar-title-prefix: "> ";
+    --menubar-title-letter-spacing: 0.12em;
+    --menubar-title-color: #ff8c00;
+    --menubar-title-prefix-color: #8a6533;
+    --menubar-title-shadow: var(--text-glow);
+    --menubar-switch-color: #8a6533;
+    --menubar-switch-hover-color: #ff8c00;
+    --menubar-switch-active-color: var(--accent-primary);
+    --menubar-switch-active-shadow: drop-shadow(0 0 0.375rem rgba(255, 176, 0, 0.6));
+    --menubar-chart-bg: linear-gradient(180deg, rgba(255, 176, 0, 0.04) 0%, transparent 100%);
+    --menubar-chart-fill-opacity: 0.22;
+    --menubar-chart-shadow: drop-shadow(0 0 0.25rem rgba(255, 176, 0, 0.6));
+    --menubar-chart-peak-shadow: drop-shadow(0 0 0.375rem var(--accent-primary));
+    --menubar-kpi-font: var(--font-display);
+    --menubar-kpi-size: 1.875rem;
+    --menubar-kpi-weight: 400;
+    --menubar-kpi-letter-spacing: 0.02em;
+    --menubar-kpi-line-height: 0.9;
+    --menubar-kpi-token-color: var(--accent-primary);
+    --menubar-kpi-session-color: var(--accent-primary);
+    --menubar-kpi-token-shadow: var(--text-glow);
+    --menubar-kpi-session-shadow: var(--text-glow);
+    --menubar-kpi-peak-shadow: var(--text-glow);
+    --menubar-label-color: #8a6533;
+    --menubar-footer-meta-color: #8a6533;
+    --menubar-open-color: #ff8c00;
+    --menubar-open-shadow: var(--text-glow);
+    --menubar-open-hover-color: var(--accent-primary);
     --scanline-color: rgba(255, 176, 0, 0.06);
     --scanline-opacity: 1;
     --vignette-strength: 0.7;
@@ -380,6 +478,55 @@
     --timeline-stats-value-color: var(--accent-signal);
     --timeline-stats-shadow: 0 0 0.5rem rgba(255, 176, 0, 0.55);
     --chart-1: 184 100% 50%;
+    --menubar-popover-bg: rgba(22, 8, 46, 0.78);
+    --menubar-popover-border: rgba(255, 43, 214, 0.22);
+    --menubar-popover-shadow: 0 1.5rem 3.75rem rgba(0, 0, 0, 0.6), 0 0 2.5rem rgba(255, 43, 214, 0.18), inset 0 0 0 0.5px rgba(0, 240, 255, 0.06);
+    --menubar-popover-accent: linear-gradient(to right, var(--accent-primary), var(--accent-secondary), var(--accent-signal));
+    --menubar-popover-overlay: repeating-linear-gradient(to bottom, rgba(0, 0, 0, 0.16) 0, rgba(0, 0, 0, 0.16) 1px, transparent 1px, transparent 3px);
+    --menubar-title-prefix: "▌ ";
+    --menubar-title-font: 'Silkscreen', monospace;
+    --menubar-title-size: 0.625rem;
+    --menubar-title-weight: 700;
+    --menubar-title-letter-spacing: 0.18em;
+    --menubar-title-color: var(--accent-primary);
+    --menubar-title-prefix-color: var(--accent-secondary);
+    --menubar-title-shadow: 0 0 0.5rem rgba(0, 240, 255, 0.55), 0 0 1rem rgba(0, 240, 255, 0.25);
+    --menubar-switch-border: transparent;
+    --menubar-switch-color: var(--text-tertiary);
+    --menubar-switch-hover-border: rgba(0, 240, 255, 0.12);
+    --menubar-switch-hover-color: var(--accent-primary);
+    --menubar-switch-hover-shadow: 0 0 0.5rem rgba(0, 240, 255, 0.45);
+    --menubar-switch-active-color: var(--accent-secondary);
+    --menubar-switch-active-shadow: drop-shadow(0 0 0.375rem rgba(255, 43, 214, 0.6));
+    --menubar-chart-bg: linear-gradient(180deg, rgba(0, 240, 255, 0.04) 0%, rgba(255, 43, 214, 0.02) 100%);
+    --menubar-chart-stroke-start: var(--accent-primary);
+    --menubar-chart-stroke-mid: var(--accent-secondary);
+    --menubar-chart-stroke-end: var(--accent-signal);
+    --menubar-chart-fill-color: var(--accent-secondary);
+    --menubar-chart-fill-opacity: 0.35;
+    --menubar-chart-shadow: drop-shadow(0 0 0.1875rem rgba(255, 43, 214, 0.6));
+    --menubar-chart-peak-color: var(--accent-signal);
+    --menubar-chart-peak-shadow: drop-shadow(0 0 0.5rem var(--accent-signal));
+    --menubar-kpi-font: var(--font-display);
+    --menubar-kpi-size: 1rem;
+    --menubar-kpi-weight: 400;
+    --menubar-kpi-letter-spacing: 0;
+    --menubar-kpi-line-height: 1.1;
+    --menubar-kpi-token-color: var(--accent-primary);
+    --menubar-kpi-session-color: var(--accent-secondary);
+    --menubar-kpi-peak-color: var(--accent-signal);
+    --menubar-kpi-token-shadow: 1px 1px 0 var(--accent-secondary), 0 0 0.375rem rgba(0, 240, 255, 0.4);
+    --menubar-kpi-session-shadow: 1px 1px 0 var(--accent-primary), 0 0 0.375rem rgba(255, 43, 214, 0.4);
+    --menubar-kpi-peak-shadow: 0 0 0.5rem rgba(255, 176, 0, 0.55);
+    --menubar-label-font: 'Silkscreen', monospace;
+    --menubar-label-size: 0.5rem;
+    --menubar-label-weight: 700;
+    --menubar-label-letter-spacing: 0.14em;
+    --menubar-label-color: var(--text-tertiary);
+    --menubar-footer-meta-color: #b6ff3b;
+    --menubar-open-color: var(--accent-secondary);
+    --menubar-open-shadow: 0 0 0.5rem rgba(255, 43, 214, 0.55);
+    --menubar-open-hover-color: var(--accent-primary);
     --scanline-color: rgba(255, 43, 214, 0.04);
     --scanline-opacity: 1;
     --vignette-strength: 0.65;
@@ -484,6 +631,57 @@
     --timeline-stats-shadow: 0 0 0.25rem rgba(252, 238, 10, 0.65);
     --timeline-stats-letter-spacing: 0.06em;
     --chart-1: 57 98% 51%;
+    --menubar-popover-bg: rgba(17, 17, 29, 0.78);
+    --menubar-popover-border: transparent;
+    --menubar-popover-shadow: 0 1.5rem 3.75rem rgba(0, 0, 0, 0.62), inset 0 0 0 0.5px rgba(252, 238, 10, 0.04);
+    --menubar-popover-clip: none;
+    --menubar-popover-accent: transparent;
+    --menubar-popover-corner: transparent;
+    --menubar-title-prefix: "▸ ";
+    --menubar-title-font: var(--font-display);
+    --menubar-title-size: 0.75rem;
+    --menubar-title-weight: 700;
+    --menubar-title-letter-spacing: 0.32em;
+    --menubar-title-color: var(--accent-primary);
+    --menubar-title-prefix-color: var(--accent-secondary);
+    --menubar-title-shadow: var(--text-glow);
+    --menubar-switch-size: 1.5rem;
+    --menubar-switch-radius: 0;
+    --menubar-switch-clip: polygon(0 0, calc(100% - 0.3125rem) 0, 100% 0.3125rem, 100% 100%, 0.3125rem 100%, 0 calc(100% - 0.3125rem));
+    --menubar-switch-color: var(--text-quaternary);
+    --menubar-switch-hover-bg: rgba(0, 240, 255, 0.04);
+    --menubar-switch-hover-border: rgba(252, 238, 10, 0.22);
+    --menubar-switch-hover-color: var(--accent-secondary);
+    --menubar-switch-hover-shadow: 0 0 0.375rem rgba(0, 240, 255, 0.45);
+    --menubar-switch-active-bg: var(--accent-primary);
+    --menubar-switch-active-border: var(--accent-primary);
+    --menubar-switch-active-color: var(--bg-deep);
+    --menubar-switch-active-shadow: drop-shadow(0 0 0.375rem rgba(252, 238, 10, 0.55));
+    --menubar-chart-bg: transparent;
+    --menubar-chart-fill-opacity: 0.4;
+    --menubar-chart-shadow: drop-shadow(0 0 0.25rem rgba(252, 238, 10, 0.7));
+    --menubar-chart-peak-shadow: drop-shadow(0 0 0.375rem var(--accent-primary));
+    --menubar-kpi-font: var(--font-display);
+    --menubar-kpi-size: 1.5rem;
+    --menubar-kpi-weight: 700;
+    --menubar-kpi-letter-spacing: 0.02em;
+    --menubar-kpi-token-color: var(--accent-primary);
+    --menubar-kpi-session-color: var(--accent-secondary);
+    --menubar-kpi-peak-color: var(--accent-signal);
+    --menubar-kpi-token-shadow: 0 0 0.375rem currentColor;
+    --menubar-kpi-session-shadow: 0 0 0.375rem currentColor;
+    --menubar-kpi-peak-shadow: 0 0 0.375rem currentColor;
+    --menubar-label-font: var(--font-display);
+    --menubar-label-size: 0.5625rem;
+    --menubar-label-weight: 600;
+    --menubar-label-letter-spacing: 0.22em;
+    --menubar-footer-meta-color: var(--accent-primary);
+    --menubar-open-color: var(--accent-secondary);
+    --menubar-open-border: transparent;
+    --menubar-open-padding: 0;
+    --menubar-open-clip: none;
+    --menubar-open-shadow: 0 0 0.375rem rgba(0, 240, 255, 0.45);
+    --menubar-open-hover-color: var(--accent-secondary);
     --scanline-color: rgba(0, 0, 0, 0.10);
     --scanline-opacity: 1;
     --vignette-strength: 0.5;
@@ -703,6 +901,167 @@
     background: rgba(255, 255, 255, 0.02);
     border: 1px solid var(--border-standard);
     border-radius: var(--radius-md);
+  }
+
+  .menubar-popover {
+    @apply relative mx-auto w-full max-w-sm overflow-hidden px-5 py-[18px] text-[var(--text-primary)];
+    background: var(--menubar-popover-bg);
+    backdrop-filter: var(--menubar-popover-backdrop);
+    border: 1px solid var(--menubar-popover-border);
+    border-radius: var(--menubar-popover-radius);
+    box-shadow: var(--menubar-popover-shadow);
+    clip-path: var(--menubar-popover-clip);
+  }
+
+  .menubar-popover::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    background: var(--menubar-popover-overlay);
+    mix-blend-mode: screen;
+  }
+
+  .menubar-popover::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 0.125rem;
+    pointer-events: none;
+    background: var(--menubar-popover-accent);
+    box-shadow: var(--menubar-title-shadow);
+  }
+
+  [data-theme='cyberpunk'] .menubar-popover::after {
+    right: auto;
+    width: 50%;
+  }
+
+  .menubar-popover-corner {
+    position: absolute;
+    right: 0;
+    bottom: 1.125rem;
+    width: 1.125rem;
+    height: 1.125rem;
+    clip-path: polygon(100% 0, 100% 100%, 0 100%);
+    background: var(--menubar-popover-corner);
+    opacity: 0.5;
+    pointer-events: none;
+  }
+
+  .menubar-content {
+    @apply relative z-[1];
+  }
+
+  .menubar-title {
+    color: var(--menubar-title-color);
+    font-family: var(--menubar-title-font);
+    font-size: var(--menubar-title-size);
+    font-weight: var(--menubar-title-weight);
+    letter-spacing: var(--menubar-title-letter-spacing);
+    line-height: 1;
+    text-shadow: var(--menubar-title-shadow);
+    text-transform: uppercase;
+  }
+
+  .menubar-title::before {
+    content: var(--menubar-title-prefix);
+    color: var(--menubar-title-prefix-color);
+    text-shadow: var(--menubar-switch-hover-shadow);
+  }
+
+  .menubar-view-button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: var(--menubar-switch-size);
+    height: var(--menubar-switch-size);
+    padding: 0;
+    color: var(--menubar-switch-color);
+    background: transparent;
+    border: 1px solid var(--menubar-switch-border);
+    border-radius: var(--menubar-switch-radius);
+    clip-path: var(--menubar-switch-clip);
+    cursor: pointer;
+    line-height: 1;
+    transition:
+      color var(--motion-fast) var(--motion-ease-out),
+      background-color var(--motion-fast) var(--motion-ease-out),
+      border-color var(--motion-fast) var(--motion-ease-out);
+  }
+
+  .menubar-view-button:hover {
+    color: var(--menubar-switch-hover-color);
+    background: var(--menubar-switch-hover-bg);
+    border-color: var(--menubar-switch-hover-border);
+    text-shadow: var(--menubar-switch-hover-shadow);
+  }
+
+  .menubar-view-button[data-active='true'] {
+    color: var(--menubar-switch-active-color);
+    background: var(--menubar-switch-active-bg);
+    border-color: var(--menubar-switch-active-border);
+    filter: var(--menubar-switch-active-shadow);
+  }
+
+  .menubar-chart-area {
+    @apply relative -mx-1 min-h-[168px] rounded;
+    background: var(--menubar-chart-bg);
+  }
+
+  .menubar-kpi-value {
+    color: var(--menubar-kpi-token-color);
+    font-family: var(--menubar-kpi-font);
+    font-size: var(--menubar-kpi-size);
+    font-weight: var(--menubar-kpi-weight);
+    letter-spacing: var(--menubar-kpi-letter-spacing);
+    line-height: var(--menubar-kpi-line-height);
+    font-variant-numeric: tabular-nums;
+  }
+
+  .menubar-kpi-value[data-kpi='tokens'] {
+    color: var(--menubar-kpi-token-color);
+    text-shadow: var(--menubar-kpi-token-shadow);
+  }
+
+  .menubar-kpi-value[data-kpi='sessions'] {
+    color: var(--menubar-kpi-session-color);
+    text-shadow: var(--menubar-kpi-session-shadow);
+  }
+
+  .menubar-kpi-value[data-kpi='peak'] {
+    color: var(--menubar-kpi-peak-color);
+    text-shadow: var(--menubar-kpi-peak-shadow);
+  }
+
+  .menubar-label {
+    color: var(--menubar-label-color);
+    font-family: var(--menubar-label-font);
+    font-size: var(--menubar-label-size);
+    font-weight: var(--menubar-label-weight);
+    letter-spacing: var(--menubar-label-letter-spacing);
+    text-transform: uppercase;
+  }
+
+  .menubar-footer-meta {
+    color: var(--menubar-footer-meta-color);
+    text-shadow: var(--menubar-open-shadow);
+  }
+
+  .menubar-open {
+    color: var(--menubar-open-color);
+    background: var(--menubar-open-bg);
+    border: 1px solid var(--menubar-open-border);
+    clip-path: var(--menubar-open-clip);
+    padding: var(--menubar-open-padding);
+    text-shadow: var(--menubar-open-shadow);
+  }
+
+  .menubar-open:hover {
+    color: var(--menubar-open-hover-color);
+    border-color: currentColor;
   }
 
   .timeline-heatmap-card {
