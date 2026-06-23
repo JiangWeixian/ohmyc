@@ -40,8 +40,8 @@ export function SourceSwitcher() {
         className={cn(
           'inline-flex h-9 items-center gap-1.5 rounded-md px-3',
           'text-[13px] text-[var(--text-secondary)]',
-          'bg-[rgba(255,255,255,0.02)] border border-[rgba(255,255,255,0.08)]',
-          'hover:bg-[rgba(255,255,255,0.04)] hover:text-[var(--text-primary)]',
+          'bg-[var(--surface-raised)] border border-[var(--border-standard)]',
+          'hover:bg-[var(--bg-hover)] hover:text-[var(--text-primary)]',
           'transition-colors duration-150',
         )}
       >
@@ -51,7 +51,7 @@ export function SourceSwitcher() {
       </DropdownMenuTrigger>
       <DropdownMenuContent
         align="end"
-        className="min-w-[180px] rounded-lg border border-[rgba(255,255,255,0.08)] bg-[#191a1b] p-2"
+        className="min-w-[180px] rounded-lg border border-[var(--border-standard)] bg-[var(--surface-raised)] p-2"
       >
         {REGISTERED_ORIGINS.map((origin) => {
           const isOnly = selected.size === 1 && selected.has(origin)

@@ -27,20 +27,20 @@ interface MarkdownEditorProperties {
 const markdownEditorOverlay = EditorView.theme({
   '&': {
     fontSize: '15px',
-    backgroundColor: '#08090a',
+    backgroundColor: 'var(--bg-marketing)',
   },
   '.cm-scroller': {
-    fontFamily: '"Berkeley Mono", ui-monospace, SFMono-Regular, "SF Mono", Menlo, monospace',
+    fontFamily: 'var(--font-mono)',
     lineHeight: '1.6',
   },
   '.cm-content': {
     padding: '18px 0',
     caretColor: 'var(--text-primary)',
     color: 'var(--text-primary)',
-    backgroundColor: '#0f1011',
+    backgroundColor: 'var(--bg-panel)',
   },
   '.cm-gutters': {
-    backgroundColor: '#08090a',
+    backgroundColor: 'var(--bg-marketing)',
   },
 }, { dark: true })
 

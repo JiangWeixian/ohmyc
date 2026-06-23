@@ -228,7 +228,7 @@ export function Explorer({ viewSwitcher: _viewSwitcher }: ExplorerProperties) {
         {config.isError
           ? (
           <div className="panel-subtle flex flex-col items-center justify-center py-20 text-center">
-            <div className="mb-3 flex size-12 items-center justify-center rounded-md border border-[var(--border-standard)] bg-[rgba(255,255,255,0.02)]">
+            <div className="mb-3 flex size-12 items-center justify-center rounded-md border border-[var(--border-standard)] bg-[var(--surface-raised)]">
               <Info size={20} className="text-[var(--text-tertiary)]" />
             </div>
             <h3 className="text-[16px] font-medium text-[var(--text-primary)]">Failed to load {sectionId}</h3>
@@ -265,7 +265,7 @@ export function Explorer({ viewSwitcher: _viewSwitcher }: ExplorerProperties) {
               )
             : (
           <div className="panel-subtle flex flex-col items-center justify-center py-20 text-center">
-            <div className="mb-3 flex size-12 items-center justify-center rounded-md border border-[var(--border-standard)] bg-[rgba(255,255,255,0.02)]">
+            <div className="mb-3 flex size-12 items-center justify-center rounded-md border border-[var(--border-standard)] bg-[var(--surface-raised)]">
               <Search size={20} className="text-[var(--text-tertiary)]" />
             </div>
             <h3 className="text-[16px] font-medium text-[var(--text-primary)]">No {sectionId} found</h3>
@@ -290,7 +290,7 @@ export function Explorer({ viewSwitcher: _viewSwitcher }: ExplorerProperties) {
         {pluginsError
           ? (
           <div className="panel-subtle flex flex-col items-center justify-center py-20 text-center">
-            <div className="mb-3 flex size-12 items-center justify-center rounded-md border border-[var(--border-standard)] bg-[rgba(255,255,255,0.02)]">
+            <div className="mb-3 flex size-12 items-center justify-center rounded-md border border-[var(--border-standard)] bg-[var(--surface-raised)]">
               <Info size={20} className="text-[var(--text-tertiary)]" />
             </div>
             <h3 className="text-[16px] font-medium text-[var(--text-primary)]">Failed to load plugins</h3>
@@ -325,7 +325,7 @@ export function Explorer({ viewSwitcher: _viewSwitcher }: ExplorerProperties) {
                         'rounded-md px-2.5 py-1 text-[11px] font-medium tracking-[0.02em]',
                         plugin.enabled
                           ? 'bg-[var(--text-primary)] text-[var(--bg-marketing)]'
-                          : 'bg-[rgba(255,255,255,0.02)] text-[var(--text-tertiary)] border border-[var(--border-standard)]',
+                          : 'bg-[var(--surface-raised)] text-[var(--text-tertiary)] border border-[var(--border-standard)]',
                       )}
                     >
                       {plugin.enabled ? 'Enabled' : 'Disabled'}
@@ -351,7 +351,7 @@ export function Explorer({ viewSwitcher: _viewSwitcher }: ExplorerProperties) {
               )
             : (
           <div className="panel-subtle flex flex-col items-center justify-center py-20 text-center">
-            <div className="mb-3 flex size-12 items-center justify-center rounded-md border border-[var(--border-standard)] bg-[rgba(255,255,255,0.02)]">
+            <div className="mb-3 flex size-12 items-center justify-center rounded-md border border-[var(--border-standard)] bg-[var(--surface-raised)]">
               <Blocks size={20} className="text-[var(--text-tertiary)]" />
             </div>
             <h3 className="text-[16px] font-medium text-[var(--text-primary)]">No plugins installed</h3>
