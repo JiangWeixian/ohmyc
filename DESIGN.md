@@ -135,6 +135,41 @@ On dark surfaces, elevation is communicated through background luminance steps, 
 - **No broad layout choreography:** existing Timeline/Library internals should not animate lists, heatmap cells, card grids, or route layout as decoration. State changes stay instant or short-fade for clarity.
 - **React Bits / WebGL exception:** The Monitor page may use a single interactive 3D object or shader-like background layer when it reinforces personal identity. R3F/Drei owns Lanyard motion, 3D text, particles, orbital traces, bloom/depth effects, and in-Canvas numeric animation. Keep the rest of the chrome calm, monochrome, and data-first.
 - **Reduced motion:** honor `prefers-reduced-motion`; disable count-up, parallax, particles, and nonessential transitions.
+- **Per-theme decoration in expressive mode:** Each theme defines a decoration stack that activates only under `[data-intensity="expressive"]`:
+  - **Phosphor Mono:** scanline overlay, vignette, phosphor text-glow, blinking cursor.
+  - **Amber CRT:** amber scanlines, CRT flicker (≤3 Hz), vignette, amber text-glow.
+  - **Retro Wave:** chromatic-offset title shadows (magenta + cyan), neon glow, top-edge gradient stripes on cards.
+  - **Cyberpunk:** grid backdrop, notched panel corners (clip-path), hazard-stripe sidebar header, yellow text-glow.
+  - **Monitor:** none — Monitor has no expressive decoration; it is calm by definition.
+- **Calm intensity disables all of the above** via a single `[data-intensity="calm"]` override block that zeroes every decoration variable. `prefers-reduced-motion: reduce` triggers the same override regardless of the user's intensity choice.
+- **Decoration utilities** (`.deco-scanlines`, `.deco-glow-text`, `.deco-notch`, `.deco-vignette`) are registered as Tailwind utilities via a plugin and consume theme CSS variables, so they collapse automatically under calm/reduced-motion without conditional classNames.
+
+## Theme System
+
+The theme system is the source of truth for how the five personalities are implemented. The architecture is CSS-variable-driven with `[data-theme]` and `[data-intensity]` attributes on `<html>`.
+
+### Semantic Token Vocabulary (the contract)
+Every theme must provide values for: backgrounds (`--bg-deep/marketing/panel/surface/hover`), text (`--text-primary/secondary/tertiary/quaternary`), accents (`--accent-primary/secondary/signal/glow`), fonts (`--font-display/body/mono`), borders (`--border-subtle/standard/primary/accent`), heatmap (`--heat-0`–`--heat-4`), and decoration (`--scanline-color/opacity`, `--vignette-strength`, `--title-shadow`, `--text-glow`, `--card-clip`, `--panel-notch-size`). Motion tokens (`--motion-*`) are shared across all themes and do not vary.
+
+A new theme works with zero component code changes as long as it provides values for every token above.
+
+### Theme Registry
+| ID | Name | Display font | Swatch |
+|---|---|---|---|
+| `monitor` | Monitor | Inter | `#f7f8f8` |
+| `phosphor` | Phosphor Mono (default) | JetBrains Mono | `#f7f8f8` |
+| `amber` | Amber CRT | VT323 | `#ffb000` |
+| `retro` | Retro Wave | Press Start 2P | `#00f0ff` |
+| `cyberpunk` | Cyberpunk | Chakra Petch | `#fcee0a` |
+
+### Switching
+Themes and intensity are switched via the ⌘K command palette only — no new persistent chrome. A custom React `ThemeProvider` (~60 lines) mounts `data-theme` and `data-intensity` on `<html>` and persists `{ theme, intensity }` to `localStorage['ohmyc-theme']`. Theme switches are pure CSS variable swaps (instant); `setTheme` awaits font loading before flipping the attribute.
+
+### Fonts
+Fonts are self-hosted via `@fontsource` packages and dynamically imported per theme (Vite code-splits them). The default theme's fonts preload with the main bundle; the other four load on first switch then cache. Berkeley Mono (Monitor theme, commercial) is declared via a local `@font-face` and shipped under `packages/ui/public/fonts/`.
+
+### Per-theme color tables
+Refer to `assets/pixel-variants-20260622/variant-{a,b,c,d}-*.html` `:root` blocks for the authoritative per-theme color values. The implementation ports those values into `[data-theme="…"]` blocks in `globals.css`.
 
 ## Component Specs
 
@@ -418,6 +453,7 @@ There is no standard header chrome. Breadcrumbs, source switchers, search trigge
 | 2026-06-20 | Move navigation island below native macOS traffic lights | The Tauri window now uses native traffic-light controls. A `top: 18px` island collides with that chrome, so desktop expanded/collapsed island states start around 48px and keep content-aligned rhythm |
 | 2026-06-20 | Timeline metric toggle uses Radix Tabs semantics | The visual treatment stays compact, but Activity/Tokens now exposes native `tablist`/`tab` semantics and selected state through the shared shadcn/Radix primitive |
 | 2026-06-20 | Timeline heatmap fills widened content | The 53-week graph should distribute columns across its card instead of keeping fixed 10px cells centered in a widened layout |
+| 2026-06-23 | Introduce five-theme + calm/expressive system; default changes from Monitor to Phosphor Mono | PRODUCT.md anti-references reframed from aesthetic bans to execution failures so the chromatic themes (Amber/Retro/Cyberpunk) can ship. Theme system is CSS-variable-driven with `[data-theme]`/`[data-intensity]` on `<html>`; components already consume shadcn semantic tokens and need zero code changes for color. Fonts self-hosted via `@fontsource` for offline Tauri support |
 
 ## Do's and Don'ts
 
@@ -433,10 +469,10 @@ There is no standard header chrome. Breadcrumbs, source switchers, search trigge
 ### Don't
 - Don't use pure white (`#ffffff`) as primary text
 - Don't use solid colored backgrounds for buttons
-- Don't apply any chromatic colors (blue, purple, cyan, etc.)
+- Don't apply chromatic colors in the Monitor theme — it stays pure monochrome. Other themes define their own accent hues via the token contract
 - Don't use positive letter-spacing on display text
 - Don't use visible/opaque borders on dark backgrounds
 - Don't skip the OpenType features (`"cv01", "ss03"`)
 - Don't use weight 700 (bold) — maximum is 590
-- Don't introduce warm colors into the UI chrome
+- Don't ship any theme (in either intensity) that fails WCAG AA contrast — chromatic accents must be tuned to pass
 - Don't use drop shadows for elevation on dark surfaces
