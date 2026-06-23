@@ -207,8 +207,8 @@ export function StoreComponentList({ category, onEdit }: StoreComponentListPrope
         <div
           className={cn(
             'flex h-9 flex-1 items-center gap-2 rounded-md px-3',
-            'border border-[rgba(255,255,255,0.08)] bg-[rgba(255,255,255,0.02)]',
-            'focus-within:border-[rgba(255,255,255,0.14)]',
+            'border border-[var(--border-standard)] bg-[var(--surface-raised)]',
+            'focus-within:border-[var(--border-hover)]',
             'transition-colors duration-150',
           )}
         >
@@ -261,8 +261,8 @@ export function StoreComponentList({ category, onEdit }: StoreComponentListPrope
             ? (
             <div
               className={cn(
-                'rounded-lg border border-[rgba(255,255,255,0.08)]',
-                'bg-[rgba(255,255,255,0.02)] px-6 py-20 text-center',
+                'rounded-lg border border-[var(--border-standard)]',
+                'bg-[var(--surface-raised)] px-6 py-20 text-center',
               )}
             >
               <h2 className="text-[18px] font-[510] text-[var(--text-primary)]">
@@ -278,9 +278,9 @@ export function StoreComponentList({ category, onEdit }: StoreComponentListPrope
                       onClick={() => onEdit?.(category)}
                       className={cn(
                         'mt-4 inline-flex h-9 items-center gap-1.5 rounded-md px-3',
-                        'border border-[rgba(255,255,255,0.08)] bg-[rgba(255,255,255,0.02)]',
+                        'border border-[var(--border-standard)] bg-[var(--surface-raised)]',
                         'text-[13px] font-[510] text-[var(--text-secondary)]',
-                        'hover:bg-[rgba(255,255,255,0.04)] hover:text-[var(--text-primary)] hover:border-[rgba(255,255,255,0.14)]',
+                        'hover:bg-[var(--bg-hover)] hover:text-[var(--text-primary)] hover:border-[var(--border-hover)]',
                         'transition-colors duration-150',
                       )}
                     >
@@ -299,15 +299,15 @@ export function StoreComponentList({ category, onEdit }: StoreComponentListPrope
                     key={item.id}
                     className={cn(
                       'group relative flex items-center gap-3 px-4 py-3.5',
-                      'rounded-lg border border-[rgba(255,255,255,0.08)]',
-                      'bg-[rgba(255,255,255,0.02)] hover:bg-[rgba(255,255,255,0.04)]',
+                      'rounded-lg border border-[var(--border-standard)]',
+                      'bg-[var(--surface-raised)] hover:bg-[var(--bg-hover)]',
                       'transition-colors duration-150',
                     )}
                   >
                     <div
                       className={cn(
                         'flex h-9 w-9 shrink-0 items-center justify-center rounded-md',
-                        'border border-[rgba(255,255,255,0.08)] bg-[rgba(255,255,255,0.04)]',
+                        'border border-[var(--border-standard)] bg-[var(--bg-hover)]',
                         'font-mono text-[11px] font-[510]',
                         'text-[var(--text-secondary)]',
                       )}
@@ -356,7 +356,7 @@ export function StoreComponentList({ category, onEdit }: StoreComponentListPrope
                         className={cn(
                           'flex h-7 w-7 items-center justify-center rounded-sm',
                           'text-[var(--text-tertiary)] hover:text-[var(--text-primary)]',
-                          'hover:bg-[rgba(255,255,255,0.04)]',
+                          'hover:bg-[var(--bg-hover)]',
                           'transition-colors duration-150',
                         )}
                       >
@@ -369,7 +369,7 @@ export function StoreComponentList({ category, onEdit }: StoreComponentListPrope
                         className={cn(
                           'flex h-7 w-7 items-center justify-center rounded-sm',
                           'text-[var(--text-tertiary)] hover:text-[var(--text-primary)]',
-                          'hover:bg-[rgba(255,255,255,0.04)]',
+                          'hover:bg-[var(--bg-hover)]',
                           'transition-colors duration-150',
                         )}
                       >

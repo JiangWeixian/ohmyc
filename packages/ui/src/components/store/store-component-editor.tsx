@@ -241,9 +241,9 @@ function MarkdownDocEditor({
   const breadcrumb = (
     <>
       <span>Store</span>
-      <span className="mx-2 text-[rgba(255,255,255,0.08)]">/</span>
+      <span className="mx-2 text-[var(--border-standard)]">/</span>
       <span className="capitalize">{category}</span>
-      <span className="mx-2 text-[rgba(255,255,255,0.08)]">/</span>
+      <span className="mx-2 text-[var(--border-standard)]">/</span>
       <span className="font-[510] text-[var(--text-primary)]">
         {isEdit ? editName : `New ${singularize(category)}`}
       </span>
@@ -259,7 +259,7 @@ function MarkdownDocEditor({
       <header
         className={cn(
           'h-16 shrink-0 px-6 flex items-center justify-between',
-          'bg-[#0f1011] border-b border-[rgba(255,255,255,0.05)]',
+          'bg-[var(--bg-panel)] border-b border-[var(--border-subtle)]',
         )}
       >
         <span className="sr-only">{a11yTitle}</span>
@@ -271,7 +271,7 @@ function MarkdownDocEditor({
             <span className="inline-flex items-center gap-1.5 font-mono text-[11px] text-[var(--text-tertiary)]">
               <span
                 className="size-1.5 rounded-full bg-[var(--text-primary)]"
-                style={{ boxShadow: '0 0 0 3px rgba(247,248,248,0.12)' }}
+                style={{ boxShadow: '0 0 0 3px color-mix(in srgb, var(--text-primary) 12%, transparent)' }}
               />
               Unsaved changes
             </span>
@@ -282,9 +282,9 @@ function MarkdownDocEditor({
               onClick={() => setShowDeleteDialog(true)}
               className={cn(
                 'h-9 px-3 rounded-md text-[13px] font-[510]',
-                'border border-[rgba(255,255,255,0.08)] bg-transparent',
+                'border border-[var(--border-standard)] bg-transparent',
                 'text-[var(--text-tertiary)]',
-                'hover:bg-[rgba(255,255,255,0.04)] hover:text-[var(--text-primary)]',
+                'hover:bg-[var(--bg-hover)] hover:text-[var(--text-primary)]',
                 'transition-colors duration-150',
               )}
             >
@@ -296,9 +296,9 @@ function MarkdownDocEditor({
             onClick={onCancel}
             className={cn(
               'h-9 px-3 rounded-md text-[13px] font-[510]',
-              'border border-[rgba(255,255,255,0.08)] bg-[rgba(255,255,255,0.02)]',
+              'border border-[var(--border-standard)] bg-[var(--surface-raised)]',
               'text-[var(--text-secondary)]',
-              'hover:bg-[rgba(255,255,255,0.04)] hover:text-[var(--text-primary)] hover:border-[rgba(255,255,255,0.14)]',
+              'hover:bg-[var(--bg-hover)] hover:text-[var(--text-primary)] hover:border-[var(--border-hover)]',
               'transition-colors duration-150',
             )}
           >
@@ -339,7 +339,7 @@ function MarkdownDocEditor({
                 className={cn(
                   'px-3 py-[9px] rounded-l-md',
                   'border border-[var(--border-default)] border-r-0',
-                  'bg-[rgba(255,255,255,0.02)] text-[var(--text-tertiary)]',
+                  'bg-[var(--surface-raised)] text-[var(--text-tertiary)]',
                 )}
               >
                 {category}
@@ -357,8 +357,8 @@ function MarkdownDocEditor({
                 className={cn(
                   'min-w-[280px] px-3 py-[9px] outline-none',
                   'border border-[var(--border-default)]',
-                  'bg-[rgba(255,255,255,0.02)] text-[var(--text-primary)] placeholder:text-[var(--text-quaternary)]',
-                  'focus:border-[rgba(255,255,255,0.2)]',
+                  'bg-[var(--surface-raised)] text-[var(--text-primary)] placeholder:text-[var(--text-quaternary)]',
+                  'focus:border-[var(--border-hover)]',
                   'disabled:opacity-80 disabled:cursor-not-allowed',
                   'transition-colors duration-150',
                 )}
@@ -367,7 +367,7 @@ function MarkdownDocEditor({
                 className={cn(
                   'px-3 py-[9px] rounded-r-md',
                   'border border-[var(--border-default)] border-l-0',
-                  'bg-[rgba(255,255,255,0.02)] text-[var(--text-tertiary)]',
+                  'bg-[var(--surface-raised)] text-[var(--text-tertiary)]',
                 )}
               >
                 .md
@@ -383,17 +383,17 @@ function MarkdownDocEditor({
           {/* The unified .md editor card */}
           <div
             className={cn(
-              'rounded-[10px] overflow-hidden bg-[#08090a]',
+              'rounded-[10px] overflow-hidden bg-[var(--bg-marketing)]',
               parsed.ok
                 ? 'border border-[var(--border-default)]'
-                : 'border border-[rgba(255,255,255,0.18)]',
+                : 'border border-[var(--border-hover)]',
             )}
           >
             {/* Card header chrome */}
             <div
               className={cn(
                 'flex items-center justify-between gap-3 px-4 py-[11px]',
-                'border-b border-[var(--border-subtle)] bg-[rgba(255,255,255,0.02)]',
+                'border-b border-[var(--border-subtle)] bg-[var(--surface-raised)]',
               )}
             >
               <div className="flex items-center gap-3">
@@ -433,7 +433,7 @@ function MarkdownDocEditor({
             <div
               className={cn(
                 'flex items-center justify-between gap-4 px-4 py-2.5',
-                'border-t border-[var(--border-subtle)] bg-[rgba(255,255,255,0.02)]',
+                'border-t border-[var(--border-subtle)] bg-[var(--surface-raised)]',
                 'font-mono text-[11px]',
               )}
             >
@@ -468,7 +468,7 @@ function MarkdownDocEditor({
           </div>
 
           {error && parsed.ok && (
-            <div className="mt-4 rounded-md border border-[rgba(255,255,255,0.18)] bg-[rgba(255,255,255,0.04)] px-3.5 py-2.5 text-[13px] text-[var(--text-primary)]">
+            <div className="mt-4 rounded-md border border-[var(--border-hover)] bg-[var(--bg-hover)] px-3.5 py-2.5 text-[13px] text-[var(--text-primary)]">
               {error}
             </div>
           )}
@@ -495,7 +495,7 @@ function StatusPill({ ok, label }: { ok: boolean; label: string }) {
       <span
         className={cn(
           'w-1.5 h-1.5 rounded-full',
-          ok ? 'bg-[#22c55e]' : 'bg-[var(--text-tertiary)]',
+          ok ? 'bg-[var(--accent-signal)]' : 'bg-[var(--text-tertiary)]',
         )}
       />
       <span className={ok ? 'text-[var(--text-tertiary)]' : 'text-[var(--text-primary)]'}>{label}</span>
