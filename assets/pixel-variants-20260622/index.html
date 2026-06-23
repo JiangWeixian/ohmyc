@@ -1,0 +1,883 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>OhMyC · Pixel Style Variants</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #08090a;
+    --panel: #0f1011;
+    --surface: #191a1b;
+    --tx-1: #f7f8f8;
+    --tx-2: #d0d6e0;
+    --tx-3: #8a8f98;
+    --tx-4: #62666d;
+    --bd: rgba(255,255,255,0.08);
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; background: var(--bg); color: var(--tx-1); }
+  body {
+    font-family: 'Inter', system-ui, sans-serif;
+    font-feature-settings: "cv01","ss03";
+    -webkit-font-smoothing: antialiased;
+  }
+  .wrap { max-width: 1200px; margin: 0 auto; padding: 60px 28px 80px; }
+
+  .eyebrow {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    color: var(--tx-3);
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    margin: 0 0 12px;
+    display: flex; align-items: center; gap: 10px;
+  }
+  .eyebrow::before { content: "//"; color: var(--tx-4); }
+
+  h1 {
+    font-family: 'JetBrains Mono', monospace;
+    font-weight: 700;
+    font-size: 40px;
+    letter-spacing: -0.03em;
+    margin: 0 0 14px;
+    line-height: 1.05;
+  }
+  h1 .accent { color: var(--tx-3); }
+
+  .lede {
+    font-size: 16px;
+    line-height: 1.6;
+    color: var(--tx-2);
+    max-width: 720px;
+    margin: 0 0 12px;
+  }
+
+  .conflict {
+    margin: 24px 0 40px;
+    padding: 16px 18px;
+    border-left: 2px solid #d0d6e0;
+    background: rgba(255,255,255,0.03);
+    font-size: 14px;
+    color: var(--tx-2);
+    line-height: 1.6;
+  }
+  .conflict b { color: var(--tx-1); }
+  .conflict code {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    color: var(--tx-1);
+    background: rgba(255,255,255,0.05);
+    padding: 1px 5px;
+    border-radius: 2px;
+  }
+
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 16px;
+  }
+  @media (max-width: 900px) { .grid { grid-template-columns: 1fr; } }
+
+  .card {
+    position: relative;
+    display: block;
+    text-decoration: none;
+    color: inherit;
+    background: var(--panel);
+    border: 1px solid var(--bd);
+    border-radius: 6px;
+    overflow: hidden;
+    transition: border-color 160ms, transform 160ms;
+  }
+  .card:hover { border-color: rgba(255,255,255,0.20); transform: translateY(-2px); }
+
+  .preview {
+    position: relative;
+    height: 200px;
+    overflow: hidden;
+    border-bottom: 1px solid var(--bd);
+  }
+  .preview .tag {
+    position: absolute; top: 12px; left: 12px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    padding: 4px 8px;
+    border-radius: 2px;
+    background: rgba(0,0,0,0.5);
+    backdrop-filter: blur(6px);
+  }
+  .preview .rule {
+    position: absolute; bottom: 12px; right: 12px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    color: var(--tx-3);
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+  }
+
+  .body { padding: 20px 22px 22px; }
+  .body h2 {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 18px;
+    margin: 0 0 6px;
+    letter-spacing: -0.01em;
+  }
+  .body .sub {
+    font-size: 13px;
+    color: var(--tx-3);
+    margin: 0 0 14px;
+  }
+  .body p {
+    font-size: 13px;
+    color: var(--tx-2);
+    line-height: 1.55;
+    margin: 0 0 14px;
+  }
+  .body .pros { font-size: 12px; line-height: 1.6; color: var(--tx-2); }
+  .body .pros li { margin: 4px 0; }
+  .body .pros .good::before { content: "+ "; color: #9ee6a0; font-weight: 700; }
+  .body .pros .bad::before  { content: "− "; color: #e6a0a0; font-weight: 700; }
+
+  .body .open {
+    display: inline-flex; align-items: center; gap: 6px;
+    margin-top: 16px;
+    padding: 8px 14px;
+    background: var(--tx-1);
+    color: var(--bg);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    font-weight: 500;
+    letter-spacing: 0.04em;
+    border-radius: 3px;
+    transition: opacity 120ms;
+  }
+  .card:hover .open { opacity: 0.85; }
+  .body .open::after { content: "→"; }
+
+  /* Variant A preview */
+  .preview-a { background: #050506; display: flex; align-items: stretch; }
+  .preview-a .mini-side {
+    width: 38px; background: #0f1011; border-right: 1px solid rgba(255,255,255,0.08);
+    display: flex; flex-direction: column; align-items: center; padding: 8px 0; gap: 6px;
+    font-family: 'JetBrains Mono', monospace;
+  }
+  .preview-a .mini-side .b { width: 14px; height: 14px; background: #f7f8f8; box-shadow: 0 0 4px rgba(247,248,248,0.5); }
+  .preview-a .mini-side .n {
+    width: 18px; height: 4px; background: rgba(255,255,255,0.2);
+  }
+  .preview-a .mini-side .n.a { background: #f7f8f8; box-shadow: 0 0 4px rgba(247,248,248,0.4); }
+  .preview-a .mini-main {
+    flex: 1; position: relative; overflow: hidden;
+  }
+  .preview-a .mini-main::before {
+    content: ""; position: absolute; inset: 0;
+    background-image:
+      radial-gradient(circle at 20% 30%, rgba(247,248,248,0.45) 0, transparent 2px),
+      radial-gradient(circle at 80% 20%, rgba(247,248,248,0.3) 0, transparent 2px),
+      radial-gradient(circle at 50% 50%, rgba(247,248,248,0.55) 0, transparent 2px),
+      radial-gradient(circle at 30% 70%, rgba(247,248,248,0.35) 0, transparent 2px),
+      radial-gradient(circle at 70% 80%, rgba(247,248,248,0.45) 0, transparent 2px),
+      radial-gradient(circle at 10% 50%, rgba(247,248,248,0.25) 0, transparent 2px),
+      radial-gradient(circle at 90% 60%, rgba(247,248,248,0.4) 0, transparent 2px);
+    background-size: 60px 60px;
+    opacity: 0.7;
+  }
+  .preview-a .mini-main::after {
+    content: "OHMYC > coding_monitor"; position: absolute;
+    left: 14px; bottom: 18px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 14px;
+    font-weight: 700;
+    color: #f7f8f8;
+    letter-spacing: -0.02em;
+    text-shadow: 0 0 12px rgba(247,248,248,0.35);
+  }
+  .preview-a .tag { color: #f7f8f8; border: 1px solid rgba(247,248,248,0.2); }
+
+  /* Variant B preview */
+  .preview-b { background: #0a0700; display: flex; align-items: stretch; }
+  .preview-b .mini-side {
+    width: 38px; background: #110b00; border-right: 1px solid rgba(255,176,0,0.16);
+    display: flex; flex-direction: column; align-items: center; padding: 8px 0; gap: 6px;
+  }
+  .preview-b .mini-side .b { width: 14px; height: 14px; background: #ffb000; box-shadow: 0 0 4px rgba(255,176,0,0.6); }
+  .preview-b .mini-side .n { width: 18px; height: 4px; background: rgba(255,176,0,0.2); }
+  .preview-b .mini-side .n.a { background: #ffb000; box-shadow: 0 0 4px rgba(255,176,0,0.5); }
+  .preview-b .mini-main { flex: 1; position: relative; overflow: hidden; }
+  .preview-b .mini-main::before {
+    content: ""; position: absolute; inset: 0;
+    background-image:
+      repeating-linear-gradient(to bottom,
+        rgba(255,176,0,0.06) 0, rgba(255,176,0,0.06) 1px,
+        transparent 1px, transparent 3px),
+      radial-gradient(ellipse at center, transparent 50%, rgba(0,0,0,0.7) 100%);
+  }
+  .preview-b .mini-main::after {
+    content: "OHMYC > coding_monitor"; position: absolute;
+    left: 14px; bottom: 18px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 14px;
+    font-weight: 700;
+    color: #ffb000;
+    letter-spacing: 0.02em;
+    text-shadow: 0 0 8px rgba(255,176,0,0.6), 0 0 16px rgba(255,140,0,0.25);
+  }
+  .preview-b .tag { color: #ffb000; border: 1px solid rgba(255,176,0,0.3); }
+
+  /* Variant C preview */
+  .preview-c { background: #0d0221; display: flex; align-items: stretch; }
+  .preview-c .mini-side {
+    width: 38px; background: #16082e; border-right: 2px solid rgba(255,43,214,0.22);
+    display: flex; flex-direction: column; align-items: center; padding: 8px 0; gap: 6px;
+    box-shadow: 4px 0 12px rgba(255,43,214,0.18);
+    position: relative;
+  }
+  .preview-c .mini-side::before {
+    content: ""; position: absolute; top: 0; left: 0; right: 0; height: 2px;
+    background: linear-gradient(to right, #00f0ff, #ff2bd6, #ffb000);
+    box-shadow: 0 0 4px rgba(255,43,214,0.5);
+  }
+  .preview-c .mini-side .b {
+    width: 14px; height: 14px; background: #00f0ff;
+    box-shadow: 0 0 4px rgba(0,240,255,0.6);
+  }
+  .preview-c .mini-side .n { width: 18px; height: 4px; background: rgba(255,43,214,0.25); }
+  .preview-c .mini-side .n.a { background: #ff2bd6; box-shadow: 0 0 4px rgba(255,43,214,0.5); }
+  .preview-c .mini-main { flex: 1; position: relative; overflow: hidden; }
+  .preview-c .mini-main::before {
+    content: ""; position: absolute; inset: 0;
+    background:
+      linear-gradient(to bottom, rgba(255,43,214,0.08) 0%, transparent 40%, rgba(0,240,255,0.08) 100%),
+      radial-gradient(ellipse at 50% 100%, rgba(255,176,0,0.25), transparent 60%);
+  }
+  .preview-c .mini-main::after {
+    content: "OHMYC > coding_monitor"; position: absolute;
+    left: 14px; bottom: 18px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 14px;
+    font-weight: 700;
+    color: #f0e6ff;
+    letter-spacing: -0.02em;
+    text-shadow:
+      2px 2px 0 #ff2bd6,
+      4px 4px 0 #00f0ff,
+      0 0 14px rgba(255,43,214,0.5);
+  }
+  .preview-c .tag { color: #00f0ff; border: 1px solid rgba(0,240,255,0.3); text-shadow: 0 0 4px rgba(0,240,255,0.4); }
+
+  /* Variant E preview */
+  .preview-e {
+    position: relative;
+    background: linear-gradient(180deg, #dff8f3 0%, #8be7df 52%, #2db4cf 100%);
+    overflow: hidden;
+  }
+  .preview-e::before,
+  .preview-e::after {
+    content: "";
+    position: absolute;
+    clip-path: polygon(0 18%, 100% 0, 88% 100%, 0 82%);
+  }
+  .preview-e::before {
+    left: 0; bottom: 0;
+    width: 64%; height: 58%;
+    background: #56d7d1;
+  }
+  .preview-e::after {
+    right: -8%; bottom: -4%;
+    width: 54%; height: 68%;
+    background: #1689bf;
+    opacity: 0.78;
+  }
+  .preview-e .mini-island {
+    position: absolute;
+    left: 50%; bottom: 34px;
+    width: 170px; height: 72px;
+    transform: translateX(-50%) skewX(-8deg);
+    border-radius: 48% 52% 44% 56% / 58% 42% 58% 42%;
+    background: linear-gradient(145deg, #ffe3af 0 48%, #ffc76f 48% 100%);
+    box-shadow: 0 18px 26px rgba(14,91,124,0.22);
+    z-index: 2;
+  }
+  .preview-e .mini-house {
+    position: absolute;
+    left: 50%; bottom: 84px;
+    width: 76px; height: 54px;
+    transform: translateX(-50%);
+    background: linear-gradient(90deg, #fff4db 0 55%, #f3d0a8 55% 100%);
+    z-index: 3;
+  }
+  .preview-e .mini-house::before {
+    content: "";
+    position: absolute;
+    left: -8px; top: -20px;
+    width: 94px; height: 28px;
+    background: linear-gradient(145deg, #ffc16d 0 52%, #ff5d66 52% 100%);
+    clip-path: polygon(8% 0, 80% 0, 100% 100%, 0 100%);
+  }
+  .preview-e .mini-boat {
+    position: absolute;
+    left: 44px; bottom: 38px;
+    width: 78px; height: 36px;
+    z-index: 4;
+    filter: drop-shadow(0 10px 10px rgba(13,78,112,0.24));
+  }
+  .preview-e .mini-boat::before {
+    content: "";
+    position: absolute;
+    inset: auto 0 0 0;
+    height: 26px;
+    background: #102b57;
+    clip-path: polygon(0 18%, 100% 0, 82% 100%, 16% 100%);
+  }
+  .preview-e .mini-boat::after {
+    content: "";
+    position: absolute;
+    left: 6px; bottom: 21px;
+    width: 66px; height: 12px;
+    background: #fff9ec;
+    clip-path: polygon(0 20%, 100% 0, 92% 100%, 6% 100%);
+  }
+  .preview-e .tag { color: #184365; border: 1px solid rgba(24,67,101,0.18); background: rgba(255,255,255,0.58); }
+  .preview-e .rule { color: #2d788f; z-index: 5; }
+
+  .next {
+    margin-top: 40px;
+    padding: 22px;
+    background: var(--panel);
+    border: 1px solid var(--bd);
+    border-radius: 6px;
+    font-size: 14px;
+    color: var(--tx-2);
+    line-height: 1.6;
+  }
+  .next b { color: var(--tx-1); }
+  .next h3 {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    color: var(--tx-1);
+    margin: 0 0 10px;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+  }
+  .next ol { margin: 8px 0 0; padding-left: 22px; }
+  .next li { margin: 6px 0; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="eyebrow">design exploration · 3 variants · sidebar layout</div>
+  <h1>Pixel & Geek style <span class="accent">— pick a direction</span></h1>
+  <p class="lede">
+    Three variants applying react-bits pixel/terminal textures (PixelSnow, FaultyTerminal, LetterGlitch, PixelCard)
+    to the OhMyC dashboard. All three now use the <b>no-header / left sidebar</b> layout you asked for. They span
+    from <b>rule-respecting monochrome</b> to <b>full chromatic retro-wave</b>. Open each in a new tab, then tell
+    me which direction to commit to.
+  </p>
+
+  <div class="conflict">
+    <b>Strategic conflict flagged.</b> Your <code>PRODUCT.md</code> (anti-references, line 36) explicitly bans
+    <i>"Gamer / RGB / 'hacker' terminal chrome. No neon, no rainbow gradients, no aggressive terminal cosplay."</i>
+    And <code>DESIGN.md</code> says <i>"No chromatic accents of any kind."</i><br><br>
+    <b>Variant A</b> stays inside those rules. <b>Variant B</b> bends them (single warm hue). <b>Variant C</b> breaks them hard.
+    Whichever you pick, we'll update PRODUCT.md and DESIGN.md to match before implementation.
+  </div>
+
+  <div class="grid">
+
+    <a class="card" href="variant-a-phosphor-mono.html" target="_blank">
+      <div class="preview preview-a">
+        <div class="mini-side">
+          <span class="b"></span>
+          <span class="n a"></span>
+          <span class="n"></span>
+          <span class="n"></span>
+          <span class="n"></span>
+        </div>
+        <div class="mini-main">
+          <span class="tag">A · Phosphor Mono</span>
+          <span class="rule">respects rules</span>
+        </div>
+      </div>
+      <div class="body">
+        <h2>Phosphor Mono</h2>
+        <p class="sub">White pixels on near-black · JetBrains Mono + Inter</p>
+        <p>Pixel/terminal <i>texture</i> in pure monochrome. PixelSnow, FaultyTerminal, LetterGlitch all rendered in white-on-near-black. The geek feel comes from density, scanlines, blinking cursors, and monospace typography — not color.</p>
+        <ul class="pros">
+          <li class="good">Stays inside existing PRODUCT.md and DESIGN.md discipline</li>
+          <li class="good">No strategy doc rewrites required — ship immediately</li>
+          <li class="good">Tests whether pixel texture alone satisfies the "geek" itch</li>
+          <li class="bad">Least visually distinct from current dashboard; subtle</li>
+        </ul>
+        <span class="open">Open variant A</span>
+      </div>
+    </a>
+
+    <a class="card" href="variant-b-amber-crt.html" target="_blank">
+      <div class="preview preview-b">
+        <div class="mini-side">
+          <span class="b"></span>
+          <span class="n a"></span>
+          <span class="n"></span>
+          <span class="n"></span>
+          <span class="n"></span>
+        </div>
+        <div class="mini-main">
+          <span class="tag">B · Amber CRT</span>
+          <span class="rule">bends rules</span>
+        </div>
+      </div>
+      <div class="body">
+        <h2>Amber CRT</h2>
+        <p class="sub">Warm phosphor hue · VT323 + IBM Plex Mono</p>
+        <p>Vintage IBM 3270 / Unix console aesthetic. Same pixel/terminal textures as A, but tinted to one warm hue. Classic "I'm in a terminal at 2am" feel.</p>
+        <ul class="pros">
+          <li class="good">Strong retro identity while staying disciplined (one hue)</li>
+          <li class="good">Distinctive — no other dev tool looks like this</li>
+          <li class="good">Simpler doc update: relax "no chromatic" to "single phosphor hue allowed"</li>
+          <li class="bad">Bends the existing monochrome rule; PRODUCT.md needs a line update</li>
+          <li class="bad">Amber-on-black can fatigue on long reading sessions</li>
+        </ul>
+        <span class="open">Open variant B</span>
+      </div>
+    </a>
+
+    <a class="card" href="variant-c-retro-wave.html" target="_blank">
+      <div class="preview preview-c">
+        <div class="mini-side">
+          <span class="b"></span>
+          <span class="n a"></span>
+          <span class="n"></span>
+          <span class="n"></span>
+          <span class="n"></span>
+        </div>
+        <div class="mini-main">
+          <span class="tag">C · Retro Wave</span>
+          <span class="rule">breaks rules</span>
+        </div>
+      </div>
+      <div class="body">
+        <h2>Retro Wave</h2>
+        <p class="sub">Cyan + Magenta + Amber · Press Start 2P + Silkscreen</p>
+        <p>Full synthwave / 80s arcade. LetterGlitch character storm background, chromatic offset shadows, neon glow. The most aggressive departure from the current precision-engineering posture.</p>
+        <ul class="pros">
+          <li class="good">Maximum "geek pixel" energy — instantly memorable</li>
+          <li class="good">Press Start 2P + Silkscreen nail the 8-bit font brief</li>
+          <li class="good">Differentiates hard from Linear / Vercel / GitHub clones</li>
+          <li class="bad">Hard break with PRODUCT.md anti-references (line 36)</li>
+          <li class="bad">Re-positions the product as "fun arcade" not "calibrated instrument"</li>
+          <li class="bad">Accessibility: heavy glow + low-contrast chromatic pairs need careful tuning</li>
+        </ul>
+        <span class="open">Open variant C</span>
+      </div>
+    </a>
+
+  </div>
+
+  <div class="next">
+    <h3>// next steps</h3>
+    Open all three in separate tabs, compare side-by-side, then tell me:
+    <ol>
+      <li>Which variant (or which elements from each) feels right.</li>
+      <li>Whether you're willing to rewrite <code>PRODUCT.md</code> anti-references if you pick B or C.</li>
+      <li>Anything to push further: more glow? different fonts? harder pixel edges? animation density?</li>
+    </ol>
+    Once you pick, I'll update <code>DESIGN.md</code> with the new system (color, typography, motion, decoration), update <code>PRODUCT.md</code> if needed, and write the implementation plan.
+  </div>
+
+  <!-- Plugins variants section (within agents HTML) -->
+  <h1>Library pages <span class="accent">— full explorer</span></h1>
+  <p class="lede">
+    The three styles applied to <code>packages/ui/src/components/entity-card.tsx</code>,
+    <code>entity-detail.tsx</code>, and the plugins grid.
+    Each file is a working explorer: sidebar switches between Agents / Skills / Commands / Plugins,
+    clicking any agent card drills into a frontmatter + markdown detail view with back button.
+  </p>
+
+  <div class="grid">
+
+    <a class="card" href="agents-a-phosphor-mono.html" target="_blank">
+      <div class="preview preview-a">
+        <div class="mini-side">
+          <span class="b"></span>
+          <span class="n a"></span>
+          <span class="n"></span>
+          <span class="n"></span>
+          <span class="n"></span>
+        </div>
+        <div class="mini-main">
+          <span class="tag">A · Phosphor Mono</span>
+          <span class="rule">agents</span>
+        </div>
+      </div>
+      <div class="body">
+        <h2>Agents · Phosphor Mono</h2>
+        <p class="sub">Inverted icon boxes · JetBrains Mono · ASCII section markers</p>
+        <p>EntityCard with phosphor-white icon chip on near-black. Hover reveals a 2px phosphor stripe down the left edge. Detail view keeps the markdown body in Inter for readability while the frontmatter strip stays monospace.</p>
+        <ul class="pros">
+          <li class="good">Stays inside PRODUCT.md discipline — no rule rewrites</li>
+          <li class="good">Icon chips look like terminal prompt blocks</li>
+          <li class="bad">Subtle; "geek" mostly reads via typography</li>
+        </ul>
+        <span class="open">Open agents A</span>
+      </div>
+    </a>
+
+    <a class="card" href="agents-b-amber-crt.html" target="_blank">
+      <div class="preview preview-b">
+        <div class="mini-side">
+          <span class="b"></span>
+          <span class="n a"></span>
+          <span class="n"></span>
+          <span class="n"></span>
+          <span class="n"></span>
+        </div>
+        <div class="mini-main">
+          <span class="tag">B · Amber CRT</span>
+          <span class="rule">agents</span>
+        </div>
+      </div>
+      <div class="body">
+        <h2>Agents · Amber CRT</h2>
+        <p class="sub">Amber icon chips with CRT glow · VT323 detail headings</p>
+        <p>Card icons become glowing amber chips. Detail h1 uses VT323 at 40px for full terminal-document feel. Frontmatter strip and code blocks all phosphor-tinted. Plugin "Enabled" badge is a bright amber block.</p>
+        <ul class="pros">
+          <li class="good">Agent icons glow like CRT pixels — strong identity</li>
+          <li class="good">Detail view feels like reading a vintage man page</li>
+          <li class="bad">Single-hue relaxation still needed in PRODUCT.md</li>
+        </ul>
+        <span class="open">Open agents B</span>
+      </div>
+    </a>
+
+    <a class="card" href="agents-c-retro-wave.html" target="_blank">
+      <div class="preview preview-c">
+        <div class="mini-side">
+          <span class="b"></span>
+          <span class="n a"></span>
+          <span class="n"></span>
+          <span class="n"></span>
+          <span class="n"></span>
+        </div>
+        <div class="mini-main">
+          <span class="tag">C · Retro Wave</span>
+          <span class="rule">agents</span>
+        </div>
+      </div>
+      <div class="body">
+        <h2>Agents · Retro Wave</h2>
+        <p class="sub">Cyan titles with magenta offset shadows · Press Start 2P · lime "Enabled"</p>
+        <p>Card titles use chromatic offset shadow (magenta + cyan). Top edge of every card has a cyan-magenta-amber gradient stripe. Plugin Enabled badge is lime green with glow. Detail h1 has the full 3-layer shadow stack.</p>
+        <ul class="pros">
+          <li class="good">Maximum pixel/arcade energy; cards feel like inventory items</li>
+          <li class="good">Lime "Enabled" state is instantly readable</li>
+          <li class="bad">Hard break with PRODUCT.md anti-references</li>
+          <li class="bad">Press Start 2P titles limit long agent names</li>
+        </ul>
+        <span class="open">Open agents C</span>
+      </div>
+    </a>
+
+  </div>
+
+  <!-- Timeline variants section -->
+  <div class="eyebrow" style="margin-top:64px">timeline view · 3 variants · applied to real layout</div>
+  <h1>Timeline page <span class="accent">— same three styles</span></h1>
+  <p class="lede">
+    Same three aesthetics, now applied to the actual <code>packages/ui/src/components/timeline/</code> layout:
+    page header + controls (metric tabs / project / year / live stats) + 53×7 contribution heatmap +
+    day-grouped event list with collapsible project rollups and per-session detail rows.
+    Faithful structure, three different skins.
+  </p>
+
+  <div class="grid">
+
+    <a class="card" href="timeline-a-phosphor-mono.html" target="_blank">
+      <div class="preview preview-a">
+        <div class="mini-side">
+          <span class="b"></span>
+          <span class="n a"></span>
+          <span class="n"></span>
+          <span class="n"></span>
+          <span class="n"></span>
+        </div>
+        <div class="mini-main">
+          <span class="tag">A · Phosphor Mono</span>
+          <span class="rule">timeline</span>
+        </div>
+      </div>
+      <div class="body">
+        <h2>Timeline · Phosphor Mono</h2>
+        <p class="sub">White-on-black heatmap cells · JetBrains Mono throughout</p>
+        <p>The heatmap luminance buckets already match this aesthetic perfectly — barely any visual change from production. Geek texture comes from monospace typography, scanlines, blinking cursors, and <code>// section markers</code>.</p>
+        <ul class="pros">
+          <li class="good">Closest to shipping — production heatmap tokens map 1:1</li>
+          <li class="good">Stays inside PRODUCT.md monochrome discipline</li>
+          <li class="bad">Subtle; may not read as "geek" enough on its own</li>
+        </ul>
+        <span class="open">Open timeline A</span>
+      </div>
+    </a>
+
+    <a class="card" href="timeline-b-amber-crt.html" target="_blank">
+      <div class="preview preview-b">
+        <div class="mini-side">
+          <span class="b"></span>
+          <span class="n a"></span>
+          <span class="n"></span>
+          <span class="n"></span>
+          <span class="n"></span>
+        </div>
+        <div class="mini-main">
+          <span class="tag">B · Amber CRT</span>
+          <span class="rule">timeline</span>
+        </div>
+      </div>
+      <div class="body">
+        <h2>Timeline · Amber CRT</h2>
+        <p class="sub">Amber phosphor heatmap · VT323 headings · IBM Plex Mono body</p>
+        <p>Heatmap cells become amber-phosphor luminance steps. Sticky day headings glow. "Today" indicator gently flickers. Classic late-night-terminal feel without breaking the data-density discipline.</p>
+        <ul class="pros">
+          <li class="good">Strong retro identity; the heatmap glows beautifully in amber</li>
+          <li class="good">Single-hue so it stays disciplined and accessible</li>
+          <li class="bad">Requires relaxing PRODUCT.md "no chromatic accents" rule</li>
+        </ul>
+        <span class="open">Open timeline B</span>
+      </div>
+    </a>
+
+    <a class="card" href="timeline-c-retro-wave.html" target="_blank">
+      <div class="preview preview-c">
+        <div class="mini-side">
+          <span class="b"></span>
+          <span class="n a"></span>
+          <span class="n"></span>
+          <span class="n"></span>
+          <span class="n"></span>
+        </div>
+        <div class="mini-main">
+          <span class="tag">C · Retro Wave</span>
+          <span class="rule">timeline</span>
+        </div>
+      </div>
+      <div class="body">
+        <h2>Timeline · Retro Wave</h2>
+        <p class="sub">Chromatic heatmap (cyan→magenta→amber) · Press Start 2P headings</p>
+        <p>Heatmap cells use a chromatic intensity ramp: low = dim magenta, mid = cyan, high = magenta, peak = amber. Each cell glows at higher intensity. Project rollups in cyan, sessions in magenta. The most "geek pixel" energy of the three.</p>
+        <ul class="pros">
+          <li class="good">Heatmap becomes a chromatic signal ramp — visually striking</li>
+          <li class="good">Cyan/magenta project names read instantly against the dim bg</li>
+          <li class="bad">Hard break with PRODUCT.md; re-positions product voice</li>
+          <li class="bad">Chromatic glow needs careful contrast tuning for AA</li>
+        </ul>
+        <span class="open">Open timeline C</span>
+      </div>
+    </a>
+
+  </div>
+
+  <!-- Menubar variants section -->
+  <div class="eyebrow" style="margin-top:64px">menubar popover · 3 variants · ~340px wide</div>
+  <h1>Menubar popover <span class="accent">— desktop HUD</span></h1>
+  <p class="lede">
+    Same three styles applied to <code>packages/ui/src/components/menubar/menubar-page.tsx</code>:
+    a 340px-wide translucent macOS popover with header + view switch (line ↔ heatmap) + 3-cell KPI row + footer.
+    Charts are SVG placeholders in each variant's color treatment. Click the line / heatmap icons
+    inside each popover to toggle views.
+  </p>
+
+  <div class="grid">
+
+    <a class="card" href="menubar-a-phosphor-mono.html" target="_blank">
+      <div class="preview preview-a">
+        <div class="mini-main" style="display:flex;align-items:center;justify-content:center">
+          <span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:#f7f8f8;border:1px solid rgba(247,248,248,0.2);padding:6px 12px;background:rgba(8,9,10,0.7);backdrop-filter:blur(10px)">popover · mono</span>
+        </div>
+      </div>
+      <div class="body">
+        <h2>Menubar · Phosphor Mono</h2>
+        <p class="sub">Translucent dark · white line chart + heatmap · mono KPIs</p>
+        <p>Closest to the production popover. Frosted dark background with scanlines, white SVG line + peak dot, white luminance heatmap buckets. KPI numbers in JetBrains Mono with phosphor glow on the peak.</p>
+        <ul class="pros">
+          <li class="good">Already matches the menubar's translucent monochrome discipline</li>
+          <li class="good">Reads as "Apple HUD with monospace" — quiet, fast</li>
+          <li class="bad">Subtle; doesn't announce "geek" at popover scale</li>
+        </ul>
+        <span class="open">Open menubar A</span>
+      </div>
+    </a>
+
+    <a class="card" href="menubar-b-amber-crt.html" target="_blank">
+      <div class="preview preview-b">
+        <div class="mini-main" style="display:flex;align-items:center;justify-content:center">
+          <span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:#ffb000;border:1px solid rgba(255,176,0,0.3);padding:6px 12px;background:rgba(10,7,0,0.7);backdrop-filter:blur(10px);text-shadow:0 0 4px rgba(255,176,0,0.5)">popover · amber</span>
+        </div>
+      </div>
+      <div class="body">
+        <h2>Menubar · Amber CRT</h2>
+        <p class="sub">Warm translucent · amber line + heatmap · VT323 KPIs</p>
+        <p>Popover becomes a tiny CRT monitor on your desktop. Amber phosphor line with glow, amber heatmap with intensity-driven glow at higher buckets, VT323 KPI numbers in full terminal-document style.</p>
+        <ul class="pros">
+          <li class="good">Strongest "I'm a tiny terminal on your menu bar" identity</li>
+          <li class="good">CRT scanlines + glow translate beautifully to popover scale</li>
+          <li class="bad">Single-hue relaxation still required in PRODUCT.md</li>
+        </ul>
+        <span class="open">Open menubar B</span>
+      </div>
+    </a>
+
+    <a class="card" href="menubar-c-retro-wave.html" target="_blank">
+      <div class="preview preview-c">
+        <div class="mini-main" style="display:flex;align-items:center;justify-content:center">
+          <span style="font-family:'Silkscreen',monospace;font-size:9px;color:#00f0ff;border:1px solid rgba(255,43,214,0.3);padding:6px 12px;background:rgba(13,2,33,0.75);backdrop-filter:blur(10px);text-shadow:0 0 4px rgba(0,240,255,0.5);letter-spacing:0.12em;text-transform:uppercase">popover · retro</span>
+        </div>
+      </div>
+      <div class="body">
+        <h2>Menubar · Retro Wave</h2>
+        <p class="sub">Purple translucent · chromatic line · cyan/magenta/amber KPIs</p>
+        <p>Top neon stripe + grid backdrop inside the popover. Line chart uses cyan→magenta→amber gradient stroke. KPI row splits across three hues (cyan tokens, magenta sessions, amber peak). Heatmap uses the chromatic ramp from timeline C.</p>
+        <ul class="pros">
+          <li class="good">Maximum pixel energy even at popover scale</li>
+          <li class="good">Chromatic KPI split makes each metric instantly distinguishable</li>
+          <li class="bad">Hardest readability — Press Start 2P at 16px is borderline</li>
+          <li class="bad">Loud; may compete with desktop content</li>
+        </ul>
+        <span class="open">Open menubar C</span>
+      </div>
+    </a>
+
+  </div>
+
+  <!-- Variant D — Cyberpunk 2077 -->
+  <div class="eyebrow" style="margin-top:64px">variant d · cyberpunk 2077 · 4 pages</div>
+  <h1>Cyberpunk 2077 <span class="accent">— Night City HUD</span></h1>
+  <p class="lede">
+    Fourth variant inspired by CP2077's in-game HUD: signature yellow <code>#fcee0a</code> + cyan secondary on deep
+    blue-black, <b>notched corner panels</b> via clip-path, hazard stripes on the sidebar header, all-caps Chakra Petch
+    display with 0.2em+ letter-spacing, Share Tech Mono for data, Rajdhani for body. Applied to the same four pages
+    (dashboard, timeline, library, menubar) so you can compare directly against A / B / C.
+  </p>
+
+  <div class="grid">
+
+    <a class="card" href="variant-d-cyberpunk.html" target="_blank">
+      <div class="preview preview-c" style="background:#0a0a14">
+        <div class="mini-main" style="display:flex;align-items:center;justify-content:center">
+          <span style="font-family:'Chakra Petch',sans-serif;font-size:11px;color:#fcee0a;border:1px solid rgba(252,238,10,0.4);padding:8px 14px;background:rgba(10,10,20,0.7);backdrop-filter:blur(10px);text-shadow:0 0 4px rgba(252,238,10,0.5);letter-spacing:0.16em;text-transform:uppercase;clip-path:polygon(0 0,calc(100% - 6px) 0,100% 6px,100% 100%,6px 100%,0 calc(100% - 6px))">dashboard // cp2077</span>
+        </div>
+      </div>
+      <div class="body">
+        <h2>Dashboard · CP2077</h2>
+        <p class="sub">Notched panels · yellow glow · hex wireframe hero · hazard stripes</p>
+        <p>Hero uses a hexagonal wireframe backdrop (60°/-60° hatching) instead of pixel snow. Stat cards have signature CP2077 notched top-right + bottom-left corners. Active sidebar item is a full-yellow block with dark text. Yellow bars on session rows have a diagonal-clipped end.</p>
+        <ul class="pros">
+          <li class="good">Most distinctive identity of the four — instantly recognizable as game HUD</li>
+          <li class="good">Notched corners translate the CP2077 look without copying any copyrighted asset</li>
+          <li class="bad">Hardest break with PRODUCT.md — yellow + cyan is the opposite of monochrome</li>
+          <li class="bad">All-caps + wide tracking eats horizontal space; long names may need truncation</li>
+        </ul>
+        <span class="open">Open dashboard D</span>
+      </div>
+    </a>
+
+    <a class="card" href="timeline-d-cyberpunk.html" target="_blank">
+      <div class="preview preview-c" style="background:#0a0a14">
+        <div class="mini-main" style="display:flex;align-items:center;justify-content:center">
+          <span style="font-family:'Chakra Petch',sans-serif;font-size:11px;color:#00f0ff;border:1px solid rgba(0,240,255,0.4);padding:8px 14px;background:rgba(10,10,20,0.7);backdrop-filter:blur(10px);text-shadow:0 0 4px rgba(0,240,255,0.5);letter-spacing:0.16em;text-transform:uppercase;clip-path:polygon(0 0,calc(100% - 6px) 0,100% 6px,100% 100%,6px 100%,0 calc(100% - 6px))">timeline // cp2077</span>
+        </div>
+      </div>
+      <div class="body">
+        <h2>Timeline · CP2077</h2>
+        <p class="sub">Yellow luminance heatmap · diamond session dots · cyan project names</p>
+        <p>Heatmap cells use a yellow luminance ramp with high-end glow, each cell has a tiny notched corner. Session dots are diamond-shaped (clip-path polygon). "TODAY" marker pulses red as an alert. Stats separators are <code>//</code> slashes for that terminal-cout feel.</p>
+        <ul class="pros">
+          <li class="good">Yellow heatmap reads as "activity meter" — very CP2077 perk-tree</li>
+          <li class="good">Diamond dots + cyan project names give each row strong identity</li>
+          <li class="bad">Caps + tracking reduces scannability for long project paths</li>
+        </ul>
+        <span class="open">Open timeline D</span>
+      </div>
+    </a>
+
+    <a class="card" href="agents-d-cyberpunk.html" target="_blank">
+      <div class="preview preview-c" style="background:#0a0a14">
+        <div class="mini-main" style="display:flex;align-items:center;justify-content:center">
+          <span style="font-family:'Chakra Petch',sans-serif;font-size:11px;color:#ff003c;border:1px solid rgba(252,238,10,0.4);padding:8px 14px;background:rgba(10,10,20,0.7);backdrop-filter:blur(10px);text-shadow:0 0 4px rgba(255,0,60,0.5);letter-spacing:0.16em;text-transform:uppercase;clip-path:polygon(0 0,calc(100% - 6px) 0,100% 6px,100% 100%,6px 100%,0 calc(100% - 6px))">agents // cp2077</span>
+        </div>
+      </div>
+      <div class="body">
+        <h2>Library · CP2077</h2>
+        <p class="sub">Notched entity cards · yellow icon chips · disabled state in red</p>
+        <p>Every EntityCard is a notched CP2077 panel with a yellow top stripe that brightens on hover. Plugin Enabled badge is a yellow block; Disabled badge uses the red alert color. Agent detail blockquote is styled as a red-bordered CP2077 "system warning" callout.</p>
+        <ul class="pros">
+          <li class="good">Cards look like inventory items in a CP2077 menu — strong game feel</li>
+          <li class="good">Red disabled state + yellow enabled state is instantly readable</li>
+          <li class="bad">Notched corners clip text on extreme narrow widths (need min-width test)</li>
+        </ul>
+        <span class="open">Open library D</span>
+      </div>
+    </a>
+
+    <a class="card" href="menubar-d-cyberpunk.html" target="_blank">
+      <div class="preview preview-c" style="background:#0a0a14">
+        <div class="mini-main" style="display:flex;align-items:center;justify-content:center">
+          <span style="font-family:'Chakra Petch',sans-serif;font-size:11px;color:#fcee0a;border:1px solid rgba(252,238,10,0.4);padding:8px 14px;background:rgba(10,10,20,0.7);backdrop-filter:blur(10px);text-shadow:0 0 4px rgba(252,238,10,0.5);letter-spacing:0.16em;text-transform:uppercase;clip-path:polygon(0 0,calc(100% - 6px) 0,100% 6px,100% 100%,6px 100%,0 calc(100% - 6px))">popover // cp2077</span>
+        </div>
+      </div>
+      <div class="body">
+        <h2>Menubar · CP2077</h2>
+        <p class="sub">Notched popover frame · yellow chart · tri-color KPIs (Y/C/R)</p>
+        <p>Popover itself is a notched panel with a hazard-stripe triangle in the bottom-right corner. Chart line is bright yellow with glow, grid lines are dashed yellow. KPI row is tri-chromatic: yellow tokens / cyan sessions / red peak — three HUD readouts at a glance.</p>
+        <ul class="pros">
+          <li class="good">Strongest "I'm a game HUD on your desktop" identity</li>
+          <li class="good">Tri-color KPIs differentiate metrics without text labels</li>
+          <li class="bad">Most loud at popover scale — competes with desktop content</li>
+          <li class="bad">Yellow chart line needs careful AA contrast tuning</li>
+        </ul>
+        <span class="open">Open menubar D</span>
+      </div>
+    </a>
+
+  </div>
+
+  <!-- Variant E - Low Poly Harbor -->
+  <div class="eyebrow" style="margin-top:64px">variant e · low poly harbor · dashboard</div>
+  <h1>Low Poly Harbor <span class="accent">— soft 3D workspace</span></h1>
+  <p class="lede">
+    Variant E leaves the pixel / CRT direction and tests the low-poly 3D look: pastel water,
+    toy-like geometric forms, soft shadows, and a dashboard that still keeps OhMyC's session
+    metrics readable.
+  </p>
+
+  <div class="grid">
+    <a class="card" href="variant-e-low-poly.html" target="_blank">
+      <div class="preview preview-e">
+        <span class="tag">E · Low Poly Harbor</span>
+        <span class="rule">soft 3D</span>
+        <span class="mini-island"></span>
+        <span class="mini-house"></span>
+        <span class="mini-boat"></span>
+      </div>
+      <div class="body">
+        <h2>Dashboard · Low Poly Harbor</h2>
+        <p class="sub">Pastel sea · toy-like harbor scene · clean operational panels</p>
+        <p>Hero turns the dashboard into a low-poly coding harbor. Sessions become route markers, the library becomes dock inventory, and the data cards stay light, readable, and less arcade than the retro variants.</p>
+        <ul class="pros">
+          <li class="good">Closest to the reference image: low-poly, soft light, toy-like geometry</li>
+          <li class="good">Warmer and more approachable than CRT or cyberpunk while staying useful</li>
+          <li class="bad">Bigger departure from the original pixel exploration brief</li>
+        </ul>
+        <span class="open">Open variant E</span>
+      </div>
+    </a>
+  </div>
+
+</div>
+</body>
+</html>

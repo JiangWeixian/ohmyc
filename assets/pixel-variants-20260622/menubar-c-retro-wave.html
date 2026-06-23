@@ -1,0 +1,465 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>OhMyC · Menubar — Variant C · Retro Wave</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Silkscreen:wght@400;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0d0221;
+    --cyan: #00f0ff; --magenta: #ff2bd6; --amber: #ffb000; --lime: #b6ff3b;
+    --tx-1: #f0e6ff; --tx-2: #b9a8e0; --tx-3: #7e6aa8; --tx-4: #4d3f70;
+    --bd-1: rgba(0,240,255,0.12); --bd-2: rgba(255,43,214,0.22); --bd-3: rgba(255,43,214,0.45);
+    --glow-c: 0 0 8px rgba(0,240,255,0.55), 0 0 16px rgba(0,240,255,0.25);
+    --glow-m: 0 0 8px rgba(255,43,214,0.55), 0 0 16px rgba(255,43,214,0.25);
+    --glow-a: 0 0 8px rgba(255,176,0,0.55);
+    --popover-w: 340px;
+
+    /* chromatic heatmap ramp */
+    --heat-0: rgba(255,43,214,0.06);
+    --heat-1: rgba(0,240,255,0.22);
+    --heat-2: rgba(0,240,255,0.55);
+    --heat-3: rgba(255,43,214,0.7);
+    --heat-4: rgba(255,176,0,0.85);
+    --heat-5: rgba(255,176,0,1);
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; height: 100%; }
+  body {
+    background:
+      radial-gradient(ellipse at 30% 20%, rgba(80,20,80,0.5), transparent 50%),
+      radial-gradient(ellipse at 70% 80%, rgba(20,0,40,0.8), transparent 60%),
+      linear-gradient(to bottom, #0d0221 0%, #050010 100%);
+    color: var(--tx-1);
+    font-family: 'JetBrains Mono', monospace;
+    -webkit-font-smoothing: antialiased;
+    display: flex; align-items: center; justify-content: center;
+    min-height: 100vh; padding: 40px 20px; overflow: auto;
+  }
+  body::before {
+    content: ""; position: fixed; inset: 0;
+    background:
+      repeating-linear-gradient(to bottom,
+        rgba(0,0,0,0.18) 0, rgba(0,0,0,0.18) 1px,
+        transparent 1px, transparent 3px),
+      linear-gradient(to bottom,
+        rgba(255,43,214,0.04) 0%, transparent 35%,
+        rgba(0,240,255,0.04) 75%, transparent 100%);
+    pointer-events: none; z-index: 1;
+  }
+  body::after {
+    content: ""; position: fixed; inset: 0;
+    background-image:
+      linear-gradient(to right, rgba(0,240,255,0.05) 1px, transparent 1px),
+      linear-gradient(to bottom, rgba(255,43,214,0.05) 1px, transparent 1px);
+    background-size: 24px 24px;
+    pointer-events: none; z-index: 1;
+    mask-image: linear-gradient(to bottom, transparent, black 30%, black 70%, transparent);
+  }
+  .stage {
+    position: relative; z-index: 2;
+    display: flex; flex-direction: column; align-items: center; gap: 12px;
+  }
+  .stage-label {
+    font-family: 'Silkscreen', monospace;
+    font-size: 9px; color: var(--cyan);
+    letter-spacing: 0.18em; text-transform: uppercase;
+    text-shadow: var(--glow-c);
+  }
+  .stage-label::before { content: "▌ "; color: var(--magenta); text-shadow: var(--glow-m); }
+
+  .popover {
+    width: var(--popover-w);
+    background: rgba(22, 8, 46, 0.78);
+    backdrop-filter: blur(40px) saturate(1.6);
+    -webkit-backdrop-filter: blur(40px) saturate(1.6);
+    border: 1px solid var(--bd-2);
+    border-radius: 12px;
+    box-shadow:
+      0 24px 60px rgba(0,0,0,0.6),
+      0 0 40px rgba(255,43,214,0.18),
+      inset 0 0 0 0.5px rgba(0,240,255,0.06);
+    padding: 18px 22px;
+    color: var(--tx-1);
+    position: relative;
+    overflow: hidden;
+  }
+  /* Top neon stripe inside popover */
+  .popover::before {
+    content: ""; position: absolute; top: 0; left: 0; right: 0; height: 2px;
+    background: linear-gradient(to right, var(--cyan), var(--magenta), var(--amber));
+    box-shadow: 0 0 8px rgba(255,43,214,0.6);
+  }
+  /* scanlines */
+  .popover::after {
+    content: ""; position: absolute; inset: 0;
+    background: repeating-linear-gradient(to bottom,
+      rgba(0,0,0,0.16) 0, rgba(0,0,0,0.16) 1px,
+      transparent 1px, transparent 3px);
+    pointer-events: none;
+  }
+  .popover > * { position: relative; z-index: 1; }
+
+  .header {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-bottom: 12px;
+  }
+  .header .title {
+    font-family: 'Silkscreen', monospace;
+    font-size: 10px; font-weight: 700;
+    color: var(--cyan);
+    letter-spacing: 0.18em; text-transform: uppercase;
+    text-shadow: var(--glow-c);
+  }
+  .header .title::before { content: "▌ "; color: var(--magenta); text-shadow: var(--glow-m); }
+  .view-switch { display: inline-flex; gap: 2px; }
+  .view-switch button {
+    background: transparent; border: 1px solid transparent;
+    width: 22px; height: 22px;
+    display: inline-flex; align-items: center; justify-content: center;
+    cursor: pointer; padding: 0;
+    color: var(--tx-3);
+    transition: color 120ms, border-color 120ms, filter 120ms;
+  }
+  .view-switch button:hover {
+    color: var(--cyan);
+    border-color: var(--bd-1);
+    text-shadow: var(--glow-c);
+  }
+  .view-switch button.active {
+    color: var(--magenta);
+    filter: drop-shadow(0 0 6px rgba(255,43,214,0.6));
+  }
+
+  .chart-area {
+    min-height: 168px;
+    margin: 0 -4px;
+    position: relative;
+    background: linear-gradient(180deg, rgba(0,240,255,0.04) 0%, rgba(255,43,214,0.02) 100%);
+    border-radius: 4px;
+  }
+  .chart-area.heatmap-bg { background: transparent; }
+
+  .line-chart {
+    width: 100%; height: 168px;
+    display: block;
+  }
+  /* Multi-color gradient stroke */
+  .line-chart .area-fill {
+    fill: url(#retroFill);
+  }
+  .line-chart .area-stroke {
+    fill: none;
+    stroke: url(#retroStroke);
+    stroke-width: 1.75;
+    stroke-linecap: round; stroke-linejoin: round;
+    filter: drop-shadow(0 0 3px rgba(255,43,214,0.6));
+  }
+  .line-chart .y-tick {
+    fill: var(--tx-3);
+    font-size: 9px;
+    font-family: 'JetBrains Mono', monospace;
+  }
+  .line-chart .x-tick {
+    fill: var(--cyan);
+    font-size: 9px;
+    font-family: 'JetBrains Mono', monospace;
+    text-shadow: 0 0 3px rgba(0,240,255,0.4);
+  }
+  .line-chart .peak-marker {
+    fill: var(--amber);
+    filter: drop-shadow(0 0 8px var(--amber));
+  }
+  .line-chart .grid-line {
+    stroke: rgba(0,240,255,0.06);
+    stroke-width: 0.5;
+  }
+
+  .heatmap { padding: 8px 4px 4px; font-size: 9px; }
+  .heatmap-grid {
+    display: grid;
+    grid-template-columns: 16px repeat(16, 1fr);
+    grid-template-rows: 12px repeat(7, 16px);
+    column-gap: 3px; row-gap: 3px;
+    align-items: center;
+  }
+  .heatmap-months {
+    grid-column: 2 / -1; grid-row: 1;
+    display: grid;
+    grid-template-columns: repeat(16, 1fr);
+    column-gap: 3px;
+    color: var(--cyan);
+    font-family: 'Silkscreen', monospace;
+    font-size: 8px; letter-spacing: 0.08em; text-transform: uppercase;
+    text-shadow: var(--glow-c);
+  }
+  .heatmap-dows {
+    grid-column: 1; grid-row: 2 / -1;
+    display: grid;
+    grid-template-rows: repeat(7, 16px);
+    row-gap: 3px;
+    color: var(--magenta);
+    font-family: 'Silkscreen', monospace;
+    font-size: 7px;
+    align-items: center;
+    text-shadow: var(--glow-m);
+  }
+  .heatmap-dows span { visibility: hidden; }
+  .heatmap-dows span.on { visibility: visible; }
+  .heatmap-cells {
+    grid-column: 2 / -1; grid-row: 2 / -1;
+    display: grid;
+    grid-template-columns: repeat(16, 1fr);
+    grid-template-rows: repeat(7, 16px);
+    column-gap: 3px; row-gap: 3px;
+  }
+  .heatmap-cells i {
+    display: block;
+    width: 100%; height: 100%;
+  }
+  .heatmap-cells i.b0 { background: var(--heat-0); }
+  .heatmap-cells i.b1 { background: var(--heat-1); }
+  .heatmap-cells i.b2 { background: var(--heat-2); box-shadow: 0 0 3px rgba(0,240,255,0.4); }
+  .heatmap-cells i.b3 { background: var(--heat-3); box-shadow: 0 0 5px rgba(255,43,214,0.5); }
+  .heatmap-cells i.b4 { background: var(--heat-4); box-shadow: 0 0 6px rgba(255,176,0,0.6); }
+  .heatmap-cells i.b5 { background: var(--heat-5); box-shadow: 0 0 8px rgba(255,176,0,0.8); }
+  .heatmap-legend {
+    margin-top: 10px;
+    display: flex; align-items: center; justify-content: space-between;
+    font-family: 'Silkscreen', monospace;
+    color: var(--tx-3);
+    font-size: 8px; letter-spacing: 0.08em; text-transform: uppercase;
+  }
+  .heatmap-legend .scale {
+    display: inline-flex; align-items: center; gap: 4px;
+  }
+  .heatmap-legend .scale .swatches {
+    display: inline-flex; gap: 2px;
+  }
+  .heatmap-legend .scale .swatches i {
+    display: block; width: 10px; height: 10px;
+  }
+
+  /* KPI row — three chromatic colors */
+  .kpi-row {
+    display: flex;
+    margin-top: 14px;
+  }
+  .kpi {
+    flex: 1;
+    display: flex; flex-direction: column; gap: 4px;
+    padding: 0 14px;
+  }
+  .kpi:first-child { padding-left: 0; }
+  .kpi:last-child { padding-right: 0; }
+  .kpi + .kpi { border-left: 1px solid var(--bd-1); }
+  .kpi-value {
+    font-family: 'Press Start 2P', monospace;
+    font-size: 16px; font-weight: 400;
+    line-height: 1.1;
+    font-variant-numeric: tabular-nums;
+  }
+  .kpi.tokens .kpi-value {
+    color: var(--cyan); text-shadow: 1px 1px 0 var(--magenta), 0 0 6px rgba(0,240,255,0.4);
+  }
+  .kpi.sessions .kpi-value {
+    color: var(--magenta); text-shadow: 1px 1px 0 var(--cyan), 0 0 6px rgba(255,43,214,0.4);
+  }
+  .kpi.peak .kpi-value {
+    color: var(--amber); text-shadow: var(--glow-a);
+  }
+  .kpi-label {
+    font-family: 'Silkscreen', monospace;
+    font-size: 8px; font-weight: 700;
+    color: var(--tx-3);
+    letter-spacing: 0.14em; text-transform: uppercase;
+  }
+
+  .footer {
+    margin-top: 14px;
+    padding-top: 12px;
+    border-top: 1px solid var(--bd-1);
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .footer .meta {
+    font-family: 'Silkscreen', monospace;
+    font-size: 8px; font-weight: 700;
+    color: var(--lime);
+    letter-spacing: 0.12em; text-transform: uppercase;
+    text-shadow: 0 0 4px rgba(182,255,59,0.5);
+  }
+  .footer .open {
+    font-family: 'Silkscreen', monospace;
+    font-size: 9px; font-weight: 700;
+    color: var(--magenta);
+    background: transparent; border: 0;
+    cursor: pointer; padding: 0;
+    transition: color 120ms;
+    text-shadow: var(--glow-m);
+    letter-spacing: 0.08em; text-transform: uppercase;
+  }
+  .footer .open:hover { color: var(--cyan); text-shadow: var(--glow-c); }
+  .footer .open::after { content: " →"; }
+
+  @media (prefers-reduced-motion: reduce) {
+    .view-switch button.active { filter: none; }
+  }
+</style>
+</head>
+<body>
+
+<div class="stage">
+  <span class="stage-label">menubar popover · retro wave · 340px wide</span>
+
+  <div class="popover">
+
+    <div class="header">
+      <span class="title">activity</span>
+      <div class="view-switch">
+        <button class="active" data-view="line" aria-label="Line view">
+          <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+            <path d="M1 11 L4 7 L7 9 L10 4 L13 6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </button>
+        <button data-view="heatmap" aria-label="Heatmap view">
+          <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+            <rect x="1.5" y="1.5" width="3" height="3" rx="0.5" fill="currentColor" opacity="0.5"/>
+            <rect x="5.5" y="1.5" width="3" height="3" rx="0.5" fill="currentColor"/>
+            <rect x="9.5" y="1.5" width="3" height="3" rx="0.5" fill="currentColor" opacity="0.3"/>
+            <rect x="1.5" y="5.5" width="3" height="3" rx="0.5" fill="currentColor"/>
+            <rect x="5.5" y="5.5" width="3" height="3" rx="0.5" fill="currentColor" opacity="0.3"/>
+            <rect x="9.5" y="5.5" width="3" height="3" rx="0.5" fill="currentColor" opacity="0.5"/>
+            <rect x="1.5" y="9.5" width="3" height="3" rx="0.5" fill="currentColor" opacity="0.3"/>
+            <rect x="5.5" y="9.5" width="3" height="3" rx="0.5" fill="currentColor" opacity="0.5"/>
+            <rect x="9.5" y="9.5" width="3" height="3" rx="0.5" fill="currentColor"/>
+          </svg>
+        </button>
+      </div>
+    </div>
+
+    <div class="chart-area" id="chart-area">
+
+      <svg class="line-chart" id="line-view" viewBox="0 0 320 168" preserveAspectRatio="none">
+        <defs>
+          <linearGradient id="retroStroke" x1="0%" y1="0%" x2="100%" y2="0%">
+            <stop offset="0%" stop-color="#00f0ff"/>
+            <stop offset="50%" stop-color="#ff2bd6"/>
+            <stop offset="100%" stop-color="#ffb000"/>
+          </linearGradient>
+          <linearGradient id="retroFill" x1="0%" y1="0%" x2="0%" y2="100%">
+            <stop offset="0%" stop-color="#ff2bd6" stop-opacity="0.35"/>
+            <stop offset="100%" stop-color="#ff2bd6" stop-opacity="0"/>
+          </linearGradient>
+        </defs>
+        <line class="grid-line" x1="0" y1="40"  x2="320" y2="40"/>
+        <line class="grid-line" x1="0" y1="84"  x2="320" y2="84"/>
+        <line class="grid-line" x1="0" y1="128" x2="320" y2="128"/>
+        <text class="y-tick" x="2" y="38">128k</text>
+        <text class="y-tick" x="2" y="82">64k</text>
+        <text class="y-tick" x="2" y="126">0</text>
+        <path class="area-fill" d="
+          M0 130
+          L20 120 L40 100 L60 110 L80 90 L100 70 L120 80 L140 60
+          L160 75 L180 50 L200 65 L220 40 L240 55 L260 30 L280 45 L300 25 L320 35
+          L320 168 L0 168 Z"/>
+        <path class="area-stroke" d="
+          M0 130
+          L20 120 L40 100 L60 110 L80 90 L100 70 L120 80 L140 60
+          L160 75 L180 50 L200 65 L220 40 L240 55 L260 30 L280 45 L300 25 L320 35"/>
+        <circle class="peak-marker" cx="300" cy="25" r="3"/>
+        <text class="x-tick" x="0"   y="162">Mar</text>
+        <text class="x-tick" x="80"  y="162">Apr</text>
+        <text class="x-tick" x="160" y="162">May</text>
+        <text class="x-tick" x="240" y="162">Jun</text>
+      </svg>
+
+      <div class="heatmap" id="heatmap-view" style="display:none">
+        <div class="heatmap-grid">
+          <div class="heatmap-months">
+            <span>Mar</span><span></span><span></span><span>Apr</span><span></span><span></span>
+            <span>May</span><span></span><span></span><span>Jun</span><span></span><span></span>
+            <span>Jul</span><span></span><span></span><span></span>
+          </div>
+          <div class="heatmap-dows">
+            <span></span><span class="on">M</span><span></span><span class="on">W</span><span></span><span class="on">F</span><span></span>
+          </div>
+          <div class="heatmap-cells" id="heatmap-cells"></div>
+        </div>
+        <div class="heatmap-legend">
+          <span>Mar 5 → Jun 22</span>
+          <span class="scale">
+            less
+            <span class="swatches">
+              <i class="b0"></i><i class="b1"></i><i class="b2"></i><i class="b3"></i><i class="b4"></i><i class="b5"></i>
+            </span>
+            more
+          </span>
+        </div>
+      </div>
+
+    </div>
+
+    <div class="kpi-row">
+      <div class="kpi tokens">
+        <span class="kpi-value">8.2M</span>
+        <span class="kpi-label">tokens</span>
+      </div>
+      <div class="kpi sessions">
+        <span class="kpi-value">147</span>
+        <span class="kpi-label">sessions</span>
+      </div>
+      <div class="kpi peak">
+        <span class="kpi-value">128k</span>
+        <span class="kpi-label">peak</span>
+      </div>
+    </div>
+
+    <div class="footer">
+      <span class="meta">peak Sun Jun 15</span>
+      <button class="open">Open OhMyC</button>
+    </div>
+
+  </div>
+
+  <span class="stage-label" style="margin-top:8px">click the icons above to toggle line ↔ heatmap</span>
+</div>
+
+<script>
+(function(){
+  const el = document.getElementById('heatmap-cells');
+  if (!el) return;
+  const WEEKS = 16;
+  for (let w = 0; w < WEEKS; w++) {
+    const recency = w / WEEKS;
+    const boost = Math.max(0, (recency - 0.4) * 1.8);
+    for (let d = 0; d < 7; d++) {
+      const cell = el.appendChild(document.createElement('i'));
+      const r = Math.random();
+      const weekend = (d === 0 || d === 6) ? 0.5 : 1;
+      const score = r * recency * weekend + boost * r;
+      let b = 'b0';
+      if (score > 0.92) b = 'b5';
+      else if (score > 0.78) b = 'b4';
+      else if (score > 0.6) b = 'b3';
+      else if (score > 0.4) b = 'b2';
+      else if (score > 0.2) b = 'b1';
+      cell.className = b;
+    }
+  }
+})();
+document.querySelectorAll('.view-switch button').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.view-switch button').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    const view = btn.dataset.view;
+    document.getElementById('line-view').style.display = view === 'line' ? 'block' : 'none';
+    document.getElementById('heatmap-view').style.display = view === 'heatmap' ? 'block' : 'none';
+    document.getElementById('chart-area').classList.toggle('heatmap-bg', view === 'heatmap');
+  });
+});
+</script>
+</body>
+</html>

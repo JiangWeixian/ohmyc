@@ -1,0 +1,470 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>OhMyC · Menubar — Variant D · Cyberpunk 2077</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@400;500;600;700&family=Rajdhani:wght@400;500;600;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --cp-bg: #0a0a14; --cp-bg-panel: #11111d; --cp-bg-surface: #1a1a2e; --cp-bg-deep: #06060c;
+    --cp-yellow: #fcee0a; --cp-yellow-d: rgba(252,238,10,0.6); --cp-yellow-f: rgba(252,238,10,0.12);
+    --cp-cyan: #00f0ff; --cp-cyan-d: rgba(0,240,255,0.55);
+    --cp-red: #ff003c; --cp-red-d: rgba(255,0,60,0.5);
+    --cp-text: #e8e8f0; --cp-text-dim: #8a8aa0; --cp-text-mute: #5a5a78;
+    --cp-border: rgba(252,238,10,0.22); --cp-border-b: rgba(252,238,10,0.55);
+    --cp-glow-y: 0 0 6px rgba(252,238,10,0.55), 0 0 14px rgba(252,238,10,0.22);
+    --cp-glow-c: 0 0 6px rgba(0,240,255,0.55), 0 0 14px rgba(0,240,255,0.22);
+    --popover-w: 340px;
+    --heat-0: rgba(252,238,10,0.05);
+    --heat-1: rgba(252,238,10,0.18);
+    --heat-2: rgba(252,238,10,0.38);
+    --heat-3: rgba(252,238,10,0.65);
+    --heat-4: rgba(252,238,10,0.92);
+    --heat-5: rgba(252,238,10,1);
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; height: 100%; }
+  body {
+    background:
+      radial-gradient(ellipse at 30% 20%, rgba(252,238,10,0.05), transparent 50%),
+      radial-gradient(ellipse at 70% 80%, rgba(0,240,255,0.04), transparent 60%),
+      #06060c;
+    color: var(--cp-text);
+    font-family: 'Rajdhani', 'Chakra Petch', sans-serif;
+    -webkit-font-smoothing: antialiased;
+    display: flex; align-items: center; justify-content: center;
+    min-height: 100vh; padding: 40px 20px; overflow: auto;
+  }
+  body::before {
+    content: ""; position: fixed; inset: 0;
+    background-image:
+      linear-gradient(to right, rgba(252,238,10,0.03) 1px, transparent 1px),
+      linear-gradient(to bottom, rgba(0,240,255,0.03) 1px, transparent 1px);
+    background-size: 32px 32px;
+    pointer-events: none; z-index: 1;
+    mask-image: linear-gradient(to bottom, transparent, black 20%, black 80%, transparent);
+  }
+  body::after {
+    content: ""; position: fixed; inset: 0;
+    background: repeating-linear-gradient(to bottom,
+      rgba(0,0,0,0.12) 0, rgba(0,0,0,0.12) 1px,
+      transparent 1px, transparent 3px);
+    pointer-events: none; z-index: 1; mix-blend-mode: multiply;
+  }
+  .stage {
+    position: relative; z-index: 2;
+    display: flex; flex-direction: column; align-items: center; gap: 12px;
+  }
+  .stage-label {
+    font-family: 'Chakra Petch', sans-serif;
+    font-size: 10px; font-weight: 600;
+    color: var(--cp-yellow);
+    letter-spacing: 0.28em; text-transform: uppercase;
+    text-shadow: var(--cp-glow-y);
+  }
+  .stage-label::before { content: "▸ "; color: var(--cp-cyan); }
+
+  /* Popover — CP2077 HUD panel with notched corners */
+  .popover {
+    width: var(--popover-w);
+    background: rgba(17, 17, 29, 0.78);
+    backdrop-filter: blur(40px) saturate(1.6);
+    -webkit-backdrop-filter: blur(40px) saturate(1.6);
+    padding: 18px 22px;
+    color: var(--cp-text);
+    position: relative;
+    /* notched corners */
+    clip-path: polygon(
+      0 0,
+      calc(100% - 18px) 0,
+      100% 18px,
+      100% 100%,
+      18px 100%,
+      0 calc(100% - 18px)
+    );
+    box-shadow:
+      0 24px 60px rgba(0,0,0,0.7),
+      0 0 40px rgba(252,238,10,0.15);
+  }
+  /* Border drawn via two layers — outer yellow wrapper for the clipped border */
+  .popover-border {
+    background: var(--cp-yellow);
+    padding: 1px;
+    clip-path: polygon(
+      0 0,
+      calc(100% - 18px) 0,
+      100% 18px,
+      100% 100%,
+      18px 100%,
+      0 calc(100% - 18px)
+    );
+    box-shadow: 0 24px 60px rgba(0,0,0,0.7), 0 0 40px rgba(252,238,10,0.18);
+  }
+  .popover-border .popover { box-shadow: none; }
+  /* Top yellow stripe inside */
+  .popover::before {
+    content: ""; position: absolute; top: 0; left: 0; width: 50%; height: 2px;
+    background: var(--cp-yellow);
+    box-shadow: var(--cp-glow-y);
+  }
+  /* hazard stripe in corner */
+  .popover::after {
+    content: ""; position: absolute; bottom: 18px; right: 0; width: 18px; height: 18px;
+    background: repeating-linear-gradient(135deg,
+      var(--cp-yellow) 0, var(--cp-yellow) 2px,
+      transparent 2px, transparent 4px);
+    clip-path: polygon(100% 0, 100% 100%, 0 100%);
+    opacity: 0.5;
+  }
+
+  /* Header */
+  .header {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-bottom: 14px;
+  }
+  .header .title {
+    font-family: 'Chakra Petch', sans-serif;
+    font-size: 12px; font-weight: 700;
+    color: var(--cp-yellow);
+    letter-spacing: 0.32em; text-transform: uppercase;
+    text-shadow: var(--cp-glow-y);
+  }
+  .header .title::before { content: "▸ "; color: var(--cp-cyan); text-shadow: var(--cp-glow-c); }
+  .view-switch { display: inline-flex; gap: 2px; }
+  .view-switch button {
+    background: transparent; border: 1px solid transparent;
+    width: 24px; height: 24px;
+    display: inline-flex; align-items: center; justify-content: center;
+    cursor: pointer; padding: 0;
+    color: var(--cp-text-mute);
+    transition: all 120ms;
+    clip-path: polygon(0 0, calc(100% - 5px) 0, 100% 5px, 100% 100%, 5px 100%, 0 calc(100% - 5px));
+  }
+  .view-switch button:hover {
+    color: var(--cp-cyan);
+    border-color: var(--cp-border);
+    background: rgba(0,240,255,0.04);
+    text-shadow: var(--cp-glow-c);
+  }
+  .view-switch button.active {
+    color: var(--cp-bg-deep);
+    background: var(--cp-yellow);
+    border-color: var(--cp-yellow);
+    box-shadow: var(--cp-glow-y);
+  }
+
+  /* Chart area */
+  .chart-area {
+    min-height: 168px;
+    margin: 0 -4px;
+    position: relative;
+  }
+  .line-chart {
+    width: 100%; height: 168px;
+    display: block;
+  }
+  .line-chart .area-fill { fill: url(#cpFill); }
+  .line-chart .area-stroke {
+    fill: none;
+    stroke: var(--cp-yellow);
+    stroke-width: 1.75;
+    stroke-linecap: round; stroke-linejoin: round;
+    filter: drop-shadow(0 0 4px rgba(252,238,10,0.7));
+  }
+  .line-chart .y-tick, .line-chart .x-tick {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 9px;
+    letter-spacing: 0.08em;
+  }
+  .line-chart .y-tick { fill: var(--cp-text-mute); }
+  .line-chart .x-tick { fill: var(--cp-cyan); text-shadow: 0 0 3px var(--cp-cyan-d); }
+  .line-chart .peak-marker {
+    fill: var(--cp-yellow);
+    filter: drop-shadow(0 0 6px var(--cp-yellow));
+  }
+  .line-chart .grid-line {
+    stroke: rgba(252,238,10,0.06);
+    stroke-width: 0.5;
+    stroke-dasharray: 2 2;
+  }
+
+  /* Heatmap */
+  .heatmap { padding: 6px 4px 4px; }
+  .heatmap-grid {
+    display: grid;
+    grid-template-columns: 16px repeat(16, 1fr);
+    grid-template-rows: 12px repeat(7, 16px);
+    column-gap: 3px; row-gap: 3px;
+    align-items: center;
+  }
+  .heatmap-months {
+    grid-column: 2 / -1; grid-row: 1;
+    display: grid;
+    grid-template-columns: repeat(16, 1fr);
+    column-gap: 3px;
+    font-family: 'Chakra Petch', sans-serif;
+    font-size: 8px; font-weight: 700;
+    color: var(--cp-cyan);
+    letter-spacing: 0.14em; text-transform: uppercase;
+    text-shadow: var(--cp-glow-c);
+  }
+  .heatmap-dows {
+    grid-column: 1; grid-row: 2 / -1;
+    display: grid;
+    grid-template-rows: repeat(7, 16px);
+    row-gap: 3px;
+    font-family: 'Chakra Petch', sans-serif;
+    font-size: 7px; font-weight: 600;
+    color: var(--cp-yellow-d);
+    letter-spacing: 0.08em;
+    align-items: center;
+  }
+  .heatmap-dows span { visibility: hidden; }
+  .heatmap-dows span.on { visibility: visible; }
+  .heatmap-cells {
+    grid-column: 2 / -1; grid-row: 2 / -1;
+    display: grid;
+    grid-template-columns: repeat(16, 1fr);
+    grid-template-rows: repeat(7, 16px);
+    column-gap: 3px; row-gap: 3px;
+  }
+  .heatmap-cells i {
+    display: block;
+    width: 100%; height: 100%;
+    clip-path: polygon(0 0, 100% 0, 100% calc(100% - 2px), calc(100% - 2px) 100%, 0 100%);
+  }
+  .heatmap-cells i.b0 { background: var(--heat-0); }
+  .heatmap-cells i.b1 { background: var(--heat-1); }
+  .heatmap-cells i.b2 { background: var(--heat-2); }
+  .heatmap-cells i.b3 { background: var(--heat-3); box-shadow: 0 0 3px rgba(252,238,10,0.4); }
+  .heatmap-cells i.b4 { background: var(--heat-4); box-shadow: 0 0 5px rgba(252,238,10,0.6); }
+  .heatmap-cells i.b5 { background: var(--heat-5); box-shadow: 0 0 7px rgba(252,238,10,0.8); }
+  .heatmap-legend {
+    margin-top: 10px;
+    display: flex; align-items: center; justify-content: space-between;
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 9px; color: var(--cp-text-dim);
+    letter-spacing: 0.1em; text-transform: uppercase;
+  }
+  .heatmap-legend .scale { display: inline-flex; align-items: center; gap: 4px; }
+  .heatmap-legend .scale .swatches { display: inline-flex; gap: 2px; }
+  .heatmap-legend .scale .swatches i {
+    display: block; width: 10px; height: 10px;
+    clip-path: polygon(0 0, 100% 0, 100% calc(100% - 2px), calc(100% - 2px) 100%, 0 100%);
+  }
+
+  /* KPI row */
+  .kpi-row {
+    display: flex;
+    margin-top: 14px;
+  }
+  .kpi {
+    flex: 1;
+    display: flex; flex-direction: column; gap: 4px;
+    padding: 0 14px;
+  }
+  .kpi:first-child { padding-left: 0; }
+  .kpi:last-child { padding-right: 0; }
+  .kpi + .kpi { border-left: 1px solid var(--cp-border); }
+  .kpi-value {
+    font-family: 'Chakra Petch', sans-serif;
+    font-size: 24px; font-weight: 700;
+    line-height: 1;
+    font-variant-numeric: tabular-nums;
+    letter-spacing: 0.02em;
+    text-shadow: 0 0 6px currentColor;
+  }
+  .kpi.tokens .kpi-value { color: var(--cp-yellow); }
+  .kpi.sessions .kpi-value { color: var(--cp-cyan); }
+  .kpi.peak .kpi-value { color: var(--cp-red); }
+  .kpi-label {
+    font-family: 'Chakra Petch', sans-serif;
+    font-size: 9px; font-weight: 600;
+    color: var(--cp-text-mute);
+    letter-spacing: 0.22em; text-transform: uppercase;
+  }
+
+  /* Footer */
+  .footer {
+    margin-top: 14px;
+    padding-top: 12px;
+    border-top: 1px solid var(--cp-border);
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .footer .meta {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 9px; color: var(--cp-yellow);
+    letter-spacing: 0.12em; text-transform: uppercase;
+    text-shadow: var(--cp-glow-y);
+  }
+  .footer .open {
+    font-family: 'Chakra Petch', sans-serif;
+    font-size: 10px; font-weight: 700;
+    color: var(--cp-cyan);
+    background: transparent; border: 1px solid var(--cp-border);
+    padding: 5px 12px;
+    cursor: pointer;
+    text-shadow: var(--cp-glow-c);
+    letter-spacing: 0.18em; text-transform: uppercase;
+    clip-path: polygon(0 0, calc(100% - 5px) 0, 100% 5px, 100% 100%, 5px 100%, 0 calc(100% - 5px));
+  }
+  .footer .open:hover {
+    border-color: var(--cp-cyan);
+    box-shadow: var(--cp-glow-c);
+  }
+  .footer .open::after { content: " ▸"; }
+</style>
+</head>
+<body>
+
+<div class="stage">
+  <span class="stage-label">menubar popover // cyberpunk 2077 // 340px wide</span>
+
+  <div class="popover-border">
+    <div class="popover">
+
+      <div class="header">
+        <span class="title">activity</span>
+        <div class="view-switch">
+          <button class="active" data-view="line" aria-label="Line view">
+            <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+              <path d="M1 11 L4 7 L7 9 L10 4 L13 6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </button>
+          <button data-view="heatmap" aria-label="Heatmap view">
+            <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+              <rect x="1.5" y="1.5" width="3" height="3" fill="currentColor" opacity="0.5"/>
+              <rect x="5.5" y="1.5" width="3" height="3" fill="currentColor"/>
+              <rect x="9.5" y="1.5" width="3" height="3" fill="currentColor" opacity="0.3"/>
+              <rect x="1.5" y="5.5" width="3" height="3" fill="currentColor"/>
+              <rect x="5.5" y="5.5" width="3" height="3" fill="currentColor" opacity="0.3"/>
+              <rect x="9.5" y="5.5" width="3" height="3" fill="currentColor" opacity="0.5"/>
+              <rect x="1.5" y="9.5" width="3" height="3" fill="currentColor" opacity="0.3"/>
+              <rect x="5.5" y="9.5" width="3" height="3" fill="currentColor" opacity="0.5"/>
+              <rect x="9.5" y="9.5" width="3" height="3" fill="currentColor"/>
+            </svg>
+          </button>
+        </div>
+      </div>
+
+      <div class="chart-area">
+
+        <svg class="line-chart" id="line-view" viewBox="0 0 320 168" preserveAspectRatio="none">
+          <defs>
+            <linearGradient id="cpFill" x1="0%" y1="0%" x2="0%" y2="100%">
+              <stop offset="0%" stop-color="#fcee0a" stop-opacity="0.4"/>
+              <stop offset="100%" stop-color="#fcee0a" stop-opacity="0"/>
+            </linearGradient>
+          </defs>
+          <line class="grid-line" x1="0" y1="40"  x2="320" y2="40"/>
+          <line class="grid-line" x1="0" y1="84"  x2="320" y2="84"/>
+          <line class="grid-line" x1="0" y1="128" x2="320" y2="128"/>
+          <text class="y-tick" x="2" y="38">128k</text>
+          <text class="y-tick" x="2" y="82">64k</text>
+          <text class="y-tick" x="2" y="126">0</text>
+          <path class="area-fill" d="
+            M0 130
+            L20 120 L40 100 L60 110 L80 90 L100 70 L120 80 L140 60
+            L160 75 L180 50 L200 65 L220 40 L240 55 L260 30 L280 45 L300 25 L320 35
+            L320 168 L0 168 Z"/>
+          <path class="area-stroke" d="
+            M0 130
+            L20 120 L40 100 L60 110 L80 90 L100 70 L120 80 L140 60
+            L160 75 L180 50 L200 65 L220 40 L240 55 L260 30 L280 45 L300 25 L320 35"/>
+          <circle class="peak-marker" cx="300" cy="25" r="3"/>
+          <text class="x-tick" x="0"   y="162">MAR</text>
+          <text class="x-tick" x="80"  y="162">APR</text>
+          <text class="x-tick" x="160" y="162">MAY</text>
+          <text class="x-tick" x="240" y="162">JUN</text>
+        </svg>
+
+        <div class="heatmap" id="heatmap-view" style="display:none">
+          <div class="heatmap-grid">
+            <div class="heatmap-months">
+              <span>MAR</span><span></span><span></span><span>APR</span><span></span><span></span>
+              <span>MAY</span><span></span><span></span><span>JUN</span><span></span><span></span>
+              <span>JUL</span><span></span><span></span><span></span>
+            </div>
+            <div class="heatmap-dows">
+              <span></span><span class="on">M</span><span></span><span class="on">W</span><span></span><span class="on">F</span><span></span>
+            </div>
+            <div class="heatmap-cells" id="heatmap-cells"></div>
+          </div>
+          <div class="heatmap-legend">
+            <span>MAR 5 → JUN 22</span>
+            <span class="scale">
+              LESS
+              <span class="swatches">
+                <i class="b0"></i><i class="b1"></i><i class="b2"></i><i class="b3"></i><i class="b4"></i><i class="b5"></i>
+              </span>
+              MORE
+            </span>
+          </div>
+        </div>
+
+      </div>
+
+      <div class="kpi-row">
+        <div class="kpi tokens">
+          <span class="kpi-value">8.2M</span>
+          <span class="kpi-label">tokens</span>
+        </div>
+        <div class="kpi sessions">
+          <span class="kpi-value">147</span>
+          <span class="kpi-label">sessions</span>
+        </div>
+        <div class="kpi peak">
+          <span class="kpi-value">128k</span>
+          <span class="kpi-label">peak</span>
+        </div>
+      </div>
+
+      <div class="footer">
+        <span class="meta">PEAK // SUN JUN 15</span>
+        <button class="open">Open OhMyC</button>
+      </div>
+
+    </div>
+  </div>
+
+  <span class="stage-label" style="margin-top:8px">click the icons above to toggle line ↔ heatmap</span>
+</div>
+
+<script>
+(function(){
+  const el = document.getElementById('heatmap-cells');
+  if (!el) return;
+  const WEEKS = 16;
+  for (let w = 0; w < WEEKS; w++) {
+    const recency = w / WEEKS;
+    const boost = Math.max(0, (recency - 0.4) * 1.8);
+    for (let d = 0; d < 7; d++) {
+      const cell = el.appendChild(document.createElement('i'));
+      const r = Math.random();
+      const weekend = (d === 0 || d === 6) ? 0.5 : 1;
+      const score = r * recency * weekend + boost * r;
+      let b = 'b0';
+      if (score > 0.92) b = 'b5';
+      else if (score > 0.78) b = 'b4';
+      else if (score > 0.6) b = 'b3';
+      else if (score > 0.4) b = 'b2';
+      else if (score > 0.2) b = 'b1';
+      cell.className = b;
+    }
+  }
+})();
+document.querySelectorAll('.view-switch button').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.view-switch button').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    const view = btn.dataset.view;
+    document.getElementById('line-view').style.display = view === 'line' ? 'block' : 'none';
+    document.getElementById('heatmap-view').style.display = view === 'heatmap' ? 'block' : 'none';
+  });
+});
+</script>
+</body>
+</html>
