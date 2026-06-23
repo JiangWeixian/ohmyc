@@ -124,10 +124,10 @@ export function NavigationIsland() {
                 aria-expanded={false}
                 onClick={() => updateCollapsed(false)}
                 className={cn(
-                  'size-12 rounded-[14px] border border-[rgba(255,255,255,0.05)] bg-[rgba(15,16,17,0.72)]',
-                  'text-[var(--text-primary)] [box-shadow:0_0_0_0.5px_rgba(255,255,255,0.10),0_8px_30px_rgba(0,0,0,0.38),0_24px_60px_rgba(0,0,0,0.22)]',
+                  'size-12 rounded-[14px] border border-[var(--border-subtle)] bg-[color-mix(in_srgb,var(--bg-panel)_72%,transparent)]',
+                  'text-[var(--text-primary)] [box-shadow:0_0_0_0.5px_var(--border-standard),0_8px_30px_rgba(0,0,0,0.38),0_24px_60px_rgba(0,0,0,0.22)]',
                   '[backdrop-filter:saturate(180%)_blur(24px)] [-webkit-backdrop-filter:saturate(180%)_blur(24px)]',
-                  'hover:bg-[rgba(255,255,255,0.04)]',
+                  'hover:bg-[var(--bg-hover)]',
                   'motion-safe:transition-transform motion-safe:duration-150 motion-safe:ease-out [@media(hover:hover)_and_(pointer:fine)]:hover:scale-[1.02]',
                 )}
               >
@@ -145,8 +145,8 @@ export function NavigationIsland() {
               aria-label="Primary"
               className={cn(
                 'fixed left-[18px] top-[48px] z-40 flex h-[calc(100dvh-66px)] w-[220px] flex-col overflow-hidden rounded-[14px]',
-                'border border-[rgba(255,255,255,0.05)] bg-[rgba(15,16,17,0.72)]',
-                'p-3 [box-shadow:0_0_0_0.5px_rgba(255,255,255,0.10),0_8px_30px_rgba(0,0,0,0.38),0_24px_60px_rgba(0,0,0,0.22)]',
+                'border border-[var(--border-subtle)] bg-[color-mix(in_srgb,var(--bg-panel)_72%,transparent)]',
+                'p-3 [box-shadow:0_0_0_0.5px_var(--border-standard),0_8px_30px_rgba(0,0,0,0.38),0_24px_60px_rgba(0,0,0,0.22)]',
                 '[backdrop-filter:saturate(180%)_blur(24px)] [-webkit-backdrop-filter:saturate(180%)_blur(24px)]',
                 'max-sm:left-[14px] max-sm:top-[14px] max-sm:h-[calc(100dvh-28px)] max-sm:w-[216px]',
               )}
@@ -177,7 +177,7 @@ export function NavigationIsland() {
                     aria-controls="primary-navigation-island"
                     aria-expanded={true}
                     onClick={() => updateCollapsed(true)}
-                    className="size-8 shrink-0 rounded-lg text-[var(--text-tertiary)] hover:bg-[rgba(255,255,255,0.03)] hover:text-[var(--text-primary)]"
+                    className="size-8 shrink-0 rounded-lg text-[var(--text-tertiary)] hover:bg-[var(--bg-hover)] hover:text-[var(--text-primary)]"
                   >
                     <PanelLeftClose size={15} aria-hidden="true" />
                   </Button>
@@ -191,16 +191,16 @@ export function NavigationIsland() {
                   variant="ghost"
                   onClick={open}
                   className={cn(
-                    'mt-auto flex h-8 w-full items-center justify-between rounded-md border border-[rgba(255,255,255,0.08)]',
-                    'bg-[rgba(255,255,255,0.02)] px-2.5 text-[12px] text-[var(--text-tertiary)]',
-                    'transition-colors hover:bg-[rgba(255,255,255,0.04)] hover:text-[var(--text-secondary)]',
+                    'mt-auto flex h-8 w-full items-center justify-between rounded-md border border-[var(--border-standard)]',
+                    'bg-[var(--surface-raised)] px-2.5 text-[12px] text-[var(--text-tertiary)]',
+                    'transition-colors hover:bg-[var(--bg-hover)] hover:text-[var(--text-secondary)]',
                   )}
                 >
                   <span className="flex items-center gap-2">
                     <Search size={13} aria-hidden="true" />
                     Command
                   </span>
-                  <kbd className="rounded border border-[rgba(255,255,255,0.08)] px-1.5 py-0.5 text-[10px] text-[var(--text-quaternary)]">
+                  <kbd className="rounded border border-[var(--border-standard)] px-1.5 py-0.5 text-[10px] text-[var(--text-quaternary)]">
                     Cmd K
                   </kbd>
                 </Button>
@@ -237,8 +237,8 @@ function IslandGroup({
               cn(
                 'flex h-8 items-center gap-2 rounded-md px-2.5 text-[13px] font-[510] transition-colors',
                 isActive
-                  ? 'bg-[rgba(255,255,255,0.08)] text-[var(--text-primary)] shadow-[inset_0_0_0_0.5px_rgba(255,255,255,0.06)]'
-                  : 'text-[var(--text-secondary)] hover:bg-[rgba(255,255,255,0.03)] hover:text-[var(--text-primary)]',
+                  ? 'bg-[var(--bg-hover)] text-[var(--text-primary)] shadow-[inset_0_0_0_0.5px_var(--border-standard)]'
+                  : 'text-[var(--text-secondary)] hover:bg-[var(--bg-hover)] hover:text-[var(--text-primary)]',
               )}
           >
             {({ isActive }) => (
