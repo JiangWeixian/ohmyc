@@ -204,7 +204,7 @@ export function EventList({ days, highlightedDay }: EventListProps) {
     return (
       <div
         className="my-3 border-y border-[var(--border-subtle)] py-[14px] px-3 text-[12px] text-[var(--text-tertiary)]"
-        style={{ fontFamily: 'Berkeley Mono, ui-monospace, SF Mono, Menlo, monospace' }}
+        style={{ fontFamily: 'var(--font-mono)' }}
       >
         No sessions match the current filters.
       </div>
@@ -233,8 +233,7 @@ export function EventList({ days, highlightedDay }: EventListProps) {
             <div
               className="sticky top-0 z-[1] px-2 pb-[6px] pt-[10px] text-[13px] font-[510] text-[var(--text-primary)]"
               style={{
-                fontFamily: 'Berkeley Mono, ui-monospace, SF Mono, Menlo, monospace',
-                letterSpacing: '0.02em',
+                fontFamily: 'var(--font-mono)',
                 background:
                   'linear-gradient(to bottom, var(--bg-marketing) 70%, rgba(8,9,10,0))',
                 outline: isHighlighted ? '1px solid var(--border-default)' : 'none',
@@ -331,7 +330,7 @@ function ProjectRollup({
         </span>
         <span
           className="flex-1 text-[12px] text-[var(--text-tertiary)]"
-          style={{ fontFamily: 'Berkeley Mono, ui-monospace, SF Mono, Menlo, monospace', letterSpacing: '0.01em' }}
+          style={{ fontFamily: 'var(--font-mono)' }}
         >
           {group.session_count}
           {' '}
@@ -352,7 +351,7 @@ function ProjectRollup({
         <AgentStack agents={group.agents} />
         <span
           className="text-[11px] text-[var(--text-quaternary)]"
-          style={{ fontFamily: 'Berkeley Mono, ui-monospace, SF Mono, Menlo, monospace' }}
+          style={{ fontFamily: 'var(--font-mono)' }}
         >
           {formatTimeRange(firstStart, lastEnd)}
         </span>
@@ -425,7 +424,7 @@ function SessionItem({ session, bucket }: { session: SessionRow; bucket: 0 | 1 |
         </span>
         <span
           className="shrink-0 text-[11px] text-[var(--text-tertiary)]"
-          style={{ fontFamily: 'Berkeley Mono, ui-monospace, SF Mono, Menlo, monospace', letterSpacing: '0.02em' }}
+          style={{ fontFamily: 'var(--font-mono)' }}
         >
           {start}
           {' · '}
@@ -434,7 +433,7 @@ function SessionItem({ session, bucket }: { session: SessionRow; bucket: 0 | 1 |
       </div>
       <div
         className="mt-1 flex flex-wrap items-center text-[11px] text-[var(--text-tertiary)]"
-        style={{ marginLeft: 20, fontFamily: 'Berkeley Mono, ui-monospace, SF Mono, Menlo, monospace', gap: '0 8px' }}
+        style={{ marginLeft: 20, fontFamily: 'var(--font-mono)', gap: '0 8px' }}
       >
         {session.agent_name && (
           <span

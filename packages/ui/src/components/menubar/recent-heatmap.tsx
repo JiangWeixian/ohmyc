@@ -20,18 +20,8 @@ const COL_GAP = 4
 
 const MONTH_NAMES = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'] as const
 
-const BUCKET_COLORS = [
-  'rgba(255,255,255,0.04)', // 0
-  'rgba(255,255,255,0.10)', // 1
-  'rgba(255,255,255,0.22)', // 2
-  'rgba(255,255,255,0.45)', // 3
-  'rgba(255,255,255,0.72)', // 4
-] as const
-
-// Legend shows all 5 cell buckets plus a "More" extreme at 0.92
-const LEGEND_COLORS = [...BUCKET_COLORS, 'rgba(255,255,255,0.92)']
-
-const MONO = '"Berkeley Mono", ui-monospace, SF Mono, Menlo, monospace'
+const HEAT_CLASSES = ['heat-l0', 'heat-l1', 'heat-l2', 'heat-l3', 'heat-l4'] as const
+const MONO = 'var(--font-mono)'
 
 function bucketFor(value: number, max: number): 0 | 1 | 2 | 3 | 4 {
   if (value <= 0 || max <= 0) {
@@ -239,10 +229,10 @@ export function RecentHeatmap({ tokens, sessions }: RecentHeatmapProps) {
               style={{
                 gridColumn: cell.col + 1,
                 gridRow: cell.row + 1,
-                background: BUCKET_COLORS[cell.bucket],
                 borderRadius: 2,
                 cursor: 'pointer',
               }}
+              className={HEAT_CLASSES[cell.bucket]}
               onMouseEnter={e => onCellEnter(cell, e)}
               onMouseLeave={() => setHover(null)}
             />
@@ -259,10 +249,11 @@ export function RecentHeatmap({ tokens, sessions }: RecentHeatmapProps) {
         <span data-heatmap-legend className="inline-flex items-center gap-1.5">
           Less
           <span className="inline-flex items-center gap-[3px] mx-1.5">
-            {LEGEND_COLORS.map((c, i) => (
+            {HEAT_CLASSES.map((className, i) => (
               <span
                 key={i}
-                style={{ width: 9, height: 9, borderRadius: 1, display: 'inline-block', background: c }}
+                className={className}
+                style={{ width: 9, height: 9, borderRadius: 1, display: 'inline-block' }}
               />
             ))}
           </span>

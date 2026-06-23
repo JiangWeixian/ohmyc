@@ -22,7 +22,7 @@ Personality is expressed through themable color, typography, and decoration laye
   - **Monitor:** Inter Variable (display + body), Berkeley Mono (mono)
   - **Phosphor Mono:** JetBrains Mono (display + mono), Inter (body)
   - **Amber CRT:** VT323 (display), IBM Plex Mono (body + mono)
-  - **Retro Wave:** Press Start 2P (display), Silkscreen (body + mono)
+  - **Retro Wave:** Press Start 2P (display), JetBrains Mono (body + mono), Silkscreen for arcade labels, controls, and heatmap microcopy
   - **Cyberpunk:** Chakra Petch (display), Rajdhani (body), Share Tech Mono (mono)
 - **OpenType:** `"cv01", "ss03"` enabled globally on Inter-based themes
 - **Fonts are self-hosted** via `@fontsource` packages for offline Tauri support
@@ -50,7 +50,7 @@ Personality is expressed through themable color, typography, and decoration laye
   - Text: `--text-primary`, `--text-secondary`, `--text-tertiary`, `--text-quaternary`
   - Accents: `--accent-primary`, `--accent-secondary`, `--accent-signal`, `--accent-glow`
   - Borders: `--border-subtle`, `--border-standard`, `--border-primary`, `--border-accent`
-  - Heatmap: `--heat-0` through `--heat-4`
+  - Heatmap: `--heat-0` through `--heat-4`, plus component tokens for graph panel, month/day labels, legend text, and high-intensity glow
 - Values below are the Monitor theme. Other themes redefine these tokens in the Theme System section.
 - **Backgrounds:**
   - Marketing/Deep: `#08090a` — page background
@@ -149,7 +149,7 @@ On dark surfaces, elevation is communicated through background luminance steps, 
 The theme system is the source of truth for how the five personalities are implemented. The architecture is CSS-variable-driven with `[data-theme]` and `[data-intensity]` attributes on `<html>`.
 
 ### Semantic Token Vocabulary (the contract)
-Every theme must provide values for: backgrounds (`--bg-deep/marketing/panel/surface/hover`), text (`--text-primary/secondary/tertiary/quaternary`), accents (`--accent-primary/secondary/signal/glow`), fonts (`--font-display/body/mono`), borders (`--border-subtle/standard/primary/accent`), heatmap (`--heat-0`–`--heat-4`), and decoration (`--scanline-color/opacity`, `--vignette-strength`, `--title-shadow`, `--text-glow`, `--card-clip`, `--panel-notch-size`). Motion tokens (`--motion-*`) are shared across all themes and do not vary.
+Every theme must provide values for: backgrounds (`--bg-deep/marketing/panel/surface/hover`), text (`--text-primary/secondary/tertiary/quaternary`), accents (`--accent-primary/secondary/signal/glow`), fonts (`--font-display/body/mono`), borders (`--border-subtle/standard/primary/accent`), Timeline page chrome (`--timeline-*` title, lede, controls, select, and stats tokens), heatmap (`--heat-0`–`--heat-4`, `--heat-glow-2`–`--heat-glow-4`, `--heatmap-panel-bg`, `--heatmap-panel-border`, `--heatmap-panel-radius`, `--heatmap-panel-shadow`, `--heatmap-panel-clip`, month/day/legend typography tokens, `--heatmap-cell-radius`, `--heatmap-cell-clip`, `--heatmap-corner-size`, `--heatmap-corner-a-color`, `--heatmap-corner-b-color`, `--heatmap-corner-a-shadow`, `--heatmap-corner-b-shadow`), and decoration (`--scanline-color/opacity`, `--vignette-strength`, `--title-shadow`, `--text-glow`, `--card-clip`, `--panel-notch-size`). Motion tokens (`--motion-*`) are shared across all themes and do not vary.
 
 A new theme works with zero component code changes as long as it provides values for every token above.
 
@@ -454,6 +454,8 @@ There is no standard header chrome. Breadcrumbs, source switchers, search trigge
 | 2026-06-20 | Timeline metric toggle uses Radix Tabs semantics | The visual treatment stays compact, but Activity/Tokens now exposes native `tablist`/`tab` semantics and selected state through the shared shadcn/Radix primitive |
 | 2026-06-20 | Timeline heatmap fills widened content | The 53-week graph should distribute columns across its card instead of keeping fixed 10px cells centered in a widened layout |
 | 2026-06-23 | Introduce five-theme + calm/expressive system; default changes from Monitor to Phosphor Mono | PRODUCT.md anti-references reframed from aesthetic bans to execution failures so the chromatic themes (Amber/Retro/Cyberpunk) can ship. Theme system is CSS-variable-driven with `[data-theme]`/`[data-intensity]` on `<html>`; components already consume shadcn semantic tokens and need zero code changes for color. Fonts self-hosted via `@fontsource` for offline Tauri support |
+| 2026-06-23 | Timeline heatmap gets component-level theme tokens | The pixel variants define more than cell colors: panel background/border/radius/shadow, month and day-label color/glow, legend type, cell radius, and Retro corner marks are part of the component grammar. These belong in theme tokens/utilities, not inline React styles |
+| 2026-06-23 | Timeline page chrome uses theme-level tokens | The variant screenshots give each theme a distinct page title, controls, select, and stats grammar. Timeline should map those through component-scoped tokens instead of inheriting generic shadcn rounded controls. Retro body copy uses JetBrains Mono from the reference, with Silkscreen reserved for arcade labels and heatmap microcopy |
 
 ## Do's and Don'ts
 

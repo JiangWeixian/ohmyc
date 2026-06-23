@@ -135,7 +135,7 @@ describe('TimelineView', () => {
     })
   })
 
-  it('uses shared control sizing for the timeline filter row', async () => {
+  it('uses theme-token control classes for the timeline filter row', async () => {
     installTimelineHandlers()
 
     renderWithProviders(<TimelineView />)
@@ -145,19 +145,18 @@ describe('TimelineView', () => {
 
     const tabList = screen.getByText('Activity').closest('[role="tablist"]')
     expect(tabList).not.toBeNull()
-    expect(tabList).toHaveClass('border-[var(--border-default)]')
-    expect(tabList).toHaveClass('bg-[rgba(255,255,255,0.02)]')
+    expect(tabList).toHaveClass('timeline-tabs')
     expect(tabList).not.toHaveClass('h-auto')
 
     const tokensTab = screen.getByText('Tokens').closest('[role="tab"]')
     expect(tokensTab).not.toBeNull()
-    expect(tokensTab).toHaveClass('text-[var(--text-tertiary)]')
-    expect(tokensTab).toHaveClass('data-[state=active]:bg-[rgba(255,255,255,0.08)]')
-    expect(tokensTab).toHaveClass('data-[state=active]:text-[var(--text-primary)]')
+    expect(tokensTab).toHaveClass('timeline-tab')
     expect(tokensTab).not.toHaveClass('h-auto')
     expect(tokensTab).not.toHaveClass('py-[6px]')
 
     expect(screen.getByLabelText('Project')).toHaveAttribute('data-size', 'default')
+    expect(screen.getByLabelText('Project')).toHaveClass('timeline-filter-select')
     expect(screen.getByLabelText('Year')).toHaveAttribute('data-size', 'default')
+    expect(screen.getByLabelText('Year')).toHaveClass('timeline-filter-select')
   })
 })

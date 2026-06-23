@@ -5,9 +5,13 @@ node_modules
 # Build outputs
 dist
 build
+packages/ui/storybook-static/
 target
 .turbo
 *.tsbuildinfo
+
+# Local visual comparison artifacts
+.visual-compare/
 
 # Prevent tsc output leaking into src/
 src/**/*.js

@@ -42,6 +42,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
   const [currentIntensity, setCurrentIntensity] = useState<Intensity>(initial.intensity)
 
   useEffect(() => {
+    void loadThemeFonts(currentTheme)
     document.documentElement.dataset.theme = currentTheme
   }, [currentTheme])
   useEffect(() => {

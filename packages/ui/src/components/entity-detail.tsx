@@ -102,7 +102,7 @@ export function EntityDetail({
       >
         <div className="flex items-start justify-between gap-4">
           <div className="min-w-0 flex-1">
-            <h1 className="text-[28px] font-semibold tracking-[-0.4px] text-[var(--text-primary)]">{name}</h1>
+            <h1 className="deco-title-shadow font-display text-[28px] font-semibold tracking-normal text-[var(--text-primary)]">{name}</h1>
             {description
               ? (
               <p className="mt-1.5 max-w-[62ch] text-[15px] leading-[1.55] text-[var(--text-secondary)]">{description}</p>

@@ -46,7 +46,7 @@ export function EntityCard({
           <Icon size={18} className="text-[var(--bg-marketing)]" />
         </div>
         <div className="min-w-0 flex-1 pt-0.5">
-          <div className="text-[15px] font-[590] text-[var(--text-primary)] truncate">{title}</div>
+          <div className="font-display truncate text-[15px] font-[590] text-[var(--text-primary)]">{title}</div>
           {hasBadges && (
             <div className="mt-1 flex flex-wrap items-center gap-1.5">
               {originLabel && <MonoBadge>{originLabel}</MonoBadge>}

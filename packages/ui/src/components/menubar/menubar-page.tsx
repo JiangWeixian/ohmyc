@@ -49,7 +49,7 @@ function shortDayLabel(iso: string): string {
   return `${dow[d.getUTCDay()]} ${mon[d.getUTCMonth()]} ${d.getUTCDate()}`
 }
 
-const MONO = '"Berkeley Mono", ui-monospace, SF Mono, Menlo, monospace'
+const MONO = 'var(--font-mono)'
 
 export function MenubarPage() {
   useFsChanged()
@@ -90,8 +90,7 @@ export function MenubarPage() {
     >
       <header className="flex items-center justify-between gap-3 mb-3">
         <span
-          className="text-[12px] font-medium uppercase tracking-[0.08em] text-[var(--text-secondary)]"
-          style={{ fontFamily: MONO }}
+          className="deco-title-shadow font-display text-[12px] font-medium uppercase tracking-normal text-[var(--text-secondary)]"
         >
           Activity
         </span>
@@ -173,6 +172,8 @@ export function MenubarPage() {
         <button
           type="button"
           onClick={async () => {
+            // Tauri supplies this module at runtime in the desktop shell.
+            // eslint-disable-next-line import/no-extraneous-dependencies
             const { invoke } = await import('@tauri-apps/api/core')
             await invoke('open_main_window')
             await invoke('hide_popover')

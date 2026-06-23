@@ -27,7 +27,7 @@ interface DualLineChartProps {
   sessions: HeatmapPoint[]
 }
 
-const MONO = '"Berkeley Mono", ui-monospace, SF Mono, Menlo, monospace'
+const MONO = 'var(--font-mono)'
 const MONTH_NAMES = [
   'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
   'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
