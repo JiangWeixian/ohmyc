@@ -221,6 +221,109 @@
     --text-glow: 0 0 8px rgba(247, 248, 248, 0.35);
     --card-clip: none;
   }
+
+  [data-theme='amber'] {
+    --bg-deep: #060400;
+    --bg-marketing: #0a0700;
+    --bg-panel: #110b00;
+    --bg-surface: #1a1300;
+    --bg-hover: #241a00;
+    --text-primary: #ffb000;
+    --text-secondary: #d49500;
+    --text-tertiary: #8a5f00;
+    --text-quaternary: #5c4000;
+    --accent-primary: #ffb000;
+    --accent-secondary: #ffb000;
+    --accent-signal: #ffb000;
+    --accent-glow: rgba(255, 176, 0, 0.4);
+    --font-display: 'VT323', monospace;
+    --font-body: 'IBM Plex Mono', monospace;
+    --font-mono: 'IBM Plex Mono', monospace;
+    --border-subtle: rgba(255, 176, 0, 0.08);
+    --border-standard: rgba(255, 176, 0, 0.16);
+    --border-primary: #3d2a00;
+    --border-accent: rgba(255, 176, 0, 0.22);
+    --heat-0: rgba(255, 176, 0, 0.05);
+    --heat-1: rgba(255, 176, 0, 0.18);
+    --heat-2: rgba(255, 176, 0, 0.38);
+    --heat-3: rgba(255, 176, 0, 0.65);
+    --heat-4: rgba(255, 176, 0, 0.92);
+    --scanline-color: rgba(255, 176, 0, 0.06);
+    --scanline-opacity: 1;
+    --vignette-strength: 0.7;
+    --title-shadow: none;
+    --text-glow: 0 0 8px rgba(255, 176, 0, 0.6), 0 0 16px rgba(255, 140, 0, 0.25);
+    --card-clip: none;
+  }
+
+  [data-theme='retro'] {
+    --bg-deep: #0a0118;
+    --bg-marketing: #0d0221;
+    --bg-panel: #16082e;
+    --bg-surface: #1f0f3e;
+    --bg-hover: #2a1654;
+    --text-primary: #f0e6ff;
+    --text-secondary: #c4b0d8;
+    --text-tertiary: #8a6fa0;
+    --text-quaternary: #5c4570;
+    --accent-primary: #00f0ff;
+    --accent-secondary: #ff2bd6;
+    --accent-signal: #ffb000;
+    --accent-glow: rgba(0, 240, 255, 0.4);
+    --font-display: 'Press Start 2P', monospace;
+    --font-body: 'Silkscreen', monospace;
+    --font-mono: 'Silkscreen', monospace;
+    --border-subtle: rgba(255, 43, 214, 0.10);
+    --border-standard: rgba(0, 240, 255, 0.18);
+    --border-primary: #3d1a5c;
+    --border-accent: rgba(255, 43, 214, 0.30);
+    --heat-0: rgba(255, 43, 214, 0.06);
+    --heat-1: rgba(0, 240, 255, 0.20);
+    --heat-2: rgba(0, 240, 255, 0.42);
+    --heat-3: rgba(255, 43, 214, 0.62);
+    --heat-4: rgba(255, 176, 0, 0.90);
+    --scanline-color: rgba(255, 43, 214, 0.04);
+    --scanline-opacity: 1;
+    --vignette-strength: 0.65;
+    --title-shadow: 2px 2px 0 #ff2bd6, 4px 4px 0 #00f0ff, 0 0 14px rgba(255, 43, 214, 0.5);
+    --text-glow: 0 0 6px rgba(0, 240, 255, 0.5);
+    --card-clip: none;
+  }
+
+  [data-theme='cyberpunk'] {
+    --bg-deep: #06060c;
+    --bg-marketing: #0a0a14;
+    --bg-panel: #11111d;
+    --bg-surface: #1a1a2e;
+    --bg-hover: #242440;
+    --text-primary: #e8e8f0;
+    --text-secondary: #b0b0c8;
+    --text-tertiary: #8a8aa0;
+    --text-quaternary: #5a5a78;
+    --accent-primary: #fcee0a;
+    --accent-secondary: #00f0ff;
+    --accent-signal: #ff003c;
+    --accent-glow: rgba(252, 238, 10, 0.45);
+    --font-display: 'Chakra Petch', sans-serif;
+    --font-body: 'Rajdhani', sans-serif;
+    --font-mono: 'Share Tech Mono', ui-monospace, monospace;
+    --border-subtle: rgba(252, 238, 10, 0.10);
+    --border-standard: rgba(252, 238, 10, 0.22);
+    --border-primary: #2a2a40;
+    --border-accent: rgba(252, 238, 10, 0.40);
+    --heat-0: rgba(252, 238, 10, 0.05);
+    --heat-1: rgba(252, 238, 10, 0.18);
+    --heat-2: rgba(252, 238, 10, 0.38);
+    --heat-3: rgba(252, 238, 10, 0.65);
+    --heat-4: rgba(252, 238, 10, 0.92);
+    --scanline-color: rgba(0, 0, 0, 0.10);
+    --scanline-opacity: 1;
+    --vignette-strength: 0.5;
+    --title-shadow: none;
+    --text-glow: 0 0 6px rgba(252, 238, 10, 0.55), 0 0 14px rgba(252, 238, 10, 0.22);
+    --card-clip: polygon(0 0, calc(100% - 8px) 0, 100% 8px, 100% 100%, 8px 100%, 0 calc(100% - 8px));
+    --panel-notch-size: 8px;
+  }
 }
 
 @layer base {
