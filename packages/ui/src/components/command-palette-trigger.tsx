@@ -12,20 +12,20 @@ export function CommandPaletteTrigger() {
     <button
       onClick={open}
       className={cn(
-        'w-60 h-9 rounded-md border border-[rgba(255,255,255,0.08)] bg-[rgba(255,255,255,0.02)]',
+        'w-60 h-9 rounded-md border border-[var(--border-standard)] bg-[var(--surface-raised)]',
         'flex items-center justify-between px-3 cursor-pointer',
-        'hover:bg-[rgba(255,255,255,0.04)] hover:border-[rgba(255,255,255,0.14)]',
+        'hover:bg-[var(--bg-hover)] hover:border-[var(--border-hover)]',
         'transition-[background-color,border-color,color] duration-150 ease-out',
       )}
     >
       <div className="flex items-center gap-2">
-        <Search size={14} className="text-[#8a8f98]" />
-        <span className="text-[13px] text-[#8a8f98]">Search...</span>
+        <Search size={14} className="text-[var(--text-tertiary)]" />
+        <span className="text-[13px] text-[var(--text-tertiary)]">Search...</span>
       </div>
       <kbd
         className={cn(
-          'text-[11px] font-[510] text-[#62666d]',
-          'border border-[rgba(255,255,255,0.08)] rounded-sm px-1 py-0.5',
+          'text-[11px] font-[510] text-[var(--text-quaternary)]',
+          'border border-[var(--border-standard)] rounded-sm px-1 py-0.5',
         )}
       >
         ⌘K

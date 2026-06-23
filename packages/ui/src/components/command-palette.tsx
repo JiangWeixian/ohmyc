@@ -126,7 +126,7 @@ export function CommandPalette({ commands, placeholder = 'Search commands...' }:
                       cmd.action()
                       close()
                     }}
-                    className="mx-1 flex cursor-pointer items-center gap-3 rounded px-4 py-2.5 text-[14px] text-[var(--text-primary)] data-[selected=true]:bg-[rgba(255,255,255,0.06)]"
+                    className="mx-1 flex cursor-pointer items-center gap-3 rounded px-4 py-2.5 text-[14px] text-[var(--text-primary)] data-[selected=true]:bg-[var(--bg-hover)]"
                   >
                     {cmd.icon && <span className="w-5 shrink-0 text-[var(--text-secondary)]">{cmd.icon}</span>}
                     <span className="min-w-0 flex-1 truncate">{cmd.label}</span>
