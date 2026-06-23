@@ -16,7 +16,7 @@ export const ohmycContainerTheme = EditorView.theme({
 
   // Selection — visible but subdued
   '.cm-selectionBackground': {
-    background: 'rgba(255,255,255,0.12)',
+    background: 'var(--border-hover)',
   },
 
   // Cursor — white
@@ -26,49 +26,49 @@ export const ohmycContainerTheme = EditorView.theme({
 
   // Active line — subtle highlight
   '.cm-activeLine': {
-    backgroundColor: 'rgba(255,255,255,0.03)',
+    backgroundColor: 'var(--bg-hover)',
   },
 
   // Active line gutter
   '.cm-activeLineGutter': {
-    backgroundColor: 'rgba(255,255,255,0.04)',
+    backgroundColor: 'var(--bg-hover)',
     color: 'var(--text-tertiary)',
   },
 
   // Matching bracket — underline instead of color
   '.cm-matchingBracket': {
-    background: 'rgba(255,255,255,0.06)',
+    background: 'var(--bg-hover)',
     textDecoration: 'underline 1px solid var(--text-secondary)',
   },
 
   // Non-matching bracket — gray error state
   '.cm-nonmatchingBracket': {
-    background: 'rgba(255,255,255,0.04)',
+    background: 'var(--bg-hover)',
     textDecoration: 'line-through',
     color: 'var(--text-quaternary)',
   },
 
   // Search match
   '.cm-searchMatch': {
-    background: 'rgba(255,255,255,0.08)',
+    background: 'var(--bg-hover)',
   },
 
   // Selected search match
   '.cm-searchMatch-selected': {
-    background: 'rgba(255,255,255,0.16)',
+    background: 'var(--border-hover)',
   },
 
   // Tooltip / autocomplete
   '.cm-tooltip': {
-    background: '#191a1b',
-    border: '1px solid rgba(255,255,255,0.08)',
+    background: 'var(--surface-raised)',
+    border: '1px solid var(--border-standard)',
     borderRadius: '8px',
     boxShadow: '0 16px 40px rgba(0,0,0,0.4)',
   },
 
   // Autocomplete item hover
   '.cm-tooltip-autocomplete > ul > li[aria-selected]': {
-    background: 'rgba(255,255,255,0.04)',
+    background: 'var(--bg-hover)',
     color: 'var(--text-primary)',
   },
 
@@ -95,29 +95,29 @@ export const ohmycContainerTheme = EditorView.theme({
 
   // Panel (find/replace)
   '.cm-panel': {
-    background: '#0f1011',
-    borderTop: '1px solid rgba(255,255,255,0.08)',
+    background: 'var(--bg-panel)',
+    borderTop: '1px solid var(--border-standard)',
     color: 'var(--text-secondary)',
   },
 
   // Panel button
   '.cm-panel button': {
-    background: 'rgba(255,255,255,0.02)',
-    border: '1px solid rgba(255,255,255,0.08)',
+    background: 'var(--surface-raised)',
+    border: '1px solid var(--border-standard)',
     color: 'var(--text-secondary)',
     borderRadius: '6px',
   },
 
   // Panel button hover
   '.cm-panel button:hover': {
-    background: 'rgba(255,255,255,0.04)',
+    background: 'var(--bg-hover)',
     color: 'var(--text-primary)',
   },
 
   // Panel input
   '.cm-panel input': {
-    background: 'rgba(255,255,255,0.02)',
-    border: '1px solid rgba(255,255,255,0.08)',
+    background: 'var(--surface-raised)',
+    border: '1px solid var(--border-standard)',
     color: 'var(--text-primary)',
     borderRadius: '6px',
   },
