@@ -10,7 +10,7 @@ import {
 } from '@/components/uitripled/native-dialog'
 import { cn } from '@/lib/utils'
 
-interface CommandItem {
+export interface CommandItem {
   id: string
   label: string
   shortcut?: string
