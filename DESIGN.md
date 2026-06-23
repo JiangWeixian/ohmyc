@@ -7,20 +7,25 @@
 - **Project type:** Web app (dark-themed dashboard)
 
 ## Aesthetic Direction
-- **Direction:** Monochrome dark — precision engineering aesthetic
-- **Decoration level:** Minimal
-- **Mood:** Serious personal monitor. Dense but readable, with one memorable AI-native identity surface.
-- **Reference:** GitHub profile contribution graph, Linear (monochrome variant), Vercel dashboard, React Bits interaction craft
+- **Direction:** Themeable dark — five personalities on a shared dark foundation
+- **Decoration level:** Minimal in calm intensity; theme-specific in expressive intensity (scanlines, glow, notched panels, chromatic shadows — all gated and reduced-motion-safe)
+- **Mood:** Serious personal monitor whose personality the user chooses. Dense but readable, with one memorable AI-native identity surface.
+- **Reference:** Monitor theme → monochrome Linear + GitHub contribution graph; Phosphor Mono → late-night terminal; Amber CRT → IBM 3270; Retro Wave → 80s synthwave arcade; Cyberpunk → CP2077 HUD. All five share the dark foundation; React Bits interaction craft applies throughout.
 
 ## Philosophy
-Darkness as the native medium. Content emerges from near-black backgrounds through carefully calibrated luminance steps. No chromatic accents — the only "color" is the gradation from white to black.
+Darkness is the native medium. Content emerges from near-black backgrounds through carefully calibrated luminance steps. The Monitor theme uses zero chromatic color — the only "color" is the gradation from white to black. The other four themes introduce themed accent hues, but always on the same dark foundation.
 
-The product should be remembered as a **personal Coding Monitor**, not a generic configuration manager. Configuration inventory still exists, but the first mental image is a profile-like activity cockpit: identity, stats, momentum, and recent coding signal.
+Personality is expressed through themable color, typography, and decoration layers — never through structural redesign. Switching a theme swaps CSS variable values; it does not re-layout the page. The product should be remembered as a **personal Coding Monitor** that the user has made their own, not a generic configuration manager.
 
 ## Typography
-- **Primary:** Inter Variable with OpenType features `"cv01", "ss03"` enabled globally
-- **Fallbacks:** SF Pro Display, -apple-system, system-ui, Segoe UI, Roboto
-- **Monospace:** Berkeley Mono (ui-monospace, SF Mono, Menlo fallback)
+- **Per-theme font stacks:** Each theme provides `--font-display`, `--font-body`, `--font-mono`:
+  - **Monitor:** Inter Variable (display + body), Berkeley Mono (mono)
+  - **Phosphor Mono:** JetBrains Mono (display + mono), Inter (body)
+  - **Amber CRT:** VT323 (display), IBM Plex Mono (body + mono)
+  - **Retro Wave:** Press Start 2P (display), Silkscreen (body + mono)
+  - **Cyberpunk:** Chakra Petch (display), Rajdhani (body), Share Tech Mono (mono)
+- **OpenType:** `"cv01", "ss03"` enabled globally on Inter-based themes
+- **Fonts are self-hosted** via `@fontsource` packages for offline Tauri support
 - **Weights:**
   - 400: Reading/body
   - 510: Emphasis/UI (signature weight — between regular and medium)
@@ -39,7 +44,14 @@ The product should be remembered as a **personal Coding Monitor**, not a generic
   - Micro: 11px / weight 510 / letter-spacing normal / line-height 1.40
 
 ## Color
-- **Approach:** Pure monochrome — zero chromatic colors
+- **Approach:** Per-theme color systems. The semantic token names (below) do not change across themes; only their values do. The Monitor theme is pure monochrome; Amber is single-hue; Retro and Cyberpunk are multi-hue. See the Theme System section for per-theme color tables.
+- **Token contract (all themes must define these):**
+  - Backgrounds: `--bg-deep`, `--bg-marketing`, `--bg-panel`, `--bg-surface`, `--bg-hover`
+  - Text: `--text-primary`, `--text-secondary`, `--text-tertiary`, `--text-quaternary`
+  - Accents: `--accent-primary`, `--accent-secondary`, `--accent-signal`, `--accent-glow`
+  - Borders: `--border-subtle`, `--border-standard`, `--border-primary`, `--border-accent`
+  - Heatmap: `--heat-0` through `--heat-4`
+- Values below are the Monitor theme. Other themes redefine these tokens in the Theme System section.
 - **Backgrounds:**
   - Marketing/Deep: `#08090a` — page background
   - Panel: `#0f1011` — navigation island, panels
