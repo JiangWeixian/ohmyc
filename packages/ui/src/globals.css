@@ -175,6 +175,25 @@
     --title-shadow: none;
     --text-glow: none;
     --card-clip: none;
+
+    /* shadcn HSL token bridge */
+    --background: 210 5% 3%;
+    --foreground: 150 5% 97%;
+    --card: 210 4% 10%;
+    --card-foreground: 150 5% 97%;
+    --popover: 210 4% 10%;
+    --popover-foreground: 150 5% 97%;
+    --primary: 150 5% 97%;
+    --primary-foreground: 210 5% 3%;
+    --secondary: 210 4% 16%;
+    --secondary-foreground: 150 5% 97%;
+    --muted: 210 4% 16%;
+    --muted-foreground: 210 5% 60%;
+    --accent: 210 4% 16%;
+    --accent-foreground: 150 5% 97%;
+    --border: 210 5% 14%;
+    --input: 210 5% 14%;
+    --ring: 150 5% 97%;
   }
 
   [data-theme='phosphor'] {
@@ -209,6 +228,25 @@
     --title-shadow: none;
     --text-glow: 0 0 8px rgba(247, 248, 248, 0.35);
     --card-clip: none;
+
+    /* shadcn HSL token bridge */
+    --background: 210 5% 3%;
+    --foreground: 150 5% 97%;
+    --card: 210 4% 10%;
+    --card-foreground: 150 5% 97%;
+    --popover: 210 4% 10%;
+    --popover-foreground: 150 5% 97%;
+    --primary: 150 5% 97%;
+    --primary-foreground: 210 5% 3%;
+    --secondary: 210 4% 16%;
+    --secondary-foreground: 150 5% 97%;
+    --muted: 210 4% 16%;
+    --muted-foreground: 210 5% 60%;
+    --accent: 210 4% 16%;
+    --accent-foreground: 150 5% 97%;
+    --border: 210 5% 14%;
+    --input: 210 5% 14%;
+    --ring: 150 5% 97%;
   }
 
   [data-theme='amber'] {
@@ -243,6 +281,25 @@
     --title-shadow: none;
     --text-glow: 0 0 8px rgba(255, 176, 0, 0.6), 0 0 16px rgba(255, 140, 0, 0.25);
     --card-clip: none;
+
+    /* shadcn HSL token bridge */
+    --background: 42 100% 2%;
+    --foreground: 41 100% 50%;
+    --card: 44 100% 5%;
+    --card-foreground: 41 100% 50%;
+    --popover: 44 100% 5%;
+    --popover-foreground: 41 100% 50%;
+    --primary: 41 100% 50%;
+    --primary-foreground: 40 100% 1%;
+    --secondary: 43 100% 7%;
+    --secondary-foreground: 41 100% 50%;
+    --muted: 39 100% 3%;
+    --muted-foreground: 41 100% 27%;
+    --accent: 43 100% 7%;
+    --accent-foreground: 41 100% 50%;
+    --border: 41 100% 50%;
+    --input: 41 100% 50%;
+    --ring: 41 100% 50%;
   }
 
   [data-theme='retro'] {
@@ -277,6 +334,25 @@
     --title-shadow: 2px 2px 0 #ff2bd6, 4px 4px 0 #00f0ff, 0 0 14px rgba(255, 43, 214, 0.5);
     --text-glow: 0 0 6px rgba(0, 240, 255, 0.5);
     --card-clip: none;
+
+    /* shadcn HSL token bridge */
+    --background: 261 89% 7%;
+    --foreground: 264 100% 95%;
+    --card: 260 61% 15%;
+    --card-foreground: 264 100% 95%;
+    --popover: 260 61% 15%;
+    --popover-foreground: 264 100% 95%;
+    --primary: 184 100% 50%;
+    --primary-foreground: 263 92% 5%;
+    --secondary: 259 58% 21%;
+    --secondary-foreground: 264 100% 95%;
+    --muted: 262 70% 11%;
+    --muted-foreground: 273 21% 53%;
+    --accent: 259 58% 21%;
+    --accent-foreground: 264 100% 95%;
+    --border: 184 100% 50%;
+    --input: 184 100% 50%;
+    --ring: 184 100% 50%;
   }
 
   [data-theme='cyberpunk'] {
@@ -312,6 +388,46 @@
     --text-glow: 0 0 6px rgba(252, 238, 10, 0.55), 0 0 14px rgba(252, 238, 10, 0.22);
     --card-clip: polygon(0 0, calc(100% - 8px) 0, 100% 8px, 100% 100%, 8px 100%, 0 calc(100% - 8px));
     --panel-notch-size: 8px;
+
+    /* shadcn HSL token bridge */
+    --background: 240 33% 6%;
+    --foreground: 240 21% 93%;
+    --card: 240 28% 14%;
+    --card-foreground: 240 21% 93%;
+    --popover: 240 28% 14%;
+    --popover-foreground: 240 21% 93%;
+    --primary: 57 98% 51%;
+    --primary-foreground: 240 33% 4%;
+    --secondary: 240 28% 20%;
+    --secondary-foreground: 240 21% 93%;
+    --muted: 240 26% 9%;
+    --muted-foreground: 240 10% 58%;
+    --accent: 240 28% 20%;
+    --accent-foreground: 240 21% 93%;
+    --border: 57 98% 51%;
+    --input: 57 98% 51%;
+    --ring: 57 98% 51%;
+  }
+
+  /* ============================================================
+     LEGACY TOKEN DERIVATION — bridges semantic tokens to the
+     legacy aliases consumed by command-palette, timeline, menubar,
+     entity-detail, etc. Applies to ALL themes via [data-theme].
+     ============================================================ */
+  [data-theme] {
+    --surface-base: var(--bg-marketing);
+    --surface-raised: var(--bg-surface);
+    --surface-overlay: var(--bg-surface);
+    --surface-panel: var(--bg-panel);
+    --border-default: var(--border-standard);
+    --border-hover: var(--border-primary);
+    --accent-blue: var(--accent-primary);
+    --accent-blue-hover: var(--accent-secondary);
+    --accent-green: var(--accent-signal);
+    --accent-amber: var(--accent-signal);
+    --accent-cyan: var(--accent-secondary);
+    --accent-purple: var(--accent-secondary);
+    --accent-red: var(--accent-signal);
   }
 
   [data-intensity='calm'] {
