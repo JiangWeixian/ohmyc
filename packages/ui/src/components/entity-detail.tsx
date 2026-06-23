@@ -83,14 +83,14 @@ export function EntityDetail({
       <button
         onClick={onBack}
         type="button"
-        className="transition-smooth -ml-2 mb-5 inline-flex items-center gap-1.5 rounded-[var(--radius-sm)] px-2 py-1.5 text-[13px] font-medium text-[var(--text-secondary)] hover:bg-white/[0.03] hover:text-[var(--text-primary)]"
+        className="transition-smooth -ml-2 mb-5 inline-flex items-center gap-1.5 rounded-[var(--radius-sm)] px-2 py-1.5 text-[13px] font-medium text-[var(--text-secondary)] hover:bg-[var(--bg-hover)] hover:text-[var(--text-primary)]"
       >
         <ChevronLeft size={14} />
         <span>Back to {title}</span>
       </button>
 
       {isReadOnly && (
-        <div className="mb-4 rounded-[var(--radius-md)] border border-[#22c55e]/20 bg-[#22c55e]/5 px-4 py-2 text-[13px] text-[#22c55e]">
+        <div className="mb-4 rounded-[var(--radius-md)] border border-[var(--accent-signal)]/20 bg-[var(--accent-signal)]/5 px-4 py-2 text-[13px] text-[var(--accent-signal)]">
           From project directory — view only.
         </div>
       )}
@@ -98,7 +98,7 @@ export function EntityDetail({
       {/* Document header — frontmatter strip */}
       <motion.div
         {...blockMotion}
-        className="mb-6 rounded-[var(--radius-lg)] border border-[var(--border-default)] bg-white/[0.02] px-7 py-6"
+        className="mb-6 rounded-[var(--radius-lg)] border border-[var(--border-default)] bg-[var(--surface-raised)] px-7 py-6"
       >
         <div className="flex items-start justify-between gap-4">
           <div className="min-w-0 flex-1">
@@ -119,7 +119,7 @@ export function EntityDetail({
                   onClick={onEdit}
                   variant="outline"
                   size="sm"
-                  className="rounded-[var(--radius-sm)] border-[var(--border-default)] bg-white/[0.04] text-[var(--text-primary)] hover:bg-white/[0.08]"
+                  className="rounded-[var(--radius-sm)] border-[var(--border-default)] bg-[var(--bg-hover)] text-[var(--text-primary)] hover:bg-[var(--bg-hover)]"
                 >
                   <Pencil size={12} />
                   Edit
@@ -134,7 +134,7 @@ export function EntityDetail({
                   aria-label="Delete"
                   variant="outline"
                   size="icon-sm"
-                  className="rounded-[var(--radius-sm)] border-[var(--border-default)] bg-white/[0.04] text-[var(--text-tertiary)] hover:bg-white/[0.08] hover:text-[var(--text-primary)]"
+                  className="rounded-[var(--radius-sm)] border-[var(--border-default)] bg-[var(--bg-hover)] text-[var(--text-tertiary)] hover:bg-[var(--bg-hover)] hover:text-[var(--text-primary)]"
                 >
                   <Trash2 size={12} />
                 </Button>
@@ -165,7 +165,7 @@ export function EntityDetail({
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ duration: 0.16, delay: reduceMotion ? 0 : 0.04, ease: motionEaseOut }}
-        className="rounded-[var(--radius-lg)] border border-[var(--border-default)] bg-white/[0.02] p-9"
+        className="rounded-[var(--radius-lg)] border border-[var(--border-default)] bg-[var(--surface-raised)] p-9"
       >
         <MarkdownRenderer content={content} />
       </motion.article>
