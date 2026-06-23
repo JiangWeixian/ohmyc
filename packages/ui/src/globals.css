@@ -324,6 +324,24 @@
     --card-clip: polygon(0 0, calc(100% - 8px) 0, 100% 8px, 100% 100%, 8px 100%, 0 calc(100% - 8px));
     --panel-notch-size: 8px;
   }
+
+  [data-intensity='calm'] {
+    --scanline-opacity: 0;
+    --vignette-strength: 0;
+    --title-shadow: none;
+    --text-glow: none;
+    --card-clip: none;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    :root, [data-theme], [data-intensity] {
+      --scanline-opacity: 0;
+      --vignette-strength: 0;
+      --title-shadow: none;
+      --text-glow: none;
+      --card-clip: none;
+    }
+  }
 }
 
 @layer base {
