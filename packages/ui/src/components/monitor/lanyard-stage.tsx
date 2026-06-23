@@ -56,7 +56,7 @@ function LanyardFallback() {
       <div className="absolute size-[420px] rounded-full border border-[rgba(255,255,255,0.08)] max-md:size-[300px]" />
       <div className="absolute size-[620px] rounded-full border border-[rgba(255,255,255,0.04)] max-md:size-[420px]" />
 
-      <div className="relative flex aspect-[0.72] h-[360px] flex-col items-center justify-center rounded-[22px] border border-[rgba(255,255,255,0.16)] bg-[#f7f8f8] text-[#08090a] shadow-[0_30px_100px_rgba(0,0,0,0.5)] max-md:h-[280px]">
+      <div className="relative flex aspect-[0.72] h-[360px] flex-col items-center justify-center rounded-[22px] border border-[var(--border-hover)] bg-[var(--text-primary)] text-[var(--bg-marketing)] shadow-[0_30px_100px_rgba(0,0,0,0.5)] max-md:h-[280px]">
         <Atom size={138} strokeWidth={1.7} aria-hidden="true" />
         <p className="sr-only">Lanyard stage fallback. WebGL lanyard replaces this layer after the React Bits spike is verified.</p>
       </div>

@@ -29,7 +29,7 @@ const stats: SpikeStat[] = [
 
 export function LanyardStatsSpikeView() {
   return (
-    <section className="relative h-dvh min-h-[720px] overflow-hidden bg-[#08090a] font-['Geist','Inter_var','Inter',sans-serif] text-[var(--text-primary)]">
+    <section className="relative h-dvh min-h-[720px] overflow-hidden bg-[var(--bg-marketing)] font-[var(--font-display)] text-[var(--text-primary)]">
       <Atmosphere />
 
       <main className="relative z-10 h-full">
