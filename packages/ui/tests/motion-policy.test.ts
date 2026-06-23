@@ -52,7 +52,6 @@ describe('motion policy', () => {
       '../src/components/ui/switch.tsx',
       '../src/components/ui/tabs.tsx',
       '../src/components/uitripled/native-dialog.tsx',
-      '../src/components/command-palette-trigger.tsx',
     ]
 
     for (const file of files) {
