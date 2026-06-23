@@ -1,5 +1,19 @@
 /* Inter Variable loaded via index.html <link> for preconnect performance */
 
+/* Berkeley Mono — commercial font, local file. Monitor theme mono stack. */
+@font-face {
+  font-family: 'Berkeley Mono';
+  src: url('/fonts/BerkeleyMono-Regular.woff2') format('woff2');
+  font-weight: 400;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Berkeley Mono';
+  src: url('/fonts/BerkeleyMono-Bold.woff2') format('woff2');
+  font-weight: 700;
+  font-display: swap;
+}
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -119,6 +133,26 @@
     --input: 210 5% 14%;
     --ring: 150 5% 97%;
     --radius: 0.5rem;
+
+    /* === Theme System: semantic accent tokens === */
+    --accent-primary: #f7f8f8;
+    --accent-secondary: #f7f8f8;
+    --accent-signal: #f7f8f8;
+    --accent-glow: rgba(247, 248, 248, 0.35);
+
+    /* === Theme System: per-theme font stacks === */
+    --font-display: 'Inter var', 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    --font-body: 'Inter var', 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    --font-mono: 'Berkeley Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
+
+    /* === Theme System: decoration tokens (zero by default = Monitor/calm) === */
+    --scanline-color: rgba(255, 255, 255, 0.018);
+    --scanline-opacity: 0;
+    --vignette-strength: 0;
+    --title-shadow: none;
+    --text-glow: none;
+    --card-clip: none;
+    --panel-notch-size: 0px;
   }
 }
 
@@ -148,6 +182,7 @@
     min-height: 100dvh;
     background-color: var(--bg-marketing);
     color: var(--text-primary);
+    font-family: var(--font-body);
     font-size: 16px;
     line-height: 1.6;
     text-rendering: optimizeLegibility;
