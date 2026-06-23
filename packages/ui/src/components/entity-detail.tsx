@@ -119,7 +119,7 @@ export function EntityDetail({
                   onClick={onEdit}
                   variant="outline"
                   size="sm"
-                  className="rounded-[var(--radius-sm)] border-[var(--border-default)] bg-[var(--bg-hover)] text-[var(--text-primary)] hover:bg-[var(--bg-hover)]"
+                  className="rounded-[var(--radius-sm)] border-[var(--border-default)] bg-[var(--surface-raised)] text-[var(--text-primary)] hover:bg-[var(--bg-hover)]"
                 >
                   <Pencil size={12} />
                   Edit
@@ -134,7 +134,7 @@ export function EntityDetail({
                   aria-label="Delete"
                   variant="outline"
                   size="icon-sm"
-                  className="rounded-[var(--radius-sm)] border-[var(--border-default)] bg-[var(--bg-hover)] text-[var(--text-tertiary)] hover:bg-[var(--bg-hover)] hover:text-[var(--text-primary)]"
+                  className="rounded-[var(--radius-sm)] border-[var(--border-default)] bg-[var(--surface-raised)] text-[var(--text-tertiary)] hover:bg-[var(--bg-hover)] hover:text-[var(--text-primary)]"
                 >
                   <Trash2 size={12} />
                 </Button>
