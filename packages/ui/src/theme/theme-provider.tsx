@@ -38,26 +38,30 @@ export function useTheme(): ThemeContextValue {
 
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
   const initial = loadPersistedTheme()
-  const [theme, setThemeState] = useState<ThemeId>(initial.theme)
-  const [intensity, setIntensityState] = useState<Intensity>(initial.intensity)
+  const [currentTheme, setCurrentTheme] = useState<ThemeId>(initial.theme)
+  const [currentIntensity, setCurrentIntensity] = useState<Intensity>(initial.intensity)
 
   useEffect(() => {
-    document.documentElement.dataset.theme = theme
-  }, [theme])
+    document.documentElement.dataset.theme = currentTheme
+  }, [currentTheme])
   useEffect(() => {
-    document.documentElement.dataset.intensity = intensity
-  }, [intensity])
+    document.documentElement.dataset.intensity = currentIntensity
+  }, [currentIntensity])
 
   const setTheme = useCallback(async (next: ThemeId) => {
     await loadThemeFonts(next)
-    setThemeState(next)
-    persistTheme({ theme: next, intensity })
-  }, [intensity])
+    setCurrentTheme(next)
+    persistTheme({ theme: next, intensity: currentIntensity })
+  }, [currentIntensity])
 
   const setIntensity = useCallback((next: Intensity) => {
-    setIntensityState(next)
-    persistTheme({ theme, intensity: next })
-  }, [theme])
+    setCurrentIntensity(next)
+    persistTheme({ theme: currentTheme, intensity: next })
+  }, [currentTheme])
 
-  return <ThemeContext.Provider value={{ theme, intensity, setTheme, setIntensity }}>{children}</ThemeContext.Provider>
+  return (
+    <ThemeContext.Provider value={{ theme: currentTheme, intensity: currentIntensity, setTheme, setIntensity }}>
+      {children}
+    </ThemeContext.Provider>
+  )
 }
