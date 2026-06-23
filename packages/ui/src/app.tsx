@@ -24,10 +24,12 @@ import { useAgents } from './hooks/use-agents'
 import { useCommands } from './hooks/use-commands'
 import { useGlobalKeyboardShortcuts } from './hooks/use-keyboard-shortcuts'
 import { useSkills } from './hooks/use-skills'
+import { useThemeCommands } from './theme'
 
 /** Command palette content — exposes navigation and entity search. */
 function AppCommandPalette() {
   const navigate = useNavigate()
+  const themeCommands = useThemeCommands()
 
   const { data: agents } = useAgents()
   const { data: skills } = useSkills()
@@ -109,6 +111,7 @@ function AppCommandPalette() {
   const allCommands = [
     ...goToCommands,
     ...searchCommands,
+    ...themeCommands,
   ]
 
   return (
