@@ -84,7 +84,7 @@ export function MenubarPage() {
         // macOS NSVisualEffectView (HudWindow) is applied to the Tauri window
         // and provides the desktop-blur. Light dark tint sits on top to
         // ensure text contrast against bright desktop content.
-        background: 'rgba(25, 26, 27, 0.45)',
+        background: 'color-mix(in srgb, var(--bg-surface) 45%, transparent)',
       }}
       data-menubar-page
     >
@@ -102,7 +102,7 @@ export function MenubarPage() {
       <div
         className="min-h-[168px]"
         style={view === 'line'
-          ? { background: 'linear-gradient(180deg, rgba(255,255,255,0.02) 0%, rgba(255,255,255,0.0) 100%)' }
+          ? { background: 'linear-gradient(180deg, var(--surface-raised) 0%, transparent 100%)' }
           : undefined}
       >
         {view === 'line'

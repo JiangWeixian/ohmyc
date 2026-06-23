@@ -150,9 +150,9 @@ export function RecentHeatmap({ tokens, sessions }: RecentHeatmapProps) {
         className="grid"
         style={{
           gridTemplateColumns: `${DOW_COL_WIDTH}px auto`,
-          gridTemplateRows: '14px auto',
+          gridTemplateRows: '0.875rem auto',
           columnGap: `${COL_GAP}px`,
-          rowGap: '2px',
+          rowGap: '0.125rem',
         }}
       >
         {/* corner */}
@@ -229,7 +229,7 @@ export function RecentHeatmap({ tokens, sessions }: RecentHeatmapProps) {
               style={{
                 gridColumn: cell.col + 1,
                 gridRow: cell.row + 1,
-                borderRadius: 2,
+                borderRadius: 'var(--heatmap-cell-radius, 0.125rem)',
                 cursor: 'pointer',
               }}
               className={HEAT_CLASSES[cell.bucket]}
@@ -253,7 +253,7 @@ export function RecentHeatmap({ tokens, sessions }: RecentHeatmapProps) {
               <span
                 key={i}
                 className={className}
-                style={{ width: 9, height: 9, borderRadius: 1, display: 'inline-block' }}
+                style={{ width: '0.5625rem', height: '0.5625rem', borderRadius: 'var(--heatmap-cell-radius, 0.125rem)', display: 'inline-block' }}
               />
             ))}
           </span>
@@ -269,13 +269,13 @@ export function RecentHeatmap({ tokens, sessions }: RecentHeatmapProps) {
             left: hover.x,
             top: hover.y - 8,
             transform: 'translate(-50%, -100%)',
-            background: '#08090a',
+            background: 'var(--bg-marketing)',
             border: '1px solid var(--border-default)',
             fontFamily: MONO,
             lineHeight: 1.5,
             whiteSpace: 'nowrap',
             maxWidth: 200,
-            boxShadow: '0 4px 12px rgba(0,0,0,0.5)',
+            boxShadow: 'var(--shadow-md)',
           }}
         >
           <div className="text-[var(--text-primary)]">{hover.sessions} sessions · {formatTokens(hover.tokens)} tokens</div>
