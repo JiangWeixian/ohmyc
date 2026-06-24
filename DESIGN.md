@@ -188,34 +188,14 @@ Refer to `assets/pixel-variants-20260622/variant-{a,b,c,d}-*.html` `:root` block
   - Background: `#f7f8f8` or `#d0d6e0` (inverted text)
 
 ### Navigation Island
-- Default shell: floating, collapsible island. No primary route uses a full-height docked sidebar or standard top header.
-- Position: `top: 48px`, `left: 18px` on desktop so the island clears native macOS traffic-light controls. On narrow screens, keep the collapsed island at `top: 14px`, `left: 14px` unless the native window chrome is present at that size.
-- Expanded size: `216-224px` wide and `calc(100dvh - 66px)` tall on desktop, preserving roughly 18px bottom breathing room after the traffic-light clearance. Collapsed size: a single `44-48px` square icon badge, not a mini navigation rail. The collapsed badge uses a quiet 16px temporary icon and aligns visually with the route content rhythm rather than the traffic-light row.
-- Background: `rgba(15,16,17,0.72)` with backdrop blur around `20-24px`.
-- Border: low-opacity edge definition, preferably a `0.5px` ring/shadow plus at most `1px rgba(255,255,255,0.05)` border. Use macOS-style vibrancy with `saturate(180%) blur(20-24px)`.
-- Border-radius: `14px` outer, `8px` inner controls.
-- Shadow: layered macOS floating-panel shadow for separation, e.g. `0 0 0 0.5px rgba(255,255,255,0.10)`, `0 8px 30px rgba(0,0,0,0.38)`, `0 24px 60px rgba(0,0,0,0.22)`.
-- Brand:
-  - Title: `OhMyC`
-  - Subtitle: `coding monitor` in Berkeley Mono, uppercase, `10px`, `text-tertiary`.
-  - Expanded state uses text only on the left plus the collapse icon button on the right. Do not show a leading brand placeholder icon while expanded.
-- Section headers:
-  - Text: `11px / 510 / uppercase / text-tertiary`
-  - Suggested groups: `Signal` (`Monitor`, `Timeline`) and `Explore` (`Agents`, `Commands`, `Skills`, `Plugins`).
-- Command palette trigger sits at the bottom of the expanded island, not directly after the navigation groups.
-- Nav items:
-  - Height: `32px`
-  - Padding: `0 10px`
-  - Border-radius: `8px`
-  - Gap: `10px`
-  - Nav items are hidden when collapsed. The collapsed state shows only a single icon badge; clicking it expands the full island.
-  - Collapsed icon: use a neutral lucide.dev coding placeholder such as `Code2` if available in the installed lucide version. Avoid `Atom` or other React-like marks; replace only this icon with the brand mark later.
-- Active state:
-  - Background: `rgba(255,255,255,0.08)`
-  - Text: `#f7f8f8`
-  - Instant or short fade only. No sliding nav animation.
-- Hover state:
-  - Background: `rgba(255,255,255,0.03)`
+- **Shell:** floating, borderless island on the left edge. No panel background, no border, no backdrop-filter. Nav items float directly on the page; the page blur creates visual separation when expanded.
+- **Interaction:** hover-to-expand. Mouse enter triggers expansion; mouse leave collapses. Touch devices: tap keycap to toggle. Keyboard: focus to expand, blur to collapse.
+- **Collapsed state:** 56px wide. First-letter keycaps (M T A S C P) in `var(--font-mono)` 14px. Active item has a 3px phosphor dot on the left edge.
+- **Expanded state:** 220px wide. Full nav with icons, grouped Signal (Monitor, Timeline) and Explore (Agents, Commands, Skills, Plugins). Command palette trigger at bottom.
+- **Stage Manager effect:** on hover, island rotates `rotateY(18deg)` with `transform-origin: left center`. Page content blurs (`blur(8px)`), dims (`brightness(0.5)`), scales down (`scale(0.96)`). A `rgba(0,0,0,0.3)` dim overlay sits between island and content. All effects animate 420ms ease-out.
+- **State management:** zustand store holds `isHovered` (boolean, discrete) + `hoverProgress` (Framer Motion `MotionValue<number>`, continuous 0→1). `setHovered` updates both. `useTransform` derives all visual values from `hoverProgress` without React re-renders.
+- **Reduced motion:** disables rotation, blur, scale. Only opacity crossfade remains.
+- **No chevron button** — hover-to-expand eliminates manual collapse.
 
 ### Header
 The standard top header is retired. Do not render a global 64px header on Monitor, Timeline, Agents, Commands, Skills, or Plugins.
@@ -468,6 +448,7 @@ There is no standard header chrome. Breadcrumbs, source switchers, search trigge
 | 2026-06-23 | Timeline heatmap gets component-level theme tokens | The pixel variants define more than cell colors: panel background/border/radius/shadow, month and day-label color/glow, legend type, cell radius, and Retro corner marks are part of the component grammar. These belong in theme tokens/utilities, not inline React styles |
 | 2026-06-23 | Timeline page chrome uses theme-level tokens | The variant screenshots give each theme a distinct page title, controls, select, and stats grammar. Timeline should map those through component-scoped tokens instead of inheriting generic shadcn rounded controls. Retro body copy uses JetBrains Mono from the reference, with Silkscreen reserved for arcade labels and heatmap microcopy |
 | 2026-06-23 | Menubar popover gets reusable `--menubar-*` theme tokens | The menubar variants differ in popover tint, title prefix/type, view-switch states, chart glow, KPI typography/color, and footer action. These are reusable theme grammar, not per-component conditionals. Width/height should follow the actual popover container rather than hard-coding the reference HTML's 340px width; the line chart remains a clean sparkline with no visible tick/grid furniture. Cyberpunk keeps interior HUD color/type but drops the hard outer HUD frame because macOS menubar popovers should rely on native popover material |
+| 2026-06-24 | Navigation Island: hover-to-expand Stage Manager replaces click-to-expand | Hover is more natural for a floating island. zustand + MotionValue: zustand manages discrete `isHovered`, MotionValue drives continuous animation via `useTransform` (no re-renders). Borderless — page blur creates visual separation. Collapsed state shows first-letter keycaps (M T A S C P) instead of a single icon badge |
 
 ## Do's and Don'ts
 
