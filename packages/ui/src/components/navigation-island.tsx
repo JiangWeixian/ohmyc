@@ -1,213 +1,180 @@
 import {
-  AnimatePresence,
   motion,
   useReducedMotion,
+  useTransform,
 } from 'framer-motion'
 import {
   Activity,
   Blocks,
   Bot,
   Code2,
-  PanelLeftClose,
   Search,
   Sparkles,
   TerminalSquare,
 } from 'lucide-react'
-import {
-  useEffect,
-  useRef,
-  useState,
-} from 'react'
+import { useState } from 'react'
 import { NavLink } from 'react-router-dom'
 
 import { useCommandPalette } from '@/components/command-palette'
-import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
+import { useIslandStore } from '@/state/island-store'
 
 import type { LucideIcon } from 'lucide-react'
 
 interface IslandItem {
-  id: string
+  keycap: string
   label: string
   to: string
   icon: LucideIcon
 }
 
 const SIGNAL_ITEMS: IslandItem[] = [
-  { id: 'monitor', label: 'Monitor', to: '/explore/monitor', icon: Code2 },
-  { id: 'timeline', label: 'Timeline', to: '/explore/timeline', icon: Activity },
+  { keycap: 'M', label: 'Monitor', to: '/explore/monitor', icon: Code2 },
+  { keycap: 'T', label: 'Timeline', to: '/explore/timeline', icon: Activity },
 ]
 
 const EXPLORE_ITEMS: IslandItem[] = [
-  { id: 'agents', label: 'Agents', to: '/explore/agents', icon: Bot },
-  { id: 'commands', label: 'Commands', to: '/explore/commands', icon: TerminalSquare },
-  { id: 'skills', label: 'Skills', to: '/explore/skills', icon: Sparkles },
-  { id: 'plugins', label: 'Plugins', to: '/explore/plugins', icon: Blocks },
+  { keycap: 'A', label: 'Agents', to: '/explore/agents', icon: Bot },
+  { keycap: 'C', label: 'Commands', to: '/explore/commands', icon: TerminalSquare },
+  { keycap: 'S', label: 'Skills', to: '/explore/skills', icon: Sparkles },
+  { keycap: 'P', label: 'Plugins', to: '/explore/plugins', icon: Blocks },
 ]
 
-const SHELL_TRANSITION = {
-  duration: 0.22,
-  ease: [0.22, 1, 0.36, 1],
-} as const
+const ALL_ITEMS = [...SIGNAL_ITEMS, ...EXPLORE_ITEMS]
 
-const CONTENT_TRANSITION = {
-  duration: 0.16,
-  ease: [0.25, 1, 0.5, 1],
-} as const
+const COLLAPSED_WIDTH = 56
+const EXPANDED_WIDTH = 220
+const ROTATION_DEG = 18
+
+function detectTouch(): boolean {
+  if (typeof globalThis.matchMedia !== 'function') {
+    return false
+  }
+  return globalThis.matchMedia('(hover: none)').matches
+}
 
 export function NavigationIsland() {
-  const [collapsed, setCollapsed] = useState(false)
+  const { hoverProgress, isHovered, setHovered, toggle } = useIslandStore()
+  const { open: openPalette } = useCommandPalette()
   const hookReduceMotion = useReducedMotion()
   const reduceMotion = hookReduceMotion
-    || (
-      typeof globalThis.matchMedia === 'function'
-      && globalThis.matchMedia('(prefers-reduced-motion: reduce)').matches
-    )
-  const { open } = useCommandPalette()
-  const hasToggledRef = useRef(false)
-  const expandButtonRef = useRef<HTMLButtonElement>(null)
-  const collapseButtonRef = useRef<HTMLButtonElement>(null)
-  const motionMode = reduceMotion ? 'reduced' : 'full'
-  const shellLayout = !reduceMotion
-  const shellLayoutId = reduceMotion ? undefined : 'primary-navigation-island-shell'
+    || (typeof globalThis.matchMedia === 'function'
+      && globalThis.matchMedia('(prefers-reduced-motion: reduce)').matches)
 
-  useEffect(() => {
-    if (!hasToggledRef.current) {
-      return
+  const [isTouch] = useState(detectTouch)
+
+  const containerWidth = useTransform(
+    hoverProgress,
+    v => `${COLLAPSED_WIDTH + v * (EXPANDED_WIDTH - COLLAPSED_WIDTH)}px`,
+  )
+  const rotateY = useTransform(hoverProgress, [0, 1], [0, ROTATION_DEG])
+  const keycapOpacity = useTransform(hoverProgress, [0, 0.35], [1, 0])
+  const keycapPointer = useTransform(keycapOpacity, v => (v < 0.5 ? 'none' : 'auto'))
+  const navOpacity = useTransform(hoverProgress, [0.25, 1], [0, 1])
+  const navX = useTransform(hoverProgress, [0.25, 1], [-8, 0])
+  const navPointer = useTransform(navOpacity, v => (v > 0.5 ? 'auto' : 'none'))
+
+  function handleMouseEnter() {
+    if (!isTouch && !reduceMotion) {
+      setHovered(true)
     }
+  }
 
-    if (collapsed) {
-      expandButtonRef.current?.focus()
-    } else {
-      collapseButtonRef.current?.focus()
+  function handleMouseLeave() {
+    if (!isTouch && !reduceMotion) {
+      setHovered(false)
     }
-  }, [collapsed])
-
-  function updateCollapsed(nextCollapsed: boolean) {
-    hasToggledRef.current = true
-    setCollapsed(nextCollapsed)
   }
 
   function handleNavigate() {
-    if (
-      globalThis.window !== undefined
-      && typeof globalThis.matchMedia === 'function'
-      && globalThis.matchMedia('(max-width: 767px)').matches
-    ) {
-      updateCollapsed(true)
+    if (isTouch) {
+      setHovered(false)
     }
   }
 
   return (
-    <AnimatePresence initial={false} mode="sync">
-      {collapsed
-        ? (
-            <motion.div
-              key="collapsed"
-              layout={shellLayout}
-              layoutId={shellLayoutId}
-              data-motion-mode={motionMode}
-              className="fixed left-[18px] top-[48px] z-40 max-sm:left-[14px] max-sm:top-[14px]"
-              initial={reduceMotion ? false : { opacity: 0, scale: 0.96, filter: 'blur(4px)' }}
-              animate={{ opacity: 1, scale: 1, filter: 'blur(0px)' }}
-              exit={reduceMotion ? { opacity: 0 } : { opacity: 0, scale: 0.98, filter: 'blur(3px)' }}
-              whileHover={undefined}
-              transition={SHELL_TRANSITION}
-            >
-              <Button
-                ref={expandButtonRef}
+    <motion.div
+      style={{ width: containerWidth }}
+      className="fixed left-[18px] top-[48px] z-40 max-sm:left-[14px] max-sm:top-[14px]"
+      onMouseEnter={handleMouseEnter}
+      onMouseLeave={handleMouseLeave}
+      onFocus={() => {
+        if (!isTouch) {
+          setHovered(true)
+        }
+      }}
+      onBlur={(e) => {
+        if (!e.currentTarget.contains(e.relatedTarget as Node) && !isTouch) {
+          setHovered(false)
+        }
+      }}
+    >
+      <div style={{ perspective: 1200 }}>
+        <motion.div
+          style={{
+            rotateY: reduceMotion ? 0 : rotateY,
+            transformOrigin: 'left center',
+            transformStyle: 'preserve-3d',
+          }}
+          className="flex h-[calc(100dvh-66px)] max-sm:h-[calc(100dvh-28px)] flex-col overflow-hidden"
+        >
+          <motion.div
+            style={{ opacity: keycapOpacity, pointerEvents: keycapPointer }}
+            className="flex flex-col gap-1 pt-2"
+          >
+            {ALL_ITEMS.map(item => (
+              <button
+                key={item.keycap}
                 type="button"
-                variant="ghost"
-                size="icon"
-                aria-label="Expand navigation"
-                aria-controls="primary-navigation-island"
-                aria-expanded={false}
-                onClick={() => updateCollapsed(false)}
+                onClick={isTouch ? toggle : undefined}
                 className={cn(
-                  'size-12 rounded-[14px] border border-[var(--border-subtle)] bg-[color-mix(in_srgb,var(--bg-panel)_72%,transparent)]',
-                  'text-[var(--text-primary)] [box-shadow:0_0_0_0.5px_var(--border-standard),0_8px_30px_rgba(0,0,0,0.38),0_24px_60px_rgba(0,0,0,0.22)]',
-                  '[backdrop-filter:saturate(180%)_blur(24px)] [-webkit-backdrop-filter:saturate(180%)_blur(24px)]',
-                  'hover:bg-[var(--bg-hover)]',
-                  'motion-safe:transition-transform motion-safe:duration-150 motion-safe:ease-out [@media(hover:hover)_and_(pointer:fine)]:hover:scale-[1.02]',
+                  'flex size-11 items-center justify-center rounded-lg font-mono text-sm font-medium',
+                  'text-[var(--text-tertiary)] transition-colors',
+                  'hover:bg-[var(--bg-hover)] hover:text-[var(--text-primary)]',
                 )}
+                aria-label={item.label}
+                aria-expanded={isHovered}
               >
-                <Code2 size={16} aria-hidden="true" />
-              </Button>
-            </motion.div>
-          )
-        : (
-            <motion.nav
-              key="expanded"
-              layout={shellLayout}
-              layoutId={shellLayoutId}
-              data-motion-mode={motionMode}
-              id="primary-navigation-island"
-              aria-label="Primary"
+                {item.keycap}
+              </button>
+            ))}
+          </motion.div>
+
+          <motion.div
+            style={{ opacity: navOpacity, x: navX, pointerEvents: navPointer }}
+            className="absolute inset-0 flex flex-col p-3"
+          >
+            <div className="mb-5 px-1">
+              <div className="truncate text-[14px] font-[590] text-[var(--text-primary)]">OhMyC</div>
+              <div className="truncate font-mono text-[10px] uppercase tracking-[0.04em] text-[var(--text-tertiary)]">
+                coding monitor
+              </div>
+            </div>
+
+            <IslandGroup label="Signal" items={SIGNAL_ITEMS} onNavigate={handleNavigate} />
+            <IslandGroup label="Explore" items={EXPLORE_ITEMS} className="mt-4" onNavigate={handleNavigate} />
+
+            <button
+              type="button"
+              onClick={openPalette}
               className={cn(
-                'fixed left-[18px] top-[48px] z-40 flex h-[calc(100dvh-66px)] w-[220px] flex-col overflow-hidden rounded-[14px]',
-                'border border-[var(--border-subtle)] bg-[color-mix(in_srgb,var(--bg-panel)_72%,transparent)]',
-                'p-3 [box-shadow:0_0_0_0.5px_var(--border-standard),0_8px_30px_rgba(0,0,0,0.38),0_24px_60px_rgba(0,0,0,0.22)]',
-                '[backdrop-filter:saturate(180%)_blur(24px)] [-webkit-backdrop-filter:saturate(180%)_blur(24px)]',
-                'max-sm:left-[14px] max-sm:top-[14px] max-sm:h-[calc(100dvh-28px)] max-sm:w-[216px]',
+                'mt-auto flex h-8 w-full items-center justify-between rounded-md border border-[var(--border-standard)]',
+                'bg-[var(--surface-raised)] px-2.5 text-[12px] text-[var(--text-tertiary)]',
+                'transition-colors hover:bg-[var(--bg-hover)] hover:text-[var(--text-secondary)]',
               )}
-              initial={reduceMotion ? false : { opacity: 0, x: -6, filter: 'blur(4px)' }}
-              animate={{ opacity: 1, x: 0, filter: 'blur(0px)' }}
-              exit={reduceMotion ? { opacity: 0 } : { opacity: 0, x: -4, filter: 'blur(3px)' }}
-              transition={SHELL_TRANSITION}
             >
-              <motion.div
-                className="flex h-full flex-col"
-                initial={reduceMotion ? false : { opacity: 0, x: -6 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ ...CONTENT_TRANSITION, delay: 0.04 }}
-              >
-                <div className="mb-5 flex min-h-11 items-start justify-between gap-3">
-                  <div className="min-w-0 px-1">
-                    <div className="truncate text-[14px] font-[590] text-[var(--text-primary)]">OhMyC</div>
-                    <div className="truncate font-mono text-[10px] uppercase tracking-[0.04em] text-[var(--text-tertiary)]">
-                      coding monitor
-                    </div>
-                  </div>
-                  <Button
-                    ref={collapseButtonRef}
-                    type="button"
-                    variant="ghost"
-                    size="icon"
-                    aria-label="Collapse navigation"
-                    aria-controls="primary-navigation-island"
-                    aria-expanded={true}
-                    onClick={() => updateCollapsed(true)}
-                    className="size-8 shrink-0 rounded-lg text-[var(--text-tertiary)] hover:bg-[var(--bg-hover)] hover:text-[var(--text-primary)]"
-                  >
-                    <PanelLeftClose size={15} aria-hidden="true" />
-                  </Button>
-                </div>
-
-                <IslandGroup label="Signal" items={SIGNAL_ITEMS} onNavigate={handleNavigate} />
-                <IslandGroup label="Explore" items={EXPLORE_ITEMS} className="mt-4" onNavigate={handleNavigate} />
-
-                <Button
-                  type="button"
-                  variant="ghost"
-                  onClick={open}
-                  className={cn(
-                    'mt-auto flex h-8 w-full items-center justify-between rounded-md border border-[var(--border-standard)]',
-                    'bg-[var(--surface-raised)] px-2.5 text-[12px] text-[var(--text-tertiary)]',
-                    'transition-colors hover:bg-[var(--bg-hover)] hover:text-[var(--text-secondary)]',
-                  )}
-                >
-                  <span className="flex items-center gap-2">
-                    <Search size={13} aria-hidden="true" />
-                    Command
-                  </span>
-                  <kbd className="rounded border border-[var(--border-standard)] px-1.5 py-0.5 text-[10px] text-[var(--text-quaternary)]">
-                    Cmd K
-                  </kbd>
-                </Button>
-              </motion.div>
-            </motion.nav>
-          )}
-    </AnimatePresence>
+              <span className="flex items-center gap-2">
+                <Search size={13} aria-hidden="true" />
+                Command
+              </span>
+              <kbd className="rounded border border-[var(--border-standard)] px-1.5 py-0.5 text-[10px] text-[var(--text-quaternary)]">
+                Cmd K
+              </kbd>
+            </button>
+          </motion.div>
+        </motion.div>
+      </div>
+    </motion.div>
   )
 }
 
@@ -230,12 +197,12 @@ function IslandGroup({
       <div className="space-y-0.5">
         {items.map(item => (
           <NavLink
-            key={item.id}
+            key={item.keycap}
             to={item.to}
             onClick={onNavigate}
             className={({ isActive }) =>
               cn(
-                'flex h-8 items-center gap-2 rounded-md px-2.5 text-[13px] font-[510] transition-colors',
+                'flex h-8 items-center gap-2.5 rounded-md px-2.5 text-[13px] font-[510] transition-colors',
                 isActive
                   ? 'bg-[var(--bg-hover)] text-[var(--text-primary)] shadow-[inset_0_0_0_0.5px_var(--border-standard)]'
                   : 'text-[var(--text-secondary)] hover:bg-[var(--bg-hover)] hover:text-[var(--text-primary)]',
