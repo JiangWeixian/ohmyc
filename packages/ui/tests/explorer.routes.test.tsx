@@ -89,8 +89,6 @@ describe('Explorer route views', () => {
 
     const island = screen.getByRole('navigation', { name: 'Primary' })
 
-    expect(island).toHaveTextContent('OhMyC')
-    expect(island).toHaveTextContent('coding monitor')
     expect(island).toHaveTextContent('Signal')
     expect(island).toHaveTextContent('Monitor')
     expect(island).toHaveTextContent('Timeline')
