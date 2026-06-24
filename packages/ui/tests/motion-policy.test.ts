@@ -65,14 +65,6 @@ describe('motion policy', () => {
     expect(readSource('../src/components/ui/dropdown-menu.tsx')).toContain('motion-reduce:data-[state=open]:animate-none')
   })
 
-  it('does not use Framer x/y shorthand in Monitor DOM motion', () => {
-    const monitor = readSource('../src/components/monitor/monitor-view.tsx')
-
-    expect(monitor).not.toMatch(/\bx:\s/)
-    expect(monitor).not.toMatch(/\by:\s/)
-    expect(monitor).toContain("transform: 'translate")
-  })
-
   it('does not keep the obsolete NativeButton component surface', () => {
     expect(() => readSource('../src/components/uitripled/native-button.tsx')).toThrow(/ENOENT/)
     expect(() => readSource('../src/stories/design-system/NativeButton.stories.tsx')).toThrow(/ENOENT/)

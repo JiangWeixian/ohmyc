@@ -34,7 +34,7 @@ afterEach(() => {
 })
 
 describe('NavigationIsland', () => {
-  it('renders all six keycap letters', () => {
+  it('renders all six collapsed icon buttons', () => {
     renderWithProviders(
       <Routes>
         <Route path="*" element={<Harness />} />
@@ -42,8 +42,8 @@ describe('NavigationIsland', () => {
       { route: '/explore/timeline' },
     )
 
-    for (const keycap of ['M', 'T', 'A', 'C', 'S', 'P']) {
-      expect(screen.getByText(keycap)).toBeInTheDocument()
+    for (const label of ['Monitor', 'Timeline', 'Agents', 'Commands', 'Skills', 'Plugins']) {
+      expect(screen.getByRole('button', { name: label })).toBeInTheDocument()
     }
   })
 

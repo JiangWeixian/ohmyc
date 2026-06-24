@@ -1,0 +1,8 @@
+{"type":"server-started","port":56324,"host":"127.0.0.1","url_host":"localhost","url":"http://localhost:56324","screen_dir":"/Users/bytedance/Projects/oss/ohmyc/.superpowers/brainstorm/83382-1782215878/content","state_dir":"/Users/bytedance/Projects/oss/ohmyc/.superpowers/brainstorm/83382-1782215878/state"}
+{"type":"screen-added","file":"/Users/bytedance/Projects/oss/ohmyc/.superpowers/brainstorm/83382-1782215878/content/island-stage-manager.html"}
+{"type":"screen-updated","file":"/Users/bytedance/Projects/oss/ohmyc/.superpowers/brainstorm/83382-1782215878/content/island-stage-manager.html"}
+{"type":"screen-updated","file":"/Users/bytedance/Projects/oss/ohmyc/.superpowers/brainstorm/83382-1782215878/content/island-stage-manager.html"}
+{"type":"screen-updated","file":"/Users/bytedance/Projects/oss/ohmyc/.superpowers/brainstorm/83382-1782215878/content/island-stage-manager.html"}
+{"type":"screen-added","file":"/Users/bytedance/Projects/oss/ohmyc/.superpowers/brainstorm/83382-1782215878/content/island-stage-manager-v2.html"}
+{"type":"screen-added","file":"/Users/bytedance/Projects/oss/ohmyc/.superpowers/brainstorm/83382-1782215878/content/waiting.html"}
+{"type":"server-stopped","reason":"idle timeout"}

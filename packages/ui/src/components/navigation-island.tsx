@@ -123,22 +123,25 @@ export function NavigationIsland() {
             style={{ opacity: keycapOpacity, pointerEvents: keycapPointer }}
             className="flex flex-col gap-1 pt-2"
           >
-            {ALL_ITEMS.map(item => (
-              <button
-                key={item.keycap}
-                type="button"
-                onClick={isTouch ? toggle : undefined}
-                className={cn(
-                  'flex size-11 items-center justify-center rounded-lg font-mono text-sm font-medium',
-                  'text-[var(--text-tertiary)] transition-colors',
-                  'hover:bg-[var(--bg-hover)] hover:text-[var(--text-primary)]',
-                )}
-                aria-label={item.label}
-                aria-expanded={isHovered}
-              >
-                {item.keycap}
-              </button>
-            ))}
+            {ALL_ITEMS.map((item) => {
+              const Icon = item.icon
+              return (
+                <button
+                  key={item.keycap}
+                  type="button"
+                  onClick={isTouch ? toggle : undefined}
+                  className={cn(
+                    'flex size-11 items-center justify-center rounded-lg',
+                    'text-[var(--text-tertiary)] transition-colors',
+                    'hover:bg-[var(--bg-hover)] hover:text-[var(--text-primary)]',
+                  )}
+                  aria-label={item.label}
+                  aria-expanded={isHovered}
+                >
+                  <Icon size={16} aria-hidden="true" />
+                </button>
+              )
+            })}
           </motion.div>
 
           <motion.div
