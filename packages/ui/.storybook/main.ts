@@ -51,7 +51,6 @@ const config: StorybookConfig = {
       ...config.optimizeDeps,
       include: [
         ...(config.optimizeDeps?.include ?? []),
-        '@lobehub/ui',
         '@lobehub/icons',
       ],
     }
@@ -59,7 +58,6 @@ const config: StorybookConfig = {
       ...config.ssr,
       noExternal: [
         ...(Array.isArray(config.ssr?.noExternal) ? config.ssr.noExternal : []),
-        '@lobehub/ui',
         '@lobehub/icons',
       ],
     }
