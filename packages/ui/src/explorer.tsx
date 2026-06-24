@@ -1,4 +1,5 @@
 // Explorer view — browse timeline activity plus agents, commands, skills, and plugins.
+import { motion, useTransform } from 'framer-motion'
 import {
   Blocks,
   Bot,
@@ -25,6 +26,7 @@ import { useCommand, useCommands } from './hooks/use-commands'
 import { useMarketplaces, usePlugins } from './hooks/use-plugins'
 import { useSkill, useSkills } from './hooks/use-skills'
 import { cn } from '@/lib/utils'
+import { useIslandStore } from '@/state/island-store'
 
 import type {
   Agent,
@@ -365,11 +367,24 @@ export function Explorer({ viewSwitcher: _viewSwitcher }: ExplorerProperties) {
     )
   }
 
+  const hoverProgress = useIslandStore(s => s.hoverProgress)
+  const pageFilter = useTransform(hoverProgress, v => `blur(${v * 8}px) brightness(${1 - v * 0.5})`)
+  const pageScale = useTransform(hoverProgress, [0, 1], [1, 0.96])
+  const dimBg = useTransform(hoverProgress, v => `rgba(0,0,0,${v * 0.3})`)
+
   return (
     <div className="relative h-full min-w-0 overflow-hidden font-sans text-[var(--text-primary)]">
       <NavigationIsland />
 
-      <main className="relative h-full min-w-0 overflow-hidden bg-[var(--bg-marketing)]">
+      <motion.div
+        style={{ background: dimBg }}
+        className="pointer-events-none fixed inset-0 z-30"
+      />
+
+      <motion.main
+        style={{ filter: pageFilter, scale: pageScale }}
+        className="relative h-full min-w-0 origin-center overflow-hidden bg-[var(--bg-marketing)]"
+      >
         {activeSection === 'monitor'
           ? (
               <MonitorSpikeView />
@@ -390,7 +405,7 @@ export function Explorer({ viewSwitcher: _viewSwitcher }: ExplorerProperties) {
                 </div>
               </div>
             )}
-      </main>
+      </motion.main>
     </div>
   )
 }
