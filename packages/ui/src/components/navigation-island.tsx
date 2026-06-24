@@ -117,7 +117,7 @@ export function NavigationIsland() {
             transformOrigin: 'left center',
             transformStyle: 'preserve-3d',
           }}
-          className="flex h-[calc(100dvh-66px)] max-sm:h-[calc(100dvh-28px)] flex-col overflow-hidden"
+          className="flex h-[calc(100dvh-66px)] flex-col overflow-hidden max-sm:h-[calc(100dvh-28px)]"
         >
           <motion.div
             style={{ opacity: keycapOpacity, pointerEvents: keycapPointer }}
