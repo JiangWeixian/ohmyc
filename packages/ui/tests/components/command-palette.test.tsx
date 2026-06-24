@@ -14,7 +14,6 @@ import {
 import {
   CommandPalette,
   CommandPaletteProvider,
-  KeyboardShortcut,
   useCommandPalette,
 } from '@/components/command-palette'
 
@@ -66,14 +65,6 @@ describe('CommandPalette', () => {
 
     fireEvent.keyDown(document, { key: 'Escape' })
     expect(screen.queryByPlaceholderText('Search commands...')).not.toBeInTheDocument()
-  })
-
-  it('renders shortcut labels with platform glyphs', () => {
-    render(<KeyboardShortcut shortcut="meta+shift+k" />)
-
-    expect(screen.getByText('⌘')).toBeInTheDocument()
-    expect(screen.getByText('⇧')).toBeInTheDocument()
-    expect(screen.getByText('k')).toBeInTheDocument()
   })
 
   it('uses instant motion for the high-frequency keyboard palette', () => {

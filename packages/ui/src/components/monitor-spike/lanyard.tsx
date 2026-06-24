@@ -6,11 +6,7 @@ import {
   useGLTF,
   useTexture,
 } from '@react-three/drei'
-import {
-  Canvas,
-  extend,
-  useFrame,
-} from '@react-three/fiber'
+import { extend, useFrame } from '@react-three/fiber'
 import {
   BallCollider,
   CuboidCollider,
@@ -78,47 +74,6 @@ type LanyardSceneProps = Pick<
   origin?: [number, number, number]
   renderOrder?: number
   unitScale?: number
-}
-
-export function Lanyard({
-  position = [0, 0, 30],
-  gravity = [0, -40, 0],
-  fov = 20,
-  transparent = true,
-  frontImage = null,
-  backImage = null,
-  imageFit = 'cover',
-  lanyardImage = null,
-  lanyardWidth = 1,
-}: LanyardProps) {
-  const [isMobile, setIsMobile] = useState<boolean>(() => globalThis.window !== undefined && window.innerWidth < 768)
-
-  useEffect(() => {
-    const handleResize = (): void => setIsMobile(window.innerWidth < 768)
-    window.addEventListener('resize', handleResize)
-    return () => window.removeEventListener('resize', handleResize)
-  }, [])
-
-  return (
-    <div className="relative z-0 flex h-full w-full origin-center scale-100 transform items-center justify-center">
-      <Canvas
-        camera={{ position, fov }}
-        dpr={[1, isMobile ? 1.5 : 2]}
-        gl={{ alpha: transparent }}
-        onCreated={({ gl }) => gl.setClearColor(new THREE.Color(0x00_00_00), transparent ? 0 : 1)}
-      >
-        <LanyardScene
-          isMobile={isMobile}
-          gravity={gravity}
-          frontImage={frontImage}
-          backImage={backImage}
-          imageFit={imageFit}
-          lanyardImage={lanyardImage}
-          lanyardWidth={lanyardWidth}
-        />
-      </Canvas>
-    </div>
-  )
 }
 
 export function LanyardScene({

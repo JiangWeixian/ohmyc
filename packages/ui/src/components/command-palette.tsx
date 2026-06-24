@@ -8,7 +8,6 @@ import {
   NativeDialogDescription,
   NativeDialogTitle,
 } from '@/components/uitripled/native-dialog'
-import { cn } from '@/lib/utils'
 
 export interface CommandItem {
   id: string
@@ -151,44 +150,5 @@ export function CommandPalette({ commands, placeholder = 'Search commands...' }:
         </Command>
       </NativeDialogContent>
     </NativeDialog>
-  )
-}
-
-function getKeyLabel(key: string): string {
-  if (key === 'meta') {
-    return '⌘'
-  }
-
-  if (key === 'ctrl') {
-    return 'Ctrl'
-  }
-
-  if (key === 'shift') {
-    return '⇧'
-  }
-
-  return key
-}
-
-// Keyboard shortcut hint component
-export function KeyboardShortcut({ shortcut }: { shortcut: string }) {
-  const keys = shortcut.split('+')
-  return (
-    <div className="flex items-center gap-0.5">
-      {keys.map((key, index) => (
-        <React.Fragment key={key}>
-          <kbd
-            className={cn(
-              'px-1.5 py-0.5 text-[10px] font-mono',
-              'bg-[var(--surface-overlay)] border border-[var(--border-default)]',
-              'rounded-[var(--radius-sm)] text-[var(--text-tertiary)]',
-            )}
-          >
-            {getKeyLabel(key)}
-          </kbd>
-          {index < keys.length - 1 && <span className="text-[var(--text-tertiary)] mx-0.5">+</span>}
-        </React.Fragment>
-      ))}
-    </div>
   )
 }
