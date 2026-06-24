@@ -37,10 +37,6 @@ Object.defineProperty(globalThis, 'localStorage', {
   value: localStorageMock,
   configurable: true,
 })
-Object.defineProperty(globalThis, 'localStorage', {
-  value: localStorageMock,
-  configurable: true,
-})
 
 // jsdom doesn't implement these PointerEvent APIs that Radix uses; stub them
 // so dropdown-menu interactions work under test. Guards keep this idempotent.

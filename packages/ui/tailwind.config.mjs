@@ -59,13 +59,6 @@ export default {
     plugin(({ addUtilities }) => addUtilities({
       '.deco-glow-text': { textShadow: 'var(--text-glow)' },
       '.deco-notch': { clipPath: 'var(--card-clip)' },
-      '.deco-scanlines': {
-        backgroundImage: 'repeating-linear-gradient(to bottom, var(--scanline-color) 0, var(--scanline-color) 1px, transparent 1px, transparent 3px)',
-        opacity: 'var(--scanline-opacity)',
-      },
-      '.deco-vignette': {
-        background: 'radial-gradient(ellipse at center, transparent 55%, rgba(0,0,0,calc(var(--vignette-strength) * 0.55)))',
-      },
       '.deco-title-shadow': { textShadow: 'var(--title-shadow)' },
     })),
   ],
