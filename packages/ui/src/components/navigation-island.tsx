@@ -93,7 +93,8 @@ export function NavigationIsland() {
   }
 
   return (
-    <motion.div
+    <motion.nav
+      aria-label="Primary"
       style={{ width: containerWidth }}
       className="fixed left-[18px] top-[48px] z-40 max-sm:left-[14px] max-sm:top-[14px]"
       onMouseEnter={handleMouseEnter}
@@ -174,7 +175,7 @@ export function NavigationIsland() {
           </motion.div>
         </motion.div>
       </div>
-    </motion.div>
+    </motion.nav>
   )
 }
 

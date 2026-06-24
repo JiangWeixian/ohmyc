@@ -1,8 +1,4 @@
-import {
-  fireEvent,
-  screen,
-  waitFor,
-} from '@testing-library/react'
+import { fireEvent, screen } from '@testing-library/react'
 import React from 'react'
 import { Route, Routes } from 'react-router-dom'
 import {
@@ -108,7 +104,7 @@ describe('Explorer route views', () => {
     expect(document.querySelector('main header')).not.toBeInTheDocument()
   })
 
-  it('collapses the navigation island to a single icon button and expands it again', async () => {
+  it('expands the navigation island on hover and shows full labels', () => {
     renderWithProviders(
       <Routes>
         <Route path="/explore/:tab" element={<Explorer />} />
@@ -116,21 +112,9 @@ describe('Explorer route views', () => {
       { route: '/explore/timeline' },
     )
 
-    const collapseButton = document.querySelector('button[aria-label="Collapse navigation"]')
-    expect(collapseButton).not.toBeNull()
-    fireEvent.click(collapseButton as HTMLElement)
-
-    let expandButton: HTMLButtonElement | null = null
-    await waitFor(() => {
-      expandButton = document.querySelector('button[aria-label="Expand navigation"]')
-      expect(expandButton).not.toBeNull()
-    })
-
-    fireEvent.click(expandButton as HTMLButtonElement)
-
-    await waitFor(() => {
-      expect(document.querySelector('a[href="/explore/timeline"]')?.textContent).toContain('Timeline')
-    })
+    const island = screen.getByRole('navigation', { name: 'Primary' })
+    expect(island).toHaveTextContent('Monitor')
+    expect(island).toHaveTextContent('Timeline')
   })
 
   it('renders Monitor route as a full-bleed personal coding monitor surface', async () => {
