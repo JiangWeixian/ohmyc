@@ -145,13 +145,6 @@ export function NavigationIsland() {
             style={{ opacity: navOpacity, x: navX, pointerEvents: navPointer }}
             className="absolute inset-0 flex flex-col p-3"
           >
-            <div className="mb-5 px-1">
-              <div className="truncate text-[14px] font-[590] text-[var(--text-primary)]">OhMyC</div>
-              <div className="truncate font-mono text-[10px] uppercase tracking-[0.04em] text-[var(--text-tertiary)]">
-                coding monitor
-              </div>
-            </div>
-
             <IslandGroup label="Signal" items={SIGNAL_ITEMS} onNavigate={handleNavigate} />
             <IslandGroup label="Explore" items={EXPLORE_ITEMS} className="mt-4" onNavigate={handleNavigate} />
 
