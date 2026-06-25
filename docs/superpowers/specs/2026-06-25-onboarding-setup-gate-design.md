@@ -70,6 +70,38 @@ Add `useSetupStatus` in `packages/ui/src/hooks/use-setup-status.ts`.
 - No dependency on `useTimelineStatus`
 - Retry is driven by explicit user action from the onboarding gate, not by aggressive background polling
 
+### Dependencies and Source Imports
+
+Add the official Atropos package to `@ohmyc/ui`:
+
+```bash
+pnpm --filter @ohmyc/ui add atropos
+```
+
+The implementation must use the official React integration from Atropos:
+
+```ts
+import Atropos from 'atropos/react'
+import 'atropos/css'
+```
+
+Do not reimplement pointer tilt by hand. Atropos owns tilt, active offset, highlight, and layer depth behavior.
+
+Use the vendored React Bits LetterGlitch implementation as the source for the onboarding background:
+
+```text
+vendor/react-bits/src/ts-default/Backgrounds/LetterGlitch/LetterGlitch.tsx
+```
+
+Copy/adapt it into the OhMyC UI source tree as a local component, for example `packages/ui/src/components/onboarding/letter-glitch.tsx`. Productize it for this app:
+
+- Type props according to OhMyC conventions.
+- Remove demo-only assumptions and inline colors that conflict with theme tokens.
+- Add a disabled/static mode for `prefers-reduced-motion` and calm intensity.
+- Use low-contrast frosted-ivory-lamplit-compatible colors.
+
+Do not import directly from `vendor/react-bits` at runtime. The vendor directory is a source reference, not a packaged dependency boundary for the app.
+
 ### App Shell Integration
 
 In the main app layout, check setup status before rendering product routes.
@@ -206,9 +238,11 @@ Expected implementation files:
 - `packages/desktop/src-tauri/src/api/setup.rs`
 - `packages/desktop/src-tauri/src/api/mod.rs`
 - `packages/desktop/src-tauri/src/main.rs`
+- `packages/ui/package.json` and the workspace lockfile for the `atropos` dependency
 - `packages/ui/src/hooks/use-setup-status.ts`
 - `packages/ui/src/components/onboarding/onboarding-gate.tsx`
 - `packages/ui/src/components/onboarding/retro-computer-atropos.tsx`
+- `packages/ui/src/components/onboarding/letter-glitch.tsx`
 - UI asset directory for the two `frosted-ivory-lamplit` PNG assets
 - `packages/ui/src/app.tsx` or a small app-gate wrapper near the route shell
 - `packages/ui/src/globals.css` for scoped onboarding/Atropos/Letter Glitch CSS, if component-local styling is insufficient
@@ -235,6 +269,8 @@ Add tests or Storybook fixtures for:
 - `unreadable_store` renders the unreadable-store status line.
 - `Retry` calls refetch.
 - `Open plugin repo` points to `https://github.com/JiangWeixian/ohmyc-plugins`.
+- Reduced motion disables LetterGlitch animation and Atropos interaction.
+- `RetroComputerAtropos` renders the required Atropos layer offsets.
 
 ### Visual QA
 
