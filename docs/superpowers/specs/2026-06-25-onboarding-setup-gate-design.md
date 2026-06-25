@@ -102,21 +102,24 @@ Copy/adapt it into the OhMyC UI source tree as a local component, for example `p
 
 Do not import directly from `vendor/react-bits` at runtime. The vendor directory is a source reference, not a packaged dependency boundary for the app.
 
-### App Shell Integration
+### App Shell and Route Integration
 
-In the main app layout, check setup status before rendering product routes.
+Add an internal onboarding route at `/onboard`.
 
-This gate is not a standalone product route. Do not add `/onboarding` or `/setup` as a normal navigation destination, and do not add it to `NavigationIsland` or the command palette. It is an app bootstrap state rendered before the route tree when the main window cannot use the local monitor store.
+The route is allowed, but it is not a normal navigation destination. Do not add `/onboard` to `NavigationIsland` or the command palette. Users reach it through setup gating or desktop entry points, not through regular product navigation.
+
+In the main app layout, check setup status before rendering normal product routes.
 
 Flow:
 
 1. Main window mounts.
 2. `useSetupStatus` checks readiness.
 3. While loading, show a minimal checking state.
-4. `ready` renders the normal app routes.
-5. Any non-ready state renders `OnboardingGate`.
+4. `ready` renders the requested normal app route.
+5. Any non-ready state routes to `/onboard` with replace semantics and renders `OnboardingGate`.
+6. If the user is already on `/onboard` and setup becomes `ready`, route back to `/explore/timeline` unless a preserved target route is available.
 
-The onboarding gate replaces the normal app shell. It should not render `NavigationIsland`, command palette search content, or route content behind it.
+The onboarding route replaces the normal app shell. It should not render `NavigationIsland`, command palette search content, or route content behind it.
 
 `/menubar` is outside this gate. The menubar remains its own compact surface.
 
@@ -124,8 +127,9 @@ Desktop menubar behavior:
 
 - Clicking the tray/menu "Open OhMyC" action opens or focuses the main window.
 - The main window then runs `useSetupStatus` during bootstrap.
-- If the monitor store is unavailable, the main window shows `OnboardingGate`.
-- The menubar popover route itself must not render the full onboarding gate. A compact popover unavailable state can be designed later, but it is out of scope for this spec.
+- If the monitor store is unavailable, the main window routes to `/onboard` and shows `OnboardingGate`.
+- The menubar-triggered main-window path reuses the same `OnboardingGate` component as direct `/onboard` visits.
+- The menubar popover route itself may reuse the same component only if it can render responsively without desktop-only layout assumptions. If that is too cramped during implementation, keep the popover on its current compact unavailable state and let "Open OhMyC" show `/onboard` in the main window.
 
 ## UI Design
 
@@ -253,7 +257,7 @@ Expected implementation files:
 - `packages/ui/src/components/onboarding/retro-computer-atropos.tsx`
 - `packages/ui/src/components/onboarding/letter-glitch.tsx`
 - UI asset directory for the two `frosted-ivory-lamplit` PNG assets
-- `packages/ui/src/app.tsx` or a small app-gate wrapper near the route shell
+- `packages/ui/src/app.tsx` or a small app-gate wrapper near the route shell, including the hidden `/onboard` route
 - `packages/ui/src/globals.css` for scoped onboarding/Atropos/Letter Glitch CSS, if component-local styling is insufficient
 
 Update `DESIGN.md` with a Decisions Log row before implementation.
@@ -276,6 +280,8 @@ Add tests or Storybook fixtures for:
 - `ready` renders the normal app shell.
 - `missing_store` renders the onboarding gate and does not render `NavigationIsland`.
 - `unreadable_store` renders the unreadable-store status line.
+- Direct `/onboard` visits render `OnboardingGate` when setup is not ready.
+- Direct `/onboard` visits redirect to `/explore/timeline` or a preserved target route when setup becomes ready.
 - `Retry` calls refetch.
 - `Open plugin repo` points to `https://github.com/JiangWeixian/ohmyc-plugins`.
 - Reduced motion disables LetterGlitch animation and Atropos interaction.
