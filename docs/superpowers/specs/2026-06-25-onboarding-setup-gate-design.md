@@ -106,6 +106,8 @@ Do not import directly from `vendor/react-bits` at runtime. The vendor directory
 
 In the main app layout, check setup status before rendering product routes.
 
+This gate is not a standalone product route. Do not add `/onboarding` or `/setup` as a normal navigation destination, and do not add it to `NavigationIsland` or the command palette. It is an app bootstrap state rendered before the route tree when the main window cannot use the local monitor store.
+
 Flow:
 
 1. Main window mounts.
@@ -117,6 +119,13 @@ Flow:
 The onboarding gate replaces the normal app shell. It should not render `NavigationIsland`, command palette search content, or route content behind it.
 
 `/menubar` is outside this gate. The menubar remains its own compact surface.
+
+Desktop menubar behavior:
+
+- Clicking the tray/menu "Open OhMyC" action opens or focuses the main window.
+- The main window then runs `useSetupStatus` during bootstrap.
+- If the monitor store is unavailable, the main window shows `OnboardingGate`.
+- The menubar popover route itself must not render the full onboarding gate. A compact popover unavailable state can be designed later, but it is out of scope for this spec.
 
 ## UI Design
 
