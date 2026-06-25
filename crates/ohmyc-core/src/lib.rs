@@ -8,6 +8,7 @@ pub mod configs;
 pub mod error;
 pub mod plugins;
 pub mod settings;
+pub mod setup;
 pub mod store;
 pub mod timeline;
 pub mod watcher;
