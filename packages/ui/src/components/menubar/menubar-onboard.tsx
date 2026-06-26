@@ -1,23 +1,13 @@
-// SPIKE — compact menubar onboarding state. A shrunk version of the full
-// onboard-spike: mini RetroComputerAtropos + subtle LetterGlitch + tight copy,
-// reflowed vertically into the 360px popover. Preview at /explore/menubar-onboard-spike.
+// Compact menubar onboarding state — a shrunk version of the full OnboardingGate
+// (mini RetroComputerAtropos, no LetterGlitch/gradients, highlight off) reflowed
+// vertically into the 360px popover. Shown by MenubarPage when setup is not ready.
 import { ExternalLink } from 'lucide-react'
-import { useSyncExternalStore } from 'react'
 
 import { RetroComputerAtropos } from '@/components/onboarding/retro-computer-atropos'
 import { Button } from '@/components/ui/button'
+import { usePrefersReducedMotion } from '@/hooks/use-prefers-reduced-motion'
 
 const PLUGIN_REPO = 'https://github.com/JiangWeixian/ohmyc-plugins'
-
-const REDUCED_QUERY = '(prefers-reduced-motion: reduce)'
-function subscribePrefersReducedMotion(callback: () => void) {
-  const mq = globalThis.matchMedia(REDUCED_QUERY)
-  mq.addEventListener('change', callback)
-  return () => mq.removeEventListener('change', callback)
-}
-function getPrefersReducedMotion() {
-  return globalThis.matchMedia(REDUCED_QUERY).matches
-}
 
 export interface MenubarOnboardProps {
   /** Optional unreadable/internal status line under the body. */
@@ -25,11 +15,7 @@ export interface MenubarOnboardProps {
 }
 
 export function MenubarOnboard({ statusLine }: MenubarOnboardProps) {
-  const reduced = useSyncExternalStore(
-    subscribePrefersReducedMotion,
-    getPrefersReducedMotion,
-    () => false,
-  )
+  const reduced = usePrefersReducedMotion()
 
   return (
     <div className="menubar-popover" data-menubar-page>

@@ -51,7 +51,7 @@ export function RetroComputerAtropos({
 
         {/* Shell main — CRT screen is baked into this image */}
         <div className="onboard-layer onboard-asset onboard-shell" data-atropos-offset={12}>
-          <img src={computerShell} alt="Lamplit frosted ivory retro CRT" draggable={false} />
+          <img src={computerShell} alt="" draggable={false} />
         </div>
 
         {/* Keyboard depth */}
@@ -61,7 +61,7 @@ export function RetroComputerAtropos({
 
         {/* Keyboard main */}
         <div className="onboard-layer onboard-asset onboard-keyboard" data-atropos-offset={26}>
-          <img src={keyboard} alt="Lamplit frosted ivory retro keyboard" draggable={false} />
+          <img src={keyboard} alt="" draggable={false} />
         </div>
 
         {/* Foreground fragments */}

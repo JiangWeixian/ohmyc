@@ -2,27 +2,17 @@
 // ready. Reuses the spike-validated RetroComputerAtropos + LetterGlitch visuals.
 // Copy + actions follow the spec; Retry refetches useSetupStatus (installs nothing).
 import { ExternalLink, RotateCw } from 'lucide-react'
-import { useSyncExternalStore } from 'react'
 
 import { LetterGlitch } from './letter-glitch'
 import { RetroComputerAtropos } from './retro-computer-atropos'
 import { Button } from '@/components/ui/button'
+import { usePrefersReducedMotion } from '@/hooks/use-prefers-reduced-motion'
 import { useSetupStatus } from '@/hooks/use-setup-status'
 import { cn } from '@/lib/utils'
 
 import type { SetupStatus } from '@/hooks/use-setup-status'
 
 const PLUGIN_REPO = 'https://github.com/JiangWeixian/ohmyc-plugins'
-
-const REDUCED_QUERY = '(prefers-reduced-motion: reduce)'
-function subscribePrefersReducedMotion(callback: () => void) {
-  const mq = globalThis.matchMedia(REDUCED_QUERY)
-  mq.addEventListener('change', callback)
-  return () => mq.removeEventListener('change', callback)
-}
-function getPrefersReducedMotion() {
-  return globalThis.matchMedia(REDUCED_QUERY).matches
-}
 
 /** Extra status line for non-missing states (spec: unreadable / internal_error). */
 function statusLine(state: SetupStatus['state']): string | null {
@@ -41,11 +31,7 @@ function statusLine(state: SetupStatus['state']): string | null {
 
 export function OnboardingGate() {
   const { data, refetch, isFetching } = useSetupStatus()
-  const reduced = useSyncExternalStore(
-    subscribePrefersReducedMotion,
-    getPrefersReducedMotion,
-    () => false,
-  )
+  const reduced = usePrefersReducedMotion()
   const state = data?.state ?? 'missing_store'
   const line = statusLine(state)
 

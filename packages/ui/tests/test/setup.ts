@@ -75,6 +75,8 @@ if (!globalThis.matchMedia) {
 
 // jsdom does not implement canvas.getContext (would log a not-implemented error
 // that fails tests). LetterGlitch bails out gracefully when getContext is null.
+// Intentionally a permanent global stub: jsdom never yields a real context, and
+// vi.clearAllMocks() in afterEach does not touch plain prototype assignments.
 HTMLCanvasElement.prototype.getContext = function getContext() {
   return null
 }

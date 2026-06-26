@@ -17,10 +17,12 @@ export function useSetupStatus() {
   return useQuery({
     queryKey: ['setup', 'status'],
     queryFn: async () => request<SetupStatus>('setup.status', {}),
-    // No aggressive polling — Retry is an explicit user action (spec).
+    // No aggressive polling — Retry is an explicit user action (spec). Data is
+    // always considered stale (staleTime 0) so a fresh component mount re-probes
+    // rather than trusting a cached missing_store after the user installs the
+    // plugin; window restart always re-probes via a fresh QueryClient anyway.
     retry: false,
     refetchOnWindowFocus: false,
-    refetchOnMount: false,
-    staleTime: Number.POSITIVE_INFINITY,
+    staleTime: 0,
   })
 }
