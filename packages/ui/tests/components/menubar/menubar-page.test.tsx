@@ -66,6 +66,8 @@ beforeAll(() => {
 beforeEach(() => {
   __setTransportForTests('mock')
   setupTimelineMock()
+  // The activity surface only renders when setup is ready.
+  setMockHandler('setup.status', async () => ({ state: 'ready' }))
 })
 
 afterEach(() => {
@@ -183,5 +185,42 @@ describe('MenubarPage', () => {
     const hasSpan = peakValueEls.some(el => el.tagName.toLowerCase() === 'span')
     expect(hasSpan).toBe(true)
     expect(await screen.findByText(/^Peak$/i)).toBeInTheDocument()
+  })
+})
+
+describe('MenubarPage (setup gate)', () => {
+  it('renders the compact onboarding state when the store is missing', async () => {
+    setMockHandler('setup.status', async () => ({ state: 'missing_store' }))
+    render(<MenubarPage />, { wrapper })
+    expect(await screen.findByText('Monitor not connected')).toBeInTheDocument()
+    // The activity Surface (view switch / chart) must not render.
+    expect(screen.queryByRole('tab', { name: /heatmap view/i })).not.toBeInTheDocument()
+  })
+
+  it('renders the unreadable-store status line', async () => {
+    setMockHandler('setup.status', async () => ({ state: 'unreadable_store' }))
+    render(<MenubarPage />, { wrapper })
+    expect(
+      await screen.findByText('Local monitor store exists but could not be opened.'),
+    ).toBeInTheDocument()
+  })
+
+  it('renders the normal activity surface when ready', async () => {
+    setMockHandler('setup.status', async () => ({ state: 'ready' }))
+    render(<MenubarPage />, { wrapper })
+    expect(await screen.findByText(/^Activity$/i)).toBeInTheDocument()
+    expect(screen.queryByText('Monitor not connected')).not.toBeInTheDocument()
+  })
+
+  it('renders nothing while readiness is loading', () => {
+    // Handler never resolves → query stays pending.
+    setMockHandler('setup.status', async () => {
+      await new Promise(() => {})
+      return { state: 'ready' }
+    })
+    const { container } = render(<MenubarPage />, { wrapper })
+    expect(screen.queryByText('Monitor not connected')).not.toBeInTheDocument()
+    expect(screen.queryByText(/^Activity$/i)).not.toBeInTheDocument()
+    expect(container.querySelector('.menubar-popover')).not.toBeInTheDocument()
   })
 })

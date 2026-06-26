@@ -4,10 +4,14 @@
 import { useMemo, useState } from 'react'
 
 import { DualLineChart } from './dual-line-chart'
+import { MenubarOnboard } from './menubar-onboard'
 import { RecentHeatmap } from './recent-heatmap'
 import { type MenubarView, ViewSwitch } from './view-switch'
 import { useFsChanged } from '@/hooks/use-fs-changed'
+import { useSetupStatus } from '@/hooks/use-setup-status'
 import { useTimelineHeatmapRange } from '@/hooks/use-timeline'
+
+import type { SetupStatus } from '@/hooks/use-setup-status'
 
 function isoDate(d: Date): string {
   return d.toISOString().slice(0, 10)
@@ -49,7 +53,7 @@ function shortDayLabel(iso: string): string {
   return `${dow[d.getUTCDay()]} ${mon[d.getUTCMonth()]} ${d.getUTCDate()}`
 }
 
-export function MenubarPage() {
+function MenubarActivity() {
   useFsChanged()
   const [view, setView] = useState<MenubarView>('line')
 
@@ -142,4 +146,40 @@ export function MenubarPage() {
       </div>
     </div>
   )
+}
+
+/** Compact status line for the popover (mirrors the main gate). */
+function menubarStatusLine(state: SetupStatus['state']): string | undefined {
+  switch (state) {
+    case 'unreadable_store': {
+      return 'Local monitor store exists but could not be opened.'
+    }
+    case 'internal_error': {
+      return 'Setup check failed. Retry after installing the plugin.'
+    }
+    default: {
+      return undefined
+    }
+  }
+}
+
+/**
+ * Menubar popover page. Owns view state, fetches data, switches between
+ * dual-line and heatmap views. When the monitor store is not ready it shows
+ * the compact MenubarOnboard instead of an empty activity chart. Lives at
+ * /menubar — outside the main-window setup gate.
+ */
+export function MenubarPage() {
+  const { data, isLoading } = useSetupStatus()
+
+  // While the readiness check is in flight, render nothing — the popover is
+  // transient and a flash of empty space is preferable to a flash of the
+  // wrong surface.
+  if (isLoading || !data) {
+    return null
+  }
+  if (data.state !== 'ready') {
+    return <MenubarOnboard statusLine={menubarStatusLine(data.state)} />
+  }
+  return <MenubarActivity />
 }
