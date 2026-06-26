@@ -158,15 +158,17 @@ Do not show the database path.
 
 ### Visual Treatment
 
-Use the `frosted-ivory-lamplit` Atropos asset variant from:
+Use the `frosted-ivory-lamplit-screen-baked` Atropos asset variant from:
 
 ```text
-/Users/bytedance/Documents/Codex/2026-06-24/atroposjs/outputs/atropos-retro-computer/variants/frosted-ivory-lamplit
+/Users/bytedance/Documents/Codex/2026-06-24/atroposjs/outputs/atropos-retro-computer/variants/frosted-ivory-lamplit-screen-baked
 ```
+
+This is the baked-screen variant: the CRT screen (dark glass, scanlines, cyan terminal glow) is part of the shell image, so no separate screen DOM layer is needed. This was validated during the onboarding spike — the earlier `frosted-ivory-lamplit` (hole) variant required a transparent aperture + screen DOM layer and read as a hollowed-out rectangle once the card background was removed.
 
 Required assets:
 
-- `computer-shell-hole.png`
+- `computer-shell.png` (screen baked in)
 - `keyboard.png`
 
 Do not use `rough-composition.png` as the final asset. The scene must be rebuilt from layers so Atropos can create depth.
@@ -179,8 +181,7 @@ Create a `RetroComputerAtropos` component using the reference interaction from t
 | Ambient rim light | `-3` | Warm/cyan light spill |
 | Shell depth back | `4` | Dark shifted duplicate for body thickness |
 | Shell depth mid | `7` | Mid duplicate for body thickness |
-| Screen DOM layer | `9` | Setup status inside transparent aperture |
-| Shell main | `12` | Primary computer shell |
+| Shell main | `12` | Primary computer shell (screen baked in) |
 | Keyboard depth | `18` | Dark shifted duplicate for keyboard thickness |
 | Keyboard main | `26` | Primary keyboard |
 | Foreground fragments | `34` | Sparse signal shards |
@@ -199,11 +200,28 @@ Atropos options should follow the asset manifest:
 
 Keep rotation restrained so the 2D layer construction still reads as a physical object. The shell must use at least three layers and the keyboard at least two layers; reducing the scene to a single flat image fails the design.
 
+The Atropos scene has no card/frame background — `.atropos-inner` is transparent with `overflow: visible` so the computer floats on the ambient field and the depth duplicates read as thickness against the dark base rather than as ghosting. The dark depth duplicates depend on a dark surround to read correctly.
+
 ### Background
 
 Use a React Bits Letter Glitch style for the surrounding field. It should be low-contrast, slow, and ambient. The background is not the main subject; the retro computer and setup actions are.
 
 Avoid bright purple/blue AI-cliche gradients, orbs, bokeh blobs, or marketing hero composition.
+
+### Layout
+
+The gate uses a two-column composition (validated in the onboarding spike):
+
+- Left: `RetroComputerAtropos`, sized to roughly half the centered stage (`min(42vw, 380px)`), shrunk from the 760px reference so it does not dominate.
+- Right: the copy (title + body) and the primary/secondary actions, stacked and left-aligned in a `max-width: 26rem` column.
+
+On narrow viewports (`max-width: 860px`) the composition collapses to a single centered column with centered text, and the computer scales back up (`min(70vw, 420px)`).
+
+### Theming
+
+The right column (title, body, actions) is built entirely from theme tokens — `--text-primary`, `--bg-marketing`, `--font-display`, `--border-default`, `--radius-lg` — so it adapts to every theme (monitor, phosphor, amber, retro, cyberpunk) with no hardcoded colors. The primary action inverts to `background: var(--text-primary); color: var(--bg-marketing)` per theme.
+
+The retro computer scene (left) is intentionally a fixed lamplit palette: the warm/cyan gradients and green CRT glow are part of the asset, not theme-driven. The computer is a single consistent object across themes; the surrounding chrome adapts.
 
 ### Accessibility and Reduced Motion
 
@@ -256,7 +274,7 @@ Expected implementation files:
 - `packages/ui/src/components/onboarding/onboarding-gate.tsx`
 - `packages/ui/src/components/onboarding/retro-computer-atropos.tsx`
 - `packages/ui/src/components/onboarding/letter-glitch.tsx`
-- UI asset directory for the two `frosted-ivory-lamplit` PNG assets
+- UI asset directory for the two `frosted-ivory-lamplit-screen-baked` PNG assets (`computer-shell.png`, `keyboard.png`)
 - `packages/ui/src/app.tsx` or a small app-gate wrapper near the route shell, including the hidden `/onboard` route
 - `packages/ui/src/globals.css` for scoped onboarding/Atropos/Letter Glitch CSS, if component-local styling is insufficient
 

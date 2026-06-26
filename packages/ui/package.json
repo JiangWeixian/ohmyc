@@ -5,6 +5,7 @@
   "private": true,
   "exports": {
     "./app": "./src/app.tsx",
+    "./onboard": "./src/components/onboarding/onboarding-gate.tsx",
     "./components/*": "./src/components/*.tsx",
     "./hooks/*": "./src/hooks/*.ts",
     "./state/*": "./src/state/*.ts",
@@ -47,6 +48,7 @@
     "@react-three/postprocessing": "^3.0.4",
     "@react-three/rapier": "^2.2.0",
     "@tanstack/react-query": "^5.28.4",
+    "atropos": "^2.0.2",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.0",
     "cmdk": "^1.1.1",
