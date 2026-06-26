@@ -44,6 +44,10 @@ vi.mock('@/hooks/use-commands', () => ({
   useCommand: () => ({ data: null }),
 }))
 
+vi.mock('@/hooks/use-setup-status', () => ({
+  useSetupStatus: () => ({ data: { state: 'ready' }, isLoading: false, isFetching: false, refetch: () => Promise.resolve() }),
+}))
+
 vi.mock('@/hooks/use-plugins', () => ({
   usePlugins: () => ({
     data: [

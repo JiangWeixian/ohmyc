@@ -46,6 +46,10 @@ vi.mock('@/hooks/use-commands', () => ({
   useCommands: () => ({ data: [] }),
 }))
 
+vi.mock('@/hooks/use-setup-status', () => ({
+  useSetupStatus: () => ({ data: { state: 'ready' }, isLoading: false, isFetching: false, refetch: () => Promise.resolve() }),
+}))
+
 describe('App routes', () => {
   it('redirects unknown paths to the Explorer timeline fallback', async () => {
     renderWithProviders(<App />, { route: '/legacy/missing' })
