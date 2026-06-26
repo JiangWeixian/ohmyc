@@ -57,6 +57,28 @@ if (!Element.prototype.scrollIntoView) {
   Element.prototype.scrollIntoView = () => {}
 }
 
+// jsdom does not implement matchMedia; components using useSyncExternalStore
+// over a media query (e.g. prefers-reduced-motion) need it to render in tests.
+if (!globalThis.matchMedia) {
+  // @ts-expect-error – minimal stub is sufficient for reads + subscriptions
+  globalThis.matchMedia = (query: string) => ({
+    matches: false,
+    media: query,
+    onchange: null,
+    addEventListener: () => {},
+    removeEventListener: () => {},
+    addListener: () => {},
+    removeListener: () => {},
+    dispatchEvent: () => false,
+  })
+}
+
+// jsdom does not implement canvas.getContext (would log a not-implemented error
+// that fails tests). LetterGlitch bails out gracefully when getContext is null.
+HTMLCanvasElement.prototype.getContext = function getContext() {
+  return null
+}
+
 afterEach(() => {
   cleanup()
   vi.clearAllMocks()
