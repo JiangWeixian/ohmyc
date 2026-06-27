@@ -6,6 +6,7 @@ import { useMemo, useState } from 'react'
 import { DualLineChart } from './dual-line-chart'
 import { MenubarOnboard } from './menubar-onboard'
 import { RecentHeatmap } from './recent-heatmap'
+import { menubarPopoverStyles } from './styles'
 import { type MenubarView, ViewSwitch } from './view-switch'
 import { useFsChanged } from '@/hooks/use-fs-changed'
 import { useSetupStatus } from '@/hooks/use-setup-status'
@@ -80,71 +81,74 @@ function MenubarActivity() {
     : 'no activity yet'
 
   return (
-    <div
-      className="menubar-popover"
-      data-menubar-page
-    >
-      <span className="menubar-popover-corner" aria-hidden="true" />
-      <div className="menubar-content">
-        <header className="mb-3 flex items-center justify-between gap-3">
-          <span className="menubar-title">Activity</span>
-          <ViewSwitch value={view} onChange={setView} />
-        </header>
+    <>
+      <style>{menubarPopoverStyles}</style>
+      <div
+        className="relative mx-auto w-full max-w-sm overflow-hidden px-5 py-[18px] text-[var(--text-primary)] menubar-popover"
+        data-menubar-page
+      >
+        <span className="menubar-popover-corner" aria-hidden="true" />
+        <div className="relative z-[1] menubar-content">
+          <header className="mb-3 flex items-center justify-between gap-3">
+            <span className="menubar-title">Activity</span>
+            <ViewSwitch value={view} onChange={setView} />
+          </header>
 
-        {/* No overflow-hidden here: the heatmap tooltip escapes the slot upward
-            for top-row cells. */}
-        <div className={view === 'line' ? 'menubar-chart-area' : 'relative -mx-1 min-h-[168px]'}>
-          {view === 'line'
-            ? (
-                <DualLineChart tokens={tokensRecent.data ?? []} sessions={sessionsRecent.data ?? []} />
-              )
-            : (
-                <RecentHeatmap tokens={tokensRecent.data ?? []} sessions={sessionsRecent.data ?? []} />
-              )}
-        </div>
+          {/* No overflow-hidden here: the heatmap tooltip escapes the slot upward
+              for top-row cells. */}
+          <div className={view === 'line' ? 'relative -mx-1 min-h-[168px] rounded menubar-chart-area' : 'relative -mx-1 min-h-[168px]'}>
+            {view === 'line'
+              ? (
+                  <DualLineChart tokens={tokensRecent.data ?? []} sessions={sessionsRecent.data ?? []} />
+                )
+              : (
+                  <RecentHeatmap tokens={tokensRecent.data ?? []} sessions={sessionsRecent.data ?? []} />
+                )}
+          </div>
 
-        <div className="mt-3.5 flex">
-          <div className="flex flex-1 flex-col gap-1 pr-3.5">
-            <span className="menubar-kpi-value" data-kpi="tokens">
-              {formatTokens(totalTokens)}
-            </span>
-            <span className="menubar-label">Tokens</span>
+          <div className="mt-3.5 flex">
+            <div className="flex flex-1 flex-col gap-1 pr-3.5">
+              <span className="menubar-kpi-value" data-kpi="tokens">
+                {formatTokens(totalTokens)}
+              </span>
+              <span className="menubar-label">Tokens</span>
+            </div>
+            <div className="flex flex-1 flex-col gap-1 border-l border-[var(--border-subtle)] px-3.5">
+              <span className="menubar-kpi-value" data-kpi="sessions">
+                {/* exact count — unlike tokens, sessions are never compressed to k/M */}
+                {totalSessions.toLocaleString()}
+              </span>
+              <span className="menubar-label">Sessions</span>
+            </div>
+            <div className="flex flex-1 flex-col gap-1 border-l border-[var(--border-subtle)] pl-3.5">
+              <span className="menubar-kpi-value" data-kpi="peak">
+                {peak ? formatTokens(peak.value) : '—'}
+              </span>
+              <span className="menubar-label">Peak</span>
+            </div>
           </div>
-          <div className="flex flex-1 flex-col gap-1 border-l border-[var(--border-subtle)] px-3.5">
-            <span className="menubar-kpi-value" data-kpi="sessions">
-              {/* exact count — unlike tokens, sessions are never compressed to k/M */}
-              {totalSessions.toLocaleString()}
-            </span>
-            <span className="menubar-label">Sessions</span>
-          </div>
-          <div className="flex flex-1 flex-col gap-1 border-l border-[var(--border-subtle)] pl-3.5">
-            <span className="menubar-kpi-value" data-kpi="peak">
-              {peak ? formatTokens(peak.value) : '—'}
-            </span>
-            <span className="menubar-label">Peak</span>
-          </div>
-        </div>
 
-        <div className="mt-3.5 flex items-center justify-between border-t border-[var(--border-subtle)] pt-3">
-          <span className="menubar-label menubar-footer-meta">
-            {peakMeta}
-          </span>
-          <button
-            type="button"
-            onClick={async () => {
-              // Tauri supplies this module at runtime in the desktop shell.
-              // eslint-disable-next-line import/no-extraneous-dependencies
-              const { invoke } = await import('@tauri-apps/api/core')
-              await invoke('open_main_window')
-              await invoke('hide_popover')
-            }}
-            className="menubar-label menubar-open transition-colors"
-          >
-            Open OhMyC →
-          </button>
+          <div className="mt-3.5 flex items-center justify-between border-t border-[var(--border-subtle)] pt-3">
+            <span className="menubar-label menubar-footer-meta">
+              {peakMeta}
+            </span>
+            <button
+              type="button"
+              onClick={async () => {
+                // Tauri supplies this module at runtime in the desktop shell.
+                // eslint-disable-next-line import/no-extraneous-dependencies
+                const { invoke } = await import('@tauri-apps/api/core')
+                await invoke('open_main_window')
+                await invoke('hide_popover')
+              }}
+              className="menubar-label menubar-open transition-colors"
+            >
+              Open OhMyC →
+            </button>
+          </div>
         </div>
       </div>
-    </div>
+    </>
   )
 }
 
