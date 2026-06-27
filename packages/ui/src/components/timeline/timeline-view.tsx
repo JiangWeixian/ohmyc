@@ -10,6 +10,7 @@ import {
 
 import { ContributionGraph } from './contribution-graph'
 import { EventList } from './event-list'
+import { timelinePageStyles } from './styles'
 import {
   Select,
   SelectContent,
@@ -101,111 +102,114 @@ export function TimelineView() {
   const yearOptions = years ?? [currentYear]
 
   return (
-    <div className="w-full max-w-4xl">
-      <h1 className="timeline-page-title mb-1">
-        Timeline
-      </h1>
-      <p className="timeline-page-lede mb-7 max-w-screen-sm">
-        Every Claude Code session you've run, across every project. Auto-synced via the Stop hook.
-      </p>
+    <>
+      <style>{timelinePageStyles}</style>
+      <div className="w-full max-w-4xl">
+        <h1 className="timeline-page-title mb-1">
+          Timeline
+        </h1>
+        <p className="timeline-page-lede mb-7 max-w-screen-sm">
+          Every Claude Code session you've run, across every project. Auto-synced via the Stop hook.
+        </p>
 
-      {/* Controls bar */}
-      <div className="mb-7 flex items-center gap-2.5">
-        <Tabs
-          value={metric}
-          onValueChange={value => setMetric(value as 'activity' | 'tokens')}
-        >
-          <TabsList className="timeline-tabs">
-            <TabsTrigger
-              value="activity"
-              className="timeline-tab"
-            >
-              Activity
-            </TabsTrigger>
-            <TabsTrigger
-              value="tokens"
-              className="timeline-tab"
-            >
-              Tokens
-            </TabsTrigger>
-          </TabsList>
-        </Tabs>
-        <TimelineSelect
-          label="Project"
-          value={project ?? '__all__'}
-          onChange={v => setProject(v === '__all__' ? undefined : v)}
-          options={[
-            { value: '__all__', label: 'All projects' },
-            ...(projects ?? []).map(p => ({ value: p, label: p })),
-          ]}
-        />
-        <TimelineSelect
-          label="Year"
-          value={String(year)}
-          onChange={v => setYear(Number(v))}
-          options={yearOptions.map(y => ({ value: String(y), label: String(y) }))}
-        />
-        <span className="flex-1" />
-        <span className="timeline-stats">
-          <b>{(status?.sessionCount ?? 0).toLocaleString()}</b>
-          {' sessions '}
-          <span className="sep">·</span>
-          {' '}
-          <b>{totals.turns.toLocaleString()}</b>
-          {' turns '}
-          <span className="sep">·</span>
-          {' '}
-          <b>{formatTokensCompact(totals.tokens)}</b>
-          {' tokens'}
-        </span>
-      </div>
-
-      {/* Heatmap */}
-      <div className="mb-9">
-        {heatmapLoading || !heatmap
-          ? (
-              <div className="rounded-lg border border-[var(--border-default)] bg-[rgba(255,255,255,0.02)] px-5 py-4 text-xs text-[var(--text-tertiary)]">
-                Loading…
-              </div>
-            )
-          : (
-              <ContributionGraph
-                year={year}
-                metric={heatmapMetric}
-                data={heatmap}
-                onSelectDay={handleSelectDay}
-              />
-            )}
-      </div>
-
-      {/* Events header */}
-      <div className="mb-3 flex items-baseline justify-between">
-        <h3 className="text-sm font-[590] tracking-normal text-[var(--text-primary)]">
-          Recent activity
-        </h3>
-        {events?.nextCursor && (
-          <span
-            className="text-xs text-[var(--text-quaternary)]"
-            style={{ fontFamily: 'var(--font-mono)' }}
+        {/* Controls bar */}
+        <div className="mb-7 flex items-center gap-2.5">
+          <Tabs
+            value={metric}
+            onValueChange={value => setMetric(value as 'activity' | 'tokens')}
           >
-            Showing {events.days.length} days · earlier sessions truncated
-          </span>
-        )}
-      </div>
-
-      <div ref={eventsRef}>
-        {eventsLoading || !events
-          ? (
-              <div
-                className="my-3 border-y border-[var(--border-subtle)] px-3 py-3.5 text-xs text-[var(--text-tertiary)]"
-                style={{ fontFamily: 'var(--font-mono)' }}
+            <TabsList className="h-auto overflow-hidden p-0 timeline-tabs">
+              <TabsTrigger
+                value="activity"
+                className="h-auto px-3 py-2 timeline-tab"
               >
-                Loading…
-              </div>
-            )
-          : <EventList days={events.days} highlightedDay={highlightedDay} />}
+                Activity
+              </TabsTrigger>
+              <TabsTrigger
+                value="tokens"
+                className="h-auto px-3 py-2 timeline-tab"
+              >
+                Tokens
+              </TabsTrigger>
+            </TabsList>
+          </Tabs>
+          <TimelineSelect
+            label="Project"
+            value={project ?? '__all__'}
+            onChange={v => setProject(v === '__all__' ? undefined : v)}
+            options={[
+              { value: '__all__', label: 'All projects' },
+              ...(projects ?? []).map(p => ({ value: p, label: p })),
+            ]}
+          />
+          <TimelineSelect
+            label="Year"
+            value={String(year)}
+            onChange={v => setYear(Number(v))}
+            options={yearOptions.map(y => ({ value: String(y), label: String(y) }))}
+          />
+          <span className="flex-1" />
+          <span className="text-xs timeline-stats">
+            <b>{(status?.sessionCount ?? 0).toLocaleString()}</b>
+            {' sessions '}
+            <span className="sep mx-1">·</span>
+            {' '}
+            <b>{totals.turns.toLocaleString()}</b>
+            {' turns '}
+            <span className="sep mx-1">·</span>
+            {' '}
+            <b>{formatTokensCompact(totals.tokens)}</b>
+            {' tokens'}
+          </span>
+        </div>
+
+        {/* Heatmap */}
+        <div className="mb-9">
+          {heatmapLoading || !heatmap
+            ? (
+                <div className="rounded-lg border border-[var(--border-default)] bg-[rgba(255,255,255,0.02)] px-5 py-4 text-xs text-[var(--text-tertiary)]">
+                  Loading…
+                </div>
+              )
+            : (
+                <ContributionGraph
+                  year={year}
+                  metric={heatmapMetric}
+                  data={heatmap}
+                  onSelectDay={handleSelectDay}
+                />
+              )}
+        </div>
+
+        {/* Events header */}
+        <div className="mb-3 flex items-baseline justify-between">
+          <h3 className="text-sm font-[590] tracking-normal text-[var(--text-primary)]">
+            Recent activity
+          </h3>
+          {events?.nextCursor && (
+            <span
+              className="text-xs text-[var(--text-quaternary)]"
+              style={{ fontFamily: 'var(--font-mono)' }}
+            >
+              Showing {events.days.length} days · earlier sessions truncated
+            </span>
+          )}
+        </div>
+
+        <div ref={eventsRef}>
+          {eventsLoading || !events
+            ? (
+                <div
+                  className="my-3 border-y border-[var(--border-subtle)] px-3 py-3.5 text-xs text-[var(--text-tertiary)]"
+                  style={{ fontFamily: 'var(--font-mono)' }}
+                >
+                  Loading…
+                </div>
+              )
+            : <EventList days={events.days} highlightedDay={highlightedDay} />}
+        </div>
       </div>
-    </div>
+    </>
   )
 }
 
@@ -236,7 +240,7 @@ function TimelineSelect({
     <Select value={value} onValueChange={onChange}>
       <SelectTrigger
         aria-label={label}
-        className="timeline-filter-select focus-visible:ring-0 [&_svg]:size-3"
+        className="h-auto px-3 py-2 timeline-filter-select focus-visible:ring-0 [&_svg]:size-3"
       >
         <span className="timeline-filter-label">{label}</span>
         <span className="timeline-filter-value">

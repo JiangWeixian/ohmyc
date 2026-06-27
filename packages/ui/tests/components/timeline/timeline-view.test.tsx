@@ -146,12 +146,12 @@ describe('TimelineView', () => {
     const tabList = screen.getByText('Activity').closest('[role="tablist"]')
     expect(tabList).not.toBeNull()
     expect(tabList).toHaveClass('timeline-tabs')
-    expect(tabList).not.toHaveClass('h-auto')
+    expect(tabList).toHaveClass('h-auto')
 
     const tokensTab = screen.getByText('Tokens').closest('[role="tab"]')
     expect(tokensTab).not.toBeNull()
     expect(tokensTab).toHaveClass('timeline-tab')
-    expect(tokensTab).not.toHaveClass('h-auto')
+    expect(tokensTab).toHaveClass('h-auto')
     expect(tokensTab).not.toHaveClass('py-[6px]')
 
     expect(screen.getByLabelText('Project')).toHaveAttribute('data-size', 'default')
