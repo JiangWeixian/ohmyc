@@ -3,44 +3,20 @@ import {
   useReducedMotion,
   useTransform,
 } from 'framer-motion'
-import {
-  Activity,
-  Blocks,
-  Bot,
-  Code2,
-  Search,
-  Sparkles,
-  TerminalSquare,
-} from 'lucide-react'
+import { Search } from 'lucide-react'
 import { useState } from 'react'
 import { NavLink } from 'react-router-dom'
 
 import { useCommandPalette } from '@/components/command-palette'
+import { NAV_ITEMS, type NavItem } from '@/components/nav-items'
 import { cn } from '@/lib/utils'
 import { useIslandStore } from '@/state/island-store'
 
-import type { LucideIcon } from 'lucide-react'
+const SIGNAL_IDS = new Set(['monitor', 'timeline'])
 
-interface IslandItem {
-  keycap: string
-  label: string
-  to: string
-  icon: LucideIcon
-}
-
-const SIGNAL_ITEMS: IslandItem[] = [
-  { keycap: 'M', label: 'Monitor', to: '/explore/monitor', icon: Code2 },
-  { keycap: 'T', label: 'Timeline', to: '/explore/timeline', icon: Activity },
-]
-
-const EXPLORE_ITEMS: IslandItem[] = [
-  { keycap: 'A', label: 'Agents', to: '/explore/agents', icon: Bot },
-  { keycap: 'C', label: 'Commands', to: '/explore/commands', icon: TerminalSquare },
-  { keycap: 'S', label: 'Skills', to: '/explore/skills', icon: Sparkles },
-  { keycap: 'P', label: 'Plugins', to: '/explore/plugins', icon: Blocks },
-]
-
-const ALL_ITEMS = [...SIGNAL_ITEMS, ...EXPLORE_ITEMS]
+const SIGNAL_ITEMS = NAV_ITEMS.filter(item => SIGNAL_IDS.has(item.id))
+const EXPLORE_ITEMS = NAV_ITEMS.filter(item => !SIGNAL_IDS.has(item.id))
+const ALL_ITEMS = NAV_ITEMS
 
 const COLLAPSED_WIDTH = 56
 const EXPANDED_WIDTH = 220
@@ -182,7 +158,7 @@ function IslandGroup({
   onNavigate,
 }: {
   label: string
-  items: IslandItem[]
+  items: NavItem[]
   className?: string
   onNavigate: () => void
 }) {
@@ -195,7 +171,7 @@ function IslandGroup({
         {items.map(item => (
           <NavLink
             key={item.keycap}
-            to={item.to}
+            to={item.path}
             onClick={onNavigate}
             className={({ isActive }) =>
               cn(
