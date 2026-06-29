@@ -14,9 +14,28 @@ import {
 
 import { renderWithProviders } from './test/render-with-providers'
 import { App } from '@/app'
+import { NAV_ITEMS } from '@/components/nav-items'
 
-vi.mock('@/explorer', () => ({
-  Explorer: () => {
+vi.mock('@/routes/timeline-page', () => ({
+  TimelinePage: () => <div data-testid="explorer-route">timeline</div>,
+}))
+vi.mock('@/routes/agents-page', () => ({
+  AgentsPage: () => {
+    const location = useLocation()
+    return <div data-testid="explorer-route">{location.pathname}</div>
+  },
+}))
+vi.mock('@/routes/skills-page', () => ({
+  SkillsPage: () => <div data-testid="explorer-route">skills</div>,
+}))
+vi.mock('@/routes/commands-page', () => ({
+  CommandsPage: () => <div data-testid="explorer-route">commands</div>,
+}))
+vi.mock('@/routes/plugins-page', () => ({
+  PluginsPage: () => <div data-testid="explorer-route">plugins</div>,
+}))
+vi.mock('@/routes/monitor-page', () => ({
+  MonitorPage: () => {
     const location = useLocation()
     return <div data-testid="explorer-route">{location.pathname}</div>
   },
@@ -24,14 +43,6 @@ vi.mock('@/explorer', () => ({
 
 vi.mock('@/components/menubar/menubar-page', () => ({
   MenubarPage: () => <div data-testid="menubar-route">Menubar route</div>,
-}))
-
-vi.mock('@/components/monitor-spike/monitor-spike-view', () => ({
-  MonitorSpikeView: () => <div data-testid="monitor-spike-route">Monitor spike route</div>,
-}))
-
-vi.mock('@/components/monitor-spike/lanyard-stats-spike-view', () => ({
-  LanyardStatsSpikeView: () => <div data-testid="lanyard-stats-spike-route">Lanyard stats spike route</div>,
 }))
 
 vi.mock('@/hooks/use-agents', () => ({
@@ -80,5 +91,13 @@ describe('App routes', () => {
     await waitFor(() => {
       expect(screen.getByTestId('explorer-route')).toHaveTextContent('/explore/monitor')
     })
+  })
+
+  it('routes every NAV_ITEMS path to its page without falling through to the timeline redirect', () => {
+    for (const item of NAV_ITEMS) {
+      const { unmount } = renderWithProviders(<App />, { route: item.path })
+      expect(screen.getByTestId('explorer-route')).toBeInTheDocument()
+      unmount()
+    }
   })
 })

@@ -1,6 +1,10 @@
 import { fireEvent, screen } from '@testing-library/react'
 import React from 'react'
-import { Route, Routes } from 'react-router-dom'
+import {
+  Navigate,
+  Route,
+  Routes,
+} from 'react-router-dom'
 import {
   describe,
   expect,
@@ -9,8 +13,11 @@ import {
 } from 'vitest'
 
 import { renderWithProviders } from './test/render-with-providers'
-import { App } from '@/app'
-import { Explorer } from '@/explorer'
+import { ExplorerLayout } from '@/components/explorer-layout'
+import { AgentsPage } from '@/routes/agents-page'
+import { MonitorPage } from '@/routes/monitor-page'
+import { PluginsPage } from '@/routes/plugins-page'
+import { TimelinePage } from '@/routes/timeline-page'
 
 const opencodeAgentFixture = {
   id: 'opencode-agent',
@@ -31,7 +38,7 @@ const opencodeAgentFixture = {
 
 vi.mock('@/hooks/use-agents', () => ({
   useAgents: () => ({ data: [opencodeAgentFixture], isLoading: false, isError: false }),
-  useAgent: () => ({ data: opencodeAgentFixture }),
+  useAgent: (locator: unknown) => ({ data: locator ? opencodeAgentFixture : null }),
 }))
 
 vi.mock('@/hooks/use-skills', () => ({
@@ -78,15 +85,11 @@ vi.mock('@/components/monitor-spike/monitor-spike-view', () => ({
   MonitorSpikeView: () => <div data-testid="monitor-spike-route">Monitor spike route</div>,
 }))
 
-vi.mock('@/components/monitor-spike/lanyard-stats-spike-view', () => ({
-  LanyardStatsSpikeView: () => <div data-testid="lanyard-stats-spike-route">Lanyard stats spike route</div>,
-}))
-
 describe('Explorer route views', () => {
   it('shows the floating navigation island with Signal and Explore groups', () => {
     renderWithProviders(
       <Routes>
-        <Route path="/explore/:tab" element={<Explorer />} />
+        <Route path="/explore/plugins" element={<ExplorerLayout><PluginsPage /></ExplorerLayout>} />
       </Routes>,
       { route: '/explore/plugins' },
     )
@@ -109,7 +112,7 @@ describe('Explorer route views', () => {
   it('expands the navigation island on hover and shows full labels', () => {
     renderWithProviders(
       <Routes>
-        <Route path="/explore/:tab" element={<Explorer />} />
+        <Route path="/explore/timeline" element={<ExplorerLayout><TimelinePage /></ExplorerLayout>} />
       </Routes>,
       { route: '/explore/timeline' },
     )
@@ -122,7 +125,7 @@ describe('Explorer route views', () => {
   it('renders Monitor route as a full-bleed personal coding monitor surface', async () => {
     renderWithProviders(
       <Routes>
-        <Route path="/explore/:tab" element={<Explorer />} />
+        <Route path="/explore/monitor" element={<ExplorerLayout padded={false}><MonitorPage /></ExplorerLayout>} />
       </Routes>,
       { route: '/explore/monitor' },
     )
@@ -134,7 +137,7 @@ describe('Explorer route views', () => {
   it('uses an island-aware content shell for non-Monitor routes', () => {
     renderWithProviders(
       <Routes>
-        <Route path="/explore/:tab" element={<Explorer />} />
+        <Route path="/explore/timeline" element={<ExplorerLayout><TimelinePage /></ExplorerLayout>} />
       </Routes>,
       { route: '/explore/timeline' },
     )
@@ -148,7 +151,7 @@ describe('Explorer route views', () => {
   it('shows plugin inventory details without the Environment summary', () => {
     renderWithProviders(
       <Routes>
-        <Route path="/explore/:tab" element={<Explorer />} />
+        <Route path="/explore/plugins" element={<ExplorerLayout><PluginsPage /></ExplorerLayout>} />
       </Routes>,
       { route: '/explore/plugins' },
     )
@@ -171,7 +174,7 @@ describe('Explorer route views', () => {
   it('renders flattened permission.* rows and mode in the detail panel for opencode agents', async () => {
     renderWithProviders(
       <Routes>
-        <Route path="/explore/:tab" element={<Explorer />} />
+        <Route path="/explore/agents" element={<ExplorerLayout><AgentsPage /></ExplorerLayout>} />
       </Routes>,
       { route: '/explore/agents' },
     )
@@ -194,7 +197,8 @@ describe('Explorer route views', () => {
   it('clears resource detail selection when navigating between island routes', async () => {
     renderWithProviders(
       <Routes>
-        <Route path="/explore/:tab" element={<Explorer />} />
+        <Route path="/explore/agents" element={<ExplorerLayout><AgentsPage /></ExplorerLayout>} />
+        <Route path="/explore/plugins" element={<ExplorerLayout><PluginsPage /></ExplorerLayout>} />
       </Routes>,
       { route: '/explore/agents' },
     )
@@ -218,44 +222,37 @@ describe('Explorer route views', () => {
   })
 
   it.each([
-    ['/explore/hooks', 'Hooks', 'No hooks configured in settings.json'],
-    ['/explore/mcp', 'MCP Servers', 'No MCP servers configured in .mcp.json'],
-    ['/explore/lsp', 'LSP Servers', 'No LSP servers configured in .lsp.json'],
-  ])('treats %s as a removed Explorer tab and falls back to Timeline content', (route, removedHeading, removedEmptyState) => {
+    ['/explore/hooks'],
+    ['/explore/mcp'],
+    ['/explore/lsp'],
+  ])('redirects %s to /explore/timeline', (route) => {
     renderWithProviders(
       <Routes>
-        <Route path="/explore/:tab" element={<Explorer />} />
+        <Route path="/explore/timeline" element={<ExplorerLayout><TimelinePage /></ExplorerLayout>} />
+        <Route path="/explore/*" element={<Navigate to="/explore/timeline" replace />} />
       </Routes>,
       { route },
     )
 
-    const main = document.querySelector('main')
-    const timelineHeading = document.querySelector('main h1')
-
-    expect(screen.getByRole('navigation', { name: 'Primary' })).toHaveTextContent('Timeline')
-    expect(timelineHeading?.textContent).toBe('Timeline')
-    expect(main?.textContent).not.toContain(removedHeading)
-    expect(screen.queryByText(removedEmptyState)).not.toBeInTheDocument()
+    expect(document.querySelector('main h1')?.textContent).toBe('Timeline')
   })
 
-  it('treats /explore/settings as an invalid tab and falls back to timeline content', () => {
+  it('redirects /explore/settings to /explore/timeline', () => {
     renderWithProviders(
       <Routes>
-        <Route path="/explore/:tab" element={<Explorer />} />
+        <Route path="/explore/timeline" element={<ExplorerLayout><TimelinePage /></ExplorerLayout>} />
+        <Route path="/explore/*" element={<Navigate to="/explore/timeline" replace />} />
       </Routes>,
       { route: '/explore/settings' },
     )
 
-    expect(document.body.textContent).toContain('Timeline')
-    expect(document.body.textContent).not.toContain('Settings panel')
-    expect(document.body.textContent).not.toContain('General')
-    expect(document.body.textContent).not.toContain('Configure your general settings')
+    expect(document.querySelector('main h1')?.textContent).toBe('Timeline')
   })
 
   it('keeps resource page internals while changing only the shell', () => {
     renderWithProviders(
       <Routes>
-        <Route path="/explore/:tab" element={<Explorer />} />
+        <Route path="/explore/plugins" element={<ExplorerLayout><PluginsPage /></ExplorerLayout>} />
       </Routes>,
       { route: '/explore/plugins' },
     )
@@ -274,7 +271,7 @@ describe('Explorer route views', () => {
   it('keeps Timeline route owned content inside the new shell', () => {
     renderWithProviders(
       <Routes>
-        <Route path="/explore/:tab" element={<Explorer />} />
+        <Route path="/explore/timeline" element={<ExplorerLayout><TimelinePage /></ExplorerLayout>} />
       </Routes>,
       { route: '/explore/timeline' },
     )
@@ -282,19 +279,5 @@ describe('Explorer route views', () => {
     expect(screen.getByRole('navigation', { name: 'Primary' })).toHaveTextContent('Timeline')
     expect(document.querySelector('main h1')?.textContent).toBe('Timeline')
     expect(document.body.textContent).toContain('Every Claude Code session')
-  })
-})
-
-describe('Explorer spike routes', () => {
-  it('renders the monitor spike route', () => {
-    renderWithProviders(<App />, { route: '/explore/monitor-spike' })
-
-    expect(screen.getByTestId('monitor-spike-route')).toBeInTheDocument()
-  })
-
-  it('renders the lanyard stats spike route', () => {
-    renderWithProviders(<App />, { route: '/explore/monitor-lanyard-stats-spike' })
-
-    expect(screen.getByTestId('lanyard-stats-spike-route')).toBeInTheDocument()
   })
 })

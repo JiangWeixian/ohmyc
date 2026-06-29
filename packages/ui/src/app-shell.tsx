@@ -1,14 +1,7 @@
 // Ready-state app shell — route table, command palette, and global keyboard
 // shortcuts. Extracted from app.tsx so the setup gate (app-setup-gate.tsx) can
 // unit-test routing without mounting the toaster/provider composition.
-import {
-  Activity,
-  Bot,
-  Code2,
-  Search,
-  Sparkles,
-  TerminalSquare,
-} from 'lucide-react'
+import { Search } from 'lucide-react'
 import {
   Navigate,
   Route,
@@ -17,15 +10,19 @@ import {
 } from 'react-router-dom'
 
 import { CommandPalette } from './components/command-palette'
+import { ExplorerLayout } from './components/explorer-layout'
 import { MenubarPage } from './components/menubar/menubar-page'
-import { LanyardStatsSpikeView } from './components/monitor-spike/lanyard-stats-spike-view'
-import { MonitorSpikeView } from './components/monitor-spike/monitor-spike-view'
-import { NavigationIsland } from './components/navigation-island'
-import { Explorer } from './explorer'
+import { NAV_ITEMS } from './components/nav-items'
 import { useAgents } from './hooks/use-agents'
 import { useCommands } from './hooks/use-commands'
 import { useGlobalKeyboardShortcuts } from './hooks/use-keyboard-shortcuts'
 import { useSkills } from './hooks/use-skills'
+import { AgentsPage } from './routes/agents-page'
+import { CommandsPage } from './routes/commands-page'
+import { MonitorPage } from './routes/monitor-page'
+import { PluginsPage } from './routes/plugins-page'
+import { SkillsPage } from './routes/skills-page'
+import { TimelinePage } from './routes/timeline-page'
 import { useThemeCommands } from './theme'
 
 /** Command palette content — exposes navigation and entity search. */
@@ -37,48 +34,14 @@ export function AppCommandPalette() {
   const { data: skills } = useSkills()
   const { data: commands } = useCommands()
 
-  const goToCommands = [
-    {
-      id: 'goto-monitor',
-      label: 'Monitor',
-      shortcut: 'g m',
-      icon: <Code2 size={14} />,
-      category: 'Go to',
-      action: () => navigate('/explore/monitor'),
-    },
-    {
-      id: 'goto-agents',
-      label: 'Agents',
-      shortcut: 'g a',
-      icon: <Bot size={14} />,
-      category: 'Go to',
-      action: () => navigate('/explore/agents'),
-    },
-    {
-      id: 'goto-skills',
-      label: 'Skills',
-      shortcut: 'g s',
-      icon: <Sparkles size={14} />,
-      category: 'Go to',
-      action: () => navigate('/explore/skills'),
-    },
-    {
-      id: 'goto-commands',
-      label: 'Commands',
-      shortcut: 'g c',
-      icon: <TerminalSquare size={14} />,
-      category: 'Go to',
-      action: () => navigate('/explore/commands'),
-    },
-    {
-      id: 'goto-timeline',
-      label: 'Timeline',
-      shortcut: 'g t',
-      icon: <Activity size={14} />,
-      category: 'Go to',
-      action: () => navigate('/explore/timeline'),
-    },
-  ]
+  const goToCommands = NAV_ITEMS.map(item => ({
+    id: `goto-${item.id}`,
+    label: item.label,
+    shortcut: `g ${item.keycap.toLowerCase()}`,
+    icon: <item.icon size={14} />,
+    category: 'Go to',
+    action: () => navigate(item.path),
+  }))
 
   const searchCommands = [
     ...(agents ?? [])
@@ -131,12 +94,19 @@ export function AppLayout() {
   return (
     <div className="h-dvh overflow-hidden bg-[var(--surface-base)] text-[var(--text-primary)]">
       <Routes>
-        <Route path="/explore/monitor-lanyard-stats-spike" element={<><NavigationIsland /><LanyardStatsSpikeView /></>} />
-        <Route path="/explore/monitor-spike" element={<><NavigationIsland /><MonitorSpikeView /></>} />
-        <Route path="/explore/:tab" element={<Explorer viewSwitcher={null} />} />
+        <Route path="/explore/monitor" element={<ExplorerLayout padded={false}><MonitorPage /></ExplorerLayout>} />
+        <Route path="/explore/timeline" element={<ExplorerLayout><TimelinePage /></ExplorerLayout>} />
+        <Route path="/explore/agents" element={<ExplorerLayout><AgentsPage /></ExplorerLayout>} />
+        <Route path="/explore/skills" element={<ExplorerLayout><SkillsPage /></ExplorerLayout>} />
+        <Route path="/explore/commands" element={<ExplorerLayout><CommandsPage /></ExplorerLayout>} />
+        <Route path="/explore/plugins" element={<ExplorerLayout><PluginsPage /></ExplorerLayout>} />
+
         <Route path="/explore" element={<Navigate to="/explore/timeline" replace />} />
-        <Route path="/menubar" element={<MenubarPage />} />
+        <Route path="/explore/*" element={<Navigate to="/explore/timeline" replace />} />
         <Route path="/onboard" element={<Navigate to="/explore/timeline" replace />} />
+
+        <Route path="/menubar" element={<MenubarPage />} />
+
         <Route path="*" element={<Navigate to="/explore/timeline" replace />} />
       </Routes>
     </div>

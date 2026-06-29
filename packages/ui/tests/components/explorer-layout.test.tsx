@@ -16,7 +16,7 @@ vi.mock('@/components/navigation-island', () => ({
 
 describe('ExplorerLayout', () => {
   it('renders the padded explorer-content-shell by default', () => {
-    const { container } = renderWithProviders(
+    renderWithProviders(
       <ExplorerLayout>
         <div data-testid="page-content">page</div>
       </ExplorerLayout>,
