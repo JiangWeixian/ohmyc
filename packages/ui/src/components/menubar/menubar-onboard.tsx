@@ -5,6 +5,7 @@ import { ExternalLink } from 'lucide-react'
 
 import { menubarOnboardStyles, menubarPopoverStyles } from './styles'
 import { RetroComputerAtropos } from '@/components/onboarding/retro-computer-atropos'
+import { retroComputerSceneStyles } from '@/components/onboarding/styles'
 import { Button } from '@/components/ui/button'
 import { usePrefersReducedMotion } from '@/hooks/use-prefers-reduced-motion'
 
@@ -20,7 +21,7 @@ export function MenubarOnboard({ statusLine }: MenubarOnboardProps) {
 
   return (
     <>
-      <style>{menubarPopoverStyles + menubarOnboardStyles}</style>
+      <style>{menubarPopoverStyles + retroComputerSceneStyles + menubarOnboardStyles}</style>
       <div className="relative mx-auto w-full max-w-sm overflow-hidden px-5 py-[18px] text-[var(--text-primary)] menubar-popover" data-menubar-page>
         <span className="menubar-popover-corner" aria-hidden="true" />
         <div className="relative z-[1] menubar-content">

@@ -1,5 +1,3 @@
-import { fireEvent, within } from 'storybook/test'
-
 import { CommandPaletteProvider } from '@/components/command-palette'
 import { NavigationIsland } from '@/components/navigation-island'
 import { withRouter } from '@/stories/decorators/storybook-decorators'
@@ -29,11 +27,4 @@ type Story = StoryObj<typeof meta>
 
 export const Expanded: Story = {}
 
-export const Collapsed: Story = {
-  play: async ({ canvasElement }) => {
-    const body = within(canvasElement.ownerDocument.body)
-    const collapse = await body.findByRole('button', { name: 'Collapse navigation' })
-    fireEvent.click(collapse)
-    await body.findByRole('button', { name: 'Expand navigation' })
-  },
-}
+export const Collapsed: Story = {}

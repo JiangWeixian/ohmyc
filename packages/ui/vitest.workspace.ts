@@ -65,6 +65,21 @@ export default defineWorkspace([
         headless: true,
         instances: [{ browser: 'chromium' }],
       },
+      // @ts-expect-error coverage works at runtime but is missing from vitest's ProjectConfig type
+      coverage: {
+        provider: 'v8',
+        reporter: ['text', 'json-summary', 'json'],
+        exclude: [
+          'node_modules/',
+          'tests/',
+          'dist/',
+          'src/components/ui/**',
+          'src/components/uitripled/**',
+          'src/components/monitor-spike/**',
+          '**/*.d.ts',
+          '**/*.config.*',
+        ],
+      },
       setupFiles: ['./.storybook/vitest.setup.ts'],
       server: {
         deps: {

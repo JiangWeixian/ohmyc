@@ -80,6 +80,12 @@ jobs:
           name: cli
           working-directory: packages/cli
 
+      - name: Install Playwright browsers
+        run: pnpm --filter @ohmyc/ui exec playwright install --with-deps chromium
+
+      - name: Test Storybook
+        run: pnpm --filter @ohmyc/ui exec vitest --project=storybook --run
+
   desktop-test:
     runs-on: macos-14
     steps:

@@ -1,6 +1,7 @@
 import { fireEvent, within } from 'storybook/test'
 
 import { MenubarPage } from '@/components/menubar/menubar-page'
+import { setMockHandler } from '@/lib/transport/mock'
 import {
   installTimelineHandlers,
   MenubarFrame,
@@ -11,27 +12,33 @@ import { menubarSessions, menubarTokens } from '@/stories/fixtures/timeline'
 
 import type { Meta, StoryObj } from '@storybook/react-vite'
 
-const populatedHandlers = () => installTimelineHandlers({
-  years: [2026],
-  projects: ['ohmyc'],
-  heatmapByMetric: {
-    tokens: menubarTokens,
-    sessions: menubarSessions,
-  },
-  events: { days: [] },
-  status: { sessionCount: 9, lastSyncAt: Date.UTC(2026, 5, 19, 12, 0, 0) },
-})
+const populatedHandlers = () => {
+  installTimelineHandlers({
+    years: [2026],
+    projects: ['ohmyc'],
+    heatmapByMetric: {
+      tokens: menubarTokens,
+      sessions: menubarSessions,
+    },
+    events: { days: [] },
+    status: { sessionCount: 9, lastSyncAt: Date.UTC(2026, 5, 19, 12, 0, 0) },
+  })
+  setMockHandler('setup.status', async () => ({ state: 'ready' }))
+}
 
-const emptyHandlers = () => installTimelineHandlers({
-  years: [2026],
-  projects: [],
-  heatmapByMetric: {
-    tokens: [],
-    sessions: [],
-  },
-  events: { days: [] },
-  status: { sessionCount: 0, lastSyncAt: null },
-})
+const emptyHandlers = () => {
+  installTimelineHandlers({
+    years: [2026],
+    projects: [],
+    heatmapByMetric: {
+      tokens: [],
+      sessions: [],
+    },
+    events: { days: [] },
+    status: { sessionCount: 0, lastSyncAt: null },
+  })
+  setMockHandler('setup.status', async () => ({ state: 'ready' }))
+}
 
 const meta = {
   title: 'Menubar/MenubarPage',
@@ -66,4 +73,20 @@ export const HeatmapView: Story = {
 
 export const NoActivity: Story = {
   decorators: [withMockTransport(emptyHandlers)],
+}
+
+const missingStoreHandlers = () => {
+  setMockHandler('setup.status', async () => ({ state: 'missing_store' }))
+}
+
+const internalErrorHandlers = () => {
+  setMockHandler('setup.status', async () => ({ state: 'internal_error' }))
+}
+
+export const Onboarding: Story = {
+  decorators: [withMockTransport(missingStoreHandlers)],
+}
+
+export const SetupError: Story = {
+  decorators: [withMockTransport(internalErrorHandlers)],
 }
