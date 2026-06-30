@@ -51,6 +51,11 @@ Thumbs.db
 log/
 .gstack/
 
+# Playwright E2E
+packages/ui/test-results/
+packages/ui/playwright-report/
+packages/ui/playwright/.cache/
+
 # Coverage
 coverage/
 lcov.info
