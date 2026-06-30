@@ -8,6 +8,7 @@ const stubsDir = path.resolve(dirname, 'stubs')
 
 export default defineConfig({
   plugins: [react()],
+  assetsInclude: ['**/*.glb'],
   define: {
     'import.meta.env.VITE_TRANSPORT': JSON.stringify('mock'),
   },
