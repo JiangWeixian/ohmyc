@@ -1,15 +1,13 @@
 import { expect, test } from '@playwright/test'
 
-const BASE = 'http://localhost:7335'
-
 test.describe('Navigation', () => {
   test('lands on timeline by default', async ({ page }) => {
-    await page.goto(`${BASE}/?scenario=ready`)
+    await page.goto('/?scenario=ready')
     await expect(page).toHaveURL(/\/explore\/timeline$/)
   })
 
   test('navigates to each tab via NavigationIsland', async ({ page }) => {
-    await page.goto(`${BASE}/explore/timeline?scenario=ready`)
+    await page.goto('/explore/timeline?scenario=ready')
 
     const tabs = [
       { label: 'Monitor', path: '/explore/monitor' },
@@ -41,7 +39,7 @@ test.describe('Navigation', () => {
     ]
 
     for (const route of routes) {
-      await page.goto(`${BASE}${route}?scenario=ready`)
+      await page.goto(`${route}?scenario=ready`)
       await expect(page).toHaveURL(new RegExp(String.raw`${route}(?:\?|$)`))
     }
   })

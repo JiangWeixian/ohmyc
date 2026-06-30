@@ -1,13 +1,13 @@
 import { expect, test } from '@playwright/test'
 
-const MENUBAR = 'http://localhost:7335/menubar.html'
+const MENUBAR = '/menubar.html'
 
 test.describe('Menubar popover', () => {
   test('shows activity view when ready', async ({ page }) => {
     await page.goto(`${MENUBAR}?scenario=ready`)
 
     await expect(page.locator('[data-menubar-page]')).toBeVisible()
-    await expect(page.getByText('Activity')).toBeVisible()
+    await expect(page.getByText('Activity', { exact: true })).toBeVisible()
   })
 
   test('switches between line and heatmap views', async ({ page }) => {
@@ -15,16 +15,18 @@ test.describe('Menubar popover', () => {
 
     await expect(page.locator('[data-menubar-page]')).toBeVisible()
 
-    const viewButtons = page.locator('[role="tablist"] button')
-    const count = await viewButtons.count()
-    expect(count).toBeGreaterThanOrEqual(2)
+    const lineButton = page.getByRole('tab', { name: 'Line view' })
+    const heatmapButton = page.getByRole('tab', { name: 'Heatmap view' })
 
-    await viewButtons.nth(1).click()
-    await page.waitForTimeout(300)
-    await viewButtons.nth(0).click()
-    await page.waitForTimeout(300)
+    await expect(lineButton).toHaveAttribute('aria-pressed', 'true')
+    await expect(heatmapButton).toHaveAttribute('aria-pressed', 'false')
 
-    await expect(page.locator('[data-menubar-page]')).toBeVisible()
+    await heatmapButton.click()
+    await expect(heatmapButton).toHaveAttribute('aria-pressed', 'true')
+    await expect(lineButton).toHaveAttribute('aria-pressed', 'false')
+
+    await lineButton.click()
+    await expect(lineButton).toHaveAttribute('aria-pressed', 'true')
   })
 
   test('Open OhMyC button triggers invoke', async ({ page }) => {

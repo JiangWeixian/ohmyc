@@ -1,12 +1,10 @@
 import { expect, test } from '@playwright/test'
 
-const BASE = 'http://localhost:7335'
-
 // The CommandPaletteProvider attaches its ⌘K listener in a useEffect once the
 // ready-state shell mounts. Wait for a shell-level element before pressing the
 // shortcut so the keydown never races ahead of mount.
 async function openPalette(page: import('@playwright/test').Page) {
-  await page.goto(`${BASE}/explore/timeline?scenario=ready`)
+  await page.goto('/explore/timeline?scenario=ready')
   await expect(page.getByRole('navigation', { name: 'Primary' })).toBeVisible()
   await page.keyboard.press('Meta+k')
   await expect(page.locator('[cmdk-input]').first()).toBeVisible()

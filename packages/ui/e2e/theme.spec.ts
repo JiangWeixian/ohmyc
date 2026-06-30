@@ -1,6 +1,5 @@
 import { expect, test } from '@playwright/test'
 
-const BASE = 'http://localhost:7335'
 const THEMES = [
   { name: 'Monitor', id: 'monitor' },
   { name: 'Phosphor Mono', id: 'phosphor' },
@@ -25,7 +24,7 @@ async function openPalette(page: import('@playwright/test').Page) {
 
 test.describe('Theme switching', () => {
   test('switching theme updates data-theme attribute', async ({ page }) => {
-    await page.goto(`${BASE}/explore/timeline?scenario=ready`)
+    await page.goto('/explore/timeline?scenario=ready')
 
     for (const theme of THEMES) {
       await openPalette(page)
@@ -39,7 +38,7 @@ test.describe('Theme switching', () => {
   })
 
   test('theme persists in localStorage', async ({ page }) => {
-    await page.goto(`${BASE}/explore/timeline?scenario=ready`)
+    await page.goto('/explore/timeline?scenario=ready')
 
     await openPalette(page)
     const input = page.locator('[cmdk-input]').first()
@@ -51,7 +50,7 @@ test.describe('Theme switching', () => {
   })
 
   test('theme survives page reload', async ({ page }) => {
-    await page.goto(`${BASE}/explore/timeline?scenario=ready`)
+    await page.goto('/explore/timeline?scenario=ready')
 
     await openPalette(page)
     const input = page.locator('[cmdk-input]').first()
@@ -65,7 +64,7 @@ test.describe('Theme switching', () => {
   })
 
   test('switching intensity updates data-intensity attribute', async ({ page }) => {
-    await page.goto(`${BASE}/explore/timeline?scenario=ready`)
+    await page.goto('/explore/timeline?scenario=ready')
 
     for (const intensity of INTENSITIES) {
       await openPalette(page)

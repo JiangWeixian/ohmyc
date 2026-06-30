@@ -1,10 +1,8 @@
 import { expect, test } from '@playwright/test'
 
-const BASE = 'http://localhost:7335'
-
 test.describe('Onboarding gate', () => {
   test('shows onboarding when store is missing', async ({ page }) => {
-    await page.goto(`${BASE}/?scenario=missing`)
+    await page.goto('/?scenario=missing')
 
     await expect(page.locator('h1')).toHaveText('Monitor not connected')
     await expect(page.getByText('Install the OhMyC plugin')).toBeVisible()
@@ -13,27 +11,27 @@ test.describe('Onboarding gate', () => {
   })
 
   test('shows error line for unreadable store', async ({ page }) => {
-    await page.goto(`${BASE}/?scenario=unreadable`)
+    await page.goto('/?scenario=unreadable')
 
     await expect(page.locator('h1')).toHaveText('Monitor not connected')
     await expect(page.getByText('Local monitor store exists but could not be opened.')).toBeVisible()
   })
 
   test('shows error line for internal error', async ({ page }) => {
-    await page.goto(`${BASE}/?scenario=error`)
+    await page.goto('/?scenario=error')
 
     await expect(page.locator('h1')).toHaveText('Monitor not connected')
     await expect(page.getByText('Setup check failed.')).toBeVisible()
   })
 
   test('redirects to timeline when ready', async ({ page }) => {
-    await page.goto(`${BASE}/?scenario=ready`)
+    await page.goto('/?scenario=ready')
 
     await expect(page).toHaveURL(/\/explore\/timeline$/)
   })
 
   test('retry button re-probes setup status', async ({ page }) => {
-    await page.goto(`${BASE}/?scenario=missing`)
+    await page.goto('/?scenario=missing')
 
     await expect(page.locator('h1')).toHaveText('Monitor not connected')
 

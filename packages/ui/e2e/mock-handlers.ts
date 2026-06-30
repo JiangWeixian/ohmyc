@@ -81,8 +81,11 @@ function empty(): void {
   setMockHandler('timeline.events', async () => ({ days: [] }))
   setMockHandler('timeline.status', async () => ({ sessionCount: 0, lastSyncAt: null }))
   setMockHandler('agents.list', async () => ({ agents: [] }))
+  setMockHandler('agents.get', async () => ({ agent: null }))
   setMockHandler('skills.list', async () => ({ skills: [] }))
+  setMockHandler('skills.get', async () => ({ skill: null }))
   setMockHandler('commands.list', async () => ({ commands: [] }))
+  setMockHandler('commands.get', async () => ({ command: null }))
   setMockHandler('plugins.list', async () => ({ plugins: [] }))
   setMockHandler('marketplaces.list', async () => ({ marketplaces: [] }))
 }
