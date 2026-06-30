@@ -7,6 +7,10 @@ const dirname = path.dirname(new URL(import.meta.url).pathname)
 const stubsDir = path.resolve(dirname, 'stubs')
 
 export default defineConfig({
+  // Serve e2e/index.html as the dev root so the scenario bootstrap — not the
+  // production entry — mounts the app. Without this, vite serves the package
+  // root index.html and the mock transport is never installed.
+  root: dirname,
   plugins: [react()],
   assetsInclude: ['**/*.glb'],
   define: {
