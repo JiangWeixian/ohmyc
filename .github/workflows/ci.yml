@@ -86,6 +86,9 @@ jobs:
       - name: Test Storybook
         run: pnpm --filter @ohmyc/ui exec vitest --project=storybook --run
 
+      - name: Test E2E
+        run: pnpm --filter @ohmyc/ui exec playwright test
+
   desktop-test:
     runs-on: macos-14
     steps:
