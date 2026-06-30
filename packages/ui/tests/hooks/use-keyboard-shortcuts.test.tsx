@@ -32,6 +32,7 @@ describe('useGlobalKeyboardShortcuts', () => {
     ['a', '/explore/agents'],
     ['s', '/explore/skills'],
     ['c', '/explore/commands'],
+    ['p', '/explore/plugins'],
     ['t', '/explore/timeline'],
   ])('maps g then %s to %s', (key, expectedPath) => {
     renderWithProviders(
