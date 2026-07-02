@@ -7,6 +7,14 @@ on:
         description: Release tag (e.g. v0.2.0)
         required: true
         type: string
+      release_kind:
+        description: Draft builds use the selected branch; official releases build from the tag.
+        required: true
+        default: draft
+        type: choice
+        options:
+          - draft
+          - official
 
 jobs:
   build:
@@ -19,7 +27,16 @@ jobs:
     permissions:
       contents: write
     steps:
-      - uses: actions/checkout@v5
+      - name: Checkout selected ref
+        if: ${{ inputs.release_kind == 'draft' }}
+        uses: actions/checkout@v5
+
+      - name: Checkout release tag
+        if: ${{ inputs.release_kind == 'official' }}
+        uses: actions/checkout@v5
+        with:
+          ref: ${{ inputs.tag }}
+          fetch-depth: 0
 
       - uses: pnpm/action-setup@v4
         with:
@@ -75,7 +92,7 @@ jobs:
         with:
           tagName: ${{ inputs.tag }}
           releaseName: "OhMyC ${{ inputs.tag }}"
-          releaseDraft: true
-          prerelease: false
+          releaseDraft: ${{ inputs.release_kind == 'draft' }}
+          prerelease: ${{ contains(inputs.tag, '-') }}
           projectPath: packages/desktop
           tauriScript: pnpm tauri
