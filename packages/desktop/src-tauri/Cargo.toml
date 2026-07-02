@@ -1,6 +1,6 @@
 [package]
 name = "ohmyc-desktop"
-version = "0.1.0"
+version = "0.1.2"
 description = "OhMyC menu bar app"
 authors.workspace = true
 edition.workspace = true
