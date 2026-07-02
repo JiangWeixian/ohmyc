@@ -70,9 +70,27 @@ jobs:
           fi
           VERSION="$VERSION" node - <<'NODE'
           const fs = require('node:fs')
+          const inputVersion = process.env.VERSION
           const configPath = 'packages/desktop/src-tauri/tauri.conf.json'
           const config = JSON.parse(fs.readFileSync(configPath, 'utf8'))
-          config.version = process.env.VERSION
+          let bundleVersion = inputVersion
+          if (process.env.RUNNER_OS === 'Windows' && inputVersion.includes('-')) {
+            const [core, prereleaseAndMetadata] = inputVersion.split('-', 2)
+            const prerelease = prereleaseAndMetadata.split('+', 1)[0]
+            const numericIdentifier = prerelease.match(/(?:^|[.-])(\d+)(?:$|[.-])/)?.[1]
+            if (!numericIdentifier) {
+              console.error(`Windows MSI requires numeric prerelease identifiers, but ${inputVersion} has none.`)
+              process.exit(1)
+            }
+            const numericValue = Number(numericIdentifier)
+            if (!Number.isInteger(numericValue) || numericValue > 65535) {
+              console.error(`Windows MSI prerelease identifier must be an integer <= 65535, got ${numericIdentifier}.`)
+              process.exit(1)
+            }
+            bundleVersion = `${core}-${numericIdentifier}`
+            console.log(`Windows MSI bundle version normalized from ${inputVersion} to ${bundleVersion}.`)
+          }
+          config.version = bundleVersion
           fs.writeFileSync(configPath, `${JSON.stringify(config, null, 2)}\n`)
           console.log(`Desktop bundle version set to ${config.version}`)
           NODE
