@@ -162,13 +162,17 @@
     --timeline-stats-shadow: none;
     --timeline-stats-letter-spacing: 0.02em;
 
-    /* Menubar popover chrome */
-    --menubar-popover-bg: rgba(25, 26, 27, 0.65);
+    /*
+     * Menubar popover runs inside a transparent native window. Keep the card
+     * opaque and shadowless so macOS/WebKit do not compose a second rounded
+     * shell around it on light backgrounds.
+     */
+    --menubar-popover-bg: #191a1b;
     --menubar-popover-border: rgba(255, 255, 255, 0.08);
     --menubar-popover-radius: 0.75rem;
-    --menubar-popover-shadow: 0 1.5rem 3.75rem rgba(0, 0, 0, 0.5), 0 0 0 0.5px rgba(255, 255, 255, 0.04), inset 0 0 0 0.5px rgba(255, 255, 255, 0.03);
+    --menubar-popover-shadow: none;
     --menubar-popover-clip: none;
-    --menubar-popover-backdrop: blur(40px) saturate(1.4);
+    --menubar-popover-backdrop: none;
     --menubar-popover-overlay: repeating-linear-gradient(to bottom, rgba(255, 255, 255, 0.015) 0, rgba(255, 255, 255, 0.015) 1px, transparent 1px, transparent 3px);
     --menubar-popover-accent: transparent;
     --menubar-popover-corner: transparent;
@@ -342,9 +346,9 @@
     --timeline-stats-value-color: var(--accent-primary);
     --timeline-stats-shadow: var(--text-glow);
     --chart-1: 41 100% 50%;
-    --menubar-popover-bg: rgba(20, 14, 0, 0.7);
+    --menubar-popover-bg: #140e00;
     --menubar-popover-border: rgba(255, 176, 0, 0.20);
-    --menubar-popover-shadow: 0 1.5rem 3.75rem rgba(0, 0, 0, 0.6), 0 0 1.875rem rgba(255, 140, 0, 0.08), inset 0 0 0 0.5px rgba(255, 176, 0, 0.05);
+    --menubar-popover-shadow: none;
     --menubar-popover-overlay: repeating-linear-gradient(to bottom, rgba(0, 0, 0, 0.14) 0, rgba(0, 0, 0, 0.14) 1px, transparent 1px, transparent 3px), radial-gradient(ellipse at center, transparent 50%, rgba(0, 0, 0, 0.4) 100%);
     --menubar-title-prefix: "> ";
     --menubar-title-letter-spacing: 0.12em;
@@ -478,9 +482,9 @@
     --timeline-stats-value-color: var(--accent-signal);
     --timeline-stats-shadow: 0 0 0.5rem rgba(255, 176, 0, 0.55);
     --chart-1: 184 100% 50%;
-    --menubar-popover-bg: rgba(22, 8, 46, 0.78);
+    --menubar-popover-bg: #16082e;
     --menubar-popover-border: rgba(255, 43, 214, 0.22);
-    --menubar-popover-shadow: 0 1.5rem 3.75rem rgba(0, 0, 0, 0.6), 0 0 2.5rem rgba(255, 43, 214, 0.18), inset 0 0 0 0.5px rgba(0, 240, 255, 0.06);
+    --menubar-popover-shadow: none;
     --menubar-popover-accent: linear-gradient(to right, var(--accent-primary), var(--accent-secondary), var(--accent-signal));
     --menubar-popover-overlay: repeating-linear-gradient(to bottom, rgba(0, 0, 0, 0.16) 0, rgba(0, 0, 0, 0.16) 1px, transparent 1px, transparent 3px);
     --menubar-title-prefix: "▌ ";
@@ -631,9 +635,9 @@
     --timeline-stats-shadow: 0 0 0.25rem rgba(252, 238, 10, 0.65);
     --timeline-stats-letter-spacing: 0.06em;
     --chart-1: 57 98% 51%;
-    --menubar-popover-bg: rgba(17, 17, 29, 0.78);
+    --menubar-popover-bg: #11111d;
     --menubar-popover-border: transparent;
-    --menubar-popover-shadow: 0 1.5rem 3.75rem rgba(0, 0, 0, 0.62), inset 0 0 0 0.5px rgba(252, 238, 10, 0.04);
+    --menubar-popover-shadow: none;
     --menubar-popover-clip: none;
     --menubar-popover-accent: transparent;
     --menubar-popover-corner: transparent;
