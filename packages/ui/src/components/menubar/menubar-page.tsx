@@ -1,9 +1,9 @@
 // Menubar popover page — owns view state, fetches data, switches between
-// dual-line and heatmap views. Lives at /menubar.
+// area chart and heatmap views. Lives at /menubar.
 
 import { useMemo, useState } from 'react'
 
-import { DualLineChart } from './dual-line-chart'
+import { AreaTrendChart } from './area-trend-chart'
 import { MenubarOnboard } from './menubar-onboard'
 import { RecentHeatmap } from './recent-heatmap'
 import { menubarPopoverStyles } from './styles'
@@ -56,13 +56,13 @@ function shortDayLabel(iso: string): string {
 
 function MenubarActivity() {
   useFsChanged()
-  const [view, setView] = useState<MenubarView>('line')
+  const [view, setView] = useState<MenubarView>('area')
 
   const today = useMemo(() => new Date(), [])
   const todayIso = isoDate(today)
   const fourMonthAgoIso = isoDate(subDays(today, 16 * 7 - 1))
 
-  // Both views share the same 16-week rolling window — the line and heatmap
+  // Both views share the same 16-week rolling window — the area chart and heatmap
   // are two visualizations of the same data, not different time scopes.
   const tokensRecent = useTimelineHeatmapRange({ from: fourMonthAgoIso, to: todayIso, metric: 'tokens' })
   const sessionsRecent = useTimelineHeatmapRange({ from: fourMonthAgoIso, to: todayIso, metric: 'sessions' })
@@ -96,10 +96,10 @@ function MenubarActivity() {
 
           {/* No overflow-hidden here: the heatmap tooltip escapes the slot upward
               for top-row cells. */}
-          <div className={view === 'line' ? 'relative -mx-1 min-h-[168px] rounded menubar-chart-area' : 'relative -mx-1 min-h-[168px]'}>
-            {view === 'line'
+          <div className={view === 'area' ? 'relative -mx-1 min-h-[168px] rounded menubar-chart-area' : 'relative -mx-1 min-h-[168px]'}>
+            {view === 'area'
               ? (
-                  <DualLineChart tokens={tokensRecent.data ?? []} sessions={sessionsRecent.data ?? []} />
+                  <AreaTrendChart tokens={tokensRecent.data ?? []} sessions={sessionsRecent.data ?? []} />
                 )
               : (
                   <RecentHeatmap tokens={tokensRecent.data ?? []} sessions={sessionsRecent.data ?? []} />
@@ -169,7 +169,7 @@ function menubarStatusLine(state: SetupStatus['state']): string | undefined {
 
 /**
  * Menubar popover page. Owns view state, fetches data, switches between
- * dual-line and heatmap views. When the monitor store is not ready it shows
+ * area chart and heatmap views. When the monitor store is not ready it shows
  * the compact MenubarOnboard instead of an empty activity chart. Lives at
  * /menubar — outside the main-window setup gate.
  */

@@ -202,7 +202,7 @@
     --menubar-chart-stroke-mid: var(--accent-primary);
     --menubar-chart-stroke-end: var(--accent-primary);
     --menubar-chart-fill-color: var(--accent-primary);
-    --menubar-chart-fill-opacity: 0.18;
+    --menubar-chart-fill-opacity: 0.46;
     --menubar-chart-shadow: drop-shadow(0 0 0.1875rem var(--accent-glow));
     --menubar-chart-peak-color: var(--accent-primary);
     --menubar-chart-peak-shadow: drop-shadow(0 0 0.25rem var(--accent-glow));
@@ -360,7 +360,7 @@
     --menubar-switch-active-color: var(--accent-primary);
     --menubar-switch-active-shadow: drop-shadow(0 0 0.375rem rgba(255, 176, 0, 0.6));
     --menubar-chart-bg: linear-gradient(180deg, rgba(255, 176, 0, 0.04) 0%, transparent 100%);
-    --menubar-chart-fill-opacity: 0.22;
+    --menubar-chart-fill-opacity: 0.42;
     --menubar-chart-shadow: drop-shadow(0 0 0.25rem rgba(255, 176, 0, 0.6));
     --menubar-chart-peak-shadow: drop-shadow(0 0 0.375rem var(--accent-primary));
     --menubar-kpi-font: var(--font-display);

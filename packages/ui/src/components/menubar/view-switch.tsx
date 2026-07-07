@@ -1,6 +1,6 @@
-// Icon-only line/heatmap view switch for the menubar popover header.
+// Icon-only area/heatmap view switch for the menubar popover header.
 
-export type MenubarView = 'heatmap' | 'line'
+export type MenubarView = 'area' | 'heatmap'
 
 interface ViewSwitchProps {
   value: MenubarView
@@ -13,13 +13,18 @@ export function ViewSwitch({ value, onChange }: ViewSwitchProps) {
       <button
         type="button"
         role="tab"
-        aria-label="Line view"
-        aria-pressed={value === 'line'}
-        data-active={value === 'line'}
-        onClick={() => onChange('line')}
+        aria-label="Area chart view"
+        aria-pressed={value === 'area'}
+        data-active={value === 'area'}
+        onClick={() => onChange('area')}
         className="menubar-view-button"
       >
         <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+          <path
+            d="M1 11 L4 7 L7 9 L10 4 L13 6 V12 H1 Z"
+            fill="currentColor"
+            opacity="0.2"
+          />
           <path
             d="M1 11 L4 7 L7 9 L10 4 L13 6"
             stroke="currentColor"

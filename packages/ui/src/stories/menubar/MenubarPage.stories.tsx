@@ -58,7 +58,7 @@ export default meta
 
 type Story = StoryObj<typeof meta>
 
-export const LineView: Story = {
+export const AreaView: Story = {
   decorators: [withMockTransport(populatedHandlers)],
 }
 
