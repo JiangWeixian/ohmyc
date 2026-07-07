@@ -145,7 +145,7 @@ export function RecentHeatmap({ tokens, sessions }: RecentHeatmapProps) {
   }
 
   return (
-    <div data-heatmap-wrap className="relative pt-1">
+    <div data-heatmap-wrap className="relative">
       <div
         className="grid"
         style={{
@@ -249,7 +249,7 @@ export function RecentHeatmap({ tokens, sessions }: RecentHeatmapProps) {
 
       {/* footer: range left, Less/More right */}
       <div
-        className="menubar-label mt-2.5 flex items-center justify-between"
+        className="menubar-label mt-1.5 flex items-center justify-between"
       >
         <span data-heatmap-range>{rangeText}</span>
         <span data-heatmap-legend className="inline-flex items-center gap-1.5">
