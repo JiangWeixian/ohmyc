@@ -234,6 +234,17 @@ describe('query', () => {
 
   describe('getProjects', () => {
     it('returns distinct projects sorted', () => {
+      const insertSession = db.prepare(`
+        INSERT INTO sessions (
+          session_id, project, started_at, ended_at, duration_ms,
+          turns, tokens_input, tokens_output, tokens_cached,
+          summary, summary_source, transcript_path, last_offset, ingested_at
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      `)
+      const startedAt = Date.UTC(2026, 3, 30)
+      insertSession.run('blank-project', '', startedAt, startedAt + 1, 1, 1, 0, 0, 0, null, 'auto', '/tmp/blank.jsonl', 0, startedAt)
+      insertSession.run('space-project', '   ', startedAt, startedAt + 1, 1, 1, 0, 0, 0, null, 'auto', '/tmp/space.jsonl', 0, startedAt)
+
       const projects = getProjects(db)
       expect(projects).toEqual(['project-a', 'project-b'])
     })

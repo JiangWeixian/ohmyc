@@ -512,7 +512,7 @@ pub fn session(conn: &Connection, session_id: &str) -> Result<Option<SessionDeta
 
 pub fn projects(conn: &Connection) -> Result<Vec<String>, ApiError> {
     let mut stmt = conn
-        .prepare("SELECT DISTINCT project FROM sessions ORDER BY project")
+        .prepare("SELECT DISTINCT project FROM sessions WHERE TRIM(project) <> '' ORDER BY project")
         .map_err(|e| ApiError::Internal(format!("prepare projects: {e}")))?;
     let rows: Vec<String> = stmt
         .query_map([], |row| row.get::<_, String>(0))
@@ -892,6 +892,8 @@ mod tests {
     #[test]
     fn projects_returns_distinct_sorted() {
         let conn = empty_db();
+        insert_session(&conn, "s0", "", date_ms("2026-01-01"), 1, 0, 0, 0);
+        insert_session(&conn, "s4", "   ", date_ms("2026-01-01"), 1, 0, 0, 0);
         insert_session(&conn, "s1", "z-proj", date_ms("2026-01-01"), 1, 0, 0, 0);
         insert_session(&conn, "s2", "a-proj", date_ms("2026-01-02"), 1, 0, 0, 0);
         insert_session(&conn, "s3", "a-proj", date_ms("2026-01-03"), 1, 0, 0, 0);

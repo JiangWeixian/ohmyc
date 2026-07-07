@@ -108,7 +108,7 @@ export function useTimelineProjects() {
     queryKey: ['timeline', 'projects'],
     queryFn: async () => {
       const r = await request<{ projects: string[] }>('timeline.projects', {})
-      return r.projects
+      return r.projects.filter(project => project.trim().length > 0)
     },
   })
 }

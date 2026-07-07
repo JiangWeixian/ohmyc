@@ -42,7 +42,9 @@ pub fn open_main_window(app: tauri::AppHandle) -> Result<(), String> {
         builder = builder.title_bar_style(TitleBarStyle::Overlay).hidden_title(true);
     }
 
-    builder.build().map_err(|e| e.to_string())?;
+    let window = builder.build().map_err(|e| e.to_string())?;
+    window.show().map_err(|e| e.to_string())?;
+    window.set_focus().map_err(|e| e.to_string())?;
 
     Ok(())
 }

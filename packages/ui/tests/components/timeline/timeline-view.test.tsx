@@ -17,12 +17,12 @@ import { TimelineView } from '@/components/timeline/timeline-view'
 import { __setTransportForTests, resetTransportForTests } from '@/lib/transport'
 import { resetMock, setMockHandler } from '@/lib/transport/mock'
 
-function installTimelineHandlers() {
+function installTimelineHandlers(options?: { projects?: string[] }) {
   const currentYear = new Date().getFullYear()
   const capturedHeatmapArgs: unknown[] = []
 
   setMockHandler('timeline.years', async () => ({ years: [currentYear - 1, currentYear] }))
-  setMockHandler('timeline.projects', async () => ({ projects: ['alpha', 'beta'] }))
+  setMockHandler('timeline.projects', async () => ({ projects: options?.projects ?? ['alpha', 'beta'] }))
   setMockHandler('timeline.status', async () => ({ sessionCount: 9, lastSyncAt: Date.UTC(currentYear, 0, 1) }))
   setMockHandler('timeline.heatmap', async (args) => {
     capturedHeatmapArgs.push(args)
@@ -158,5 +158,15 @@ describe('TimelineView', () => {
     expect(screen.getByLabelText('Project')).toHaveClass('timeline-filter-select')
     expect(screen.getByLabelText('Year')).toHaveAttribute('data-size', 'default')
     expect(screen.getByLabelText('Year')).toHaveClass('timeline-filter-select')
+  })
+
+  it('renders when the backend returns blank project names', async () => {
+    installTimelineHandlers({ projects: ['', '   ', 'alpha'] })
+
+    renderWithProviders(<TimelineView />)
+    await waitFor(() => {
+      expect(screen.getByText('Timeline work')).toBeInTheDocument()
+    })
+    expect(screen.getByLabelText('Project')).toBeInTheDocument()
   })
 })

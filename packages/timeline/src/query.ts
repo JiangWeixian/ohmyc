@@ -324,7 +324,7 @@ export function getSession(
  */
 export function getProjects(db: SqliteDatabase): string[] {
   const rows = db
-    .prepare('SELECT DISTINCT project FROM sessions ORDER BY project')
+    .prepare("SELECT DISTINCT project FROM sessions WHERE TRIM(project) <> '' ORDER BY project")
     .all() as { project: string }[]
 
   return rows.map(r => r.project)

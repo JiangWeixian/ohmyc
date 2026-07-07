@@ -53,6 +53,13 @@ describe('useTimelineProjects', () => {
     await waitFor(() => expect(result.current.isSuccess).toBe(true))
     expect(result.current.data).toEqual(['a', 'b'])
   })
+
+  it('filters blank project names before they reach project selectors', async () => {
+    setMockHandler('timeline.projects', async () => ({ projects: ['', '   ', 'a'] }))
+    const { result } = renderHook(() => useTimelineProjects(), { wrapper: wrapper() })
+    await waitFor(() => expect(result.current.isSuccess).toBe(true))
+    expect(result.current.data).toEqual(['a'])
+  })
 })
 
 describe('useTimelineStatus', () => {
