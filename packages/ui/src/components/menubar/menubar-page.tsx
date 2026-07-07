@@ -159,7 +159,7 @@ function menubarStatusLine(state: SetupStatus['state']): string | undefined {
       return 'Local monitor store exists but could not be opened.'
     }
     case 'internal_error': {
-      return 'Setup check failed. Retry after installing the plugin.'
+      return 'OhMyC could not confirm the monitor connection.'
     }
     default: {
       return undefined

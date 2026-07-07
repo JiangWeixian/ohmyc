@@ -2,6 +2,7 @@
 // Renders day headings, project rollups (collapsible), and per-session detail rows.
 
 import Claude from '@lobehub/icons/es/Claude'
+import Codex from '@lobehub/icons/es/Codex'
 import OpenCode from '@lobehub/icons/es/OpenCode'
 import { motion, useReducedMotion } from 'framer-motion'
 import { ChevronRight } from 'lucide-react'
@@ -33,6 +34,9 @@ function AgentGlyph({
   }
   if (name === 'opencode') {
     return <OpenCode size={size} className={className} />
+  }
+  if (name === 'codex') {
+    return <Codex size={size} className={className} />
   }
   return null
 }

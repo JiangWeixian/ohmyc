@@ -109,7 +109,7 @@ export function TimelineView() {
           Timeline
         </h1>
         <p className="timeline-page-lede mb-7 max-w-screen-sm">
-          Every Claude Code session you've run, across every project. Auto-synced via the Stop hook.
+          Your local AI coding sessions across agents, projects, and time.
         </p>
 
         {/* Controls bar */}
@@ -168,7 +168,7 @@ export function TimelineView() {
           {heatmapLoading || !heatmap
             ? (
                 <div className="rounded-lg border border-[var(--border-default)] bg-[rgba(255,255,255,0.02)] px-5 py-4 text-xs text-[var(--text-tertiary)]">
-                  Loading…
+                  Loading heatmap…
                 </div>
               )
             : (
@@ -191,7 +191,7 @@ export function TimelineView() {
               className="text-xs text-[var(--text-quaternary)]"
               style={{ fontFamily: 'var(--font-mono)' }}
             >
-              Showing {events.days.length} days · earlier sessions truncated
+              Showing {events.days.length} days · older sessions hidden
             </span>
           )}
         </div>
@@ -203,7 +203,7 @@ export function TimelineView() {
                   className="my-3 border-y border-[var(--border-subtle)] px-3 py-3.5 text-xs text-[var(--text-tertiary)]"
                   style={{ fontFamily: 'var(--font-mono)' }}
                 >
-                  Loading…
+                  Loading sessions…
                 </div>
               )
             : <EventList days={events.days} highlightedDay={highlightedDay} />}

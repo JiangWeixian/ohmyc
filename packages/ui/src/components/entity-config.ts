@@ -11,10 +11,10 @@ export type EntitySection = 'agents' | 'commands' | 'skills'
 
 export const SECTION_DESCRIPTIONS: Record<EntitySection, string> = {
   agents:
-    'Discover and manage your autonomous team. Each agent has unique capabilities tailored for different development tasks.',
-  commands: 'Custom slash commands you can invoke with ',
+    'Local agents available to your coding tools. Inspect scope, source, and instructions.',
+  commands: 'Reusable slash commands available as ',
   skills:
-    "Extend Claude's capabilities with custom skills. Each skill provides specialized instructions for specific tasks.",
+    'Reusable instructions your coding agents can invoke for focused tasks.',
 }
 
 export const ENTITY_CONFIG = {

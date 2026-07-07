@@ -34,7 +34,7 @@ export function MonitorSpikeView() {
             </div>
           ))}
         </dl>
-        {isError ? <p>Timeline signal unavailable.</p> : null}
+        {isError ? <p>OhMyC could not read timeline activity.</p> : null}
       </main>
     </section>
   )

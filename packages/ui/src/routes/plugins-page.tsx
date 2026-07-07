@@ -13,7 +13,7 @@ export function PluginsPage() {
     <section>
       <SectionHeader
         title="Plugins"
-        description="Inspect installed plugins, enabled state, and bundled component counts for the current environment."
+        description="Installed local plugins, their enabled state, and the agents, skills, and commands they add."
       />
       {/* eslint-disable unicorn/no-nested-ternary */}
       {pluginsError
@@ -24,7 +24,7 @@ export function PluginsPage() {
           </div>
           <h3 className="text-[16px] font-medium text-[var(--text-primary)]">Failed to load plugins</h3>
           <p className="mt-2 max-w-sm text-[14px] text-[var(--text-tertiary)]">
-            Something went wrong while fetching your plugins. Try refreshing the page.
+            OhMyC could not read local plugins. Refresh, then check that the plugin registry is readable.
           </p>
         </div>
           )
@@ -85,7 +85,7 @@ export function PluginsPage() {
           </div>
           <h3 className="text-[16px] font-medium text-[var(--text-primary)]">No plugins installed</h3>
           <p className="mt-2 max-w-sm text-[14px] text-[var(--text-tertiary)]">
-            There are no plugins in the current environment.
+            OhMyC did not find installed plugins in the local registry.
           </p>
         </div>
             )}

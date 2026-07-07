@@ -34,13 +34,13 @@ export function MenubarOnboard({ statusLine }: MenubarOnboardProps) {
           </div>
 
           <p className="menubar-onboard-head">Monitor not connected</p>
-          <p className="menubar-onboard-sub">Install the OhMyC plugin to collect activity.</p>
+          <p className="menubar-onboard-sub">Install the OhMyC plugin to collect local activity.</p>
           {statusLine ? <p className="menubar-onboard-status">{statusLine}</p> : null}
 
           <div className="mt-2.5 flex flex-col gap-2 border-t border-[var(--border-subtle)] pt-2.5">
             <Button asChild variant="default" size="sm" className="w-full">
               <a href={PLUGIN_REPO} target="_blank" rel="noreferrer">
-                <ExternalLink /> Open plugin repo
+                <ExternalLink /> Open install instructions
               </a>
             </Button>
             <button

@@ -91,7 +91,7 @@ export function EntityDetail({
 
       {isReadOnly && (
         <div className="mb-4 rounded-[var(--radius-md)] border border-[var(--accent-signal)]/20 bg-[var(--accent-signal)]/5 px-4 py-2 text-[13px] text-[var(--accent-signal)]">
-          From project directory — view only.
+          Project-scoped file. Edit it in the project directory.
         </div>
       )}
 

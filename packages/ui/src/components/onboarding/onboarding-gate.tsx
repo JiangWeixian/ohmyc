@@ -22,7 +22,7 @@ function statusLine(state: SetupStatus['state']): string | null {
       return 'Local monitor store exists but could not be opened.'
     }
     case 'internal_error': {
-      return 'Setup check failed. Retry after installing the plugin or restarting OhMyC.'
+      return 'OhMyC could not confirm the monitor connection. Install the plugin, then check again.'
     }
     default: {
       return null
@@ -51,7 +51,7 @@ export function OnboardingGate() {
           <div className="onboard-copy">
             <h1 className="onboard-title">Monitor not connected</h1>
             <p className="onboard-body">
-              Install the OhMyC plugin to start collecting local coding activity.
+              Install the OhMyC plugin to start collecting local AI coding activity.
             </p>
             {line ? <p className="onboard-status-line">{line}</p> : null}
           </div>
@@ -59,7 +59,7 @@ export function OnboardingGate() {
           <div className="onboard-actions">
             <Button asChild variant="default" size="lg">
               <a href={PLUGIN_REPO} target="_blank" rel="noreferrer">
-                <ExternalLink /> Open plugin repo
+                <ExternalLink /> Open install instructions
               </a>
             </Button>
             <Button
@@ -70,7 +70,7 @@ export function OnboardingGate() {
                 void refetch()
               }}
             >
-              <RotateCw /> Retry
+              <RotateCw /> Check again
             </Button>
           </div>
         </div>

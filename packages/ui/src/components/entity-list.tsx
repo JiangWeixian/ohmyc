@@ -44,10 +44,22 @@ const SECTION_ICONS: Record<EntitySection, typeof Bot> = {
   commands: TerminalSquare,
 }
 
-const SECTION_EMPTY_MESSAGES: Record<EntitySection, { message: string; path: string }> = {
-  agents: { message: 'No agents found in ', path: '~/.claude/agents/' },
-  skills: { message: 'No skills found in ', path: '~/.claude/skills/' },
-  commands: { message: 'No commands found in ', path: '~/.claude/commands/' },
+const SECTION_EMPTY_MESSAGES: Record<EntitySection, { body: string; pathLabel: string; path: string }> = {
+  agents: {
+    body: 'OhMyC did not find agents in the enabled local sources.',
+    pathLabel: 'Claude path checked',
+    path: '~/.claude/agents/',
+  },
+  skills: {
+    body: 'OhMyC did not find skills in the enabled local sources.',
+    pathLabel: 'Claude path checked',
+    path: '~/.claude/skills/',
+  },
+  commands: {
+    body: 'OhMyC did not find commands in the enabled local sources.',
+    pathLabel: 'Claude path checked',
+    path: '~/.claude/commands/',
+  },
 }
 
 /** Builds the metadata rows for the detail panel by flattening frontmatter. */
@@ -154,7 +166,7 @@ export function EntityList({
           </div>
           <h3 className="text-[16px] font-medium text-[var(--text-primary)]">Failed to load {section}</h3>
           <p className="mt-2 max-w-sm text-[14px] text-[var(--text-tertiary)]">
-            Something went wrong while fetching your {section}. Try refreshing the page.
+            OhMyC could not read local {section}. Refresh, then check that the source directories are readable.
           </p>
         </div>
           )
@@ -188,7 +200,11 @@ export function EntityList({
           </div>
           <h3 className="text-[16px] font-medium text-[var(--text-primary)]">No {section} found</h3>
           <p className="mt-2 max-w-sm text-[14px] text-[var(--text-tertiary)]">
-            {empty.message}<code className="text-[var(--text-secondary)]">{empty.path}</code>
+            {empty.body}
+            {' '}
+            {empty.pathLabel}
+            {': '}
+            <code className="text-[var(--text-secondary)]">{empty.path}</code>
           </p>
         </div>
             )}
