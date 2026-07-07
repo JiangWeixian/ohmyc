@@ -24,6 +24,10 @@ pub struct Skill {
 }
 
 pub fn list(dir: &Path) -> Result<Vec<Skill>, ApiError> {
+    list_with_origin(dir, Origin::Claude)
+}
+
+pub fn list_with_origin(dir: &Path, origin: Origin) -> Result<Vec<Skill>, ApiError> {
     if !dir.exists() {
         return Ok(Vec::new());
     }
@@ -43,7 +47,7 @@ pub fn list(dir: &Path) -> Result<Vec<Skill>, ApiError> {
             Some(s) => s,
             None => continue,
         };
-        if let Some(skill) = parse_skill(&dir_name, &raw)? {
+        if let Some(skill) = parse_skill_with_origin(&dir_name, &raw, origin)? {
             out.push(skill);
         }
     }
@@ -52,6 +56,10 @@ pub fn list(dir: &Path) -> Result<Vec<Skill>, ApiError> {
 }
 
 pub fn get(dir: &Path, name: &str) -> Result<Option<Skill>, ApiError> {
+    get_with_origin(dir, name, Origin::Claude)
+}
+
+pub fn get_with_origin(dir: &Path, name: &str, origin: Origin) -> Result<Option<Skill>, ApiError> {
     if !is_safe_name(name) {
         return Ok(None);
     }
@@ -59,10 +67,14 @@ pub fn get(dir: &Path, name: &str) -> Result<Option<Skill>, ApiError> {
     let Some(raw) = read_md_or_skip(&skill_path)? else {
         return Ok(None);
     };
-    parse_skill(name, &raw)
+    parse_skill_with_origin(name, &raw, origin)
 }
 
 fn parse_skill(dir_name: &str, raw: &str) -> Result<Option<Skill>, ApiError> {
+    parse_skill_with_origin(dir_name, raw, Origin::Claude)
+}
+
+fn parse_skill_with_origin(dir_name: &str, raw: &str, origin: Origin) -> Result<Option<Skill>, ApiError> {
     let (mut frontmatter, content) = frontmatter::parse(raw)?;
     let name = frontmatter
         .get("name")
@@ -87,7 +99,7 @@ fn parse_skill(dir_name: &str, raw: &str) -> Result<Option<Skill>, ApiError> {
         dir_name: dir_name.to_string(),
         source: ComponentSource::Local,
         scope: Scope::Global,
-        origins: vec![Origin::Claude],
+        origins: vec![origin],
         badges: Vec::new(),
     }))
 }

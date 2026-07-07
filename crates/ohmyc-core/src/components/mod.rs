@@ -18,6 +18,7 @@ pub enum ComponentSource {
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize)]
 #[serde(rename_all = "lowercase")]
 pub enum Origin {
+    Agents,
     Claude,
 }
 
@@ -38,6 +39,11 @@ pub fn agents_dir() -> Result<PathBuf, ApiError> {
 
 pub fn skills_dir() -> Result<PathBuf, ApiError> {
     Ok(claude_home::resolve()?.join("skills"))
+}
+
+pub fn agents_shared_skills_dir() -> Result<PathBuf, ApiError> {
+    let home = dirs::home_dir().ok_or_else(|| ApiError::Internal("could not determine home dir".to_string()))?;
+    Ok(home.join(".agents").join("skills"))
 }
 
 pub fn commands_dir() -> Result<PathBuf, ApiError> {
@@ -96,6 +102,7 @@ mod tests {
 
     #[test]
     fn enums_serialize_lowercase_to_match_ts_origin_enum() {
+        assert_eq!(serde_json::to_value(Origin::Agents).unwrap(), "agents");
         assert_eq!(serde_json::to_value(Origin::Claude).unwrap(), "claude");
         assert_eq!(serde_json::to_value(Scope::Global).unwrap(), "global");
         assert_eq!(serde_json::to_value(ComponentSource::Local).unwrap(), "local");

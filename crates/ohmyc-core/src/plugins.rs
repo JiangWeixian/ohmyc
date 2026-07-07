@@ -14,6 +14,8 @@ use serde_json::{Map, Value};
 
 use crate::error::ApiError;
 
+const ENV_CODEX_PLUGINS_CACHE: &str = "OHMYC_CODEX_PLUGINS_CACHE";
+
 /// One install record from `installed_plugins.json`. Known fields are
 /// surfaced; arbitrary extras (passthrough on the TS side) ride in
 /// `extra` so JSON round-trips don't lose data.
@@ -185,6 +187,10 @@ pub fn load_manifest(install_path: &Path) -> Result<Option<PluginManifest>, ApiE
     if let Some(m) = read_manifest_or_none(&primary)? {
         return Ok(Some(m));
     }
+    let codex = install_path.join(".codex-plugin").join("plugin.json");
+    if let Some(m) = read_manifest_or_none(&codex)? {
+        return Ok(Some(m));
+    }
     let fallback = install_path.join(".claude-plugin").join("plugin.json");
     read_manifest_or_none(&fallback)
 }
@@ -303,6 +309,111 @@ pub fn list_plugins(plugins_dir: &Path, settings_path: &Path) -> Result<Vec<Inst
     }
     out.sort_by(|a, b| a.name.cmp(&b.name));
     Ok(out)
+}
+
+pub fn codex_plugins_cache_dir() -> Result<PathBuf, ApiError> {
+    if let Ok(v) = std::env::var(ENV_CODEX_PLUGINS_CACHE) {
+        if !v.trim().is_empty() {
+            return Ok(PathBuf::from(v));
+        }
+    }
+    let home = dirs::home_dir().ok_or_else(|| ApiError::Internal("could not determine home dir".to_string()))?;
+    Ok(home.join(".codex").join("plugins").join("cache"))
+}
+
+pub fn list_codex_plugins(cache_dir: &Path) -> Result<Vec<InstalledPlugin>, ApiError> {
+    if !cache_dir.exists() {
+        return Ok(Vec::new());
+    }
+    let mut install_dirs = Vec::new();
+    collect_codex_install_dirs(cache_dir, &mut install_dirs)?;
+
+    let mut out = Vec::with_capacity(install_dirs.len());
+    for install_path in install_dirs {
+        let manifest = load_manifest(&install_path)?;
+        let components = scan_components(&install_path)?;
+        let (marketplace, fallback_name, version) = codex_cache_identity(cache_dir, &install_path);
+        let name = manifest
+            .as_ref()
+            .and_then(|m| m.name.as_deref())
+            .filter(|s| !s.is_empty())
+            .unwrap_or(&fallback_name)
+            .to_string();
+        let id = format!("{name}@{marketplace}");
+        let installs = vec![PluginInstall {
+            version,
+            installed_at: String::new(),
+            last_updated: String::new(),
+            install_path: install_path.to_string_lossy().to_string(),
+            git_commit_sha: None,
+            is_local: Some(false),
+            scope: "user".to_string(),
+            project_path: None,
+            source: Some("codex".to_string()),
+            installed_by_presets: None,
+            extra: Map::new(),
+        }];
+        out.push(InstalledPlugin {
+            id,
+            name,
+            marketplace,
+            enabled: true,
+            installs,
+            manifest,
+            components,
+        });
+    }
+    out.sort_by(|a, b| a.name.cmp(&b.name).then_with(|| a.marketplace.cmp(&b.marketplace)));
+    Ok(out)
+}
+
+fn collect_codex_install_dirs(dir: &Path, out: &mut Vec<PathBuf>) -> Result<(), ApiError> {
+    if dir.join(".codex-plugin").join("plugin.json").is_file() {
+        out.push(dir.to_path_buf());
+        return Ok(());
+    }
+    let entries = match std::fs::read_dir(dir) {
+        Ok(it) => it,
+        Err(e) if e.kind() == std::io::ErrorKind::NotFound => return Ok(()),
+        Err(e) => return Err(ApiError::Io(format!("read_dir {}: {e}", dir.display()))),
+    };
+    for entry in entries {
+        let entry = entry.map_err(ApiError::from)?;
+        let path = entry.path();
+        if path.is_dir() {
+            collect_codex_install_dirs(&path, out)?;
+        }
+    }
+    Ok(())
+}
+
+fn codex_cache_identity(cache_dir: &Path, install_path: &Path) -> (String, String, String) {
+    let parts: Vec<String> = install_path
+        .strip_prefix(cache_dir)
+        .ok()
+        .map(|p| {
+            p.components()
+                .filter_map(|c| c.as_os_str().to_str().map(ToString::to_string))
+                .collect()
+        })
+        .unwrap_or_default();
+    let marketplace = parts.first().cloned().unwrap_or_else(|| "codex".to_string());
+    let fallback_name = parts
+        .get(parts.len().saturating_sub(2))
+        .cloned()
+        .or_else(|| {
+            install_path
+                .file_name()
+                .and_then(|s| s.to_str())
+                .map(ToString::to_string)
+        })
+        .unwrap_or_else(|| "plugin".to_string());
+    let version = install_path
+        .file_name()
+        .and_then(|s| s.to_str())
+        .unwrap_or("")
+        .to_string();
+    (marketplace, fallback_name, version)
 }
 
 pub fn get_plugin(plugins_dir: &Path, settings_path: &Path, id: &str) -> Result<Option<InstalledPlugin>, ApiError> {

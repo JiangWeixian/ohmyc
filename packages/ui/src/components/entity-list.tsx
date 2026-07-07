@@ -44,21 +44,15 @@ const SECTION_ICONS: Record<EntitySection, typeof Bot> = {
   commands: TerminalSquare,
 }
 
-const SECTION_EMPTY_MESSAGES: Record<EntitySection, { body: string; pathLabel: string; path: string }> = {
+const SECTION_EMPTY_MESSAGES: Record<EntitySection, { body: string }> = {
   agents: {
-    body: 'OhMyC did not find agents in the enabled local sources.',
-    pathLabel: 'Claude path checked',
-    path: '~/.claude/agents/',
+    body: 'OhMyC did not find agents in the enabled local sources. Check your local source directories or enable another source.',
   },
   skills: {
-    body: 'OhMyC did not find skills in the enabled local sources.',
-    pathLabel: 'Claude path checked',
-    path: '~/.claude/skills/',
+    body: 'OhMyC did not find skills in the enabled local sources. Check your local source directories or enable another source.',
   },
   commands: {
-    body: 'OhMyC did not find commands in the enabled local sources.',
-    pathLabel: 'Claude path checked',
-    path: '~/.claude/commands/',
+    body: 'OhMyC did not find commands in the enabled local sources. Check your local source directories or enable another source.',
   },
 }
 
@@ -201,10 +195,6 @@ export function EntityList({
           <h3 className="text-[16px] font-medium text-[var(--text-primary)]">No {section} found</h3>
           <p className="mt-2 max-w-sm text-[14px] text-[var(--text-tertiary)]">
             {empty.body}
-            {' '}
-            {empty.pathLabel}
-            {': '}
-            <code className="text-[var(--text-secondary)]">{empty.path}</code>
           </p>
         </div>
             )}
