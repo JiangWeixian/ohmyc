@@ -7,6 +7,7 @@ pub mod components;
 pub mod configs;
 pub mod error;
 pub mod plugins;
+pub mod providers;
 pub mod settings;
 pub mod setup;
 pub mod store;
