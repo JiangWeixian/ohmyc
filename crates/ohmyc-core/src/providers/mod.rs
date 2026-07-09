@@ -1,4 +1,6 @@
+pub mod claude;
 pub mod paths;
+pub mod shared_agents;
 
 use crate::components::Origin;
 use crate::error::ApiError;

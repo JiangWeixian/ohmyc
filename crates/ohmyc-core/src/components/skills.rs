@@ -41,31 +41,98 @@ pub fn list(dir: &Path) -> Result<Vec<Skill>, ApiError> {
 }
 
 pub fn list_with_origin(dir: &Path, origin: Origin) -> Result<Vec<Skill>, ApiError> {
+    list_with_origins_and_meta(
+        dir,
+        vec![origin],
+        SourceProvider::Claude,
+        ComponentSource::Local,
+        Scope::Global,
+        SourceKind::Global,
+        None,
+    )
+}
+
+pub fn list_with_origins_and_meta(
+    dir: &Path,
+    origins: Vec<Origin>,
+    source_provider: SourceProvider,
+    source: ComponentSource,
+    scope: Scope,
+    source_kind: SourceKind,
+    plugin_id: Option<String>,
+) -> Result<Vec<Skill>, ApiError> {
     if !dir.exists() {
         return Ok(Vec::new());
     }
     let mut out: Vec<Skill> = Vec::new();
+    list_skill_dirs(
+        dir,
+        &mut out,
+        &origins,
+        source_provider,
+        source,
+        scope,
+        source_kind,
+        plugin_id.as_deref(),
+    )?;
+    out.sort_by(|a, b| a.id.cmp(&b.id));
+    Ok(out)
+}
+
+fn list_skill_dirs(
+    dir: &Path,
+    out: &mut Vec<Skill>,
+    origins: &[Origin],
+    source_provider: SourceProvider,
+    source: ComponentSource,
+    scope: Scope,
+    source_kind: SourceKind,
+    plugin_id: Option<&str>,
+) -> Result<(), ApiError> {
     for entry in std::fs::read_dir(dir).map_err(ApiError::from)? {
         let entry = entry.map_err(ApiError::from)?;
+        let file_type = entry.file_type().map_err(ApiError::from)?;
         let path = entry.path();
-        if !path.is_dir() {
+        if file_type.is_symlink() || !file_type.is_dir() {
             continue;
         }
         let dir_name = match path.file_name().and_then(|s| s.to_str()) {
             Some(n) => n.to_string(),
             None => continue,
         };
+        if dir_name.starts_with('.') || dir_name == "node_modules" {
+            continue;
+        }
         let skill_path = path.join(SKILL_FILE);
-        let raw = match read_md_or_skip(&skill_path)? {
-            Some(s) => s,
-            None => continue,
-        };
-        if let Some(skill) = parse_skill_with_origin(&dir_name, &raw, origin, Some(&skill_path))? {
-            out.push(skill);
+        match read_md_or_skip(&skill_path)? {
+            Some(raw) => {
+                if let Some(skill) = parse_skill_with_meta(
+                    &dir_name,
+                    &raw,
+                    origins,
+                    Some(&skill_path),
+                    source_provider,
+                    source,
+                    scope,
+                    source_kind,
+                    plugin_id,
+                )? {
+                    out.push(skill);
+                }
+            }
+            None => list_skill_dirs(
+                &path,
+                out,
+                origins,
+                source_provider,
+                source,
+                scope,
+                source_kind,
+                plugin_id,
+            )?,
         }
     }
-    out.sort_by(|a, b| a.id.cmp(&b.id));
-    Ok(out)
+    Ok(())
 }
 
 pub fn get(dir: &Path, name: &str) -> Result<Option<Skill>, ApiError> {
@@ -89,6 +156,30 @@ fn parse_skill_with_origin(
     origin: Origin,
     source_path: Option<&Path>,
 ) -> Result<Option<Skill>, ApiError> {
+    parse_skill_with_meta(
+        dir_name,
+        raw,
+        &[origin],
+        source_path,
+        SourceProvider::Claude,
+        ComponentSource::Local,
+        Scope::Global,
+        SourceKind::Global,
+        None,
+    )
+}
+
+fn parse_skill_with_meta(
+    dir_name: &str,
+    raw: &str,
+    origins: &[Origin],
+    source_path: Option<&Path>,
+    source_provider: SourceProvider,
+    source: ComponentSource,
+    scope: Scope,
+    source_kind: SourceKind,
+    plugin_id: Option<&str>,
+) -> Result<Option<Skill>, ApiError> {
     let (mut frontmatter, content) = frontmatter::parse(raw)?;
     let name = frontmatter
         .get("name")
@@ -111,23 +202,23 @@ fn parse_skill_with_origin(
         content,
         raw: raw.to_string(),
         dir_name: dir_name.to_string(),
-        source: ComponentSource::Local,
-        scope: Scope::Global,
-        origins: vec![origin],
+        source,
+        scope,
+        origins: origins.to_vec(),
         badges: Vec::new(),
         locator_id: locator_id(
             ComponentKind::Skills,
-            SourceProvider::Claude,
-            ComponentSource::Local,
-            Scope::Global,
-            None,
+            source_provider,
+            source,
+            scope,
+            plugin_id,
             dir_name,
             source_path,
         ),
         source_path: source_path.map(|path| path.to_string_lossy().to_string()),
-        source_provider: SourceProvider::Claude,
-        source_kind: SourceKind::Global,
-        plugin_id: None,
+        source_provider,
+        source_kind,
+        plugin_id: plugin_id.map(str::to_string),
     }))
 }
 

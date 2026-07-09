@@ -34,13 +34,81 @@ pub struct Command {
 }
 
 pub fn list(dir: &Path) -> Result<Vec<Command>, ApiError> {
+    list_with_meta(
+        dir,
+        Origin::Claude,
+        SourceProvider::Claude,
+        ComponentSource::Local,
+        Scope::Global,
+        SourceKind::Global,
+        None,
+    )
+}
+
+pub fn list_with_meta(
+    dir: &Path,
+    origin: Origin,
+    source_provider: SourceProvider,
+    source: ComponentSource,
+    scope: Scope,
+    source_kind: SourceKind,
+    plugin_id: Option<String>,
+) -> Result<Vec<Command>, ApiError> {
     if !dir.exists() {
         return Ok(Vec::new());
     }
     let mut out: Vec<Command> = Vec::new();
+    list_command_files(
+        dir,
+        &mut out,
+        origin,
+        source_provider,
+        source,
+        scope,
+        source_kind,
+        plugin_id.as_deref(),
+    )?;
+    out.sort_by(|a, b| a.id.cmp(&b.id));
+    Ok(out)
+}
+
+fn list_command_files(
+    dir: &Path,
+    out: &mut Vec<Command>,
+    origin: Origin,
+    source_provider: SourceProvider,
+    source: ComponentSource,
+    scope: Scope,
+    source_kind: SourceKind,
+    plugin_id: Option<&str>,
+) -> Result<(), ApiError> {
     for entry in std::fs::read_dir(dir).map_err(ApiError::from)? {
         let entry = entry.map_err(ApiError::from)?;
+        let file_type = entry.file_type().map_err(ApiError::from)?;
         let path = entry.path();
+        if file_type.is_symlink() {
+            continue;
+        }
+        if file_type.is_dir() {
+            let name = match path.file_name().and_then(|s| s.to_str()) {
+                Some(name) => name,
+                None => continue,
+            };
+            if name.starts_with('.') || name == "node_modules" {
+                continue;
+            }
+            list_command_files(
+                &path,
+                out,
+                origin,
+                source_provider,
+                source,
+                scope,
+                source_kind,
+                plugin_id,
+            )?;
+            continue;
+        }
         if path.extension().and_then(|s| s.to_str()) != Some("md") {
             continue;
         }
@@ -52,12 +120,21 @@ pub fn list(dir: &Path) -> Result<Vec<Command>, ApiError> {
             Some(s) => s,
             None => continue,
         };
-        if let Some(cmd) = parse_command(&filename, &raw, Some(&path))? {
+        if let Some(cmd) = parse_command_with_meta(
+            &filename,
+            &raw,
+            Some(&path),
+            origin,
+            source_provider,
+            source,
+            scope,
+            source_kind,
+            plugin_id,
+        )? {
             out.push(cmd);
         }
     }
-    out.sort_by(|a, b| a.id.cmp(&b.id));
-    Ok(out)
+    Ok(())
 }
 
 pub fn get(dir: &Path, name: &str) -> Result<Option<Command>, ApiError> {
@@ -73,6 +150,30 @@ pub fn get(dir: &Path, name: &str) -> Result<Option<Command>, ApiError> {
 }
 
 fn parse_command(filename: &str, raw: &str, source_path: Option<&Path>) -> Result<Option<Command>, ApiError> {
+    parse_command_with_meta(
+        filename,
+        raw,
+        source_path,
+        Origin::Claude,
+        SourceProvider::Claude,
+        ComponentSource::Local,
+        Scope::Global,
+        SourceKind::Global,
+        None,
+    )
+}
+
+fn parse_command_with_meta(
+    filename: &str,
+    raw: &str,
+    source_path: Option<&Path>,
+    origin: Origin,
+    source_provider: SourceProvider,
+    source: ComponentSource,
+    scope: Scope,
+    source_kind: SourceKind,
+    plugin_id: Option<&str>,
+) -> Result<Option<Command>, ApiError> {
     let (mut frontmatter, content) = frontmatter::parse(raw)?;
     let id = filename.trim_end_matches(".md").to_string();
     let name = frontmatter
@@ -90,23 +191,23 @@ fn parse_command(filename: &str, raw: &str, source_path: Option<&Path>) -> Resul
         content,
         raw: raw.to_string(),
         filename: filename.to_string(),
-        source: ComponentSource::Local,
-        scope: Scope::Global,
-        origins: vec![Origin::Claude],
+        source,
+        scope,
+        origins: vec![origin],
         badges: Vec::new(),
         locator_id: locator_id(
             ComponentKind::Commands,
-            SourceProvider::Claude,
-            ComponentSource::Local,
-            Scope::Global,
-            None,
+            source_provider,
+            source,
+            scope,
+            plugin_id,
             &id,
             source_path,
         ),
         source_path: source_path.map(|path| path.to_string_lossy().to_string()),
-        source_provider: SourceProvider::Claude,
-        source_kind: SourceKind::Global,
-        plugin_id: None,
+        source_provider,
+        source_kind,
+        plugin_id: plugin_id.map(str::to_string),
     }))
 }
 
