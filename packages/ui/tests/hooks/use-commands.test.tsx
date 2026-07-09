@@ -24,7 +24,7 @@ function wrapper() {
 
 beforeEach(() => {
   __setTransportForTests('mock')
-  useSources.setState({ selected: new Set(['claude', 'opencode']) })
+  useSources.setState({ selected: new Set(['codex', 'claude', 'opencode']) })
 })
 
 afterEach(() => {
@@ -84,11 +84,17 @@ describe('useCommand', () => {
       return { command: { id: 'x', frontmatter: { name: 'x', description: 'd' }, content: '', raw: '', filename: 'x.md', source: 'local' } }
     })
     renderHook(
-      () => useCommand({ name: 'x', source: 'plugin', pluginId: 'p1', scope: 'project' }),
+      () => useCommand({ name: 'x', locatorId: 'commands:opencode:local:global:none:x:abc', source: 'plugin', pluginId: 'p1', scope: 'project' }),
       { wrapper: wrapper() },
     )
     await waitFor(() => expect(captured).not.toBeNull())
-    expect(captured).toEqual({ name: 'x', source: 'plugin', pluginId: 'p1', scope: 'project' })
+    expect(captured).toEqual({
+      name: 'x',
+      locator_id: 'commands:opencode:local:global:none:x:abc',
+      source: 'plugin',
+      pluginId: 'p1',
+      scope: 'project',
+    })
   })
 
   it('is disabled when no locator is provided', () => {

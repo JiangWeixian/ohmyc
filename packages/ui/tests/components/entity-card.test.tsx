@@ -38,4 +38,18 @@ describe('EntityCard', () => {
     )
     expect(screen.getByText('primary')).toBeInTheDocument()
   })
+
+  it('renders shared codex opencode origins', () => {
+    render(
+      <EntityCard
+        icon={Bot}
+        iconAccentVar="--text-primary"
+        title="fast-commit"
+        description="Commit quickly"
+        origins={['codex', 'opencode']}
+        onClick={() => {}}
+      />,
+    )
+    expect(screen.getByText('codex · opencode')).toBeInTheDocument()
+  })
 })

@@ -1,5 +1,7 @@
 import { z } from 'zod'
 
+import { OriginEnum } from './provider'
+
 // Individual plugin installation record
 export const PluginInstallSchema = z.object({
   version: z.string(),
@@ -47,6 +49,10 @@ export const InstalledPluginSchema = z.object({
   installs: z.array(PluginInstallSchema),
   manifest: PluginManifestSchema.nullable(),
   components: PluginComponentSummarySchema,
+  locatorId: z.string().optional(),
+  sourceProvider: z.enum(['codex', 'claude', 'opencode', 'shared']).optional(),
+  sourceKind: z.enum(['global', 'project', 'plugin', 'shared']).optional(),
+  origins: z.array(OriginEnum).optional(),
 })
 
 // Marketplace source

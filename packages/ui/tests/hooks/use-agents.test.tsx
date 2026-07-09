@@ -24,7 +24,7 @@ function wrapper() {
 
 beforeEach(() => {
   __setTransportForTests('mock')
-  useSources.setState({ selected: new Set(['claude', 'opencode']) })
+  useSources.setState({ selected: new Set(['codex', 'claude', 'opencode']) })
 })
 
 afterEach(() => {
@@ -84,18 +84,24 @@ describe('useAgent', () => {
     expect(result.current.data?.id).toBe('x')
   })
 
-  it('forwards locator fields (source, pluginId, scope) as args', async () => {
+  it('forwards locator fields (locatorId, source, pluginId, scope) as args', async () => {
     let captured: unknown = null
     setMockHandler('agents.get', async (args) => {
       captured = args
       return { agent: { id: 'x', frontmatter: { name: 'x', description: 'd' }, content: '', raw: '', filename: 'x.md', source: 'local' } }
     })
     renderHook(
-      () => useAgent({ name: 'x', source: 'plugin', pluginId: 'p1', scope: 'global' }),
+      () => useAgent({ name: 'x', locatorId: 'agents:claude:local:global:none:x:abc', source: 'plugin', pluginId: 'p1', scope: 'global' }),
       { wrapper: wrapper() },
     )
     await waitFor(() => expect(captured).not.toBeNull())
-    expect(captured).toEqual({ name: 'x', source: 'plugin', pluginId: 'p1', scope: 'global' })
+    expect(captured).toEqual({
+      name: 'x',
+      locator_id: 'agents:claude:local:global:none:x:abc',
+      source: 'plugin',
+      pluginId: 'p1',
+      scope: 'global',
+    })
   })
 
   it('is disabled when no locator is provided', async () => {

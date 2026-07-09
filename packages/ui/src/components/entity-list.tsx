@@ -169,7 +169,7 @@ export function EntityList({
         <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
           {data.map(entity => (
             <EntityCard
-              key={entity.id}
+              key={entity.locatorId ?? `${entity.source ?? 'local'}:${entity.scope ?? 'global'}:${entity.pluginId ?? 'none'}:${entity.id}`}
               icon={icon}
               iconAccentVar={entityConfig.iconAccentVar}
               title={entityConfig.getTitle(entity as never) || ''}
@@ -179,6 +179,7 @@ export function EntityList({
               onClick={() =>
                 onSelectItem({
                   name: entity.id,
+                  locatorId: entity.locatorId,
                   source: entity.source,
                   pluginId: entity.pluginId,
                   scope: entity.scope,
