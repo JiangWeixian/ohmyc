@@ -28,9 +28,9 @@ pub fn skills_list(origins: Option<serde_json::Value>) -> Result<SkillsResponse,
             out.push(skill);
         }
     }
-    if include_origin(&origins, "agents") {
+    if include_origin(&origins, "agents") || include_origin(&origins, "codex") {
         let dir = agents_shared_skills_dir()?;
-        for skill in skills::list_with_origin(&dir, Origin::Agents)? {
+        for skill in skills::list_with_origin(&dir, Origin::Codex)? {
             if seen.insert(skill.id.clone()) {
                 out.push(skill);
             }
@@ -47,7 +47,7 @@ pub fn skills_get(name: String) -> Result<SkillResponse, ApiError> {
         Some(skill) => Some(skill),
         None => {
             let dir = agents_shared_skills_dir()?;
-            skills::get_with_origin(&dir, &name, Origin::Agents)?
+            skills::get_with_origin(&dir, &name, Origin::Codex)?
         }
     };
     Ok(SkillResponse { skill })

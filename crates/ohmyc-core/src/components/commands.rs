@@ -4,7 +4,10 @@ use serde::Serialize;
 use serde_json::Value;
 
 use super::frontmatter;
-use super::{is_safe_name, read_md_or_skip, ComponentSource, Origin, Scope};
+use super::{
+    is_safe_name, locator_id, read_md_or_skip, ComponentKind, ComponentSource, Origin, Scope, SourceKind,
+    SourceProvider,
+};
 use crate::error::ApiError;
 
 #[derive(Debug, Clone, Serialize)]
@@ -18,6 +21,16 @@ pub struct Command {
     pub scope: Scope,
     pub origins: Vec<Origin>,
     pub badges: Vec<Value>,
+    #[serde(rename = "locatorId")]
+    pub locator_id: String,
+    #[serde(rename = "sourcePath", skip_serializing_if = "Option::is_none")]
+    pub source_path: Option<String>,
+    #[serde(rename = "sourceProvider")]
+    pub source_provider: SourceProvider,
+    #[serde(rename = "sourceKind")]
+    pub source_kind: SourceKind,
+    #[serde(rename = "pluginId", skip_serializing_if = "Option::is_none")]
+    pub plugin_id: Option<String>,
 }
 
 pub fn list(dir: &Path) -> Result<Vec<Command>, ApiError> {
@@ -39,7 +52,7 @@ pub fn list(dir: &Path) -> Result<Vec<Command>, ApiError> {
             Some(s) => s,
             None => continue,
         };
-        if let Some(cmd) = parse_command(&filename, &raw)? {
+        if let Some(cmd) = parse_command(&filename, &raw, Some(&path))? {
             out.push(cmd);
         }
     }
@@ -56,10 +69,10 @@ pub fn get(dir: &Path, name: &str) -> Result<Option<Command>, ApiError> {
     let Some(raw) = read_md_or_skip(&path)? else {
         return Ok(None);
     };
-    parse_command(&filename, &raw)
+    parse_command(&filename, &raw, Some(&path))
 }
 
-fn parse_command(filename: &str, raw: &str) -> Result<Option<Command>, ApiError> {
+fn parse_command(filename: &str, raw: &str, source_path: Option<&Path>) -> Result<Option<Command>, ApiError> {
     let (mut frontmatter, content) = frontmatter::parse(raw)?;
     let id = filename.trim_end_matches(".md").to_string();
     let name = frontmatter
@@ -72,7 +85,7 @@ fn parse_command(filename: &str, raw: &str) -> Result<Option<Command>, ApiError>
         obj.insert("name".to_string(), Value::String(name));
     }
     Ok(Some(Command {
-        id,
+        id: id.clone(),
         frontmatter,
         content,
         raw: raw.to_string(),
@@ -81,6 +94,19 @@ fn parse_command(filename: &str, raw: &str) -> Result<Option<Command>, ApiError>
         scope: Scope::Global,
         origins: vec![Origin::Claude],
         badges: Vec::new(),
+        locator_id: locator_id(
+            ComponentKind::Commands,
+            SourceProvider::Claude,
+            ComponentSource::Local,
+            Scope::Global,
+            None,
+            &id,
+            source_path,
+        ),
+        source_path: source_path.map(|path| path.to_string_lossy().to_string()),
+        source_provider: SourceProvider::Claude,
+        source_kind: SourceKind::Global,
+        plugin_id: None,
     }))
 }
 
@@ -102,7 +128,7 @@ pub fn create(dir: &Path, frontmatter: &Value, content: &str) -> Result<Command,
     }
     let raw = frontmatter::stringify(frontmatter, content)?;
     std::fs::write(&path, &raw).map_err(|e| ApiError::Io(format!("write {}: {e}", path.display())))?;
-    parse_command(&filename, &raw)?
+    parse_command(&filename, &raw, Some(&path))?
         .ok_or_else(|| ApiError::Internal("parse_command returned None after create".to_string()))
 }
 
@@ -130,7 +156,7 @@ pub fn update(
     let raw = frontmatter::stringify(&merged, body)?;
     let path = dir.join(format!("{name}.md"));
     std::fs::write(&path, &raw).map_err(|e| ApiError::Io(format!("write {}: {e}", path.display())))?;
-    parse_command(&format!("{name}.md"), &raw)
+    parse_command(&format!("{name}.md"), &raw, Some(&path))
 }
 
 pub fn delete(dir: &Path, name: &str) -> Result<bool, ApiError> {

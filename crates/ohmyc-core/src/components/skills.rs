@@ -4,7 +4,10 @@ use serde::Serialize;
 use serde_json::Value;
 
 use super::frontmatter;
-use super::{is_safe_name, read_md_or_skip, ComponentSource, Origin, Scope};
+use super::{
+    is_safe_name, locator_id, read_md_or_skip, ComponentKind, ComponentSource, Origin, Scope, SourceKind,
+    SourceProvider,
+};
 use crate::error::ApiError;
 
 const SKILL_FILE: &str = "SKILL.md";
@@ -21,6 +24,16 @@ pub struct Skill {
     pub scope: Scope,
     pub origins: Vec<Origin>,
     pub badges: Vec<Value>,
+    #[serde(rename = "locatorId")]
+    pub locator_id: String,
+    #[serde(rename = "sourcePath", skip_serializing_if = "Option::is_none")]
+    pub source_path: Option<String>,
+    #[serde(rename = "sourceProvider")]
+    pub source_provider: SourceProvider,
+    #[serde(rename = "sourceKind")]
+    pub source_kind: SourceKind,
+    #[serde(rename = "pluginId", skip_serializing_if = "Option::is_none")]
+    pub plugin_id: Option<String>,
 }
 
 pub fn list(dir: &Path) -> Result<Vec<Skill>, ApiError> {
@@ -47,7 +60,7 @@ pub fn list_with_origin(dir: &Path, origin: Origin) -> Result<Vec<Skill>, ApiErr
             Some(s) => s,
             None => continue,
         };
-        if let Some(skill) = parse_skill_with_origin(&dir_name, &raw, origin)? {
+        if let Some(skill) = parse_skill_with_origin(&dir_name, &raw, origin, Some(&skill_path))? {
             out.push(skill);
         }
     }
@@ -67,14 +80,15 @@ pub fn get_with_origin(dir: &Path, name: &str, origin: Origin) -> Result<Option<
     let Some(raw) = read_md_or_skip(&skill_path)? else {
         return Ok(None);
     };
-    parse_skill_with_origin(name, &raw, origin)
+    parse_skill_with_origin(name, &raw, origin, Some(&skill_path))
 }
 
-fn parse_skill(dir_name: &str, raw: &str) -> Result<Option<Skill>, ApiError> {
-    parse_skill_with_origin(dir_name, raw, Origin::Claude)
-}
-
-fn parse_skill_with_origin(dir_name: &str, raw: &str, origin: Origin) -> Result<Option<Skill>, ApiError> {
+fn parse_skill_with_origin(
+    dir_name: &str,
+    raw: &str,
+    origin: Origin,
+    source_path: Option<&Path>,
+) -> Result<Option<Skill>, ApiError> {
     let (mut frontmatter, content) = frontmatter::parse(raw)?;
     let name = frontmatter
         .get("name")
@@ -101,6 +115,19 @@ fn parse_skill_with_origin(dir_name: &str, raw: &str, origin: Origin) -> Result<
         scope: Scope::Global,
         origins: vec![origin],
         badges: Vec::new(),
+        locator_id: locator_id(
+            ComponentKind::Skills,
+            SourceProvider::Claude,
+            ComponentSource::Local,
+            Scope::Global,
+            None,
+            dir_name,
+            source_path,
+        ),
+        source_path: source_path.map(|path| path.to_string_lossy().to_string()),
+        source_provider: SourceProvider::Claude,
+        source_kind: SourceKind::Global,
+        plugin_id: None,
     }))
 }
 
@@ -122,7 +149,8 @@ pub fn create(dir: &Path, frontmatter: &Value, content: &str) -> Result<Skill, A
     let raw = frontmatter::stringify(frontmatter, content)?;
     let file_path = skill_dir.join(SKILL_FILE);
     std::fs::write(&file_path, &raw).map_err(|e| ApiError::Io(format!("write {}: {e}", file_path.display())))?;
-    parse_skill(name, &raw)?.ok_or_else(|| ApiError::Internal("parse_skill returned None after create".to_string()))
+    parse_skill_with_origin(name, &raw, Origin::Claude, Some(&file_path))?
+        .ok_or_else(|| ApiError::Internal("parse_skill returned None after create".to_string()))
 }
 
 pub fn update(
@@ -149,7 +177,7 @@ pub fn update(
     let raw = frontmatter::stringify(&merged, body)?;
     let file_path = dir.join(name).join(SKILL_FILE);
     std::fs::write(&file_path, &raw).map_err(|e| ApiError::Io(format!("write {}: {e}", file_path.display())))?;
-    parse_skill(name, &raw)
+    parse_skill_with_origin(name, &raw, Origin::Claude, Some(&file_path))
 }
 
 pub fn delete(dir: &Path, name: &str) -> Result<bool, ApiError> {

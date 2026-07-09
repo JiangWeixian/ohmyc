@@ -4,7 +4,10 @@ use serde::Serialize;
 use serde_json::Value;
 
 use super::frontmatter;
-use super::{is_safe_name, read_md_or_skip, ComponentSource, Origin, Scope};
+use super::{
+    is_safe_name, locator_id, read_md_or_skip, ComponentKind, ComponentSource, Origin, Scope, SourceKind,
+    SourceProvider,
+};
 use crate::error::ApiError;
 
 #[derive(Debug, Clone, Serialize)]
@@ -18,6 +21,16 @@ pub struct Agent {
     pub scope: Scope,
     pub origins: Vec<Origin>,
     pub badges: Vec<Value>,
+    #[serde(rename = "locatorId")]
+    pub locator_id: String,
+    #[serde(rename = "sourcePath", skip_serializing_if = "Option::is_none")]
+    pub source_path: Option<String>,
+    #[serde(rename = "sourceProvider")]
+    pub source_provider: SourceProvider,
+    #[serde(rename = "sourceKind")]
+    pub source_kind: SourceKind,
+    #[serde(rename = "pluginId", skip_serializing_if = "Option::is_none")]
+    pub plugin_id: Option<String>,
 }
 
 pub fn list(dir: &Path) -> Result<Vec<Agent>, ApiError> {
@@ -39,7 +52,7 @@ pub fn list(dir: &Path) -> Result<Vec<Agent>, ApiError> {
             Some(s) => s,
             None => continue,
         };
-        if let Some(agent) = parse_agent(&filename, &raw)? {
+        if let Some(agent) = parse_agent(&filename, &raw, Some(&path))? {
             out.push(agent);
         }
     }
@@ -56,10 +69,10 @@ pub fn get(dir: &Path, name: &str) -> Result<Option<Agent>, ApiError> {
     let Some(raw) = read_md_or_skip(&path)? else {
         return Ok(None);
     };
-    parse_agent(&filename, &raw)
+    parse_agent(&filename, &raw, Some(&path))
 }
 
-fn parse_agent(filename: &str, raw: &str) -> Result<Option<Agent>, ApiError> {
+fn parse_agent(filename: &str, raw: &str, source_path: Option<&Path>) -> Result<Option<Agent>, ApiError> {
     let (frontmatter, content) = frontmatter::parse(raw)?;
     let has_required = frontmatter.get("name").and_then(|v| v.as_str()).is_some()
         && frontmatter.get("description").and_then(|v| v.as_str()).is_some();
@@ -68,7 +81,7 @@ fn parse_agent(filename: &str, raw: &str) -> Result<Option<Agent>, ApiError> {
     }
     let id = filename.trim_end_matches(".md").to_string();
     Ok(Some(Agent {
-        id,
+        id: id.clone(),
         frontmatter,
         content,
         raw: raw.to_string(),
@@ -77,6 +90,19 @@ fn parse_agent(filename: &str, raw: &str) -> Result<Option<Agent>, ApiError> {
         scope: Scope::Global,
         origins: vec![Origin::Claude],
         badges: Vec::new(),
+        locator_id: locator_id(
+            ComponentKind::Agents,
+            SourceProvider::Claude,
+            ComponentSource::Local,
+            Scope::Global,
+            None,
+            &id,
+            source_path,
+        ),
+        source_path: source_path.map(|path| path.to_string_lossy().to_string()),
+        source_provider: SourceProvider::Claude,
+        source_kind: SourceKind::Global,
+        plugin_id: None,
     }))
 }
 
@@ -98,17 +124,8 @@ pub fn create(dir: &Path, frontmatter: &Value, content: &str) -> Result<Agent, A
     }
     let raw = frontmatter::stringify(frontmatter, content)?;
     std::fs::write(&path, &raw).map_err(|e| ApiError::Io(format!("write {}: {e}", path.display())))?;
-    Ok(Agent {
-        id: name.to_string(),
-        frontmatter: frontmatter.clone(),
-        content: content.trim().to_string(),
-        raw,
-        filename,
-        source: ComponentSource::Local,
-        scope: Scope::Global,
-        origins: vec![Origin::Claude],
-        badges: Vec::new(),
-    })
+    parse_agent(&filename, &raw, Some(&path))?
+        .ok_or_else(|| ApiError::Internal("parse_agent returned None after create".to_string()))
 }
 
 pub fn update(
@@ -135,17 +152,7 @@ pub fn update(
     let raw = frontmatter::stringify(&merged, body)?;
     let path = dir.join(format!("{name}.md"));
     std::fs::write(&path, &raw).map_err(|e| ApiError::Io(format!("write {}: {e}", path.display())))?;
-    Ok(Some(Agent {
-        id: name.to_string(),
-        frontmatter: merged,
-        content: body.trim().to_string(),
-        raw,
-        filename: format!("{name}.md"),
-        source: ComponentSource::Local,
-        scope: Scope::Global,
-        origins: vec![Origin::Claude],
-        badges: Vec::new(),
-    }))
+    parse_agent(&format!("{name}.md"), &raw, Some(&path))
 }
 
 pub fn delete(dir: &Path, name: &str) -> Result<bool, ApiError> {
