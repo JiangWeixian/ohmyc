@@ -24,6 +24,36 @@ pub fn include_origin(filter: &Option<serde_json::Value>, target: &str) -> bool 
     }
 }
 
+pub fn parse_origins(
+    filter: &Option<serde_json::Value>,
+) -> Result<Option<Vec<ohmyc_core::components::Origin>>, ohmyc_core::error::ApiError> {
+    let Some(v) = filter.as_ref() else {
+        return Ok(None);
+    };
+    let parts: Vec<String> = match v {
+        serde_json::Value::String(s) => s
+            .split(',')
+            .map(|p| p.trim().to_string())
+            .filter(|p| !p.is_empty())
+            .collect(),
+        serde_json::Value::Array(items) => items
+            .iter()
+            .filter_map(|i| i.as_str().map(ToString::to_string))
+            .collect(),
+        _ => return Ok(None),
+    };
+    let mut out = Vec::new();
+    for part in parts {
+        match part.as_str() {
+            "codex" => out.push(ohmyc_core::components::Origin::Codex),
+            "claude" => out.push(ohmyc_core::components::Origin::Claude),
+            "opencode" => out.push(ohmyc_core::components::Origin::Opencode),
+            _ => {}
+        }
+    }
+    Ok(Some(out))
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -67,5 +97,17 @@ mod tests {
         assert!(check(Some(json!({})), "claude"));
         assert!(check(Some(json!(42)), "claude"));
         assert!(check(Some(json!(null)), "claude"));
+    }
+
+    #[test]
+    fn origins_parser_accepts_codex_claude_and_opencode() {
+        assert_eq!(
+            parse_origins(&Some(serde_json::json!("codex,claude,opencode"))).unwrap(),
+            Some(vec![
+                ohmyc_core::components::Origin::Codex,
+                ohmyc_core::components::Origin::Claude,
+                ohmyc_core::components::Origin::Opencode,
+            ]),
+        );
     }
 }
