@@ -54,6 +54,7 @@ impl ClaudeProvider {
                 None,
             )?);
         }
+        out.extend(self.plugin_agents()?);
         out.sort_by(|a, b| a.id.cmp(&b.id).then_with(|| a.locator_id.cmp(&b.locator_id)));
         Ok(out)
     }
@@ -79,6 +80,7 @@ impl ClaudeProvider {
                 None,
             )?);
         }
+        out.extend(self.plugin_skills()?);
         out.sort_by(|a, b| a.id.cmp(&b.id).then_with(|| a.locator_id.cmp(&b.locator_id)));
         Ok(out)
     }
@@ -104,7 +106,64 @@ impl ClaudeProvider {
                 None,
             )?);
         }
+        out.extend(self.plugin_commands()?);
         out.sort_by(|a, b| a.id.cmp(&b.id).then_with(|| a.locator_id.cmp(&b.locator_id)));
+        Ok(out)
+    }
+
+    fn plugin_agents(&self) -> Result<Vec<Agent>, ApiError> {
+        let mut out = Vec::new();
+        let plugins = crate::plugins::list_plugins(&self.home.join("plugins"), &self.home.join("settings.json"))?;
+        for plugin in plugins {
+            if !plugin.enabled {
+                continue;
+            }
+            let Some(first) = plugin.installs.first() else {
+                continue;
+            };
+            out.extend(crate::plugins::parse_claude_plugin_agents(
+                std::path::Path::new(&first.install_path),
+                &plugin.id,
+            )?);
+        }
+        Ok(out)
+    }
+
+    fn plugin_skills(&self) -> Result<Vec<Skill>, ApiError> {
+        // Keep plugin parsing resource-specific. A skills request should not parse
+        // plugin agents and commands unless a later measured cache design needs it.
+        let mut out = Vec::new();
+        let plugins = crate::plugins::list_plugins(&self.home.join("plugins"), &self.home.join("settings.json"))?;
+        for plugin in plugins {
+            if !plugin.enabled {
+                continue;
+            }
+            let Some(first) = plugin.installs.first() else {
+                continue;
+            };
+            out.extend(crate::plugins::parse_claude_plugin_skills(
+                std::path::Path::new(&first.install_path),
+                &plugin.id,
+            )?);
+        }
+        Ok(out)
+    }
+
+    fn plugin_commands(&self) -> Result<Vec<Command>, ApiError> {
+        let mut out = Vec::new();
+        let plugins = crate::plugins::list_plugins(&self.home.join("plugins"), &self.home.join("settings.json"))?;
+        for plugin in plugins {
+            if !plugin.enabled {
+                continue;
+            }
+            let Some(first) = plugin.installs.first() else {
+                continue;
+            };
+            out.extend(crate::plugins::parse_claude_plugin_commands(
+                std::path::Path::new(&first.install_path),
+                &plugin.id,
+            )?);
+        }
         Ok(out)
     }
 }
@@ -148,5 +207,40 @@ mod tests {
             provider.commands().unwrap()[0].origins,
             vec![crate::components::Origin::Claude],
         );
+    }
+
+    #[test]
+    fn claude_provider_reads_plugin_skills_agents_and_commands() {
+        let tmp = tempfile::tempdir().unwrap();
+        let plugin = tmp.path().join("plugin");
+        std::fs::create_dir_all(plugin.join(".claude-plugin")).unwrap();
+        std::fs::create_dir_all(plugin.join("skills/review")).unwrap();
+        std::fs::create_dir_all(plugin.join("agents")).unwrap();
+        std::fs::create_dir_all(plugin.join("commands")).unwrap();
+        std::fs::write(
+            plugin.join(".claude-plugin/plugin.json"),
+            r#"{"name":"toolbox","version":"1.0.0"}"#,
+        )
+        .unwrap();
+        std::fs::write(
+            plugin.join("skills/review/SKILL.md"),
+            "---\nname: review\ndescription: Review\n---\nBody",
+        )
+        .unwrap();
+        std::fs::write(
+            plugin.join("agents/reviewer.md"),
+            "---\nname: reviewer\ndescription: Reviews\n---\nBody",
+        )
+        .unwrap();
+        std::fs::write(
+            plugin.join("commands/ship.md"),
+            "---\nname: ship\ndescription: Ship\n---\nBody",
+        )
+        .unwrap();
+
+        let resources = crate::plugins::parse_claude_plugin_resources(&plugin, "toolbox@local").unwrap();
+        assert_eq!(resources.skills[0].source, crate::components::ComponentSource::Plugin);
+        assert_eq!(resources.agents[0].plugin_id.as_deref(), Some("toolbox@local"));
+        assert_eq!(resources.commands[0].origins, vec![crate::components::Origin::Claude],);
     }
 }

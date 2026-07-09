@@ -12,6 +12,7 @@ use std::path::{Path, PathBuf};
 use serde::{Deserialize, Serialize};
 use serde_json::{Map, Value};
 
+use crate::components::{locator_id, ComponentKind, ComponentSource, Origin, Scope, SourceKind, SourceProvider};
 use crate::error::ApiError;
 
 const ENV_CODEX_PLUGINS_CACHE: &str = "OHMYC_CODEX_PLUGINS_CACHE";
@@ -99,6 +100,22 @@ pub struct InstalledPlugin {
     pub installs: Vec<PluginInstall>,
     pub manifest: Option<PluginManifest>,
     pub components: PluginComponentSummary,
+    #[serde(rename = "locatorId", default)]
+    pub locator_id: String,
+    #[serde(rename = "sourceProvider", default = "default_plugin_source_provider")]
+    pub source_provider: SourceProvider,
+    #[serde(rename = "sourceKind", default = "default_plugin_source_kind")]
+    pub source_kind: SourceKind,
+    #[serde(default)]
+    pub origins: Vec<Origin>,
+}
+
+fn default_plugin_source_provider() -> SourceProvider {
+    SourceProvider::Claude
+}
+
+fn default_plugin_source_kind() -> SourceKind {
+    SourceKind::Plugin
 }
 
 /// Marketplace source — `{ source, repo?, url? }` with passthrough.
@@ -302,9 +319,21 @@ pub fn list_plugins(plugins_dir: &Path, settings_path: &Path) -> Result<Vec<Inst
             name: name.to_string(),
             marketplace: marketplace.to_string(),
             enabled: enabled_map.get(id).copied().unwrap_or(false),
+            locator_id: locator_id(
+                ComponentKind::Plugins,
+                SourceProvider::Claude,
+                ComponentSource::Plugin,
+                Scope::Global,
+                Some(id),
+                id,
+                installs.first().map(|install| Path::new(&install.install_path)),
+            ),
             installs,
             manifest,
             components,
+            source_provider: SourceProvider::Claude,
+            source_kind: SourceKind::Plugin,
+            origins: vec![Origin::Claude],
         });
     }
     out.sort_by(|a, b| a.name.cmp(&b.name));
@@ -354,6 +383,15 @@ pub fn list_codex_plugins(cache_dir: &Path) -> Result<Vec<InstalledPlugin>, ApiE
             extra: Map::new(),
         }];
         out.push(InstalledPlugin {
+            locator_id: locator_id(
+                ComponentKind::Plugins,
+                SourceProvider::Codex,
+                ComponentSource::Plugin,
+                Scope::Global,
+                Some(&id),
+                &id,
+                installs.first().map(|install| Path::new(&install.install_path)),
+            ),
             id,
             name,
             marketplace,
@@ -361,6 +399,9 @@ pub fn list_codex_plugins(cache_dir: &Path) -> Result<Vec<InstalledPlugin>, ApiE
             installs,
             manifest,
             components,
+            source_provider: SourceProvider::Codex,
+            source_kind: SourceKind::Plugin,
+            origins: vec![Origin::Codex],
         });
     }
     out.sort_by(|a, b| a.name.cmp(&b.name).then_with(|| a.marketplace.cmp(&b.marketplace)));
@@ -426,6 +467,95 @@ fn split_id(id: &str) -> (&str, &str) {
         Some(i) => (&id[..i], &id[i + 1..]),
         None => (id, ""),
     }
+}
+
+#[derive(Debug, Clone, Default)]
+pub struct PluginResources {
+    pub agents: Vec<crate::components::agents::Agent>,
+    pub skills: Vec<crate::components::skills::Skill>,
+    pub commands: Vec<crate::components::commands::Command>,
+}
+
+pub fn parse_claude_plugin_resources(install_path: &Path, plugin_id: &str) -> Result<PluginResources, ApiError> {
+    // Used by focused tests and future full-inventory callers. Production
+    // list APIs should prefer resource-specific plugin parsers so a skills
+    // request does not parse plugin agents and commands unnecessarily.
+    Ok(PluginResources {
+        agents: parse_claude_plugin_agents(install_path, plugin_id)?,
+        skills: parse_claude_plugin_skills(install_path, plugin_id)?,
+        commands: parse_claude_plugin_commands(install_path, plugin_id)?,
+    })
+}
+
+pub fn parse_claude_plugin_agents(
+    install_path: &Path,
+    plugin_id: &str,
+) -> Result<Vec<crate::components::agents::Agent>, ApiError> {
+    crate::components::agents::list_with_meta(
+        &install_path.join("agents"),
+        Origin::Claude,
+        SourceProvider::Claude,
+        ComponentSource::Plugin,
+        Scope::Global,
+        SourceKind::Plugin,
+        Some(plugin_id.to_string()),
+    )
+}
+
+pub fn parse_claude_plugin_skills(
+    install_path: &Path,
+    plugin_id: &str,
+) -> Result<Vec<crate::components::skills::Skill>, ApiError> {
+    crate::components::skills::list_with_origins_and_meta(
+        &install_path.join("skills"),
+        vec![Origin::Claude, Origin::Opencode],
+        SourceProvider::Claude,
+        ComponentSource::Plugin,
+        Scope::Global,
+        SourceKind::Plugin,
+        Some(plugin_id.to_string()),
+    )
+}
+
+pub fn parse_claude_plugin_commands(
+    install_path: &Path,
+    plugin_id: &str,
+) -> Result<Vec<crate::components::commands::Command>, ApiError> {
+    crate::components::commands::list_with_meta(
+        &install_path.join("commands"),
+        Origin::Claude,
+        SourceProvider::Claude,
+        ComponentSource::Plugin,
+        Scope::Global,
+        SourceKind::Plugin,
+        Some(plugin_id.to_string()),
+    )
+}
+
+pub fn parse_codex_plugin_resources(install_path: &Path, plugin_id: &str) -> Result<PluginResources, ApiError> {
+    // Codex plugins currently expose skills only. Keep this parser explicit
+    // so future agent/command support does not silently change skills-list
+    // performance or behavior.
+    Ok(PluginResources {
+        agents: Vec::new(),
+        skills: parse_codex_plugin_skills(install_path, plugin_id)?,
+        commands: Vec::new(),
+    })
+}
+
+pub fn parse_codex_plugin_skills(
+    install_path: &Path,
+    plugin_id: &str,
+) -> Result<Vec<crate::components::skills::Skill>, ApiError> {
+    crate::components::skills::list_with_origins_and_meta(
+        &install_path.join("skills"),
+        vec![Origin::Codex],
+        SourceProvider::Codex,
+        ComponentSource::Plugin,
+        Scope::Global,
+        SourceKind::Plugin,
+        Some(plugin_id.to_string()),
+    )
 }
 
 #[cfg(test)]

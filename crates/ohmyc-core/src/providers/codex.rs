@@ -92,7 +92,17 @@ impl CodexProvider {
 
     pub fn skills_from_plugins(&self) -> Result<Vec<Skill>, ApiError> {
         let cache = self.home.join("plugins").join("cache");
-        crate::plugins::list_codex_plugins(&cache).map(|_| Vec::new())
+        let mut out = Vec::new();
+        for plugin in crate::plugins::list_codex_plugins(&cache)? {
+            let Some(first) = plugin.installs.first() else {
+                continue;
+            };
+            out.extend(crate::plugins::parse_codex_plugin_skills(
+                std::path::Path::new(&first.install_path),
+                &plugin.id,
+            )?);
+        }
+        Ok(out)
     }
 
     pub fn commands(&self) -> Result<Vec<Command>, ApiError> {

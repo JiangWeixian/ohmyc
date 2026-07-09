@@ -111,6 +111,29 @@ impl ProviderRegistry {
         out.sort_by(|a, b| a.id.cmp(&b.id).then_with(|| a.locator_id.cmp(&b.locator_id)));
         Ok(out)
     }
+
+    pub fn list_plugins(&self, origins: Option<&[Origin]>) -> Result<Vec<crate::plugins::InstalledPlugin>, ApiError> {
+        let dir = crate::claude_home::plugins_dir()?;
+        let settings = crate::claude_home::settings_path()?;
+        let mut plugins = crate::plugins::list_plugins(&dir, &settings)?;
+        let codex_dir = crate::plugins::codex_plugins_cache_dir()?;
+        plugins.extend(crate::plugins::list_codex_plugins(&codex_dir)?);
+        plugins.retain(|plugin| matches_origin_filter(origins, &plugin.origins));
+        plugins.sort_by(|a, b| a.name.cmp(&b.name).then_with(|| a.locator_id.cmp(&b.locator_id)));
+        Ok(plugins)
+    }
+
+    pub fn get_plugin(
+        &self,
+        id: &str,
+        locator_id: Option<&str>,
+    ) -> Result<Option<crate::plugins::InstalledPlugin>, ApiError> {
+        let plugins = self.list_plugins(None)?;
+        Ok(match locator_id {
+            Some(locator_id) => plugins.into_iter().find(|plugin| plugin.locator_id == locator_id),
+            None => plugins.into_iter().find(|plugin| plugin.id == id),
+        })
+    }
 }
 
 pub fn matches_origin_filter(filter: Option<&[Origin]>, resource_origins: &[Origin]) -> bool {
