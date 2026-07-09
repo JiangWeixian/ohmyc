@@ -260,7 +260,7 @@ describe('Explorer route views', () => {
     const main = document.querySelector('main')
 
     expect(main?.textContent).toContain('Plugins')
-    expect(main?.textContent).toContain('Inspect installed plugins, enabled state, and bundled component counts for the current environment.')
+    expect(main?.textContent).toContain('Installed local plugins, their enabled state, and the agents, skills, and commands they add.')
     expect(main?.textContent).toContain('review-pack')
     expect(main?.textContent).toContain('Enabled')
     expect(main?.textContent).toContain('Agents: 1')
@@ -278,6 +278,6 @@ describe('Explorer route views', () => {
 
     expect(screen.getByRole('navigation', { name: 'Primary' })).toHaveTextContent('Timeline')
     expect(document.querySelector('main h1')?.textContent).toBe('Timeline')
-    expect(document.body.textContent).toContain('Every Claude Code session')
+    expect(document.body.textContent).toContain('Your local AI coding sessions across agents, projects, and time.')
   })
 })

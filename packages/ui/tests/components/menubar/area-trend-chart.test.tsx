@@ -7,7 +7,7 @@ import {
   vi,
 } from 'vitest'
 
-import { DualLineChart } from '@/components/menubar/dual-line-chart'
+import { AreaTrendChart } from '@/components/menubar/area-trend-chart'
 
 import type { HeatmapPoint } from '@/hooks/use-timeline'
 
@@ -52,17 +52,17 @@ function mockSessions(): HeatmapPoint[] {
   ]
 }
 
-describe('DualLineChart', () => {
+describe('AreaTrendChart', () => {
   it('renders a Recharts wrapper (shadcn ChartContainer internals)', () => {
     const { container } = render(
-      <DualLineChart tokens={mockTokens()} sessions={mockSessions()} />,
+      <AreaTrendChart tokens={mockTokens()} sessions={mockSessions()} />,
     )
     expect(container.querySelector('.recharts-wrapper')).toBeInTheDocument()
   })
 
   it('renders a line path for the tokens series', () => {
     const { container } = render(
-      <DualLineChart tokens={mockTokens()} sessions={mockSessions()} />,
+      <AreaTrendChart tokens={mockTokens()} sessions={mockSessions()} />,
     )
     // Recharts v3 renames the class from recharts-curve to recharts-area-curve
     expect(container.querySelector('path.recharts-area-curve')).toBeInTheDocument()
@@ -70,7 +70,7 @@ describe('DualLineChart', () => {
 
   it('renders a filled area path for the tokens series', () => {
     const { container } = render(
-      <DualLineChart tokens={mockTokens()} sessions={mockSessions()} />,
+      <AreaTrendChart tokens={mockTokens()} sessions={mockSessions()} />,
     )
     // AreaChart emits both path.recharts-area-area (the filled area shape) and
     // path.recharts-area-curve (the stroked top line). LineChart emits only curve.
@@ -79,7 +79,7 @@ describe('DualLineChart', () => {
   })
 
   it('handles empty data without crashing', () => {
-    const { container } = render(<DualLineChart tokens={[]} sessions={[]} />)
+    const { container } = render(<AreaTrendChart tokens={[]} sessions={[]} />)
     expect(container.firstChild).toBeInTheDocument()
   })
 })
