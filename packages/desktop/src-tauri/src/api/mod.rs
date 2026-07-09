@@ -9,7 +9,7 @@ pub mod store;
 pub mod timeline;
 
 /// The frontend Source Switcher may pass `origins` as either a comma-separated
-/// string (e.g. `"claude,opencode"`, matching the legacy fetch URL shape) or
+/// string (e.g. `"codex,claude,opencode"`, matching the fetch URL shape) or
 /// as an array of strings. `None` means "all sources" — return everything.
 /// Other JSON shapes fall through to permissive (true) — we'd rather show
 /// data than silently hide it on a frontend mistake.
@@ -66,22 +66,25 @@ mod tests {
 
     #[test]
     fn none_includes_everything() {
+        assert!(check(None, "codex"));
         assert!(check(None, "claude"));
         assert!(check(None, "opencode"));
     }
 
     #[test]
     fn comma_string_matches_when_target_listed() {
-        assert!(check(Some(json!("claude,opencode")), "claude"));
-        assert!(check(Some(json!("claude,opencode")), "opencode"));
+        assert!(check(Some(json!("codex,claude,opencode")), "codex"));
+        assert!(check(Some(json!("codex,claude,opencode")), "claude"));
+        assert!(check(Some(json!("codex,claude,opencode")), "opencode"));
         assert!(!check(Some(json!("opencode")), "claude"));
         assert!(check(Some(json!("claude, opencode")), "opencode")); // whitespace
     }
 
     #[test]
     fn array_matches_when_target_listed() {
-        assert!(check(Some(json!(["claude", "opencode"])), "claude"));
-        assert!(check(Some(json!(["claude", "opencode"])), "opencode"));
+        assert!(check(Some(json!(["codex", "claude", "opencode"])), "codex"));
+        assert!(check(Some(json!(["codex", "claude", "opencode"])), "claude"));
+        assert!(check(Some(json!(["codex", "claude", "opencode"])), "opencode"));
         assert!(!check(Some(json!(["opencode"])), "claude"));
     }
 
