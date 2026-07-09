@@ -45,6 +45,7 @@ pub fn parse_origins(
     let mut out = Vec::new();
     for part in parts {
         match part.as_str() {
+            "agents" => out.push(ohmyc_core::components::Origin::Codex),
             "codex" => out.push(ohmyc_core::components::Origin::Codex),
             "claude" => out.push(ohmyc_core::components::Origin::Claude),
             "opencode" => out.push(ohmyc_core::components::Origin::Opencode),
@@ -108,6 +109,14 @@ mod tests {
                 ohmyc_core::components::Origin::Claude,
                 ohmyc_core::components::Origin::Opencode,
             ]),
+        );
+    }
+
+    #[test]
+    fn origins_parser_maps_legacy_agents_to_codex() {
+        assert_eq!(
+            parse_origins(&Some(serde_json::json!("agents"))).unwrap(),
+            Some(vec![ohmyc_core::components::Origin::Codex]),
         );
     }
 }

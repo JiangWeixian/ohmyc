@@ -2,7 +2,7 @@
 //! every change in the watched paths. Used by the Tauri layer to forward
 //! to the frontend as `fs:changed`.
 
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use std::sync::mpsc::Sender;
 use std::time::Duration;
 
@@ -86,18 +86,53 @@ pub fn spawn(paths: Vec<PathBuf>, tx: Sender<FsEvent>) -> Result<Debouncer<notif
     .map_err(|e| ApiError::Internal(format!("debouncer init: {e}")))?;
 
     for path in &paths {
-        if !path.exists() {
-            continue;
-        }
-        // Recursive: slices 3+ depend on detecting writes nested under
-        // ~/.claude (e.g. agents/<name>.md). The debouncer collapses bursts
-        // so cost stays low.
-        debouncer
-            .watcher()
-            .watch(path, RecursiveMode::Recursive)
-            .map_err(|e| ApiError::Internal(format!("watch {}: {e}", path.display())))?;
+        watch_existing_path_or_parent(&mut debouncer, path)?;
     }
     Ok(debouncer)
+}
+
+fn watch_existing_path_or_parent(
+    debouncer: &mut Debouncer<notify::RecommendedWatcher>,
+    path: &Path,
+) -> Result<(), ApiError> {
+    let Some((watch_path, mode)) = watch_target_for(path) else {
+        return Ok(());
+    };
+    debouncer
+        .watcher()
+        .watch(&watch_path, mode)
+        .map_err(|e| ApiError::Internal(format!("watch {}: {e}", watch_path.display())))
+}
+
+fn watch_target_for(path: &Path) -> Option<(PathBuf, RecursiveMode)> {
+    if path.exists() {
+        // Recursive: provider homes and project config dirs need nested writes
+        // such as agents/<name>.md. Files can be watched directly.
+        let mode = if path.is_dir() {
+            RecursiveMode::Recursive
+        } else {
+            RecursiveMode::NonRecursive
+        };
+        return Some((path.to_path_buf(), mode));
+    }
+    nearest_existing_parent(path).map(|parent| {
+        // The target may be created after startup. Watch the nearest existing
+        // parent non-recursively so root creation invalidates provider lists
+        // without recursively watching an entire home or project tree.
+        (parent, RecursiveMode::NonRecursive)
+    })
+}
+
+fn nearest_existing_parent(path: &Path) -> Option<PathBuf> {
+    let mut cur = path.parent()?.to_path_buf();
+    loop {
+        if cur.exists() {
+            return Some(cur);
+        }
+        if !cur.pop() {
+            return None;
+        }
+    }
 }
 
 /// Returns the default set of paths to watch:
@@ -261,6 +296,21 @@ mod tests {
             &rx,
             || std::fs::write(&target, "name = \"reviewer\"\n").unwrap(),
             |event| matches!(event, FsEvent::ProviderConfig { path } if path.contains(".codex") && path.ends_with("reviewer.toml")),
+        );
+    }
+
+    #[test]
+    fn debouncer_classifies_provider_file_created_after_startup() {
+        let _lock = WATCHER_LOCK.lock().unwrap();
+        let dir = tempfile::tempdir().unwrap();
+        let target = dir.path().join("opencode.json");
+        let (tx, rx): (Sender<FsEvent>, Receiver<FsEvent>) = channel();
+        let _debouncer = spawn(vec![target.clone()], tx).unwrap();
+
+        wait_for_matching_event(
+            &rx,
+            || std::fs::write(&target, "{}").unwrap(),
+            |event| matches!(event, FsEvent::ProviderConfig { path } if path.ends_with("opencode.json")),
         );
     }
 

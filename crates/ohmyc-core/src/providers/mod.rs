@@ -148,6 +148,9 @@ pub fn matches_origin_filter(filter: Option<&[Origin]>, resource_origins: &[Orig
 #[cfg(test)]
 mod tests {
     use super::*;
+    use std::sync::Mutex;
+
+    static ENV_LOCK: Mutex<()> = Mutex::new(());
 
     #[test]
     fn origin_filter_matches_resources_with_any_selected_origin() {
@@ -164,6 +167,7 @@ mod tests {
 
     #[test]
     fn registry_lists_shared_and_codex_skills_for_codex_origin() {
+        let _lock = ENV_LOCK.lock().unwrap();
         let codex_home = tempfile::tempdir().unwrap();
         let shared_home = tempfile::tempdir().unwrap();
         std::fs::create_dir_all(codex_home.path().join("skills/native")).unwrap();

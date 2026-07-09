@@ -354,10 +354,11 @@ pub fn list_codex_plugins(cache_dir: &Path) -> Result<Vec<InstalledPlugin>, ApiE
     if !cache_dir.exists() {
         return Ok(Vec::new());
     }
+    let enabled_plugins = read_codex_enabled_plugins(&codex_config_path_for_cache(cache_dir))?;
     let mut install_dirs = Vec::new();
     collect_codex_install_dirs(cache_dir, &mut install_dirs)?;
 
-    let mut out = Vec::with_capacity(install_dirs.len());
+    let mut by_id: BTreeMap<String, InstalledPlugin> = BTreeMap::new();
     for install_path in install_dirs {
         let manifest = load_manifest(&install_path)?;
         let components = scan_components(&install_path)?;
@@ -369,6 +370,12 @@ pub fn list_codex_plugins(cache_dir: &Path) -> Result<Vec<InstalledPlugin>, ApiE
             .unwrap_or(&fallback_name)
             .to_string();
         let id = format!("{name}@{marketplace}");
+        if enabled_plugins
+            .as_ref()
+            .is_some_and(|enabled| !enabled.get(&id).copied().unwrap_or(false))
+        {
+            continue;
+        }
         let installs = vec![PluginInstall {
             version,
             installed_at: String::new(),
@@ -382,7 +389,7 @@ pub fn list_codex_plugins(cache_dir: &Path) -> Result<Vec<InstalledPlugin>, ApiE
             installed_by_presets: None,
             extra: Map::new(),
         }];
-        out.push(InstalledPlugin {
+        let plugin = InstalledPlugin {
             locator_id: locator_id(
                 ComponentKind::Plugins,
                 SourceProvider::Codex,
@@ -392,7 +399,7 @@ pub fn list_codex_plugins(cache_dir: &Path) -> Result<Vec<InstalledPlugin>, ApiE
                 &id,
                 installs.first().map(|install| Path::new(&install.install_path)),
             ),
-            id,
+            id: id.clone(),
             name,
             marketplace,
             enabled: true,
@@ -402,10 +409,61 @@ pub fn list_codex_plugins(cache_dir: &Path) -> Result<Vec<InstalledPlugin>, ApiE
             source_provider: SourceProvider::Codex,
             source_kind: SourceKind::Plugin,
             origins: vec![Origin::Codex],
-        });
+        };
+        by_id
+            .entry(id)
+            .and_modify(|current| {
+                if codex_plugin_is_newer(&plugin, current) {
+                    *current = plugin.clone();
+                }
+            })
+            .or_insert(plugin);
     }
+    let mut out: Vec<_> = by_id.into_values().collect();
     out.sort_by(|a, b| a.name.cmp(&b.name).then_with(|| a.marketplace.cmp(&b.marketplace)));
     Ok(out)
+}
+
+fn codex_config_path_for_cache(cache_dir: &Path) -> PathBuf {
+    cache_dir
+        .parent()
+        .and_then(|plugins_dir| plugins_dir.parent())
+        .map(|codex_home| codex_home.join("config.toml"))
+        .unwrap_or_else(|| cache_dir.join("config.toml"))
+}
+
+fn read_codex_enabled_plugins(config_path: &Path) -> Result<Option<BTreeMap<String, bool>>, ApiError> {
+    let raw = match std::fs::read_to_string(config_path) {
+        Ok(raw) => raw,
+        Err(e) if e.kind() == std::io::ErrorKind::NotFound => return Ok(None),
+        Err(e) => return Err(ApiError::Io(format!("read {}: {e}", config_path.display()))),
+    };
+    let parsed = toml::from_str::<toml::Value>(&raw)
+        .map_err(|e| ApiError::Parse(format!("toml {}: {e}", config_path.display())))?;
+    let Some(plugins) = parsed.get("plugins").and_then(|value| value.as_table()) else {
+        return Ok(Some(BTreeMap::new()));
+    };
+    let mut out = BTreeMap::new();
+    for (id, value) in plugins {
+        if let Some(enabled) = value.get("enabled").and_then(|enabled| enabled.as_bool()) {
+            out.insert(id.to_string(), enabled);
+        }
+    }
+    Ok(Some(out))
+}
+
+fn codex_plugin_is_newer(candidate: &InstalledPlugin, current: &InstalledPlugin) -> bool {
+    let candidate_version = candidate
+        .installs
+        .first()
+        .map(|install| install.version.as_str())
+        .unwrap_or_default();
+    let current_version = current
+        .installs
+        .first()
+        .map(|install| install.version.as_str())
+        .unwrap_or_default();
+    candidate_version > current_version
 }
 
 fn collect_codex_install_dirs(dir: &Path, out: &mut Vec<PathBuf>) -> Result<(), ApiError> {
@@ -422,10 +480,19 @@ fn collect_codex_install_dirs(dir: &Path, out: &mut Vec<PathBuf>) -> Result<(), 
         let entry = entry.map_err(ApiError::from)?;
         let path = entry.path();
         if path.is_dir() {
+            if is_ignored_codex_cache_dir(&path) {
+                continue;
+            }
             collect_codex_install_dirs(&path, out)?;
         }
     }
     Ok(())
+}
+
+fn is_ignored_codex_cache_dir(path: &Path) -> bool {
+    path.file_name()
+        .and_then(|name| name.to_str())
+        .is_some_and(|name| name.starts_with('.') || name == "backup" || name == "staging")
 }
 
 fn codex_cache_identity(cache_dir: &Path, install_path: &Path) -> (String, String, String) {
@@ -907,5 +974,87 @@ mod tests {
         let found = get_plugin(dir.path(), &settings, "test@market").unwrap().unwrap();
         assert_eq!(found.name, "test");
         assert!(get_plugin(dir.path(), &settings, "nope").unwrap().is_none());
+    }
+
+    fn write_codex_plugin(cache_dir: &Path, marketplace: &str, name: &str, version: &str) -> PathBuf {
+        let install = cache_dir.join(marketplace).join(name).join(version);
+        std::fs::create_dir_all(install.join(".codex-plugin")).unwrap();
+        std::fs::write(
+            install.join(".codex-plugin/plugin.json"),
+            format!(r#"{{"name":"{name}","description":"{name} plugin"}}"#),
+        )
+        .unwrap();
+        install
+    }
+
+    #[test]
+    fn list_codex_plugins_filters_disabled_plugins_from_config() {
+        let codex_home = tempfile::tempdir().unwrap();
+        let cache = codex_home.path().join("plugins/cache");
+        write_codex_plugin(&cache, "market", "enabled", "1.0.0");
+        write_codex_plugin(&cache, "market", "disabled", "1.0.0");
+        std::fs::write(
+            codex_home.path().join("config.toml"),
+            r#"
+[plugins."enabled@market"]
+enabled = true
+
+[plugins."disabled@market"]
+enabled = false
+"#,
+        )
+        .unwrap();
+
+        let plugins = list_codex_plugins(&cache).unwrap();
+        let ids: Vec<_> = plugins.iter().map(|plugin| plugin.id.as_str()).collect();
+        assert_eq!(ids, vec!["enabled@market"]);
+    }
+
+    #[test]
+    fn list_codex_plugins_keeps_one_enabled_version_per_plugin() {
+        let codex_home = tempfile::tempdir().unwrap();
+        let cache = codex_home.path().join("plugins/cache");
+        write_codex_plugin(&cache, "market", "toolbox", "1.0.0");
+        write_codex_plugin(&cache, "market", "toolbox", "2.0.0");
+        std::fs::write(
+            codex_home.path().join("config.toml"),
+            r#"
+[plugins."toolbox@market"]
+enabled = true
+"#,
+        )
+        .unwrap();
+
+        let plugins = list_codex_plugins(&cache).unwrap();
+        assert_eq!(plugins.len(), 1);
+        assert_eq!(plugins[0].id, "toolbox@market");
+        assert_eq!(plugins[0].installs[0].version, "2.0.0");
+    }
+
+    #[test]
+    fn list_codex_plugins_ignores_staging_and_backup_cache_dirs() {
+        let codex_home = tempfile::tempdir().unwrap();
+        let cache = codex_home.path().join("plugins/cache");
+        write_codex_plugin(&cache, "market", "live", "1.0.0");
+        write_codex_plugin(&cache.join("staging"), "market", "staged", "9.0.0");
+        write_codex_plugin(&cache.join("backup"), "market", "backup", "9.0.0");
+        std::fs::write(
+            codex_home.path().join("config.toml"),
+            r#"
+[plugins."live@market"]
+enabled = true
+
+[plugins."staged@staging"]
+enabled = true
+
+[plugins."backup@backup"]
+enabled = true
+"#,
+        )
+        .unwrap();
+
+        let plugins = list_codex_plugins(&cache).unwrap();
+        let ids: Vec<_> = plugins.iter().map(|plugin| plugin.id.as_str()).collect();
+        assert_eq!(ids, vec!["live@market"]);
     }
 }
