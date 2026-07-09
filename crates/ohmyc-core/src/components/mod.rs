@@ -100,6 +100,45 @@ impl Scope {
     }
 }
 
+#[derive(Debug, Clone, Copy)]
+pub struct ComponentMeta<'a> {
+    pub provider: SourceProvider,
+    pub source: ComponentSource,
+    pub scope: Scope,
+    pub kind: SourceKind,
+    pub plugin_id: Option<&'a str>,
+}
+
+impl<'a> ComponentMeta<'a> {
+    pub fn new(
+        provider: SourceProvider,
+        source: ComponentSource,
+        scope: Scope,
+        kind: SourceKind,
+        plugin_id: Option<&'a str>,
+    ) -> Self {
+        Self {
+            provider,
+            source,
+            scope,
+            kind,
+            plugin_id,
+        }
+    }
+}
+
+impl ComponentMeta<'static> {
+    pub fn claude_global() -> Self {
+        Self::new(
+            SourceProvider::Claude,
+            ComponentSource::Local,
+            Scope::Global,
+            SourceKind::Global,
+            None,
+        )
+    }
+}
+
 pub fn locator_id(
     kind: ComponentKind,
     provider: SourceProvider,

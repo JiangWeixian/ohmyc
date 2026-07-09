@@ -39,6 +39,7 @@ export default defineWorkspace([
         '@react-three/postprocessing',
         '@react-three/rapier',
         '@lobehub/icons/es/Claude',
+        '@lobehub/icons/es/Codex',
         '@lobehub/icons/es/OpenCode',
         '@tanstack/react-query',
         'class-variance-authority',

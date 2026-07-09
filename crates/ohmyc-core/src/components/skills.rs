@@ -5,8 +5,8 @@ use serde_json::Value;
 
 use super::frontmatter;
 use super::{
-    is_safe_name, locator_id, read_md_or_skip, ComponentKind, ComponentSource, Origin, Scope, SourceKind,
-    SourceProvider,
+    is_safe_name, locator_id, read_md_or_skip, ComponentKind, ComponentMeta, ComponentSource, Origin, Scope,
+    SourceKind, SourceProvider,
 };
 use crate::error::ApiError;
 
@@ -65,16 +65,8 @@ pub fn list_with_origins_and_meta(
         return Ok(Vec::new());
     }
     let mut out: Vec<Skill> = Vec::new();
-    list_skill_dirs(
-        dir,
-        &mut out,
-        &origins,
-        source_provider,
-        source,
-        scope,
-        source_kind,
-        plugin_id.as_deref(),
-    )?;
+    let meta = ComponentMeta::new(source_provider, source, scope, source_kind, plugin_id.as_deref());
+    list_skill_dirs(dir, &mut out, &origins, meta)?;
     out.sort_by(|a, b| a.id.cmp(&b.id));
     Ok(out)
 }
@@ -83,11 +75,7 @@ fn list_skill_dirs(
     dir: &Path,
     out: &mut Vec<Skill>,
     origins: &[Origin],
-    source_provider: SourceProvider,
-    source: ComponentSource,
-    scope: Scope,
-    source_kind: SourceKind,
-    plugin_id: Option<&str>,
+    meta: ComponentMeta<'_>,
 ) -> Result<(), ApiError> {
     for entry in std::fs::read_dir(dir).map_err(ApiError::from)? {
         let entry = entry.map_err(ApiError::from)?;
@@ -106,30 +94,11 @@ fn list_skill_dirs(
         let skill_path = path.join(SKILL_FILE);
         match read_md_or_skip(&skill_path)? {
             Some(raw) => {
-                if let Some(skill) = parse_skill_with_meta(
-                    &dir_name,
-                    &raw,
-                    origins,
-                    Some(&skill_path),
-                    source_provider,
-                    source,
-                    scope,
-                    source_kind,
-                    plugin_id,
-                )? {
+                if let Some(skill) = parse_skill_with_meta(&dir_name, &raw, origins, Some(&skill_path), meta)? {
                     out.push(skill);
                 }
             }
-            None => list_skill_dirs(
-                &path,
-                out,
-                origins,
-                source_provider,
-                source,
-                scope,
-                source_kind,
-                plugin_id,
-            )?,
+            None => list_skill_dirs(&path, out, origins, meta)?,
         }
     }
     Ok(())
@@ -156,17 +125,7 @@ fn parse_skill_with_origin(
     origin: Origin,
     source_path: Option<&Path>,
 ) -> Result<Option<Skill>, ApiError> {
-    parse_skill_with_meta(
-        dir_name,
-        raw,
-        &[origin],
-        source_path,
-        SourceProvider::Claude,
-        ComponentSource::Local,
-        Scope::Global,
-        SourceKind::Global,
-        None,
-    )
+    parse_skill_with_meta(dir_name, raw, &[origin], source_path, ComponentMeta::claude_global())
 }
 
 fn parse_skill_with_meta(
@@ -174,11 +133,7 @@ fn parse_skill_with_meta(
     raw: &str,
     origins: &[Origin],
     source_path: Option<&Path>,
-    source_provider: SourceProvider,
-    source: ComponentSource,
-    scope: Scope,
-    source_kind: SourceKind,
-    plugin_id: Option<&str>,
+    meta: ComponentMeta<'_>,
 ) -> Result<Option<Skill>, ApiError> {
     let (mut frontmatter, content) = frontmatter::parse(raw)?;
     let name = frontmatter
@@ -202,23 +157,23 @@ fn parse_skill_with_meta(
         content,
         raw: raw.to_string(),
         dir_name: dir_name.to_string(),
-        source,
-        scope,
+        source: meta.source,
+        scope: meta.scope,
         origins: origins.to_vec(),
         badges: Vec::new(),
         locator_id: locator_id(
             ComponentKind::Skills,
-            source_provider,
-            source,
-            scope,
-            plugin_id,
+            meta.provider,
+            meta.source,
+            meta.scope,
+            meta.plugin_id,
             dir_name,
             source_path,
         ),
         source_path: source_path.map(|path| path.to_string_lossy().to_string()),
-        source_provider,
-        source_kind,
-        plugin_id: plugin_id.map(str::to_string),
+        source_provider: meta.provider,
+        source_kind: meta.kind,
+        plugin_id: meta.plugin_id.map(str::to_string),
     }))
 }
 

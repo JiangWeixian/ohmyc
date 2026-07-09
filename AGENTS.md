@@ -66,6 +66,15 @@ Key routing rules:
 ## Multi-tool provider discovery
 
 The server enumerates agents/skills/commands via a `ProviderRegistry` that
-wraps three `ConfigProvider`s: `ClaudeProvider`, `OpencodeProvider`, and
-`AgentsSharedProvider` (skills only). Read-only routes accept `?origins=`
-to filter (`claude`, `opencode`, `agents`).
+wraps `CodexProvider`, `ClaudeProvider`, `OpencodeProvider`, and
+`AgentsSharedProvider` (shared skills only). Read-only routes accept `?origins=`
+to filter (`codex`, `claude`, `opencode`); legacy `agents` filters should map
+to Codex compatibility rather than becoming a user-facing origin.
+
+## PR verification
+
+Before claiming a PR is CI-ready, run checks that match GitHub Actions, not only
+local unit/build shortcuts:
+
+- Rust changes: `cargo clippy --all-targets --all-features -- -D warnings`
+- UI story changes or copy changes used by stories: `pnpm --filter @ohmyc/ui test:storybook`

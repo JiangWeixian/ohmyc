@@ -31,7 +31,7 @@ export const OpenWithCommands: Story = {
   args: {
     commands: commandPaletteCommands,
   },
-  render: () => <OpenPalette />,
+  render: ({ commands }) => <OpenPalette commands={commands} />,
   play: async ({ canvasElement }) => {
     fireEvent.keyDown(canvasElement.ownerDocument, { key: 'k', metaKey: true })
     await within(canvasElement.ownerDocument.body).findByPlaceholderText('Search commands...')
@@ -42,9 +42,9 @@ export const Empty: Story = {
   args: {
     commands: [],
   },
-  render: () => <OpenPalette commands={[]} />,
+  render: ({ commands }) => <OpenPalette commands={commands} />,
   play: async ({ canvasElement }) => {
     fireEvent.keyDown(canvasElement.ownerDocument, { key: 'k', metaKey: true })
-    await within(canvasElement.ownerDocument.body).findByText('No commands found')
+    await within(canvasElement.ownerDocument.body).findByText('No matching actions or resources')
   },
 }

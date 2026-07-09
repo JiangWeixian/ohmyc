@@ -5,8 +5,8 @@ use serde_json::Value;
 
 use super::frontmatter;
 use super::{
-    is_safe_name, locator_id, read_md_or_skip, ComponentKind, ComponentSource, Origin, Scope, SourceKind,
-    SourceProvider,
+    is_safe_name, locator_id, read_md_or_skip, ComponentKind, ComponentMeta, ComponentSource, Origin, Scope,
+    SourceKind, SourceProvider,
 };
 use crate::error::ApiError;
 
@@ -58,30 +58,13 @@ pub fn list_with_meta(
         return Ok(Vec::new());
     }
     let mut out: Vec<Agent> = Vec::new();
-    list_agent_files(
-        dir,
-        &mut out,
-        origin,
-        source_provider,
-        source,
-        scope,
-        source_kind,
-        plugin_id.as_deref(),
-    )?;
+    let meta = ComponentMeta::new(source_provider, source, scope, source_kind, plugin_id.as_deref());
+    list_agent_files(dir, &mut out, origin, meta)?;
     out.sort_by(|a, b| a.id.cmp(&b.id));
     Ok(out)
 }
 
-fn list_agent_files(
-    dir: &Path,
-    out: &mut Vec<Agent>,
-    origin: Origin,
-    source_provider: SourceProvider,
-    source: ComponentSource,
-    scope: Scope,
-    source_kind: SourceKind,
-    plugin_id: Option<&str>,
-) -> Result<(), ApiError> {
+fn list_agent_files(dir: &Path, out: &mut Vec<Agent>, origin: Origin, meta: ComponentMeta<'_>) -> Result<(), ApiError> {
     for entry in std::fs::read_dir(dir).map_err(ApiError::from)? {
         let entry = entry.map_err(ApiError::from)?;
         let file_type = entry.file_type().map_err(ApiError::from)?;
@@ -97,16 +80,7 @@ fn list_agent_files(
             if name.starts_with('.') || name == "node_modules" {
                 continue;
             }
-            list_agent_files(
-                &path,
-                out,
-                origin,
-                source_provider,
-                source,
-                scope,
-                source_kind,
-                plugin_id,
-            )?;
+            list_agent_files(&path, out, origin, meta)?;
             continue;
         }
         if path.extension().and_then(|s| s.to_str()) != Some("md") {
@@ -120,17 +94,7 @@ fn list_agent_files(
             Some(s) => s,
             None => continue,
         };
-        if let Some(agent) = parse_agent_with_meta(
-            &filename,
-            &raw,
-            Some(&path),
-            origin,
-            source_provider,
-            source,
-            scope,
-            source_kind,
-            plugin_id,
-        )? {
+        if let Some(agent) = parse_agent_with_meta(&filename, &raw, Some(&path), origin, meta)? {
             out.push(agent);
         }
     }
@@ -155,11 +119,7 @@ fn parse_agent(filename: &str, raw: &str, source_path: Option<&Path>) -> Result<
         raw,
         source_path,
         Origin::Claude,
-        SourceProvider::Claude,
-        ComponentSource::Local,
-        Scope::Global,
-        SourceKind::Global,
-        None,
+        ComponentMeta::claude_global(),
     )
 }
 
@@ -168,11 +128,7 @@ fn parse_agent_with_meta(
     raw: &str,
     source_path: Option<&Path>,
     origin: Origin,
-    source_provider: SourceProvider,
-    source: ComponentSource,
-    scope: Scope,
-    source_kind: SourceKind,
-    plugin_id: Option<&str>,
+    meta: ComponentMeta<'_>,
 ) -> Result<Option<Agent>, ApiError> {
     let (frontmatter, content) = frontmatter::parse(raw)?;
     let has_description = frontmatter.get("description").and_then(|v| v.as_str()).is_some();
@@ -191,23 +147,23 @@ fn parse_agent_with_meta(
         content,
         raw: raw.to_string(),
         filename: filename.to_string(),
-        source,
-        scope,
+        source: meta.source,
+        scope: meta.scope,
         origins: vec![origin],
         badges: Vec::new(),
         locator_id: locator_id(
             ComponentKind::Agents,
-            source_provider,
-            source,
-            scope,
-            plugin_id,
+            meta.provider,
+            meta.source,
+            meta.scope,
+            meta.plugin_id,
             &id,
             source_path,
         ),
         source_path: source_path.map(|path| path.to_string_lossy().to_string()),
-        source_provider,
-        source_kind,
-        plugin_id: plugin_id.map(str::to_string),
+        source_provider: meta.provider,
+        source_kind: meta.kind,
+        plugin_id: meta.plugin_id.map(str::to_string),
     }))
 }
 
