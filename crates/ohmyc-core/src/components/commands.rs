@@ -319,6 +319,49 @@ pub fn parse_codex_prompt(
     }))
 }
 
+pub fn command_from_opencode_config(id: &str, value: &Value, source_path: &Path, scope: Scope) -> Option<Command> {
+    let template = value.get("template")?.as_str()?.to_string();
+    let description = value
+        .get("description")
+        .and_then(|v| v.as_str())
+        .unwrap_or("")
+        .to_string();
+    let mut frontmatter = value.as_object().cloned().unwrap_or_default();
+    frontmatter.insert("name".into(), Value::String(id.to_string()));
+    frontmatter.insert("description".into(), Value::String(description));
+    let source = match scope {
+        Scope::Global => ComponentSource::Local,
+        Scope::Project => ComponentSource::Project,
+    };
+    Some(Command {
+        id: id.to_string(),
+        frontmatter: Value::Object(frontmatter),
+        content: template,
+        raw: value.to_string(),
+        filename: source_path.file_name()?.to_string_lossy().to_string(),
+        source,
+        scope,
+        origins: vec![Origin::Opencode],
+        badges: Vec::new(),
+        locator_id: locator_id(
+            ComponentKind::Commands,
+            SourceProvider::Opencode,
+            source,
+            scope,
+            None,
+            id,
+            Some(source_path),
+        ),
+        source_path: Some(source_path.to_string_lossy().to_string()),
+        source_provider: SourceProvider::Opencode,
+        source_kind: match scope {
+            Scope::Global => SourceKind::Global,
+            Scope::Project => SourceKind::Project,
+        },
+        plugin_id: None,
+    })
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
