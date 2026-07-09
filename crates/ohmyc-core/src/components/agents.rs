@@ -272,6 +272,70 @@ pub fn delete(dir: &Path, name: &str) -> Result<bool, ApiError> {
     }
 }
 
+pub fn parse_codex_toml_agent(
+    filename: &str,
+    raw: &str,
+    source_path: &Path,
+    scope: Scope,
+) -> Result<Option<Agent>, ApiError> {
+    let value: toml::Value = toml::from_str(raw).map_err(|e| ApiError::Parse(format!("codex agent toml: {e}")))?;
+    let Some(name) = value.get("name").and_then(|v| v.as_str()).filter(|s| !s.is_empty()) else {
+        return Ok(None);
+    };
+    let Some(description) = value
+        .get("description")
+        .and_then(|v| v.as_str())
+        .filter(|s| !s.is_empty())
+    else {
+        return Ok(None);
+    };
+    let Some(instructions) = value
+        .get("developer_instructions")
+        .and_then(|v| v.as_str())
+        .filter(|s| !s.is_empty())
+    else {
+        return Ok(None);
+    };
+    let mut frontmatter = serde_json::Map::new();
+    frontmatter.insert("name".into(), Value::String(name.to_string()));
+    frontmatter.insert("description".into(), Value::String(description.to_string()));
+    if let Some(model) = value.get("model").and_then(|v| v.as_str()) {
+        frontmatter.insert("model".into(), Value::String(model.to_string()));
+    }
+    let id = name.to_string();
+    let source = match scope {
+        Scope::Global => ComponentSource::Local,
+        Scope::Project => ComponentSource::Project,
+    };
+    Ok(Some(Agent {
+        id: id.clone(),
+        frontmatter: Value::Object(frontmatter),
+        content: instructions.trim().to_string(),
+        raw: raw.to_string(),
+        filename: filename.to_string(),
+        source,
+        scope,
+        origins: vec![Origin::Codex],
+        badges: Vec::new(),
+        locator_id: locator_id(
+            ComponentKind::Agents,
+            SourceProvider::Codex,
+            source,
+            scope,
+            None,
+            &id,
+            Some(source_path),
+        ),
+        source_path: Some(source_path.to_string_lossy().to_string()),
+        source_provider: SourceProvider::Codex,
+        source_kind: match scope {
+            Scope::Global => SourceKind::Global,
+            Scope::Project => SourceKind::Project,
+        },
+        plugin_id: None,
+    }))
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

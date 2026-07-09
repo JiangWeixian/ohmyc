@@ -272,6 +272,53 @@ pub fn delete(dir: &Path, name: &str) -> Result<bool, ApiError> {
     }
 }
 
+pub fn parse_codex_prompt(
+    filename: &str,
+    raw: &str,
+    source_path: &Path,
+    scope: Scope,
+) -> Result<Option<Command>, ApiError> {
+    let (mut frontmatter, content) = frontmatter::parse(raw)?;
+    let id = filename.trim_end_matches(".md").to_string();
+    if let Some(obj) = frontmatter.as_object_mut() {
+        obj.entry("name".to_string())
+            .or_insert_with(|| Value::String(id.clone()));
+        obj.entry("description".to_string())
+            .or_insert_with(|| Value::String("Codex legacy prompt".into()));
+    }
+    let source = match scope {
+        Scope::Global => ComponentSource::Local,
+        Scope::Project => ComponentSource::Project,
+    };
+    Ok(Some(Command {
+        id: id.clone(),
+        frontmatter,
+        content,
+        raw: raw.to_string(),
+        filename: filename.to_string(),
+        source,
+        scope,
+        origins: vec![Origin::Codex],
+        badges: vec![serde_json::json!({"kind": "pill", "label": "prompt", "tone": "neutral"})],
+        locator_id: locator_id(
+            ComponentKind::Commands,
+            SourceProvider::Codex,
+            source,
+            scope,
+            None,
+            &id,
+            Some(source_path),
+        ),
+        source_path: Some(source_path.to_string_lossy().to_string()),
+        source_provider: SourceProvider::Codex,
+        source_kind: match scope {
+            Scope::Global => SourceKind::Global,
+            Scope::Project => SourceKind::Project,
+        },
+        plugin_id: None,
+    }))
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
