@@ -76,5 +76,8 @@ to Codex compatibility rather than becoming a user-facing origin.
 Before claiming a PR is CI-ready, run checks that match GitHub Actions, not only
 local unit/build shortcuts:
 
+- Rust uses the exact version pinned in `rust-toolchain.toml`; confirm it with
+  `rustup show active-toolchain` before running Rust checks.
 - Rust changes: `cargo clippy --all-targets --all-features -- -D warnings`
+- TypeScript or UI changes: `pnpm build`
 - UI story changes or copy changes used by stories: `pnpm --filter @ohmyc/ui test:storybook`

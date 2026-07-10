@@ -3,9 +3,10 @@ import { fireEvent, within } from 'storybook/test'
 import { CommandPalette, CommandPaletteProvider } from '@/components/command-palette'
 import { commandPaletteCommands } from '@/stories/fixtures/commands'
 
+import type { CommandItem } from '@/components/command-palette'
 import type { Meta, StoryObj } from '@storybook/react-vite'
 
-function OpenPalette({ commands = commandPaletteCommands }: { commands?: typeof commandPaletteCommands }) {
+function OpenPalette({ commands = commandPaletteCommands }: { commands?: CommandItem[] }) {
   return (
     <CommandPaletteProvider>
       <button type="button" className="sr-only" data-testid="open-command-palette">
