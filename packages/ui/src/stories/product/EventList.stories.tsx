@@ -1,5 +1,5 @@
 import { EventList } from '@/components/timeline/event-list'
-import { timelineDays } from '@/stories/fixtures/timeline'
+import { longProjectTimelineDays, timelineDays } from '@/stories/fixtures/timeline'
 
 import type { Meta, StoryObj } from '@storybook/react-vite'
 
@@ -23,6 +23,12 @@ type Story = StoryObj<typeof meta>
 export const Populated: Story = {
   args: {
     days: timelineDays,
+  },
+}
+
+export const LongProjectTitle: Story = {
+  args: {
+    days: longProjectTimelineDays,
   },
 }
 
