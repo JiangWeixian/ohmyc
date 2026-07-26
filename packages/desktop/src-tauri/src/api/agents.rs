@@ -1,9 +1,6 @@
-use ohmyc_core::components::agents::{self, Agent};
-use ohmyc_core::components::agents_dir;
+use ohmyc_core::components::agents::Agent;
 use ohmyc_core::error::ApiError;
 use serde::Serialize;
-
-use super::include_origin;
 
 #[derive(Serialize)]
 pub struct AgentsResponse {
@@ -17,17 +14,19 @@ pub struct AgentResponse {
 
 #[tauri::command]
 pub fn agents_list(origins: Option<serde_json::Value>) -> Result<AgentsResponse, ApiError> {
-    if !include_origin(&origins, "claude") {
-        return Ok(AgentsResponse { agents: Vec::new() });
-    }
-    let dir = agents_dir()?;
-    let agents = agents::list(&dir)?;
+    let parsed = super::parse_origins(&origins)?;
+    let registry = ohmyc_core::providers::ProviderRegistry::current_dir()?;
+    let agents = registry.list_agents(parsed.as_deref())?;
     Ok(AgentsResponse { agents })
 }
 
 #[tauri::command]
-pub fn agents_get(name: String) -> Result<AgentResponse, ApiError> {
-    let dir = agents_dir()?;
-    let agent = agents::get(&dir, &name)?;
+pub fn agents_get(name: String, locator_id: Option<String>) -> Result<AgentResponse, ApiError> {
+    let registry = ohmyc_core::providers::ProviderRegistry::current_dir()?;
+    let agents = registry.list_agents(None)?;
+    let agent = match locator_id {
+        Some(locator_id) => agents.into_iter().find(|agent| agent.locator_id == locator_id),
+        None => agents.into_iter().find(|agent| agent.id == name),
+    };
     Ok(AgentResponse { agent })
 }

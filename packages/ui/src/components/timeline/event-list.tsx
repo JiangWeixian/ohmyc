@@ -207,7 +207,7 @@ export function EventList({ days, highlightedDay }: EventListProps) {
   if (days.length === 0) {
     return (
       <div
-        className="my-3 border-y border-[var(--border-subtle)] py-[14px] px-3 text-[12px] text-[var(--text-tertiary)]"
+        className="my-3 border-y border-[var(--border-subtle)] px-3 py-[14px] text-[12px] text-[var(--text-tertiary)]"
         style={{ fontFamily: 'var(--font-mono)' }}
       >
         No sessions match the current filters.
@@ -245,7 +245,7 @@ export function EventList({ days, highlightedDay }: EventListProps) {
               }}
             >
               {formatDayHeading(day.day)}
-              <span className="ml-[10px] text-[var(--text-quaternary)] font-normal">
+              <span className="ml-[10px] font-normal text-[var(--text-quaternary)]">
                 {day.session_count}
                 {' '}
                 session
@@ -316,7 +316,7 @@ function ProjectRollup({
         tabIndex={0}
         onClick={onToggle}
         onKeyDown={e => (e.key === 'Enter' || e.key === ' ') && onToggle()}
-        className="flex cursor-pointer items-center gap-3 rounded-md hover:bg-[rgba(255,255,255,0.02)]"
+        className="grid cursor-pointer grid-cols-[auto_minmax(0,1fr)_auto_auto_auto] items-center gap-3 rounded-md hover:bg-[rgba(255,255,255,0.02)]"
           // Expanded state gets taller padding so the chevron/content
           // transition does not feel cramped against the session list below.
         style={{
@@ -329,11 +329,11 @@ function ProjectRollup({
           className={open ? 'text-[var(--text-primary)]' : 'text-[var(--text-tertiary)]'}
           style={{ transition: 'transform 150ms ease-out', transform: open ? 'rotate(90deg)' : undefined, flexShrink: 0 }}
         />
-        <span className="text-[13px] font-[510] text-[var(--text-primary)] tracking-[-0.05px]">
+        <span className="min-w-0 truncate text-[13px] font-[510] tracking-[-0.05px] text-[var(--text-primary)]">
           {group.project}
         </span>
         <span
-          className="flex-1 text-[12px] text-[var(--text-tertiary)]"
+          className="shrink-0 whitespace-nowrap text-[12px] text-[var(--text-tertiary)]"
           style={{ fontFamily: 'var(--font-mono)' }}
         >
           {group.session_count}
@@ -354,7 +354,7 @@ function ProjectRollup({
         </span>
         <AgentStack agents={group.agents} />
         <span
-          className="text-[11px] text-[var(--text-quaternary)]"
+          className="shrink-0 text-[11px] text-[var(--text-quaternary)]"
           style={{ fontFamily: 'var(--font-mono)' }}
         >
           {formatTimeRange(firstStart, lastEnd)}

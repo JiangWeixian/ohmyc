@@ -92,7 +92,7 @@ describe('TimelineView', () => {
     expect(container.textContent).toContain('9 sessions')
     expect(container.textContent).toContain('12 turns')
     expect(container.textContent).toContain('1.5k tokens')
-    expect(container.textContent).toContain('earlier sessions truncated')
+    expect(container.textContent).toContain('older sessions hidden')
   })
 
   it('switches heatmap metric, project, and year filters through accessible controls', async () => {

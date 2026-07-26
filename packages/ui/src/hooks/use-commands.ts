@@ -39,9 +39,12 @@ export function useCommands() {
 
 export function useCommand(locator: ItemLocator | null) {
   return useQuery({
-    queryKey: ['commands', locator?.name, locator?.source, locator?.pluginId, locator?.scope],
+    queryKey: ['commands', locator?.locatorId, locator?.name, locator?.source, locator?.pluginId, locator?.scope],
     queryFn: async () => {
       const args: Record<string, unknown> = { name: locator!.name }
+      if (locator!.locatorId) {
+        args.locator_id = locator!.locatorId
+      }
       if (locator!.source) {
         args.source = locator!.source
       }

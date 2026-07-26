@@ -95,7 +95,7 @@ jobs:
           console.log(`Desktop bundle version set to ${config.version}`)
           NODE
 
-      - uses: dtolnay/rust-toolchain@stable
+      - uses: dtolnay/rust-toolchain@1.97.0
 
       - uses: Swatinem/rust-cache@v2
         with:

@@ -1,33 +1,44 @@
 # ohmyc
 
-A CLI tool with a built-in WebUI for visualizing and editing `.claude` configuration files.
+OhMyC is a local-first personal Coding Monitor for AI-assisted development. It
+shows activity, sessions, token usage, and project momentum across coding
+agents, with a resource library for inspecting the agents, skills, commands, and
+plugins that power that work.
 
 ## Features
 
-- Visual management of all `.claude` configuration files
-- View and edit `settings.json`, `CLAUDE.md`, hooks, MCP servers, commands, agents, skills, plugins, and more
-- Local web interface powered by React + shadcn/ui
-- Simple CLI to launch the WebUI
+- Local monitor for AI coding sessions, turns, token usage, and projects
+- Explorer for local agents, skills, commands, and plugins
+- Provider-aware discovery for Codex, Claude, OpenCode, and shared `.agents`
+  skills
+- Local desktop/web UI powered by React and Tauri
 
 ### Multi-tool discovery
 
-OhMyC also reads opencode config from `~/.config/opencode/` (or
-`~/Library/Application Support/opencode/` on macOS) and `<cwd>/.opencode/`,
-plus the shared `~/.agents/skills/` and `<cwd>/.agents/skills/` namespace.
-Set `OPENCODE_CONFIG_DIR` to override the global opencode config dir.
+OhMyC reads provider resources from:
+
+- Codex: `~/.codex/` and project `.codex/`
+- Claude: `~/.claude/` and project `.claude/`
+- OpenCode: `~/.config/opencode/` (or `~/Library/Application Support/opencode/`
+  on macOS), project `.opencode/`, and documented OpenCode config overrides
+- Shared skills: `~/.agents/skills/` and project `.agents/skills/`
+
+Use the Explorer source filter to switch between `codex`, `claude`, and
+`opencode`. Shared `.agents` skills appear as `codex · opencode`.
 
 ## Tech Stack
 
 - **CLI**: [cac](https://github.com/cacjs/cac)
-- **WebUI**: React + [shadcn/ui](https://ui.shadcn.com/)
-- **Language**: TypeScript
-- **Build**: [Vite](https://vitejs.dev/) (WebUI) + [tsup](https://github.com/egoist/tsup) (CLI)
-- **Package Manager**: npm
+- **Desktop/UI**: Tauri + React
+- **Core**: Rust
+- **Language**: TypeScript + Rust
+- **Build**: [Vite](https://vitejs.dev/) + [tsup](https://github.com/egoist/tsup)
+- **Package Manager**: pnpm
 
 ## Installation
 
 ```bash
-npm install -g ohmyc
+pnpm add -g ohmyc
 ```
 
 ## Usage
@@ -36,19 +47,20 @@ npm install -g ohmyc
 ohmyc
 ```
 
-This starts a local web server and opens the UI in your browser, where you can browse and edit your `.claude` configuration.
+This starts OhMyC so you can inspect local coding activity and browse local
+agent resources.
 
 ## Development
 
 ```bash
 # Install dependencies
-npm install
+pnpm install
 
 # Start development server
-npm run dev
+pnpm dev
 
 # Build
-npm run build
+pnpm build
 ```
 
 ## License

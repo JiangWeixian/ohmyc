@@ -39,9 +39,12 @@ export function useSkills() {
 
 export function useSkill(locator: ItemLocator | null) {
   return useQuery({
-    queryKey: ['skills', locator?.name, locator?.source, locator?.pluginId, locator?.scope],
+    queryKey: ['skills', locator?.locatorId, locator?.name, locator?.source, locator?.pluginId, locator?.scope],
     queryFn: async () => {
       const args: Record<string, unknown> = { name: locator!.name }
+      if (locator!.locatorId) {
+        args.locator_id = locator!.locatorId
+      }
       if (locator!.source) {
         args.source = locator!.source
       }

@@ -4,7 +4,10 @@ use serde::Serialize;
 use serde_json::Value;
 
 use super::frontmatter;
-use super::{is_safe_name, read_md_or_skip, ComponentSource, Origin, Scope};
+use super::{
+    is_safe_name, locator_id, read_md_or_skip, ComponentKind, ComponentMeta, ComponentSource, Origin, Scope,
+    SourceKind, SourceProvider,
+};
 use crate::error::ApiError;
 
 #[derive(Debug, Clone, Serialize)]
@@ -18,16 +21,73 @@ pub struct Command {
     pub scope: Scope,
     pub origins: Vec<Origin>,
     pub badges: Vec<Value>,
+    #[serde(rename = "locatorId")]
+    pub locator_id: String,
+    #[serde(rename = "sourcePath", skip_serializing_if = "Option::is_none")]
+    pub source_path: Option<String>,
+    #[serde(rename = "sourceProvider")]
+    pub source_provider: SourceProvider,
+    #[serde(rename = "sourceKind")]
+    pub source_kind: SourceKind,
+    #[serde(rename = "pluginId", skip_serializing_if = "Option::is_none")]
+    pub plugin_id: Option<String>,
 }
 
 pub fn list(dir: &Path) -> Result<Vec<Command>, ApiError> {
+    list_with_meta(
+        dir,
+        Origin::Claude,
+        SourceProvider::Claude,
+        ComponentSource::Local,
+        Scope::Global,
+        SourceKind::Global,
+        None,
+    )
+}
+
+pub fn list_with_meta(
+    dir: &Path,
+    origin: Origin,
+    source_provider: SourceProvider,
+    source: ComponentSource,
+    scope: Scope,
+    source_kind: SourceKind,
+    plugin_id: Option<String>,
+) -> Result<Vec<Command>, ApiError> {
     if !dir.exists() {
         return Ok(Vec::new());
     }
     let mut out: Vec<Command> = Vec::new();
+    let meta = ComponentMeta::new(source_provider, source, scope, source_kind, plugin_id.as_deref());
+    list_command_files(dir, &mut out, origin, meta)?;
+    out.sort_by(|a, b| a.id.cmp(&b.id));
+    Ok(out)
+}
+
+fn list_command_files(
+    dir: &Path,
+    out: &mut Vec<Command>,
+    origin: Origin,
+    meta: ComponentMeta<'_>,
+) -> Result<(), ApiError> {
     for entry in std::fs::read_dir(dir).map_err(ApiError::from)? {
         let entry = entry.map_err(ApiError::from)?;
+        let file_type = entry.file_type().map_err(ApiError::from)?;
         let path = entry.path();
+        if file_type.is_symlink() {
+            continue;
+        }
+        if file_type.is_dir() {
+            let name = match path.file_name().and_then(|s| s.to_str()) {
+                Some(name) => name,
+                None => continue,
+            };
+            if name.starts_with('.') || name == "node_modules" {
+                continue;
+            }
+            list_command_files(&path, out, origin, meta)?;
+            continue;
+        }
         if path.extension().and_then(|s| s.to_str()) != Some("md") {
             continue;
         }
@@ -39,12 +99,11 @@ pub fn list(dir: &Path) -> Result<Vec<Command>, ApiError> {
             Some(s) => s,
             None => continue,
         };
-        if let Some(cmd) = parse_command(&filename, &raw)? {
+        if let Some(cmd) = parse_command_with_meta(&filename, &raw, Some(&path), origin, meta)? {
             out.push(cmd);
         }
     }
-    out.sort_by(|a, b| a.id.cmp(&b.id));
-    Ok(out)
+    Ok(())
 }
 
 pub fn get(dir: &Path, name: &str) -> Result<Option<Command>, ApiError> {
@@ -56,10 +115,26 @@ pub fn get(dir: &Path, name: &str) -> Result<Option<Command>, ApiError> {
     let Some(raw) = read_md_or_skip(&path)? else {
         return Ok(None);
     };
-    parse_command(&filename, &raw)
+    parse_command(&filename, &raw, Some(&path))
 }
 
-fn parse_command(filename: &str, raw: &str) -> Result<Option<Command>, ApiError> {
+fn parse_command(filename: &str, raw: &str, source_path: Option<&Path>) -> Result<Option<Command>, ApiError> {
+    parse_command_with_meta(
+        filename,
+        raw,
+        source_path,
+        Origin::Claude,
+        ComponentMeta::claude_global(),
+    )
+}
+
+fn parse_command_with_meta(
+    filename: &str,
+    raw: &str,
+    source_path: Option<&Path>,
+    origin: Origin,
+    meta: ComponentMeta<'_>,
+) -> Result<Option<Command>, ApiError> {
     let (mut frontmatter, content) = frontmatter::parse(raw)?;
     let id = filename.trim_end_matches(".md").to_string();
     let name = frontmatter
@@ -72,15 +147,28 @@ fn parse_command(filename: &str, raw: &str) -> Result<Option<Command>, ApiError>
         obj.insert("name".to_string(), Value::String(name));
     }
     Ok(Some(Command {
-        id,
+        id: id.clone(),
         frontmatter,
         content,
         raw: raw.to_string(),
         filename: filename.to_string(),
-        source: ComponentSource::Local,
-        scope: Scope::Global,
-        origins: vec![Origin::Claude],
+        source: meta.source,
+        scope: meta.scope,
+        origins: vec![origin],
         badges: Vec::new(),
+        locator_id: locator_id(
+            ComponentKind::Commands,
+            meta.provider,
+            meta.source,
+            meta.scope,
+            meta.plugin_id,
+            &id,
+            source_path,
+        ),
+        source_path: source_path.map(|path| path.to_string_lossy().to_string()),
+        source_provider: meta.provider,
+        source_kind: meta.kind,
+        plugin_id: meta.plugin_id.map(str::to_string),
     }))
 }
 
@@ -102,7 +190,7 @@ pub fn create(dir: &Path, frontmatter: &Value, content: &str) -> Result<Command,
     }
     let raw = frontmatter::stringify(frontmatter, content)?;
     std::fs::write(&path, &raw).map_err(|e| ApiError::Io(format!("write {}: {e}", path.display())))?;
-    parse_command(&filename, &raw)?
+    parse_command(&filename, &raw, Some(&path))?
         .ok_or_else(|| ApiError::Internal("parse_command returned None after create".to_string()))
 }
 
@@ -130,7 +218,7 @@ pub fn update(
     let raw = frontmatter::stringify(&merged, body)?;
     let path = dir.join(format!("{name}.md"));
     std::fs::write(&path, &raw).map_err(|e| ApiError::Io(format!("write {}: {e}", path.display())))?;
-    parse_command(&format!("{name}.md"), &raw)
+    parse_command(&format!("{name}.md"), &raw, Some(&path))
 }
 
 pub fn delete(dir: &Path, name: &str) -> Result<bool, ApiError> {
@@ -143,6 +231,96 @@ pub fn delete(dir: &Path, name: &str) -> Result<bool, ApiError> {
         Err(e) if e.kind() == std::io::ErrorKind::NotFound => Ok(false),
         Err(e) => Err(ApiError::Io(format!("remove {}: {e}", path.display()))),
     }
+}
+
+pub fn parse_codex_prompt(
+    filename: &str,
+    raw: &str,
+    source_path: &Path,
+    scope: Scope,
+) -> Result<Option<Command>, ApiError> {
+    let (mut frontmatter, content) = frontmatter::parse(raw)?;
+    let id = filename.trim_end_matches(".md").to_string();
+    if let Some(obj) = frontmatter.as_object_mut() {
+        obj.entry("name".to_string())
+            .or_insert_with(|| Value::String(id.clone()));
+        obj.entry("description".to_string())
+            .or_insert_with(|| Value::String("Codex legacy prompt".into()));
+    }
+    let source = match scope {
+        Scope::Global => ComponentSource::Local,
+        Scope::Project => ComponentSource::Project,
+    };
+    Ok(Some(Command {
+        id: id.clone(),
+        frontmatter,
+        content,
+        raw: raw.to_string(),
+        filename: filename.to_string(),
+        source,
+        scope,
+        origins: vec![Origin::Codex],
+        badges: vec![serde_json::json!({"kind": "pill", "label": "prompt", "tone": "neutral"})],
+        locator_id: locator_id(
+            ComponentKind::Commands,
+            SourceProvider::Codex,
+            source,
+            scope,
+            None,
+            &id,
+            Some(source_path),
+        ),
+        source_path: Some(source_path.to_string_lossy().to_string()),
+        source_provider: SourceProvider::Codex,
+        source_kind: match scope {
+            Scope::Global => SourceKind::Global,
+            Scope::Project => SourceKind::Project,
+        },
+        plugin_id: None,
+    }))
+}
+
+pub fn command_from_opencode_config(id: &str, value: &Value, source_path: &Path, scope: Scope) -> Option<Command> {
+    let template = value.get("template")?.as_str()?.to_string();
+    let description = value
+        .get("description")
+        .and_then(|v| v.as_str())
+        .unwrap_or("")
+        .to_string();
+    let mut frontmatter = value.as_object().cloned().unwrap_or_default();
+    frontmatter.insert("name".into(), Value::String(id.to_string()));
+    frontmatter.insert("description".into(), Value::String(description));
+    let source = match scope {
+        Scope::Global => ComponentSource::Local,
+        Scope::Project => ComponentSource::Project,
+    };
+    Some(Command {
+        id: id.to_string(),
+        frontmatter: Value::Object(frontmatter),
+        content: template,
+        raw: value.to_string(),
+        filename: source_path.file_name()?.to_string_lossy().to_string(),
+        source,
+        scope,
+        origins: vec![Origin::Opencode],
+        badges: Vec::new(),
+        locator_id: locator_id(
+            ComponentKind::Commands,
+            SourceProvider::Opencode,
+            source,
+            scope,
+            None,
+            id,
+            Some(source_path),
+        ),
+        source_path: Some(source_path.to_string_lossy().to_string()),
+        source_provider: SourceProvider::Opencode,
+        source_kind: match scope {
+            Scope::Global => SourceKind::Global,
+            Scope::Project => SourceKind::Project,
+        },
+        plugin_id: None,
+    })
 }
 
 #[cfg(test)]

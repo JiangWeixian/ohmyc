@@ -10,23 +10,23 @@ test.describe('Menubar popover', () => {
     await expect(page.getByText('Activity', { exact: true })).toBeVisible()
   })
 
-  test('switches between line and heatmap views', async ({ page }) => {
+  test('switches between area chart and heatmap views', async ({ page }) => {
     await page.goto(`${MENUBAR}?scenario=ready`)
 
     await expect(page.locator('[data-menubar-page]')).toBeVisible()
 
-    const lineButton = page.getByRole('tab', { name: 'Line view' })
+    const areaButton = page.getByRole('tab', { name: 'Area chart view' })
     const heatmapButton = page.getByRole('tab', { name: 'Heatmap view' })
 
-    await expect(lineButton).toHaveAttribute('aria-pressed', 'true')
+    await expect(areaButton).toHaveAttribute('aria-pressed', 'true')
     await expect(heatmapButton).toHaveAttribute('aria-pressed', 'false')
 
     await heatmapButton.click()
     await expect(heatmapButton).toHaveAttribute('aria-pressed', 'true')
-    await expect(lineButton).toHaveAttribute('aria-pressed', 'false')
+    await expect(areaButton).toHaveAttribute('aria-pressed', 'false')
 
-    await lineButton.click()
-    await expect(lineButton).toHaveAttribute('aria-pressed', 'true')
+    await areaButton.click()
+    await expect(areaButton).toHaveAttribute('aria-pressed', 'true')
   })
 
   test('Open OhMyC button triggers invoke', async ({ page }) => {

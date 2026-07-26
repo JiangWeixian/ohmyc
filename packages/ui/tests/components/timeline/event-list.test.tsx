@@ -135,4 +135,32 @@ describe('EventList', () => {
     expect(screen.getByText('Second day')).toBeInTheDocument()
     expect(screen.getByText('800 tokens')).toBeInTheDocument()
   })
+
+  it('truncates long project titles without squeezing rollup metrics', () => {
+    const longProject = 'generated-workspace-with-a-very-long-project-title-that-keeps-growing-past-the-row-budget'
+    render(
+      <EventList
+        days={[
+          day({
+            projectGroups: [{
+              project: longProject,
+              sessions: [session({ project: longProject })],
+              session_count: 1,
+              turn_count: 6,
+              token_count: 160_000,
+              tool_count: 1,
+              skill_count: 1,
+              agents: ['claude'],
+            }],
+          }),
+        ]}
+      />,
+    )
+
+    const rollup = screen.getByRole('button')
+    expect(rollup).toHaveClass('grid')
+    expect(screen.getByText(longProject)).toHaveClass('min-w-0', 'truncate')
+    expect(within(rollup).getByText(/1 session/)).toHaveClass('shrink-0')
+    expect(within(rollup).getByText(/→/)).toHaveClass('shrink-0')
+  })
 })

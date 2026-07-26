@@ -2,7 +2,7 @@ import { useQueryClient } from '@tanstack/react-query'
 import { useEffect } from 'react'
 
 interface FsEvent {
-  kind: 'claude_home' | 'timeline_db'
+  kind: 'claude_home' | 'provider_config' | 'timeline_db'
   path: string
 }
 
@@ -29,6 +29,13 @@ export function useFsChanged(): void {
         const off = await subscribe<FsEvent>('fs:changed', (payload) => {
           if (payload.kind === 'timeline_db') {
             void qc.invalidateQueries({ queryKey: ['timeline'] })
+            return
+          }
+          if (payload.kind === 'provider_config') {
+            void qc.invalidateQueries({ queryKey: ['agents'] })
+            void qc.invalidateQueries({ queryKey: ['skills'] })
+            void qc.invalidateQueries({ queryKey: ['commands'] })
+            void qc.invalidateQueries({ queryKey: ['plugins'] })
             return
           }
           if (payload.kind === 'claude_home') {

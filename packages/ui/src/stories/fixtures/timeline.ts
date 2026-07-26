@@ -111,3 +111,43 @@ export const timelineDays: DayEvents[] = [
 export const timelineEventsResponse = {
   days: timelineDays,
 }
+
+export const longProjectName = 'generated-workspace-with-a-very-long-project-title-that-keeps-growing-past-the-row-budget'
+
+const longProjectSessions = [
+  session({
+    session_id: 'long-project-a',
+    project: longProjectName,
+    summary: 'Verify long timeline project names preserve rollup metrics',
+    turns: 6,
+    tokens_input: 40_000,
+    tokens_output: 36_000,
+    tokens_cached: 84_000,
+  }),
+]
+
+export const longProjectTimelineDays: DayEvents[] = [
+  {
+    day: '2026-06-19',
+    projectGroups: [
+      {
+        project: longProjectName,
+        sessions: longProjectSessions,
+        session_count: 1,
+        turn_count: 6,
+        token_count: 160_000,
+        tool_count: 1,
+        skill_count: 1,
+        agents: ['claude'],
+      },
+      ...timelineProjectGroups,
+    ],
+    session_count: 4,
+    turn_count: 35,
+    token_count: 214_600,
+  },
+]
+
+export const longProjectTimelineEventsResponse = {
+  days: longProjectTimelineDays,
+}

@@ -6,8 +6,8 @@ test.describe('Onboarding gate', () => {
 
     await expect(page.locator('h1')).toHaveText('Monitor not connected')
     await expect(page.getByText('Install the OhMyC plugin')).toBeVisible()
-    await expect(page.getByRole('button', { name: /retry/i })).toBeVisible()
-    await expect(page.getByRole('link', { name: /open plugin repo/i })).toBeVisible()
+    await expect(page.getByRole('button', { name: /check again/i })).toBeVisible()
+    await expect(page.getByRole('link', { name: /open install instructions/i })).toBeVisible()
   })
 
   test('shows error line for unreadable store', async ({ page }) => {
@@ -21,7 +21,7 @@ test.describe('Onboarding gate', () => {
     await page.goto('/?scenario=error')
 
     await expect(page.locator('h1')).toHaveText('Monitor not connected')
-    await expect(page.getByText('Setup check failed.')).toBeVisible()
+    await expect(page.getByText('OhMyC could not confirm the monitor connection. Install the plugin, then check again.')).toBeVisible()
   })
 
   test('redirects to timeline when ready', async ({ page }) => {
@@ -35,12 +35,12 @@ test.describe('Onboarding gate', () => {
 
     await expect(page.locator('h1')).toHaveText('Monitor not connected')
 
-    // Switch scenario to ready, then click retry
+    // Switch scenario to ready, then run the setup check again.
     await page.evaluate(() => {
       ;(globalThis as unknown as { __e2eSetScenario: (n: string) => void }).__e2eSetScenario('ready')
     })
 
-    await page.getByRole('button', { name: /retry/i }).click()
+    await page.getByRole('button', { name: /check again/i }).click()
 
     await expect(page).toHaveURL(/\/explore\/timeline$/)
   })

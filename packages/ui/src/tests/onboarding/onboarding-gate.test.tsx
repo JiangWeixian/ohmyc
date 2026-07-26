@@ -38,7 +38,7 @@ describe('OnboardingGate', () => {
     renderGate()
     expect(await screen.findByText('Monitor not connected')).toBeTruthy()
     expect(
-      screen.getByText('Install the OhMyC plugin to start collecting local coding activity.'),
+      screen.getByText('Install the OhMyC plugin to start collecting local AI coding activity.'),
     ).toBeTruthy()
   })
 
@@ -55,7 +55,7 @@ describe('OnboardingGate', () => {
     renderGate()
     expect(
       await screen.findByText(
-        'Setup check failed. Retry after installing the plugin or restarting OhMyC.',
+        'OhMyC could not confirm the monitor connection. Install the plugin, then check again.',
       ),
     ).toBeTruthy()
   })
@@ -70,7 +70,7 @@ describe('OnboardingGate', () => {
   it('links the primary action to the plugin repo', async () => {
     setMockHandler('setup.status', async () => ({ state: 'missing_store' }))
     renderGate()
-    const link = await screen.findByRole('link', { name: /open plugin repo/i })
+    const link = await screen.findByRole('link', { name: /open install instructions/i })
     expect(link.getAttribute('href')).toBe(PLUGIN_REPO)
     expect(link.getAttribute('target')).toBe('_blank')
   })
@@ -78,6 +78,6 @@ describe('OnboardingGate', () => {
   it('renders a Retry button', async () => {
     setMockHandler('setup.status', async () => ({ state: 'missing_store' }))
     renderGate()
-    expect(await screen.findByRole('button', { name: /retry/i })).toBeTruthy()
+    expect(await screen.findByRole('button', { name: /check again/i })).toBeTruthy()
   })
 })

@@ -1,11 +1,6 @@
-use std::collections::BTreeSet;
-
-use ohmyc_core::components::skills::{self, Skill};
-use ohmyc_core::components::{agents_shared_skills_dir, skills_dir, Origin};
+use ohmyc_core::components::skills::Skill;
 use ohmyc_core::error::ApiError;
 use serde::Serialize;
-
-use super::include_origin;
 
 #[derive(Serialize)]
 pub struct SkillsResponse {
@@ -19,36 +14,19 @@ pub struct SkillResponse {
 
 #[tauri::command]
 pub fn skills_list(origins: Option<serde_json::Value>) -> Result<SkillsResponse, ApiError> {
-    let mut out = Vec::new();
-    let mut seen = BTreeSet::new();
-    if include_origin(&origins, "claude") {
-        let dir = skills_dir()?;
-        for skill in skills::list_with_origin(&dir, Origin::Claude)? {
-            seen.insert(skill.id.clone());
-            out.push(skill);
-        }
-    }
-    if include_origin(&origins, "agents") {
-        let dir = agents_shared_skills_dir()?;
-        for skill in skills::list_with_origin(&dir, Origin::Agents)? {
-            if seen.insert(skill.id.clone()) {
-                out.push(skill);
-            }
-        }
-    }
-    out.sort_by(|a, b| a.id.cmp(&b.id));
-    Ok(SkillsResponse { skills: out })
+    let parsed = super::parse_origins(&origins)?;
+    let registry = ohmyc_core::providers::ProviderRegistry::current_dir()?;
+    let skills = registry.list_skills(parsed.as_deref())?;
+    Ok(SkillsResponse { skills })
 }
 
 #[tauri::command]
-pub fn skills_get(name: String) -> Result<SkillResponse, ApiError> {
-    let dir = skills_dir()?;
-    let skill = match skills::get_with_origin(&dir, &name, Origin::Claude)? {
-        Some(skill) => Some(skill),
-        None => {
-            let dir = agents_shared_skills_dir()?;
-            skills::get_with_origin(&dir, &name, Origin::Agents)?
-        }
+pub fn skills_get(name: String, locator_id: Option<String>) -> Result<SkillResponse, ApiError> {
+    let registry = ohmyc_core::providers::ProviderRegistry::current_dir()?;
+    let skills = registry.list_skills(None)?;
+    let skill = match locator_id {
+        Some(locator_id) => skills.into_iter().find(|skill| skill.locator_id == locator_id),
+        None => skills.into_iter().find(|skill| skill.id == name),
     };
     Ok(SkillResponse { skill })
 }

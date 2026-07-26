@@ -352,7 +352,7 @@ pub fn events(conn: &Connection, q: EventsQuery) -> Result<EventsResult, ApiErro
         }
     }
 
-    for (_day, groups) in day_project_map.iter_mut() {
+    for groups in day_project_map.values_mut() {
         let session_ids: Vec<String> = groups
             .iter()
             .flat_map(|g| g.sessions.iter().map(|s| s.session_id.clone()))

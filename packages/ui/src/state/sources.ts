@@ -1,4 +1,4 @@
-// Zustand store for which provider origins (claude/opencode) the Explorer is filtered to.
+// Zustand store for which provider origins (codex/claude/opencode) the Explorer is filtered to.
 // Persisted to localStorage under `ohmyc.sources`. Last-on guard prevents zero-state.
 import { create } from 'zustand'
 
@@ -6,8 +6,7 @@ import type { Origin } from '@ohmyc/shared'
 
 const STORAGE_KEY = 'ohmyc.sources'
 
-// `agents` is a property of skills, not a top-level user-facing source — see spec §SourceSwitcher.
-export const REGISTERED_ORIGINS: readonly Origin[] = ['claude', 'opencode']
+export const REGISTERED_ORIGINS: readonly Origin[] = ['codex', 'claude', 'opencode']
 
 interface SourcesStore {
   selected: Set<Origin>
