@@ -1,12 +1,11 @@
 // Expandable event list for the timeline page.
 // Renders day headings, project rollups (collapsible), and per-session detail rows.
 
-import Claude from '@lobehub/icons/es/Claude'
-import Codex from '@lobehub/icons/es/Codex'
-import OpenCode from '@lobehub/icons/es/OpenCode'
 import { motion, useReducedMotion } from 'framer-motion'
 import { ChevronRight } from 'lucide-react'
 import { useMemo, useState } from 'react'
+
+import { AgentGlyph } from '@/components/agent-glyph'
 
 import type {
   DayEvents,
@@ -17,29 +16,6 @@ import type {
 const motionEaseOut = [0.23, 1, 0.32, 1] as const
 
 // ── Agent glyph components ────────────────────────────────────────
-
-// Map agent_name → lobehub Mono icon component.
-// `null`/unknown → no glyph (legacy rows without agent attribution).
-function AgentGlyph({
-  name,
-  size = 12,
-  className,
-}: {
-  name: string | null | undefined
-  size?: number
-  className?: string
-}) {
-  if (name === 'claude') {
-    return <Claude size={size} className={className} />
-  }
-  if (name === 'opencode') {
-    return <OpenCode size={size} className={className} />
-  }
-  if (name === 'codex') {
-    return <Codex size={size} className={className} />
-  }
-  return null
-}
 
 // Avatar-stack of distinct agents for a project rollup.
 // 16px circular chips with 1px ring + page-bg fill so the overlap reads as
