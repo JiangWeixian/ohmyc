@@ -8,8 +8,8 @@ one does not publish the other.
 
 | Release | Use it for | Trigger | Result |
 | --- | --- | --- | --- |
-| Desktop draft | Testing desktop installers from a branch | Manually run **Build Desktop App** with `draft` | Creates or updates a draft GitHub Release |
-| Desktop official release | Publishing macOS and Windows installers from an immutable version | Create a Git tag, then manually run **Build Desktop App** with `official` | Creates a non-draft GitHub Release with desktop installers |
+| Desktop draft | Testing desktop installers from a branch | Manually run **Build Desktop App** with `draft` (no tag) | Creates or updates that branch's fixed-slot draft GitHub Release |
+| Desktop official release | Publishing macOS and Windows installers from an immutable version | Create a Git tag, then manually run **Build Desktop App** with `official` + tag | Creates a non-draft GitHub Release with desktop installers |
 | Snapshot release | Testing unpublished package changes from a branch | Manually run **Snapshot Release** | Publishes affected public packages to npm with the `snapshot` dist-tag |
 | Package release | Publishing stable npm packages | Push to a branch watched by **Release** | Opens or updates a Changesets version PR, then publishes after that PR is merged |
 
@@ -49,19 +49,35 @@ publication.
 ## Build a Desktop Draft
 
 Use a draft to test installers built from a branch before creating an official
-version tag.
+version tag. Drafts use a **per-branch fixed slot**: the same branch always
+updates one draft GitHub Release (no version inventing, no draft pile-up on
+that branch).
 
 1. Push the branch to build.
 2. Open **Actions → Build Desktop App → Run workflow**.
 3. Select the branch from the **Use workflow from** control.
-4. Enter an unused version-shaped value such as `v0.2.0-rc.1` in `tag`.
+4. Leave `tag` empty (ignored for draft).
 5. Select `draft` for `release_kind`.
 6. Run the workflow.
-7. Download and test the generated artifacts from the draft GitHub Release.
+7. Download and test the generated artifacts from that branch's draft GitHub
+   Release.
 
-Draft builds check out the branch selected in **Use workflow from**. The `tag`
-input supplies the bundle version and draft release name; it does not make the
-branch immutable.
+### Draft identity
+
+| Field | Value |
+| --- | --- |
+| GitHub Release tag | `v0.0.0-draft-{branch-slug}` |
+| Release title | `OhMyC draft ({branch})` |
+| macOS bundle version | `0.0.0-draft-{branch-slug}` |
+| Windows MSI bundle version | `0.0.0-1` (MSI-safe small prerelease id) |
+
+Branch slug rules: lowercase, non `[a-z0-9]` → `-`, collapse repeats, trim,
+max 40 characters. Example: `hotfix/geek-design` → tag
+`v0.0.0-draft-hotfix-geek-design`.
+
+Draft builds check out the branch selected in **Use workflow from**. Re-running
+draft on the same branch overwrites that slot's assets. Different branches get
+different slots and do not overwrite each other.
 
 ## Publish an Official Desktop Release
 
@@ -80,7 +96,7 @@ before the workflow starts.
    ```
 
 4. Open **Actions → Build Desktop App → Run workflow**.
-5. Enter the same tag, such as `v0.2.0`, in `tag`.
+5. Enter the same tag, such as `v0.2.0`, in `tag` (required for official).
 6. Select `official` for `release_kind`.
 7. Run the workflow and wait for both the macOS and Windows jobs to pass.
 8. Verify the GitHub Release is public rather than a draft.
