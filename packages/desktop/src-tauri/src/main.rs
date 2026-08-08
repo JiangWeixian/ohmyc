@@ -5,9 +5,9 @@ use ohmyc_desktop_lib::tray::{classify_click, TrayClick, TrayMenuId};
 use std::sync::Mutex;
 use tauri::menu::{Menu, MenuItem};
 use tauri::tray::{MouseButton, MouseButtonState, TrayIconBuilder, TrayIconEvent};
-use tauri::{Manager, PhysicalSize};
 #[cfg(not(debug_assertions))]
 use tauri::WindowEvent;
+use tauri::{Manager, PhysicalSize};
 
 struct PopoverGuard(Mutex<PopoverState>);
 
@@ -156,9 +156,7 @@ fn main() {
             // Position under a synthetic top-right tray rect so layout matches production.
             #[cfg(debug_assertions)]
             {
-                let size = popover_window
-                    .outer_size()
-                    .unwrap_or(PhysicalSize::new(360, 440));
+                let size = popover_window.outer_size().unwrap_or(PhysicalSize::new(360, 440));
                 let monitor = popover_window
                     .current_monitor()
                     .ok()
