@@ -1,5 +1,5 @@
 // Reusable card for top-level entities (agents, skills, commands) shown in grids.
-import { MonoBadge } from './badge'
+import { AgentGlyph } from './agent-glyph'
 import { RenderBadgeView } from './render-badge'
 import { Card } from '@/components/ui/card'
 import { cn } from '@/lib/utils'
@@ -19,7 +19,7 @@ interface EntityCardProperties {
 }
 
 /** Clickable card summarizing an entity (agent, skill, or command) with icon,
- *  title, description, origin chip, and provider-supplied badges. */
+ *  title, description, origin icons, and provider-supplied badges. */
 export function EntityCard({
   icon: Icon,
   title,
@@ -28,8 +28,8 @@ export function EntityCard({
   renderBadges,
   onClick,
 }: EntityCardProperties) {
-  const originLabel = origins && origins.length > 0 ? origins.join(' · ') : null
-  const hasBadges = originLabel || (renderBadges && renderBadges.length > 0)
+  const hasOrigins = Boolean(origins && origins.length > 0)
+  const hasBadges = hasOrigins || (renderBadges && renderBadges.length > 0)
 
   return (
     <Card
@@ -49,7 +49,20 @@ export function EntityCard({
           <div className="font-display truncate text-[15px] font-[590] text-[var(--text-primary)]">{title}</div>
           {hasBadges && (
             <div className="mt-1 flex flex-wrap items-center gap-1.5">
-              {originLabel && <MonoBadge>{originLabel}</MonoBadge>}
+              {hasOrigins && (
+                <span className="inline-flex items-center gap-1">
+                  {origins!.map(origin => (
+                    <span
+                      key={origin}
+                      title={origin}
+                      aria-label={origin}
+                      className="inline-flex size-4 items-center justify-center text-[var(--text-tertiary)]"
+                    >
+                      <AgentGlyph name={origin} size={12} />
+                    </span>
+                  ))}
+                </span>
+              )}
               {renderBadges?.map((b, idx) => (
                 <RenderBadgeView key={`${b.kind}-${b.label}-${idx}`} badge={b} />
               ))}

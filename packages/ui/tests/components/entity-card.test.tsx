@@ -9,7 +9,7 @@ import {
 import { EntityCard } from '@/components/entity-card'
 
 describe('EntityCard', () => {
-  it('renders origin chip from origins prop', () => {
+  it('renders origin icons with tooltips from origins prop', () => {
     render(
       <EntityCard
         icon={Bot}
@@ -21,7 +21,9 @@ describe('EntityCard', () => {
         onClick={() => {}}
       />,
     )
-    expect(screen.getByText('claude · opencode')).toBeInTheDocument()
+    expect(screen.getByLabelText('claude')).toBeInTheDocument()
+    expect(screen.getByLabelText('opencode')).toBeInTheDocument()
+    expect(screen.queryByText('claude · opencode')).not.toBeInTheDocument()
   })
 
   it('renders provider badges verbatim', () => {
@@ -37,9 +39,10 @@ describe('EntityCard', () => {
       />,
     )
     expect(screen.getByText('primary')).toBeInTheDocument()
+    expect(screen.getByLabelText('opencode')).toBeInTheDocument()
   })
 
-  it('renders shared codex opencode origins', () => {
+  it('renders shared codex opencode origin icons', () => {
     render(
       <EntityCard
         icon={Bot}
@@ -50,6 +53,8 @@ describe('EntityCard', () => {
         onClick={() => {}}
       />,
     )
-    expect(screen.getByText('codex · opencode')).toBeInTheDocument()
+    expect(screen.getByLabelText('codex')).toBeInTheDocument()
+    expect(screen.getByLabelText('opencode')).toBeInTheDocument()
+    expect(screen.queryByText('codex · opencode')).not.toBeInTheDocument()
   })
 })
