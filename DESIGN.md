@@ -7,20 +7,25 @@
 - **Project type:** Web app (dark-themed dashboard)
 
 ## Aesthetic Direction
-- **Direction:** Monochrome dark — precision engineering aesthetic
-- **Decoration level:** Minimal
-- **Mood:** Serious personal monitor. Dense but readable, with one memorable AI-native identity surface.
-- **Reference:** GitHub profile contribution graph, Linear (monochrome variant), Vercel dashboard, React Bits interaction craft
+- **Direction:** Themeable dark — five personalities on a shared dark foundation
+- **Decoration level:** Minimal in calm intensity; theme-specific in expressive intensity (scanlines, glow, notched panels, chromatic shadows — all gated and reduced-motion-safe)
+- **Mood:** Serious personal monitor whose personality the user chooses. Dense but readable, with one memorable AI-native identity surface.
+- **Reference:** Monitor theme → monochrome Linear + GitHub contribution graph; Phosphor Mono → late-night terminal; Amber CRT → IBM 3270; Retro Wave → 80s synthwave arcade; Cyberpunk → CP2077 HUD. All five share the dark foundation; React Bits interaction craft applies throughout.
 
 ## Philosophy
-Darkness as the native medium. Content emerges from near-black backgrounds through carefully calibrated luminance steps. No chromatic accents — the only "color" is the gradation from white to black.
+Darkness is the native medium. Content emerges from near-black backgrounds through carefully calibrated luminance steps. The Monitor theme uses zero chromatic color — the only "color" is the gradation from white to black. The other four themes introduce themed accent hues, but always on the same dark foundation.
 
-The product should be remembered as a **personal Coding Monitor**, not a generic configuration manager. Configuration inventory still exists, but the first mental image is a profile-like activity cockpit: identity, stats, momentum, and recent coding signal.
+Personality is expressed through themable color, typography, and decoration layers — never through structural redesign. Switching a theme swaps CSS variable values; it does not re-layout the page. The product should be remembered as a **personal Coding Monitor** that the user has made their own, not a generic configuration manager.
 
 ## Typography
-- **Primary:** Inter Variable with OpenType features `"cv01", "ss03"` enabled globally
-- **Fallbacks:** SF Pro Display, -apple-system, system-ui, Segoe UI, Roboto
-- **Monospace:** Berkeley Mono (ui-monospace, SF Mono, Menlo fallback)
+- **Per-theme font stacks:** Each theme provides `--font-display`, `--font-body`, `--font-mono`:
+  - **Monitor:** Inter Variable (display + body), Berkeley Mono (mono)
+  - **Phosphor Mono:** JetBrains Mono (display + mono), Inter (body)
+  - **Amber CRT:** VT323 (display), IBM Plex Mono (body + mono)
+  - **Retro Wave:** Press Start 2P (display), JetBrains Mono (body + mono), Silkscreen for arcade labels, controls, and heatmap microcopy
+  - **Cyberpunk:** Chakra Petch (display), Rajdhani (body), Share Tech Mono (mono)
+- **OpenType:** `"cv01", "ss03"` enabled globally on Inter-based themes
+- **Fonts are self-hosted** via `@fontsource` packages for offline Tauri support
 - **Weights:**
   - 400: Reading/body
   - 510: Emphasis/UI (signature weight — between regular and medium)
@@ -39,7 +44,14 @@ The product should be remembered as a **personal Coding Monitor**, not a generic
   - Micro: 11px / weight 510 / letter-spacing normal / line-height 1.40
 
 ## Color
-- **Approach:** Pure monochrome — zero chromatic colors
+- **Approach:** Per-theme color systems. The semantic token names (below) do not change across themes; only their values do. The Monitor theme is pure monochrome; Amber is single-hue; Retro and Cyberpunk are multi-hue. See the Theme System section for per-theme color tables.
+- **Token contract (all themes must define these):**
+  - Backgrounds: `--bg-deep`, `--bg-marketing`, `--bg-panel`, `--bg-surface`, `--bg-hover`
+  - Text: `--text-primary`, `--text-secondary`, `--text-tertiary`, `--text-quaternary`
+  - Accents: `--accent-primary`, `--accent-secondary`, `--accent-signal`, `--accent-glow`
+  - Borders: `--border-subtle`, `--border-standard`, `--border-primary`, `--border-accent`
+  - Heatmap: `--heat-0` through `--heat-4`, plus component tokens for graph panel, month/day labels, legend text, and high-intensity glow
+- Values below are the Monitor theme. Other themes redefine these tokens in the Theme System section.
 - **Backgrounds:**
   - Marketing/Deep: `#08090a` — page background
   - Panel: `#0f1011` — navigation island, panels
@@ -123,6 +135,41 @@ On dark surfaces, elevation is communicated through background luminance steps, 
 - **No broad layout choreography:** existing Timeline/Library internals should not animate lists, heatmap cells, card grids, or route layout as decoration. State changes stay instant or short-fade for clarity.
 - **React Bits / WebGL exception:** The Monitor page may use a single interactive 3D object or shader-like background layer when it reinforces personal identity. R3F/Drei owns Lanyard motion, 3D text, particles, orbital traces, bloom/depth effects, and in-Canvas numeric animation. Keep the rest of the chrome calm, monochrome, and data-first.
 - **Reduced motion:** honor `prefers-reduced-motion`; disable count-up, parallax, particles, and nonessential transitions.
+- **Per-theme decoration in expressive mode:** Each theme defines a decoration stack that activates only under `[data-intensity="expressive"]`:
+  - **Phosphor Mono:** scanline overlay, vignette, phosphor text-glow, blinking cursor.
+  - **Amber CRT:** amber scanlines, CRT flicker (≤3 Hz), vignette, amber text-glow.
+  - **Retro Wave:** chromatic-offset title shadows (magenta + cyan), neon glow, top-edge gradient stripes on cards.
+  - **Cyberpunk:** grid backdrop, notched panel corners (clip-path), hazard-stripe sidebar header, yellow text-glow.
+  - **Monitor:** none — Monitor has no expressive decoration; it is calm by definition.
+- **Calm intensity disables all of the above** via a single `[data-intensity="calm"]` override block that zeroes every decoration variable. `prefers-reduced-motion: reduce` triggers the same override regardless of the user's intensity choice.
+- **Decoration utilities** (`.deco-scanlines`, `.deco-glow-text`, `.deco-notch`, `.deco-vignette`) are registered as Tailwind utilities via a plugin and consume theme CSS variables, so they collapse automatically under calm/reduced-motion without conditional classNames.
+
+## Theme System
+
+The theme system is the source of truth for how the five personalities are implemented. The architecture is CSS-variable-driven with `[data-theme]` and `[data-intensity]` attributes on `<html>`.
+
+### Semantic Token Vocabulary (the contract)
+Every theme must provide values for: backgrounds (`--bg-deep/marketing/panel/surface/hover`), text (`--text-primary/secondary/tertiary/quaternary`), accents (`--accent-primary/secondary/signal/glow`), fonts (`--font-display/body/mono`), borders (`--border-subtle/standard/primary/accent`), Timeline page chrome (`--timeline-*` title, lede, controls, select, and stats tokens), heatmap (`--heat-0`–`--heat-4`, `--heat-glow-2`–`--heat-glow-4`, `--heatmap-panel-bg`, `--heatmap-panel-border`, `--heatmap-panel-radius`, `--heatmap-panel-shadow`, `--heatmap-panel-clip`, month/day/legend typography tokens, `--heatmap-cell-radius`, `--heatmap-cell-clip`, `--heatmap-corner-size`, `--heatmap-corner-a-color`, `--heatmap-corner-b-color`, `--heatmap-corner-a-shadow`, `--heatmap-corner-b-shadow`), Menubar popover chrome (`--menubar-*` popover, title, view switch, chart, KPI, label, footer, and open-link tokens), and decoration (`--scanline-color/opacity`, `--vignette-strength`, `--title-shadow`, `--text-glow`, `--card-clip`, `--panel-notch-size`). Motion tokens (`--motion-*`) are shared across all themes and do not vary.
+
+A new theme works with zero component code changes as long as it provides values for every token above.
+
+### Theme Registry
+| ID | Name | Display font | Swatch |
+|---|---|---|---|
+| `monitor` | Monitor | Inter | `#f7f8f8` |
+| `phosphor` | Phosphor Mono (default) | JetBrains Mono | `#f7f8f8` |
+| `amber` | Amber CRT | VT323 | `#ffb000` |
+| `retro` | Retro Wave | Press Start 2P | `#00f0ff` |
+| `cyberpunk` | Cyberpunk | Chakra Petch | `#fcee0a` |
+
+### Switching
+Themes and intensity are switched via the ⌘K command palette only — no new persistent chrome. A custom React `ThemeProvider` (~60 lines) mounts `data-theme` and `data-intensity` on `<html>` and persists `{ theme, intensity }` to `localStorage['ohmyc-theme']`. Theme switches are pure CSS variable swaps (instant); `setTheme` awaits font loading before flipping the attribute.
+
+### Fonts
+Fonts are self-hosted via `@fontsource` packages and dynamically imported per theme (Vite code-splits them). The default theme's fonts preload with the main bundle; the other four load on first switch then cache. Berkeley Mono (Monitor theme, commercial) is declared via a local `@font-face` and shipped under `packages/ui/public/fonts/`.
+
+### Per-theme color tables
+Refer to `assets/pixel-variants-20260622/variant-{a,b,c,d}-*.html` `:root` blocks for the authoritative per-theme color values. The implementation ports those values into `[data-theme="…"]` blocks in `globals.css`.
 
 ## Component Specs
 
@@ -141,34 +188,14 @@ On dark surfaces, elevation is communicated through background luminance steps, 
   - Background: `#f7f8f8` or `#d0d6e0` (inverted text)
 
 ### Navigation Island
-- Default shell: floating, collapsible island. No primary route uses a full-height docked sidebar or standard top header.
-- Position: `top: 48px`, `left: 18px` on desktop so the island clears native macOS traffic-light controls. On narrow screens, keep the collapsed island at `top: 14px`, `left: 14px` unless the native window chrome is present at that size.
-- Expanded size: `216-224px` wide and `calc(100dvh - 66px)` tall on desktop, preserving roughly 18px bottom breathing room after the traffic-light clearance. Collapsed size: a single `44-48px` square icon badge, not a mini navigation rail. The collapsed badge uses a quiet 16px temporary icon and aligns visually with the route content rhythm rather than the traffic-light row.
-- Background: `rgba(15,16,17,0.72)` with backdrop blur around `20-24px`.
-- Border: low-opacity edge definition, preferably a `0.5px` ring/shadow plus at most `1px rgba(255,255,255,0.05)` border. Use macOS-style vibrancy with `saturate(180%) blur(20-24px)`.
-- Border-radius: `14px` outer, `8px` inner controls.
-- Shadow: layered macOS floating-panel shadow for separation, e.g. `0 0 0 0.5px rgba(255,255,255,0.10)`, `0 8px 30px rgba(0,0,0,0.38)`, `0 24px 60px rgba(0,0,0,0.22)`.
-- Brand:
-  - Title: `OhMyC`
-  - Subtitle: `coding monitor` in Berkeley Mono, uppercase, `10px`, `text-tertiary`.
-  - Expanded state uses text only on the left plus the collapse icon button on the right. Do not show a leading brand placeholder icon while expanded.
-- Section headers:
-  - Text: `11px / 510 / uppercase / text-tertiary`
-  - Suggested groups: `Signal` (`Monitor`, `Timeline`) and `Explore` (`Agents`, `Commands`, `Skills`, `Plugins`).
-- Command palette trigger sits at the bottom of the expanded island, not directly after the navigation groups.
-- Nav items:
-  - Height: `32px`
-  - Padding: `0 10px`
-  - Border-radius: `8px`
-  - Gap: `10px`
-  - Nav items are hidden when collapsed. The collapsed state shows only a single icon badge; clicking it expands the full island.
-  - Collapsed icon: use a neutral lucide.dev coding placeholder such as `Code2` if available in the installed lucide version. Avoid `Atom` or other React-like marks; replace only this icon with the brand mark later.
-- Active state:
-  - Background: `rgba(255,255,255,0.08)`
-  - Text: `#f7f8f8`
-  - Instant or short fade only. No sliding nav animation.
-- Hover state:
-  - Background: `rgba(255,255,255,0.03)`
+- **Shell:** floating, borderless island on the left edge. No panel background, no border, no backdrop-filter. Nav items float directly on the page; the page blur creates visual separation when expanded.
+- **Interaction:** hover-to-expand. Mouse enter triggers expansion; mouse leave collapses. Touch devices: tap keycap to toggle. Keyboard: focus to expand, blur to collapse.
+- **Collapsed state:** 56px wide. First-letter keycaps (M T A S C P) in `var(--font-mono)` 14px. Active item has a 3px phosphor dot on the left edge.
+- **Expanded state:** 220px wide. Full nav with icons, grouped Signal (Monitor, Timeline) and Explore (Agents, Commands, Skills, Plugins). Command palette trigger at bottom.
+- **Stage Manager effect:** on hover, island rotates `rotateY(18deg)` with `transform-origin: left center`. Page content blurs (`blur(8px)`), dims (`brightness(0.5)`), scales down (`scale(0.96)`). A `rgba(0,0,0,0.3)` dim overlay sits between island and content. All effects animate 420ms ease-out.
+- **State management:** zustand store holds `isHovered` (boolean, discrete) + `hoverProgress` (Framer Motion `MotionValue<number>`, continuous 0→1). `setHovered` updates both. `useTransform` derives all visual values from `hoverProgress` without React re-renders.
+- **Reduced motion:** disables rotation, blur, scale. Only opacity crossfade remains.
+- **No chevron button** — hover-to-expand eliminates manual collapse.
 
 ### Header
 The standard top header is retired. Do not render a global 64px header on Monitor, Timeline, Agents, Commands, Skills, or Plugins.
@@ -268,6 +295,17 @@ Timeline entry sits in the navigation island under the `Signal` group. Timeline 
   - First-load (no DB): centered card, "Setting up your timeline. This runs once and indexes your past Claude Code sessions." No skeleton.
   - Empty (no sessions ever): centered card, "No Claude Code sessions yet. Run a Claude Code session in any project and your activity will show up here."
   - Filter empty: inline `text-tertiary` Berkeley Mono row with `border-subtle` top and bottom — `No sessions match the current filters. [Reset filters]`.
+
+### Menubar Popover
+The desktop menubar popover is a compact monitor surface, not a miniature full page. It should feel like the same activity instrument as Timeline, compressed into a Tauri popover window.
+
+- **Container:** Fill the available popover window with a responsive `w-full max-w-sm` content box rather than hard-coding the pixel width from the reference HTML. Height is content-driven. The Tauri window supplies transparent desktop blur; UI chrome supplies the themed tint, border, clipping, and overlays.
+- **Token contract:** Components consume `--menubar-*` tokens for popover background/border/shadow/optional clip/stripe, title prefix/type/glow, view-switch states, chart stroke/fill/peak, KPI typography/color, label type, footer meta, and Open action. `:root` provides reusable defaults; themes override only their visible differences.
+- **Header:** `Activity` stays a compact uppercase signal label. Prefix is themeable (`//`, `>`, `▌`, `▸`) through CSS, not duplicated in JSX.
+- **View switch:** Icon-only line/heatmap buttons. Active/hover states are tokenized. No segmented pill or explanatory copy.
+- **Line chart:** A clean sparkline/area chart with hidden axes. Use theme stroke/fill/peak-marker tokens, but do not add visible grid lines, tick labels, or chart furniture in the popover.
+- **Heatmap:** 16 weeks × 7 days, same five-bucket activity model as Timeline. Keep the grid readable inside the popover width; do not force reference-image dimensions if they clip the grid.
+- **KPI/footer:** Three compact KPI cells (`Tokens`, `Sessions`, `Peak`) plus peak-day meta and Open action. Numeric treatment is themeable: monochrome/CRT/arcade/HUD variants should come from tokens, not component branches. Cyberpunk may keep interior HUD typography/color, but the macOS menubar popover should not use a hard HUD outer frame.
 
 ### Monitor
 Monitor entry sits in the navigation island under the `Signal` group above Timeline. Monitor is available at `/explore/monitor`; Timeline remains the default route at `/explore/timeline`.
@@ -406,6 +444,12 @@ There is no standard header chrome. Breadcrumbs, source switchers, search trigge
 | 2026-06-20 | Move navigation island below native macOS traffic lights | The Tauri window now uses native traffic-light controls. A `top: 18px` island collides with that chrome, so desktop expanded/collapsed island states start around 48px and keep content-aligned rhythm |
 | 2026-06-20 | Timeline metric toggle uses Radix Tabs semantics | The visual treatment stays compact, but Activity/Tokens now exposes native `tablist`/`tab` semantics and selected state through the shared shadcn/Radix primitive |
 | 2026-06-20 | Timeline heatmap fills widened content | The 53-week graph should distribute columns across its card instead of keeping fixed 10px cells centered in a widened layout |
+| 2026-06-23 | Introduce five-theme + calm/expressive system; default changes from Monitor to Phosphor Mono | PRODUCT.md anti-references reframed from aesthetic bans to execution failures so the chromatic themes (Amber/Retro/Cyberpunk) can ship. Theme system is CSS-variable-driven with `[data-theme]`/`[data-intensity]` on `<html>`; components already consume shadcn semantic tokens and need zero code changes for color. Fonts self-hosted via `@fontsource` for offline Tauri support |
+| 2026-06-23 | Timeline heatmap gets component-level theme tokens | The pixel variants define more than cell colors: panel background/border/radius/shadow, month and day-label color/glow, legend type, cell radius, and Retro corner marks are part of the component grammar. These belong in theme tokens/utilities, not inline React styles |
+| 2026-06-23 | Timeline page chrome uses theme-level tokens | The variant screenshots give each theme a distinct page title, controls, select, and stats grammar. Timeline should map those through component-scoped tokens instead of inheriting generic shadcn rounded controls. Retro body copy uses JetBrains Mono from the reference, with Silkscreen reserved for arcade labels and heatmap microcopy |
+| 2026-06-23 | Menubar popover gets reusable `--menubar-*` theme tokens | The menubar variants differ in popover tint, title prefix/type, view-switch states, chart glow, KPI typography/color, and footer action. These are reusable theme grammar, not per-component conditionals. Width/height should follow the actual popover container rather than hard-coding the reference HTML's 340px width; the line chart remains a clean sparkline with no visible tick/grid furniture. Cyberpunk keeps interior HUD color/type but drops the hard outer HUD frame because macOS menubar popovers should rely on native popover material |
+| 2026-06-24 | Navigation Island: hover-to-expand Stage Manager replaces click-to-expand | Hover is more natural for a floating island. zustand + MotionValue: zustand manages discrete `isHovered`, MotionValue drives continuous animation via `useTransform` (no re-renders). Borderless — page blur creates visual separation. Collapsed state shows first-letter keycaps (M T A S C P) instead of a single icon badge |
+| 2026-06-25 | Missing monitor store uses a hidden `/onboard` setup route | When the local monitor store is unavailable, the main app should route to a headerless setup gate instead of rendering a broken or empty Timeline. A `SetupGate` at the app root checks `useSetupStatus` and renders only `OnboardingGate` (no Navigation Island, no command palette) when not ready; `/onboard` is hidden and is not regular navigation chrome. Retry refetches only (installs nothing); no database path is shown. The desktop menubar popover runs its own internal gate (`MenubarOnboard`, a shrunk mini-computer) since the full gate is too large for the 360px popover; "Open OhMyC" opens the main window which runs the full gate. The visual subject uses the `frosted-ivory-lamplit-screen-baked` Atropos computer (screen baked into the shell image, real layered shell/keyboard depth, reduced-motion fallback, low-contrast Letter Glitch ambience) |
 
 ## Do's and Don'ts
 
@@ -421,10 +465,10 @@ There is no standard header chrome. Breadcrumbs, source switchers, search trigge
 ### Don't
 - Don't use pure white (`#ffffff`) as primary text
 - Don't use solid colored backgrounds for buttons
-- Don't apply any chromatic colors (blue, purple, cyan, etc.)
+- Don't apply chromatic colors in the Monitor theme — it stays pure monochrome. Other themes define their own accent hues via the token contract
 - Don't use positive letter-spacing on display text
 - Don't use visible/opaque borders on dark backgrounds
 - Don't skip the OpenType features (`"cv01", "ss03"`)
 - Don't use weight 700 (bold) — maximum is 590
-- Don't introduce warm colors into the UI chrome
+- Don't ship any theme (in either intensity) that fails WCAG AA contrast — chromatic accents must be tuned to pass
 - Don't use drop shadows for elevation on dark surfaces

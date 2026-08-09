@@ -24,7 +24,7 @@ function wrapper() {
 
 beforeEach(() => {
   __setTransportForTests('mock')
-  useSources.setState({ selected: new Set(['claude', 'opencode']) })
+  useSources.setState({ selected: new Set(['codex', 'claude', 'opencode']) })
 })
 
 afterEach(() => {
@@ -63,7 +63,7 @@ describe('useSkills', () => {
     })
     renderHook(() => useSkills(), { wrapper: wrapper() })
     await waitFor(() => expect(captured).not.toBeNull())
-    expect((captured as { origins?: string }).origins).toBeUndefined()
+    expect((captured as { origins?: string }).origins).toBe('claude,opencode')
   })
 
   it('passes origins=claude when only claude is selected', async () => {
@@ -96,11 +96,17 @@ describe('useSkill', () => {
       return { skill: { id: 'x', frontmatter: { name: 'x', description: 'd' }, content: '', raw: '', filename: 'x.md', source: 'local' } }
     })
     renderHook(
-      () => useSkill({ name: 'x', source: 'plugin', pluginId: 'p1', scope: 'user' }),
+      () => useSkill({ name: 'x', locatorId: 'skills:shared:local:global:none:x:abc', source: 'plugin', pluginId: 'p1', scope: 'global' }),
       { wrapper: wrapper() },
     )
     await waitFor(() => expect(captured).not.toBeNull())
-    expect(captured).toEqual({ name: 'x', source: 'plugin', pluginId: 'p1', scope: 'user' })
+    expect(captured).toEqual({
+      name: 'x',
+      locator_id: 'skills:shared:local:global:none:x:abc',
+      source: 'plugin',
+      pluginId: 'p1',
+      scope: 'global',
+    })
   })
 
   it('is disabled when no locator is provided', () => {

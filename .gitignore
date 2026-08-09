@@ -5,9 +5,13 @@ node_modules
 # Build outputs
 dist
 build
+packages/ui/storybook-static/
 target
 .turbo
 *.tsbuildinfo
+
+# Local visual comparison artifacts
+.visual-compare/
 
 # Prevent tsc output leaking into src/
 src/**/*.js
@@ -46,6 +50,11 @@ Thumbs.db
 .claude/
 log/
 .gstack/
+
+# Playwright E2E
+packages/ui/test-results/
+packages/ui/playwright-report/
+packages/ui/playwright/.cache/
 
 # Coverage
 coverage/

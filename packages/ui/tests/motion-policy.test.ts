@@ -52,8 +52,6 @@ describe('motion policy', () => {
       '../src/components/ui/switch.tsx',
       '../src/components/ui/tabs.tsx',
       '../src/components/uitripled/native-dialog.tsx',
-      '../src/components/command-palette-trigger.tsx',
-      '../src/components/config-section.tsx',
     ]
 
     for (const file of files) {
@@ -65,14 +63,6 @@ describe('motion policy', () => {
     expect(readSource('../src/components/timeline/timeline-view.tsx')).toContain('(prefers-reduced-motion: reduce)')
     expect(readSource('../src/components/ui/select.tsx')).toContain('motion-reduce:data-[state=open]:animate-none')
     expect(readSource('../src/components/ui/dropdown-menu.tsx')).toContain('motion-reduce:data-[state=open]:animate-none')
-  })
-
-  it('does not use Framer x/y shorthand in Monitor DOM motion', () => {
-    const monitor = readSource('../src/components/monitor/monitor-view.tsx')
-
-    expect(monitor).not.toMatch(/\bx:\s/)
-    expect(monitor).not.toMatch(/\by:\s/)
-    expect(monitor).toContain("transform: 'translate")
   })
 
   it('does not keep the obsolete NativeButton component surface', () => {

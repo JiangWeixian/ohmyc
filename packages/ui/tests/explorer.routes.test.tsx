@@ -1,10 +1,10 @@
-import {
-  fireEvent,
-  screen,
-  waitFor,
-} from '@testing-library/react'
+import { fireEvent, screen } from '@testing-library/react'
 import React from 'react'
-import { Route, Routes } from 'react-router-dom'
+import {
+  Navigate,
+  Route,
+  Routes,
+} from 'react-router-dom'
 import {
   describe,
   expect,
@@ -13,8 +13,11 @@ import {
 } from 'vitest'
 
 import { renderWithProviders } from './test/render-with-providers'
-import { App } from '@/app'
-import { Explorer } from '@/explorer'
+import { ExplorerLayout } from '@/components/explorer-layout'
+import { AgentsPage } from '@/routes/agents-page'
+import { MonitorPage } from '@/routes/monitor-page'
+import { PluginsPage } from '@/routes/plugins-page'
+import { TimelinePage } from '@/routes/timeline-page'
 
 const opencodeAgentFixture = {
   id: 'opencode-agent',
@@ -35,7 +38,7 @@ const opencodeAgentFixture = {
 
 vi.mock('@/hooks/use-agents', () => ({
   useAgents: () => ({ data: [opencodeAgentFixture], isLoading: false, isError: false }),
-  useAgent: () => ({ data: opencodeAgentFixture }),
+  useAgent: (locator: unknown) => ({ data: locator ? opencodeAgentFixture : null }),
 }))
 
 vi.mock('@/hooks/use-skills', () => ({
@@ -46,6 +49,10 @@ vi.mock('@/hooks/use-skills', () => ({
 vi.mock('@/hooks/use-commands', () => ({
   useCommands: () => ({ data: [], isLoading: false, isError: false }),
   useCommand: () => ({ data: null }),
+}))
+
+vi.mock('@/hooks/use-setup-status', () => ({
+  useSetupStatus: () => ({ data: { state: 'ready' }, isLoading: false, isFetching: false, refetch: () => Promise.resolve() }),
 }))
 
 vi.mock('@/hooks/use-plugins', () => ({
@@ -78,23 +85,17 @@ vi.mock('@/components/monitor-spike/monitor-spike-view', () => ({
   MonitorSpikeView: () => <div data-testid="monitor-spike-route">Monitor spike route</div>,
 }))
 
-vi.mock('@/components/monitor-spike/lanyard-stats-spike-view', () => ({
-  LanyardStatsSpikeView: () => <div data-testid="lanyard-stats-spike-route">Lanyard stats spike route</div>,
-}))
-
 describe('Explorer route views', () => {
   it('shows the floating navigation island with Signal and Explore groups', () => {
     renderWithProviders(
       <Routes>
-        <Route path="/explore/:tab" element={<Explorer />} />
+        <Route path="/explore/plugins" element={<ExplorerLayout><PluginsPage /></ExplorerLayout>} />
       </Routes>,
       { route: '/explore/plugins' },
     )
 
     const island = screen.getByRole('navigation', { name: 'Primary' })
 
-    expect(island).toHaveTextContent('OhMyC')
-    expect(island).toHaveTextContent('coding monitor')
     expect(island).toHaveTextContent('Signal')
     expect(island).toHaveTextContent('Monitor')
     expect(island).toHaveTextContent('Timeline')
@@ -108,35 +109,23 @@ describe('Explorer route views', () => {
     expect(document.querySelector('main header')).not.toBeInTheDocument()
   })
 
-  it('collapses the navigation island to a single icon button and expands it again', async () => {
+  it('expands the navigation island on hover and shows full labels', () => {
     renderWithProviders(
       <Routes>
-        <Route path="/explore/:tab" element={<Explorer />} />
+        <Route path="/explore/timeline" element={<ExplorerLayout><TimelinePage /></ExplorerLayout>} />
       </Routes>,
       { route: '/explore/timeline' },
     )
 
-    const collapseButton = document.querySelector('button[aria-label="Collapse navigation"]')
-    expect(collapseButton).not.toBeNull()
-    fireEvent.click(collapseButton as HTMLElement)
-
-    let expandButton: HTMLButtonElement | null = null
-    await waitFor(() => {
-      expandButton = document.querySelector('button[aria-label="Expand navigation"]')
-      expect(expandButton).not.toBeNull()
-    })
-
-    fireEvent.click(expandButton as HTMLButtonElement)
-
-    await waitFor(() => {
-      expect(document.querySelector('a[href="/explore/timeline"]')?.textContent).toContain('Timeline')
-    })
+    const island = screen.getByRole('navigation', { name: 'Primary' })
+    expect(island).toHaveTextContent('Monitor')
+    expect(island).toHaveTextContent('Timeline')
   })
 
   it('renders Monitor route as a full-bleed personal coding monitor surface', async () => {
     renderWithProviders(
       <Routes>
-        <Route path="/explore/:tab" element={<Explorer />} />
+        <Route path="/explore/monitor" element={<ExplorerLayout padded={false}><MonitorPage /></ExplorerLayout>} />
       </Routes>,
       { route: '/explore/monitor' },
     )
@@ -148,7 +137,7 @@ describe('Explorer route views', () => {
   it('uses an island-aware content shell for non-Monitor routes', () => {
     renderWithProviders(
       <Routes>
-        <Route path="/explore/:tab" element={<Explorer />} />
+        <Route path="/explore/timeline" element={<ExplorerLayout><TimelinePage /></ExplorerLayout>} />
       </Routes>,
       { route: '/explore/timeline' },
     )
@@ -162,7 +151,7 @@ describe('Explorer route views', () => {
   it('shows plugin inventory details without the Environment summary', () => {
     renderWithProviders(
       <Routes>
-        <Route path="/explore/:tab" element={<Explorer />} />
+        <Route path="/explore/plugins" element={<ExplorerLayout><PluginsPage /></ExplorerLayout>} />
       </Routes>,
       { route: '/explore/plugins' },
     )
@@ -185,7 +174,7 @@ describe('Explorer route views', () => {
   it('renders flattened permission.* rows and mode in the detail panel for opencode agents', async () => {
     renderWithProviders(
       <Routes>
-        <Route path="/explore/:tab" element={<Explorer />} />
+        <Route path="/explore/agents" element={<ExplorerLayout><AgentsPage /></ExplorerLayout>} />
       </Routes>,
       { route: '/explore/agents' },
     )
@@ -208,7 +197,8 @@ describe('Explorer route views', () => {
   it('clears resource detail selection when navigating between island routes', async () => {
     renderWithProviders(
       <Routes>
-        <Route path="/explore/:tab" element={<Explorer />} />
+        <Route path="/explore/agents" element={<ExplorerLayout><AgentsPage /></ExplorerLayout>} />
+        <Route path="/explore/plugins" element={<ExplorerLayout><PluginsPage /></ExplorerLayout>} />
       </Routes>,
       { route: '/explore/agents' },
     )
@@ -232,44 +222,37 @@ describe('Explorer route views', () => {
   })
 
   it.each([
-    ['/explore/hooks', 'Hooks', 'No hooks configured in settings.json'],
-    ['/explore/mcp', 'MCP Servers', 'No MCP servers configured in .mcp.json'],
-    ['/explore/lsp', 'LSP Servers', 'No LSP servers configured in .lsp.json'],
-  ])('treats %s as a removed Explorer tab and falls back to Timeline content', (route, removedHeading, removedEmptyState) => {
+    ['/explore/hooks'],
+    ['/explore/mcp'],
+    ['/explore/lsp'],
+  ])('redirects %s to /explore/timeline', (route) => {
     renderWithProviders(
       <Routes>
-        <Route path="/explore/:tab" element={<Explorer />} />
+        <Route path="/explore/timeline" element={<ExplorerLayout><TimelinePage /></ExplorerLayout>} />
+        <Route path="/explore/*" element={<Navigate to="/explore/timeline" replace />} />
       </Routes>,
       { route },
     )
 
-    const main = document.querySelector('main')
-    const timelineHeading = document.querySelector('main h1')
-
-    expect(screen.getByRole('navigation', { name: 'Primary' })).toHaveTextContent('Timeline')
-    expect(timelineHeading?.textContent).toBe('Timeline')
-    expect(main?.textContent).not.toContain(removedHeading)
-    expect(screen.queryByText(removedEmptyState)).not.toBeInTheDocument()
+    expect(document.querySelector('main h1')?.textContent).toBe('Timeline')
   })
 
-  it('treats /explore/settings as an invalid tab and falls back to timeline content', () => {
+  it('redirects /explore/settings to /explore/timeline', () => {
     renderWithProviders(
       <Routes>
-        <Route path="/explore/:tab" element={<Explorer />} />
+        <Route path="/explore/timeline" element={<ExplorerLayout><TimelinePage /></ExplorerLayout>} />
+        <Route path="/explore/*" element={<Navigate to="/explore/timeline" replace />} />
       </Routes>,
       { route: '/explore/settings' },
     )
 
-    expect(document.body.textContent).toContain('Timeline')
-    expect(document.body.textContent).not.toContain('Settings panel')
-    expect(document.body.textContent).not.toContain('General')
-    expect(document.body.textContent).not.toContain('Configure your general settings')
+    expect(document.querySelector('main h1')?.textContent).toBe('Timeline')
   })
 
   it('keeps resource page internals while changing only the shell', () => {
     renderWithProviders(
       <Routes>
-        <Route path="/explore/:tab" element={<Explorer />} />
+        <Route path="/explore/plugins" element={<ExplorerLayout><PluginsPage /></ExplorerLayout>} />
       </Routes>,
       { route: '/explore/plugins' },
     )
@@ -277,7 +260,7 @@ describe('Explorer route views', () => {
     const main = document.querySelector('main')
 
     expect(main?.textContent).toContain('Plugins')
-    expect(main?.textContent).toContain('Inspect installed plugins, enabled state, and bundled component counts for the current environment.')
+    expect(main?.textContent).toContain('Installed local plugins, their enabled state, and the agents, skills, and commands they add.')
     expect(main?.textContent).toContain('review-pack')
     expect(main?.textContent).toContain('Enabled')
     expect(main?.textContent).toContain('Agents: 1')
@@ -288,27 +271,13 @@ describe('Explorer route views', () => {
   it('keeps Timeline route owned content inside the new shell', () => {
     renderWithProviders(
       <Routes>
-        <Route path="/explore/:tab" element={<Explorer />} />
+        <Route path="/explore/timeline" element={<ExplorerLayout><TimelinePage /></ExplorerLayout>} />
       </Routes>,
       { route: '/explore/timeline' },
     )
 
     expect(screen.getByRole('navigation', { name: 'Primary' })).toHaveTextContent('Timeline')
     expect(document.querySelector('main h1')?.textContent).toBe('Timeline')
-    expect(document.body.textContent).toContain('Every Claude Code session')
-  })
-})
-
-describe('Explorer spike routes', () => {
-  it('renders the monitor spike route', () => {
-    renderWithProviders(<App />, { route: '/explore/monitor-spike' })
-
-    expect(screen.getByTestId('monitor-spike-route')).toBeInTheDocument()
-  })
-
-  it('renders the lanyard stats spike route', () => {
-    renderWithProviders(<App />, { route: '/explore/monitor-lanyard-stats-spike' })
-
-    expect(screen.getByTestId('lanyard-stats-spike-route')).toBeInTheDocument()
+    expect(document.body.textContent).toContain('Your local AI coding sessions across agents, projects, and time.')
   })
 })

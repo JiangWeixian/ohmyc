@@ -1,0 +1,726 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>OhMyC · Timeline — Variant C · Retro Wave</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Silkscreen:wght@400;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg:        #0d0221;
+    --bg-panel:  #16082e;
+    --bg-surface:#1f0c3d;
+    --cyan:      #00f0ff;
+    --magenta:   #ff2bd6;
+    --amber:     #ffb000;
+    --lime:      #b6ff3b;
+    --pink:      #ff5cb6;
+    --tx-1:      #f0e6ff;
+    --tx-2:      #b9a8e0;
+    --tx-3:      #7e6aa8;
+    --tx-4:      #4d3f70;
+    --bd-1:      rgba(0,240,255,0.12);
+    --bd-2:      rgba(255,43,214,0.22);
+    --bd-3:      rgba(255,43,214,0.45);
+    --glow-c:    0 0 8px rgba(0,240,255,0.55), 0 0 16px rgba(0,240,255,0.25);
+    --glow-m:    0 0 8px rgba(255,43,214,0.55), 0 0 16px rgba(255,43,214,0.25);
+    --glow-a:    0 0 8px rgba(255,176,0,0.55);
+    --side-w:    230px;
+
+    /* Chromatic heatmap buckets: cyan → magenta → amber by intensity */
+    --heat-0: rgba(255,43,214,0.06);
+    --heat-1: rgba(0,240,255,0.28);
+    --heat-2: rgba(0,240,255,0.6);
+    --heat-3: rgba(255,43,214,0.8);
+    --heat-4: rgba(255,176,0,0.95);
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; background: var(--bg); color: var(--tx-1); height: 100%; }
+  body {
+    font-family: 'JetBrains Mono', monospace;
+    -webkit-font-smoothing: antialiased;
+    overflow: hidden;
+    display: flex; align-items: stretch;
+  }
+
+  body::before {
+    content: ""; position: fixed; inset: 0;
+    background:
+      repeating-linear-gradient(to bottom,
+        rgba(0,0,0,0.18) 0, rgba(0,0,0,0.18) 1px,
+        transparent 1px, transparent 3px),
+      linear-gradient(to bottom,
+        rgba(255,43,214,0.04) 0%, transparent 35%,
+        rgba(0,240,255,0.04) 75%, transparent 100%);
+    pointer-events: none; z-index: 9999;
+  }
+  body::after {
+    content: ""; position: fixed; inset: 0;
+    background-image:
+      linear-gradient(to right, rgba(0,240,255,0.05) 1px, transparent 1px),
+      linear-gradient(to bottom, rgba(255,43,214,0.05) 1px, transparent 1px);
+    background-size: 24px 24px;
+    pointer-events: none; z-index: 9997;
+    mask-image: linear-gradient(to bottom, transparent, black 30%, black 70%, transparent);
+  }
+
+  /* ---------- Sidebar ---------- */
+  .sidebar {
+    width: var(--side-w); flex-shrink: 0; height: 100vh;
+    display: flex; flex-direction: column;
+    padding: 22px 16px 16px;
+    background: var(--bg-panel);
+    border-right: 2px solid var(--bd-2);
+    box-shadow: 4px 0 16px rgba(255,43,214,0.18);
+    z-index: 50;
+    position: relative;
+  }
+  .sidebar::before {
+    content: ""; position: absolute; top: 0; left: 0; right: 0; height: 2px;
+    background: linear-gradient(to right, var(--cyan), var(--magenta), var(--amber));
+    box-shadow: 0 0 8px rgba(255,43,214,0.5);
+  }
+  .side-brand {
+    font-family: 'Press Start 2P', monospace;
+    font-size: 14px; letter-spacing: 0.02em;
+    color: var(--cyan); text-shadow: var(--glow-c);
+    display: flex; align-items: center; gap: 8px;
+    padding: 0 6px 14px;
+    border-bottom: 1px solid var(--bd-1);
+    margin-bottom: 10px;
+  }
+  .side-brand::before {
+    content: "▣"; color: var(--magenta); text-shadow: var(--glow-m);
+    animation: pulse 1.2s ease-in-out infinite;
+    font-family: inherit;
+  }
+  @keyframes pulse {
+    0%,100% { opacity: 1; transform: scale(1); }
+    50%     { opacity: 0.6; transform: scale(0.85); }
+  }
+  .side-meta {
+    font-family: 'Silkscreen', monospace;
+    font-size: 9px; color: var(--tx-3);
+    letter-spacing: 0.14em; text-transform: uppercase;
+    padding: 0 6px 14px; line-height: 1.8;
+    border-bottom: 1px solid var(--bd-1);
+    margin-bottom: 14px;
+  }
+  .side-meta b { color: var(--amber); font-weight: 700; text-shadow: var(--glow-a); }
+  .side-section { margin-bottom: 18px; }
+  .side-label {
+    font-family: 'Silkscreen', monospace;
+    font-size: 10px; color: var(--magenta);
+    letter-spacing: 0.18em; text-transform: uppercase;
+    padding: 0 6px 8px; text-shadow: var(--glow-m);
+    display: flex; align-items: center; gap: 6px;
+  }
+  .side-label::before { content: "▌"; color: var(--cyan); text-shadow: var(--glow-c); }
+  .side-nav { display: flex; flex-direction: column; gap: 2px; }
+  .side-nav a {
+    display: flex; align-items: center; gap: 10px;
+    color: var(--tx-2); text-decoration: none;
+    font-family: 'Silkscreen', monospace;
+    font-size: 11px; letter-spacing: 0.04em;
+    padding: 8px 8px; border: 1px solid transparent;
+    transition: all 120ms;
+  }
+  .side-nav a .key {
+    color: var(--tx-3); font-size: 9px;
+    width: 18px; text-align: center;
+    border: 1px solid var(--bd-1); padding: 1px 0;
+    font-family: 'JetBrains Mono', monospace;
+  }
+  .side-nav a:hover {
+    color: var(--cyan); border-color: var(--bd-1);
+    background: rgba(0,240,255,0.06); text-shadow: var(--glow-c);
+  }
+  .side-nav a.active {
+    color: var(--magenta); border-color: var(--bd-2);
+    background: rgba(255,43,214,0.1); text-shadow: var(--glow-m);
+    box-shadow: inset 3px 0 0 var(--magenta), 0 0 8px rgba(255,43,214,0.15);
+  }
+  .side-nav a.active .key { color: var(--magenta); border-color: var(--bd-3); }
+  .side-sub a {
+    display: flex; align-items: center; justify-content: space-between;
+    color: var(--tx-2); text-decoration: none;
+    font-family: 'Silkscreen', monospace;
+    font-size: 10px; letter-spacing: 0.06em;
+    padding: 6px 8px;
+  }
+  .side-sub a:hover { color: var(--cyan); background: rgba(0,240,255,0.06); text-shadow: var(--glow-c); }
+  .side-sub a .count { color: var(--tx-3); font-size: 9px; }
+  .side-spacer { flex: 1; }
+  .side-cmdk {
+    display: flex; align-items: center; gap: 8px;
+    padding: 8px 10px; border: 1px solid var(--bd-2);
+    background: rgba(255,43,214,0.05);
+    font-family: 'Silkscreen', monospace;
+    font-size: 10px; color: var(--magenta);
+    cursor: pointer; text-shadow: var(--glow-m);
+    margin-bottom: 12px;
+  }
+  .side-cmdk:hover { border-color: var(--magenta); box-shadow: 0 0 10px rgba(255,43,214,0.3); }
+  .side-cmdk .mk { margin-right: auto; }
+  .side-cmdk kbd {
+    border: 1px solid var(--bd-2); padding: 1px 5px;
+    color: var(--cyan); background: rgba(0,240,255,0.06);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 9px; text-shadow: var(--glow-c);
+  }
+  .side-status {
+    font-family: 'Silkscreen', monospace;
+    font-size: 9px; color: var(--lime);
+    letter-spacing: 0.14em; text-transform: uppercase;
+    padding: 8px 6px 0; border-top: 1px solid var(--bd-1);
+    display: flex; align-items: center; gap: 8px;
+    text-shadow: 0 0 4px rgba(182,255,59,0.5);
+  }
+  .side-status .dot {
+    width: 7px; height: 7px; background: var(--lime);
+    box-shadow: 0 0 6px var(--lime); border-radius: 50%;
+    animation: dotpulse 2.4s ease-in-out infinite;
+  }
+  @keyframes dotpulse { 0%,100% { opacity: 1; } 50% { opacity: 0.4; } }
+
+  /* ---------- Content ---------- */
+  .content {
+    flex: 1; min-width: 0; height: 100vh;
+    overflow-y: auto;
+    padding: 40px 40px 80px;
+  }
+  .content::-webkit-scrollbar { width: 8px; }
+  .content::-webkit-scrollbar-thumb {
+    background: var(--bd-2); border-radius: 4px;
+    box-shadow: 0 0 6px rgba(255,43,214,0.3);
+  }
+  .page { max-width: 920px; margin: 0 auto; }
+
+  .page h1 {
+    font-family: 'Press Start 2P', monospace;
+    font-size: 24px; line-height: 1.1;
+    letter-spacing: 0; margin: 0 0 8px;
+    color: var(--tx-1);
+    text-shadow:
+      2px 2px 0 var(--magenta),
+      4px 4px 0 var(--cyan),
+      0 0 14px rgba(255,43,214,0.4);
+  }
+  .page .lede {
+    font-size: 13px; color: var(--tx-2);
+    margin: 0 0 28px; max-width: 540px;
+    line-height: 1.6;
+  }
+
+  .controls {
+    display: flex; align-items: center; gap: 10px;
+    margin-bottom: 28px; flex-wrap: wrap;
+  }
+  .tabs {
+    display: inline-flex;
+    border: 1px solid var(--bd-2);
+    background: rgba(255,43,214,0.04);
+  }
+  .tabs button {
+    background: transparent; border: 0;
+    padding: 7px 14px;
+    font-family: 'Silkscreen', monospace;
+    font-size: 10px; letter-spacing: 0.06em;
+    color: var(--tx-2); cursor: pointer;
+    transition: color 120ms, background 120ms;
+  }
+  .tabs button + button { border-left: 1px solid var(--bd-1); }
+  .tabs button:hover { color: var(--cyan); text-shadow: var(--glow-c); }
+  .tabs button.active {
+    background: rgba(255,43,214,0.12);
+    color: var(--magenta); text-shadow: var(--glow-m);
+    box-shadow: inset 0 -2px 0 var(--magenta);
+  }
+  .select {
+    display: inline-flex; align-items: center; gap: 8px;
+    padding: 7px 12px;
+    border: 1px solid var(--bd-1);
+    background: rgba(0,240,255,0.03);
+    font-family: 'Silkscreen', monospace;
+    font-size: 10px; cursor: pointer;
+    color: var(--cyan); text-shadow: var(--glow-c);
+  }
+  .select:hover { border-color: var(--cyan); box-shadow: 0 0 8px rgba(0,240,255,0.2); }
+  .select .lbl { color: var(--tx-3); text-shadow: none; }
+  .select::after { content: "▾"; color: var(--tx-3); margin-left: 4px; }
+  .stats {
+    margin-left: auto;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px; color: var(--tx-3);
+    letter-spacing: 0.02em;
+  }
+  .stats b { color: var(--amber); font-weight: 700; text-shadow: var(--glow-a); }
+  .stats .sep { color: var(--tx-4); margin: 0 4px; }
+
+  .heatmap-card {
+    border: 1px solid var(--bd-2);
+    background: var(--bg-panel);
+    padding: 22px; margin-bottom: 36px;
+    box-shadow: 0 0 16px rgba(255,43,214,0.12);
+    position: relative;
+  }
+  .heatmap-card::before {
+    content: ""; position: absolute; top: -1px; left: -1px;
+    width: 12px; height: 12px;
+    border-top: 2px solid var(--cyan); border-left: 2px solid var(--cyan);
+    box-shadow: var(--glow-c);
+  }
+  .heatmap-card::after {
+    content: ""; position: absolute; bottom: -1px; right: -1px;
+    width: 12px; height: 12px;
+    border-bottom: 2px solid var(--magenta); border-right: 2px solid var(--magenta);
+    box-shadow: var(--glow-m);
+  }
+  .heatmap-grid {
+    display: grid;
+    grid-template-columns: 18px minmax(0, 1fr);
+    grid-template-rows: 16px 1fr;
+    column-gap: 4px; row-gap: 4px;
+  }
+  .heatmap-months {
+    grid-column: 2; display: flex;
+    font-family: 'Silkscreen', monospace;
+    font-size: 9px; font-weight: 700;
+    color: var(--cyan); letter-spacing: 0.06em;
+    text-transform: uppercase; text-shadow: var(--glow-c);
+  }
+  .heatmap-months span { overflow: hidden; white-space: nowrap; }
+  .heatmap-dows {
+    grid-column: 1; grid-row: 2;
+    display: grid; grid-template-rows: repeat(7, 1fr); gap: 3px;
+    font-family: 'Silkscreen', monospace;
+    font-size: 9px; color: var(--tx-3); align-items: center;
+  }
+  .heatmap-dows span { visibility: hidden; }
+  .heatmap-dows span.on { visibility: visible; color: var(--magenta); text-shadow: var(--glow-m); }
+  .heatmap-cells {
+    grid-column: 2; grid-row: 2;
+    display: grid;
+    grid-template-columns: repeat(53, minmax(0, 1fr));
+    grid-template-rows: repeat(7, 1fr);
+    grid-auto-flow: column; row-gap: 3px; justify-items: center;
+  }
+  .cell {
+    width: 100%; aspect-ratio: 1;
+    max-width: 14px; max-height: 14px;
+  }
+  .cell.l0 { background: var(--heat-0); }
+  .cell.l1 { background: var(--heat-1); }
+  .cell.l2 { background: var(--heat-2); box-shadow: 0 0 4px rgba(0,240,255,0.3); }
+  .cell.l3 { background: var(--heat-3); box-shadow: 0 0 6px rgba(255,43,214,0.5); }
+  .cell.l4 { background: var(--heat-4); box-shadow: 0 0 8px rgba(255,176,0,0.6); }
+  .heatmap-legend {
+    margin-top: 14px;
+    display: flex; align-items: center; justify-content: space-between;
+    font-family: 'Silkscreen', monospace;
+    font-size: 10px; color: var(--tx-3);
+    letter-spacing: 0.06em; text-transform: uppercase;
+  }
+  .heatmap-legend .scale {
+    display: inline-flex; align-items: center; gap: 6px; color: var(--tx-3);
+  }
+  .heatmap-legend .scale .swatches { display: inline-flex; gap: 3px; }
+  .heatmap-legend .scale .swatches i {
+    display: block; width: 12px; height: 12px;
+  }
+
+  .events-header {
+    display: flex; align-items: baseline; justify-content: space-between;
+    margin-bottom: 12px;
+  }
+  .events-header h3 {
+    font-family: 'Press Start 2P', monospace;
+    font-size: 12px; color: var(--magenta);
+    margin: 0; letter-spacing: 0.04em;
+    text-shadow: var(--glow-m);
+  }
+  .events-header .meta {
+    font-family: 'Silkscreen', monospace;
+    font-size: 10px; color: var(--tx-4);
+    letter-spacing: 0.06em; text-transform: uppercase;
+  }
+
+  .day-block { margin-bottom: 4px; }
+  .day-heading {
+    position: sticky; top: 0; z-index: 2;
+    padding: 10px 8px 6px;
+    font-family: 'Silkscreen', monospace;
+    font-size: 11px; font-weight: 700;
+    color: var(--cyan); letter-spacing: 0.06em;
+    text-transform: uppercase; text-shadow: var(--glow-c);
+    background: linear-gradient(to bottom, var(--bg) 70%, rgba(13,2,33,0));
+    display: flex; align-items: baseline; gap: 12px;
+  }
+  .day-heading .date { color: var(--cyan); }
+  .day-heading .today {
+    color: var(--lime); text-shadow: 0 0 4px rgba(182,255,59,0.6);
+    animation: todaypulse 1.4s ease-in-out infinite;
+  }
+  @keyframes todaypulse { 0%,100% { opacity: 1; } 50% { opacity: 0.5; } }
+  .day-heading .summary {
+    color: var(--tx-3); font-weight: 400; text-transform: none; letter-spacing: 0.02em;
+  }
+  .day-heading .summary b { color: var(--amber); font-weight: 700; text-shadow: var(--glow-a); }
+
+  .project-rollup {
+    display: flex; align-items: center; gap: 12px;
+    padding: 9px 14px; margin-bottom: 1px;
+    cursor: pointer;
+    border: 1px solid transparent;
+    transition: all 120ms;
+  }
+  .project-rollup:hover {
+    background: rgba(0,240,255,0.05);
+    border-color: var(--bd-1);
+  }
+  .project-rollup.open { padding: 11px 14px; margin-bottom: 2px; }
+  .chev {
+    color: var(--cyan); flex-shrink: 0;
+    transition: transform 150ms ease-out;
+    font-size: 10px; text-shadow: var(--glow-c);
+  }
+  .project-rollup.open .chev {
+    transform: rotate(90deg);
+    color: var(--magenta); text-shadow: var(--glow-m);
+  }
+  .project-name {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 13px; font-weight: 700;
+    color: var(--cyan); letter-spacing: -0.02px;
+    text-shadow: 0 0 4px rgba(0,240,255,0.4);
+  }
+  .project-stats {
+    flex: 1; font-size: 11px; color: var(--tx-2);
+  }
+  .project-stats .sep { color: var(--tx-4); margin: 0 6px; }
+  .agent-stack { display: inline-flex; margin-right: 4px; }
+  .agent-stack span {
+    width: 18px; height: 18px;
+    background: var(--bg-panel);
+    border: 1px solid var(--bd-2);
+    display: inline-flex; align-items: center; justify-content: center;
+    font-family: 'Press Start 2P', monospace;
+    font-size: 8px; font-weight: 700;
+    color: var(--cyan); margin-left: -6px;
+    text-shadow: var(--glow-c);
+  }
+  .agent-stack span.opencode {
+    color: var(--magenta); border-color: var(--bd-3);
+    text-shadow: var(--glow-m);
+  }
+  .agent-stack span:first-child { margin-left: 0; }
+  .time-range {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px; color: var(--amber);
+    text-shadow: 0 0 4px rgba(255,176,0,0.3);
+  }
+
+  .session-list {
+    margin: 2px 0 8px 28px;
+    padding-left: 16px;
+    border-left: 1px solid var(--bd-1);
+    box-shadow: -1px 0 8px -2px rgba(0,240,255,0.15);
+  }
+  .session-item {
+    padding: 10px 12px; cursor: pointer;
+    border: 1px solid transparent;
+    transition: all 120ms;
+  }
+  .session-item:hover {
+    background: rgba(0,240,255,0.04);
+    border-color: var(--bd-1);
+  }
+  .session-main { display: flex; align-items: center; gap: 12px; }
+  .session-main .dot {
+    width: 8px; height: 8px; flex-shrink: 0;
+    background: var(--tx-3);
+  }
+  .session-main .dot.l3 { background: var(--magenta); box-shadow: 0 0 6px rgba(255,43,214,0.6); }
+  .session-main .dot.l2 { background: var(--cyan); box-shadow: 0 0 4px rgba(0,240,255,0.5); }
+  .session-summary {
+    flex: 1; min-width: 0;
+    font-size: 13px; font-weight: 500;
+    color: var(--tx-1); letter-spacing: -0.02px;
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  }
+  .session-summary .quote { color: var(--magenta); }
+  .session-time {
+    font-size: 11px; color: var(--amber);
+    flex-shrink: 0; text-shadow: 0 0 4px rgba(255,176,0,0.3);
+  }
+  .session-meta {
+    margin-top: 4px; margin-left: 20px;
+    font-size: 11px; color: var(--tx-3);
+    display: flex; flex-wrap: wrap; gap: 0 8px;
+  }
+  .session-meta .sep { color: var(--tx-4); }
+  .session-meta .agent {
+    display: inline-flex; align-items: center;
+    color: var(--cyan); text-shadow: var(--glow-c);
+  }
+  .session-meta .agent::before {
+    content: ""; display: inline-block;
+    width: 6px; height: 6px;
+    background: var(--cyan); margin-right: 4px;
+    box-shadow: 0 0 3px var(--cyan);
+  }
+  .session-meta .agent.opencode {
+    color: var(--magenta); text-shadow: var(--glow-m);
+  }
+  .session-meta .agent.opencode::before {
+    background: var(--magenta); box-shadow: 0 0 3px var(--magenta);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .side-brand::before, .side-status .dot, .day-heading .today { animation: none; }
+  }
+  @media (max-width: 760px) {
+    body { flex-direction: column; overflow-y: auto; }
+    .sidebar { width: 100%; height: auto; flex-direction: row; flex-wrap: wrap; padding: 12px; gap: 10px; }
+    .side-brand, .side-meta, .side-section, .side-spacer, .side-status { display: none; }
+    .side-cmdk { margin: 0; }
+    .content { padding: 24px 16px 60px; height: auto; }
+  }
+</style>
+</head>
+<body>
+
+<aside class="sidebar">
+  <div class="side-brand">OHMYC</div>
+  <div class="side-meta"><b>v0.4.2</b><br>build 7a3f · ONLINE</div>
+
+  <div class="side-section">
+    <div class="side-label">activity</div>
+    <nav class="side-nav">
+      <a href="#" class="active"><span class="key">T</span> timeline</a>
+      <a href="#"><span class="key">M</span> monitor</a>
+    </nav>
+  </div>
+
+  <div class="side-section">
+    <div class="side-label">explore</div>
+    <nav class="side-nav">
+      <a href="#"><span class="key">A</span> agents</a>
+      <a href="#"><span class="key">S</span> skills</a>
+      <a href="#"><span class="key">C</span> commands</a>
+      <a href="#"><span class="key">P</span> plugins</a>
+    </nav>
+  </div>
+
+  <div class="side-section">
+    <div class="side-label">library</div>
+    <nav class="side-sub">
+      <a href="#">recent <span class="count">42</span></a>
+      <a href="#">favorites <span class="count">8</span></a>
+      <a href="#">all origins <span class="count">142</span></a>
+    </nav>
+  </div>
+
+  <div class="side-spacer"></div>
+  <div class="side-cmdk"><span class="mk">search</span><kbd>⌘K</kbd></div>
+  <div class="side-status"><span class="dot"></span> 14 sessions live</div>
+</aside>
+
+<div class="content">
+  <div class="page">
+    <h1>Timeline</h1>
+    <p class="lede">Every Claude Code session you've run, across every project. Auto-synced via the Stop hook.</p>
+
+    <div class="controls">
+      <div class="tabs">
+        <button class="active">activity</button>
+        <button>tokens</button>
+      </div>
+      <button class="select"><span class="lbl">project:</span>all</button>
+      <button class="select"><span class="lbl">year:</span>2026</button>
+      <span class="stats">
+        <b>147</b> sessions<span class="sep">·</span>
+        <b>1,284</b> turns<span class="sep">·</span>
+        <b>8.2M</b> tokens
+      </span>
+    </div>
+
+    <div class="heatmap-card">
+      <div class="heatmap-grid">
+        <div class="heatmap-months" id="months"></div>
+        <div class="heatmap-dows">
+          <span></span><span class="on">M</span><span></span><span class="on">W</span><span></span><span class="on">F</span><span></span>
+        </div>
+        <div class="heatmap-cells" id="cells"></div>
+      </div>
+      <div class="heatmap-legend">
+        <span>Jan 1 → Dec 31, 2026</span>
+        <span class="scale">
+          less
+          <span class="swatches">
+            <i class="cell l0"></i><i class="cell l1"></i><i class="cell l2"></i><i class="cell l3"></i><i class="cell l4"></i>
+          </span>
+          more
+        </span>
+      </div>
+    </div>
+
+    <div class="events-header">
+      <h3>recent activity</h3>
+      <span class="meta">showing 4 days · earlier sessions truncated</span>
+    </div>
+
+    <section class="day-block">
+      <div class="day-heading">
+        <span class="date">Jun 22, 2026 <span class="today">· today</span></span>
+        <span class="summary"><b>3</b> sessions · <b>47</b> turns · <b>128k</b> tokens</span>
+      </div>
+
+      <div class="project-rollup open">
+        <span class="chev">▸</span>
+        <span class="project-name">claudeui</span>
+        <span class="project-stats">
+          3 sessions<span class="sep">·</span>47 turns<span class="sep">·</span>128k tokens<span class="sep">·</span>8 tools<span class="sep">·</span>2 skills
+        </span>
+        <span class="agent-stack"><span title="claude">C</span><span class="opencode" title="opencode">O</span></span>
+        <span class="time-range">08:31 → 11:38</span>
+      </div>
+      <div class="session-list">
+        <div class="session-item">
+          <div class="session-main">
+            <span class="dot l3"></span>
+            <span class="session-summary">implement pixel-card variant C · retro wave</span>
+            <span class="session-time">09:42 · 1h 56m</span>
+          </div>
+          <div class="session-meta">
+            <span class="agent">claude</span><span class="sep">·</span>
+            <span>18 turns</span><span class="sep">·</span>
+            <span>128k tokens</span><span class="sep">·</span>
+            <span>claude-sonnet-4</span>
+          </div>
+        </div>
+        <div class="session-item">
+          <div class="session-main">
+            <span class="dot l2"></span>
+            <span class="session-summary">fix WebGL fallback DOM labels for accessibility</span>
+            <span class="session-time">09:18 · 38 min</span>
+          </div>
+          <div class="session-meta">
+            <span class="agent">claude</span><span class="sep">·</span>
+            <span>12 turns</span><span class="sep">·</span>
+            <span>82k tokens</span><span class="sep">·</span>
+            <span>claude-sonnet-4</span>
+          </div>
+        </div>
+        <div class="session-item">
+          <div class="session-main">
+            <span class="dot l2"></span>
+            <span class="session-summary"><span class="quote">"</span>extract PixelSnow shader params and uniforms<span class="quote">"</span></span>
+            <span class="session-time">08:31 · 22 min</span>
+          </div>
+          <div class="session-meta">
+            <span class="agent opencode">opencode</span><span class="sep">·</span>
+            <span>17 turns</span><span class="sep">·</span>
+            <span>44k tokens</span><span class="sep">·</span>
+            <span>gpt-5-codex</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="day-block">
+      <div class="day-heading">
+        <span class="date">Jun 21, 2026</span>
+        <span class="summary"><b>2</b> sessions · <b>19</b> turns · <b>62k</b> tokens</span>
+      </div>
+      <div class="project-rollup">
+        <span class="chev">▸</span>
+        <span class="project-name">ohmyc/monitor-route</span>
+        <span class="project-stats">1 session<span class="sep">·</span>11 turns<span class="sep">·</span>38k tokens<span class="sep">·</span>3 tools</span>
+        <span class="agent-stack"><span title="claude">C</span></span>
+        <span class="time-range">14:22 → 15:09</span>
+      </div>
+      <div class="project-rollup">
+        <span class="chev">▸</span>
+        <span class="project-name">vendor/react-bits</span>
+        <span class="project-stats">1 session<span class="sep">·</span>8 turns<span class="sep">·</span>24k tokens<span class="sep">·</span>2 tools</span>
+        <span class="agent-stack"><span title="claude">C</span></span>
+        <span class="time-range">10:14 → 10:48</span>
+      </div>
+    </section>
+
+    <section class="day-block">
+      <div class="day-heading">
+        <span class="date">Jun 20, 2026</span>
+        <span class="summary"><b>1</b> session · <b>8</b> turns · <b>18k</b> tokens</span>
+      </div>
+      <div class="project-rollup">
+        <span class="chev">▸</span>
+        <span class="project-name">ohmyc/timeline</span>
+        <span class="project-stats">1 session<span class="sep">·</span>8 turns<span class="sep">·</span>18k tokens<span class="sep">·</span>1 tool</span>
+        <span class="agent-stack"><span title="claude">C</span></span>
+        <span class="time-range">22:48 → 23:09</span>
+      </div>
+    </section>
+
+    <section class="day-block">
+      <div class="day-heading">
+        <span class="date">Jun 19, 2026</span>
+        <span class="summary"><b>4</b> sessions · <b>52</b> turns · <b>184k</b> tokens</span>
+      </div>
+      <div class="project-rollup">
+        <span class="chev">▸</span>
+        <span class="project-name">claudeui</span>
+        <span class="project-stats">4 sessions<span class="sep">·</span>52 turns<span class="sep">·</span>184k tokens<span class="sep">·</span>9 tools<span class="sep">·</span>3 skills</span>
+        <span class="agent-stack"><span title="claude">C</span><span class="opencode" title="opencode">O</span></span>
+        <span class="time-range">09:12 → 18:44</span>
+      </div>
+    </section>
+
+  </div>
+</div>
+
+<script>
+(function(){
+  const monthsEl = document.getElementById('months');
+  const cellsEl  = document.getElementById('cells');
+  if (!monthsEl || !cellsEl) return;
+  const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  const WEEKS = 53;
+  for (let w = 0; w < WEEKS; w++) {
+    const span = monthsEl.appendChild(document.createElement('span'));
+    span.style.flex = '1 1 0'; span.style.minWidth = '0';
+    span.textContent = (w % 4 === 0) ? MONTHS[Math.min(11, Math.floor(w / 4.4))] : '';
+  }
+  for (let w = 0; w < WEEKS; w++) {
+    const recency = (w / WEEKS);
+    const recentBoost = Math.max(0, (recency - 0.6) * 2.5);
+    for (let d = 0; d < 7; d++) {
+      const cell = cellsEl.appendChild(document.createElement('div'));
+      cell.className = 'cell';
+      const r = Math.random();
+      const weekendFactor = (d === 0 || d === 6) ? 0.4 : 1;
+      const score = (r * recency * weekendFactor) + recentBoost * r;
+      let bucket = 'l0';
+      if (score > 0.85) bucket = 'l4';
+      else if (score > 0.65) bucket = 'l3';
+      else if (score > 0.45) bucket = 'l2';
+      else if (score > 0.25) bucket = 'l1';
+      cell.classList.add(bucket);
+    }
+  }
+})();
+document.querySelectorAll('.project-rollup').forEach(el => {
+  el.addEventListener('click', () => {
+    const wasOpen = el.classList.contains('open');
+    el.classList.toggle('open');
+    const list = el.nextElementSibling;
+    if (list && list.classList.contains('session-list')) list.style.display = wasOpen ? 'none' : 'block';
+  });
+});
+document.querySelectorAll('.project-rollup:not(.open) + .session-list').forEach(l => l.style.display = 'none');
+</script>
+</body>
+</html>

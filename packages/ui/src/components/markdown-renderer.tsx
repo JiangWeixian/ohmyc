@@ -12,11 +12,10 @@ interface MarkdownRendererProperties {
   className?: string
 }
 
-/** Renders markdown content with GFM (tables, strikethrough, task lists)
- *  using the OhMyC prose typography styles. */
+/** Renders markdown content with GFM (tables, strikethrough, task lists). */
 export function MarkdownRenderer({ content, className }: MarkdownRendererProperties) {
   return (
-    <div className={cn('prose prose-ohmyc mx-auto', className)}>
+    <div className={cn('prose prose-sm prose-invert mx-auto max-w-none', className)}>
       <ReactMarkdown remarkPlugins={[remarkGfm]}>{content}</ReactMarkdown>
     </div>
   )

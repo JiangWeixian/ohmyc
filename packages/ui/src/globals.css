@@ -1,4 +1,7 @@
 /* Inter Variable loaded via index.html <link> for preconnect performance */
+/* Note: Berkeley Mono (@font-face) removed — font files absent. Monitor theme
+   uses JetBrains Mono as the mono stack substitute. Add licensed .woff2 files
+   under packages/ui/public/fonts/ and restore @font-face if shipping Berkeley Mono. */
 
 @tailwind base;
 @tailwind components;
@@ -7,9 +10,11 @@
 @layer base {
   :root {
     /* Monochrome Dark Palette */
+    --bg-deep: #050506;
     --bg-marketing: #08090a;
     --bg-panel: #0f1011;
     --bg-surface: #191a1b;
+    --bg-hover: #28282c;
     --bg-secondary: #28282c;
     
     --text-primary: #f7f8f8;
@@ -26,6 +31,7 @@
     --border-primary: #23252a;
     --border-secondary: #34343a;
     --border-tertiary: #3e3e44;
+    --border-accent: rgba(255, 255, 255, 0.08);
     
     /* Legacy aliases for smooth migration */
     --surface-base: #08090a;
@@ -43,18 +49,18 @@
     --accent-red: #8a8f98;
     
     /* Radius */
-    --radius-sm: 6px;
-    --radius-md: 8px;
-    --radius-lg: 12px;
-    --radius-xl: 18px;
-    --radius-2xl: 22px;
+    --radius-sm: 0.375rem;
+    --radius-md: 0.5rem;
+    --radius-lg: 0.75rem;
+    --radius-xl: 1rem;
+    --radius-2xl: 1.5rem;
     --radius-full: 9999px;
     
     /* Shadows */
-    --shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.3);
-    --shadow-sm: 0 8px 24px rgba(0, 0, 0, 0.35);
-    --shadow-md: 0 16px 40px rgba(0, 0, 0, 0.4);
-    --shadow-lg: 0 24px 48px rgba(0, 0, 0, 0.45);
+    --shadow-xs: 0 0.0625rem 0.125rem rgba(0, 0, 0, 0.3);
+    --shadow-sm: 0 0.5rem 1.5rem rgba(0, 0, 0, 0.35);
+    --shadow-md: 0 1rem 2.5rem rgba(0, 0, 0, 0.4);
+    --shadow-lg: 0 1.5rem 3rem rgba(0, 0, 0, 0.45);
     
     /* Motion */
     --motion-fast: 120ms;
@@ -78,27 +84,153 @@
     --heat-2: rgba(255, 255, 255, 0.30);
     --heat-3: rgba(255, 255, 255, 0.50);
     --heat-4: rgba(255, 255, 255, 0.78);
+    --heat-glow-2: none;
+    --heat-glow-3: none;
+    --heat-glow-4: 0 0 0.25rem rgba(247, 248, 248, 0.25);
+    --heatmap-panel-bg: rgba(255, 255, 255, 0.02);
+    --heatmap-panel-border: var(--border-standard);
+    --heatmap-panel-radius: 0.5rem;
+    --heatmap-panel-shadow: none;
+    --heatmap-panel-clip: none;
+    --heatmap-month-font: var(--font-mono);
+    --heatmap-month-weight: 500;
+    --heatmap-month-letter-spacing: 0.04em;
+    --heatmap-month-color: var(--text-quaternary);
+    --heatmap-month-shadow: none;
+    --heatmap-dow-font: var(--font-mono);
+    --heatmap-dow-weight: 400;
+    --heatmap-dow-letter-spacing: 0;
+    --heatmap-dow-color: var(--text-quaternary);
+    --heatmap-dow-active-color: var(--text-quaternary);
+    --heatmap-dow-active-shadow: none;
+    --heatmap-legend-font: var(--font-mono);
+    --heatmap-legend-size: 0.75rem;
+    --heatmap-legend-letter-spacing: 0;
+    --heatmap-legend-color: var(--text-tertiary);
+    --heatmap-cell-radius: 0.125rem;
+    --heatmap-cell-clip: none;
+    --heatmap-corner-size: 0;
+    --heatmap-corner-a-color: transparent;
+    --heatmap-corner-b-color: transparent;
+    --heatmap-corner-a-shadow: none;
+    --heatmap-corner-b-shadow: none;
+
+    /* Timeline page chrome */
+    --timeline-title-prefix: "// ";
+    --timeline-title-font: var(--font-display);
+    --timeline-title-size: 1.875rem;
+    --timeline-title-weight: 700;
+    --timeline-title-line-height: 1.1;
+    --timeline-title-letter-spacing: -0.04em;
+    --timeline-title-transform: none;
+    --timeline-title-color: var(--text-primary);
+    --timeline-title-prefix-color: var(--text-quaternary);
+    --timeline-title-shadow: none;
+    --timeline-title-prefix-shadow: none;
+    --timeline-lede-font: var(--font-body);
+    --timeline-lede-size: 0.875rem;
+    --timeline-lede-weight: 400;
+    --timeline-lede-line-height: 1.55;
+    --timeline-lede-letter-spacing: 0;
+    --timeline-lede-color: var(--text-tertiary);
+    --timeline-control-font: var(--font-mono);
+    --timeline-control-size: 0.75rem;
+    --timeline-control-weight: 400;
+    --timeline-control-letter-spacing: 0.04em;
+    --timeline-control-transform: none;
+    --timeline-control-bg: rgba(255, 255, 255, 0.02);
+    --timeline-control-border: var(--border-standard);
+    --timeline-control-radius: 0.25rem;
+    --timeline-control-clip: none;
+    --timeline-control-color: var(--text-tertiary);
+    --timeline-control-hover-color: var(--text-primary);
+    --timeline-control-hover-shadow: none;
+    --timeline-control-active-bg: rgba(255, 255, 255, 0.08);
+    --timeline-control-active-color: var(--text-primary);
+    --timeline-control-active-shadow: inset 0 -1px 0 var(--accent-primary);
+    --timeline-control-active-text-shadow: none;
+    --timeline-select-bg: rgba(255, 255, 255, 0.02);
+    --timeline-select-border: var(--timeline-control-border);
+    --timeline-select-color: var(--text-primary);
+    --timeline-select-label-color: var(--text-tertiary);
+    --timeline-select-hover-border: var(--border-primary);
+    --timeline-select-hover-shadow: none;
+    --timeline-stats-font: var(--font-mono);
+    --timeline-stats-color: var(--text-tertiary);
+    --timeline-stats-value-color: var(--text-primary);
+    --timeline-stats-sep-color: var(--text-quaternary);
+    --timeline-stats-shadow: none;
+    --timeline-stats-letter-spacing: 0.02em;
+
+    /*
+     * Menubar popover runs inside a transparent native window. Keep the card
+     * opaque and shadowless so macOS/WebKit do not compose a second rounded
+     * shell around it on light backgrounds.
+     */
+    --menubar-popover-bg: #191a1b;
+    --menubar-popover-border: rgba(255, 255, 255, 0.08);
+    --menubar-popover-radius: 0.75rem;
+    --menubar-popover-shadow: none;
+    --menubar-popover-clip: none;
+    --menubar-popover-backdrop: none;
+    --menubar-popover-overlay: repeating-linear-gradient(to bottom, rgba(255, 255, 255, 0.015) 0, rgba(255, 255, 255, 0.015) 1px, transparent 1px, transparent 3px);
+    --menubar-popover-accent: transparent;
+    --menubar-popover-corner: transparent;
+    --menubar-title-prefix: "// ";
+    --menubar-title-font: var(--font-mono);
+    --menubar-title-size: 0.6875rem;
+    --menubar-title-weight: 500;
+    --menubar-title-letter-spacing: 0.10em;
+    --menubar-title-color: var(--text-secondary);
+    --menubar-title-prefix-color: var(--text-quaternary);
+    --menubar-title-shadow: none;
+    --menubar-switch-size: 1.375rem;
+    --menubar-switch-border: transparent;
+    --menubar-switch-radius: 0;
+    --menubar-switch-clip: none;
+    --menubar-switch-color: var(--text-quaternary);
+    --menubar-switch-hover-bg: transparent;
+    --menubar-switch-hover-border: transparent;
+    --menubar-switch-hover-color: var(--text-secondary);
+    --menubar-switch-hover-shadow: none;
+    --menubar-switch-active-bg: transparent;
+    --menubar-switch-active-border: transparent;
+    --menubar-switch-active-color: var(--text-primary);
+    --menubar-switch-active-shadow: drop-shadow(0 0 0.25rem var(--accent-glow));
+    --menubar-chart-bg: linear-gradient(180deg, rgba(255, 255, 255, 0.02) 0%, transparent 100%);
+    --menubar-chart-stroke-start: var(--accent-primary);
+    --menubar-chart-stroke-mid: var(--accent-primary);
+    --menubar-chart-stroke-end: var(--accent-primary);
+    --menubar-chart-fill-color: var(--accent-primary);
+    --menubar-chart-fill-opacity: 0.46;
+    --menubar-chart-shadow: drop-shadow(0 0 0.1875rem var(--accent-glow));
+    --menubar-chart-peak-color: var(--accent-primary);
+    --menubar-chart-peak-shadow: drop-shadow(0 0 0.25rem var(--accent-glow));
+    --menubar-kpi-font: var(--font-mono);
+    --menubar-kpi-size: 1.375rem;
+    --menubar-kpi-weight: 500;
+    --menubar-kpi-letter-spacing: -0.03125rem;
+    --menubar-kpi-line-height: 1;
+    --menubar-kpi-token-color: var(--text-primary);
+    --menubar-kpi-session-color: var(--text-primary);
+    --menubar-kpi-peak-color: var(--accent-primary);
+    --menubar-kpi-token-shadow: none;
+    --menubar-kpi-session-shadow: none;
+    --menubar-kpi-peak-shadow: 0 0 0.375rem var(--accent-glow);
+    --menubar-label-font: var(--font-mono);
+    --menubar-label-size: 0.5625rem;
+    --menubar-label-weight: 500;
+    --menubar-label-letter-spacing: 0.08em;
+    --menubar-label-color: var(--text-quaternary);
+    --menubar-footer-meta-color: var(--text-quaternary);
+    --menubar-open-color: var(--text-secondary);
+    --menubar-open-border: transparent;
+    --menubar-open-bg: transparent;
+    --menubar-open-padding: 0;
+    --menubar-open-clip: none;
+    --menubar-open-shadow: none;
+    --menubar-open-hover-color: var(--text-primary);
     
-    /* Elevation */
-    --elevation-0: none;
-    --elevation-1: 0 8px 20px rgba(0, 0, 0, 0.2);
-    --elevation-2: 0 16px 32px rgba(0, 0, 0, 0.28);
-    --elevation-3: 0 24px 40px rgba(0, 0, 0, 0.35);
-
-    /* spacing scale — 4px base */
-    --space-1: 4px;
-    --space-2: 8px;
-    --space-3: 12px;
-    --space-4: 16px;
-    --space-5: 20px;
-    --space-6: 24px;
-    --space-8: 32px;
-    --space-10: 40px;
-    --space-12: 48px;
-    --space-16: 64px;
-    --space-20: 80px;
-    --space-24: 96px;
-
     /* shadcn token mappings */
     --background: 210 5% 3%;
     --foreground: 150 5% 97%;
@@ -119,6 +251,521 @@
     --input: 210 5% 14%;
     --ring: 150 5% 97%;
     --radius: 0.5rem;
+
+    /* === Theme System: semantic accent tokens === */
+    --accent-primary: #f7f8f8;
+    --accent-secondary: #f7f8f8;
+    --accent-signal: #f7f8f8;
+    --accent-glow: rgba(247, 248, 248, 0.35);
+
+    /* === Theme System: per-theme font stacks === */
+    --font-display: 'Inter var', 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    --font-body: 'Inter var', 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    --font-mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
+
+    /* === Theme System: decoration tokens (zero by default = Monitor/calm) === */
+    --scanline-color: rgba(255, 255, 255, 0.018);
+    --scanline-opacity: 0;
+    --vignette-strength: 0;
+    --title-shadow: none;
+    --text-glow: none;
+    --card-clip: none;
+    --panel-notch-size: 0;
+  }
+
+  [data-theme='phosphor'] {
+    --font-display: 'JetBrains Mono', ui-monospace, monospace;
+    --font-body: 'Inter', -apple-system, sans-serif;
+    --font-mono: 'JetBrains Mono', ui-monospace, monospace;
+    --border-subtle: rgba(255, 255, 255, 0.06);
+    --border-standard: rgba(255, 255, 255, 0.10);
+    --border-primary: #2a2c30;
+    --border-accent: rgba(247, 248, 248, 0.18);
+    --heatmap-panel-radius: 0.375rem;
+    --scanline-opacity: 1;
+    --vignette-strength: 0.55;
+    --timeline-title-shadow: 0 0 0.75rem rgba(247, 248, 248, 0.18);
+    --text-glow: 0 0 0.5rem rgba(247, 248, 248, 0.35);
+    --menubar-chart-shadow: drop-shadow(0 0 0.1875rem rgba(247, 248, 248, 0.4));
+  }
+
+  [data-theme='amber'] {
+    --bg-deep: #060400;
+    --bg-marketing: #0a0700;
+    --bg-panel: #110b00;
+    --bg-surface: #1a1300;
+    --bg-hover: #241a00;
+    --text-primary: #ffb000;
+    --text-secondary: #d49500;
+    --text-tertiary: #8a5f00;
+    --text-quaternary: #5c4000;
+    --accent-primary: #ffb000;
+    --accent-secondary: #ffb000;
+    --accent-signal: #ffb000;
+    --accent-glow: rgba(255, 176, 0, 0.4);
+    --font-display: 'VT323', monospace;
+    --font-body: 'IBM Plex Mono', monospace;
+    --font-mono: 'IBM Plex Mono', monospace;
+    --border-subtle: rgba(255, 176, 0, 0.08);
+    --border-standard: rgba(255, 176, 0, 0.16);
+    --border-primary: #3d2a00;
+    --border-accent: rgba(255, 176, 0, 0.22);
+    --heat-0: rgba(255, 176, 0, 0.04);
+    --heat-1: rgba(255, 176, 0, 0.18);
+    --heat-2: rgba(255, 176, 0, 0.36);
+    --heat-3: rgba(255, 176, 0, 0.58);
+    --heat-4: rgba(255, 176, 0, 0.92);
+    --heat-glow-4: 0 0 0.25rem rgba(255, 176, 0, 0.4);
+    --heatmap-panel-bg: rgba(255, 176, 0, 0.02);
+    --heatmap-panel-radius: 0;
+    --heatmap-panel-shadow: inset 0 0 2rem rgba(255, 140, 0, 0.04);
+    --heatmap-month-color: #ff8c00;
+    --heatmap-month-shadow: var(--text-glow);
+    --heatmap-dow-color: #4d3a1c;
+    --heatmap-dow-active-color: #4d3a1c;
+    --heatmap-legend-color: #8a6533;
+    --timeline-title-size: 3rem;
+    --timeline-title-weight: 400;
+    --timeline-title-line-height: 1;
+    --timeline-title-letter-spacing: 0.02em;
+    --timeline-title-color: var(--accent-primary);
+    --timeline-title-prefix-color: var(--text-tertiary);
+    --timeline-title-shadow: var(--text-glow);
+    --timeline-lede-color: #c89554;
+    --timeline-control-letter-spacing: 0;
+    --timeline-control-bg: rgba(255, 176, 0, 0.02);
+    --timeline-control-color: #c89554;
+    --timeline-control-radius: 0;
+    --timeline-control-hover-color: var(--accent-primary);
+    --timeline-control-active-bg: rgba(255, 176, 0, 0.12);
+    --timeline-control-active-color: var(--accent-primary);
+    --timeline-control-active-shadow: inset 0 -1px 0 var(--accent-primary);
+    --timeline-control-active-text-shadow: var(--text-glow);
+    --timeline-select-bg: rgba(255, 176, 0, 0.02);
+    --timeline-select-color: var(--accent-primary);
+    --timeline-stats-value-color: var(--accent-primary);
+    --timeline-stats-shadow: var(--text-glow);
+    --chart-1: 41 100% 50%;
+    --menubar-popover-bg: #140e00;
+    --menubar-popover-border: rgba(255, 176, 0, 0.20);
+    --menubar-popover-shadow: none;
+    --menubar-popover-overlay: repeating-linear-gradient(to bottom, rgba(0, 0, 0, 0.14) 0, rgba(0, 0, 0, 0.14) 1px, transparent 1px, transparent 3px), radial-gradient(ellipse at center, transparent 50%, rgba(0, 0, 0, 0.4) 100%);
+    --menubar-title-prefix: "> ";
+    --menubar-title-letter-spacing: 0.12em;
+    --menubar-title-color: #ff8c00;
+    --menubar-title-prefix-color: #8a6533;
+    --menubar-title-shadow: var(--text-glow);
+    --menubar-switch-color: #8a6533;
+    --menubar-switch-hover-color: #ff8c00;
+    --menubar-switch-active-color: var(--accent-primary);
+    --menubar-switch-active-shadow: drop-shadow(0 0 0.375rem rgba(255, 176, 0, 0.6));
+    --menubar-chart-bg: linear-gradient(180deg, rgba(255, 176, 0, 0.04) 0%, transparent 100%);
+    --menubar-chart-fill-opacity: 0.42;
+    --menubar-chart-shadow: drop-shadow(0 0 0.25rem rgba(255, 176, 0, 0.6));
+    --menubar-chart-peak-shadow: drop-shadow(0 0 0.375rem var(--accent-primary));
+    --menubar-kpi-font: var(--font-display);
+    --menubar-kpi-size: 1.875rem;
+    --menubar-kpi-weight: 400;
+    --menubar-kpi-letter-spacing: 0.02em;
+    --menubar-kpi-line-height: 0.9;
+    --menubar-kpi-token-color: var(--accent-primary);
+    --menubar-kpi-session-color: var(--accent-primary);
+    --menubar-kpi-token-shadow: var(--text-glow);
+    --menubar-kpi-session-shadow: var(--text-glow);
+    --menubar-kpi-peak-shadow: var(--text-glow);
+    --menubar-label-color: #8a6533;
+    --menubar-footer-meta-color: #8a6533;
+    --menubar-open-color: #ff8c00;
+    --menubar-open-shadow: var(--text-glow);
+    --menubar-open-hover-color: var(--accent-primary);
+    --scanline-color: rgba(255, 176, 0, 0.06);
+    --scanline-opacity: 1;
+    --vignette-strength: 0.7;
+    --text-glow: 0 0 0.5rem rgba(255, 176, 0, 0.6), 0 0 1rem rgba(255, 140, 0, 0.25);
+
+    /* shadcn HSL token bridge */
+    --background: 42 100% 2%;
+    --foreground: 41 100% 50%;
+    --card: 44 100% 5%;
+    --card-foreground: 41 100% 50%;
+    --popover: 44 100% 5%;
+    --popover-foreground: 41 100% 50%;
+    --primary: 41 100% 50%;
+    --primary-foreground: 40 100% 1%;
+    --secondary: 43 100% 7%;
+    --secondary-foreground: 41 100% 50%;
+    --muted: 39 100% 3%;
+    --muted-foreground: 41 100% 27%;
+    --accent: 43 100% 7%;
+    --accent-foreground: 41 100% 50%;
+    --border: 41 100% 50%;
+    --input: 41 100% 50%;
+    --ring: 41 100% 50%;
+  }
+
+  [data-theme='retro'] {
+    --bg-deep: #0a0118;
+    --bg-marketing: #0d0221;
+    --bg-panel: #16082e;
+    --bg-surface: #1f0f3e;
+    --bg-hover: #2a1654;
+    --text-primary: #f0e6ff;
+    --text-secondary: #c4b0d8;
+    --text-tertiary: #8a6fa0;
+    --text-quaternary: #5c4570;
+    --accent-primary: #00f0ff;
+    --accent-secondary: #ff2bd6;
+    --accent-signal: #ffb000;
+    --accent-glow: rgba(0, 240, 255, 0.4);
+    --font-display: 'Press Start 2P', monospace;
+    --font-body: 'JetBrains Mono', monospace;
+    --font-mono: 'JetBrains Mono', ui-monospace, monospace;
+    --border-subtle: rgba(255, 43, 214, 0.10);
+    --border-standard: rgba(0, 240, 255, 0.18);
+    --border-primary: #3d1a5c;
+    --border-accent: rgba(255, 43, 214, 0.30);
+    --heat-0: rgba(255, 43, 214, 0.06);
+    --heat-1: rgba(0, 240, 255, 0.28);
+    --heat-2: rgba(0, 240, 255, 0.60);
+    --heat-3: rgba(255, 43, 214, 0.80);
+    --heat-4: rgba(255, 176, 0, 0.95);
+    --heat-glow-2: 0 0 0.25rem rgba(0, 240, 255, 0.3);
+    --heat-glow-3: 0 0 0.375rem rgba(255, 43, 214, 0.5);
+    --heat-glow-4: 0 0 0.5rem rgba(255, 176, 0, 0.6);
+    --heatmap-panel-bg: var(--bg-panel);
+    --heatmap-panel-border: rgba(255, 43, 214, 0.22);
+    --heatmap-panel-radius: 0;
+    --heatmap-panel-shadow: 0 0 1rem rgba(255, 43, 214, 0.12);
+    --heatmap-month-font: 'Silkscreen', monospace;
+    --heatmap-month-weight: 700;
+    --heatmap-month-letter-spacing: 0.06em;
+    --heatmap-month-color: var(--accent-primary);
+    --heatmap-month-shadow: 0 0 0.5rem rgba(0, 240, 255, 0.55), 0 0 1rem rgba(0, 240, 255, 0.25);
+    --heatmap-dow-font: 'Silkscreen', monospace;
+    --heatmap-dow-color: var(--text-tertiary);
+    --heatmap-dow-active-color: var(--accent-secondary);
+    --heatmap-dow-active-shadow: 0 0 0.5rem rgba(255, 43, 214, 0.55), 0 0 1rem rgba(255, 43, 214, 0.25);
+    --heatmap-legend-font: 'Silkscreen', monospace;
+    --heatmap-legend-letter-spacing: 0.06em;
+    --heatmap-legend-color: var(--text-tertiary);
+    --heatmap-cell-radius: 0;
+    --heatmap-corner-size: 0.75rem;
+    --heatmap-corner-a-color: var(--accent-primary);
+    --heatmap-corner-b-color: var(--accent-secondary);
+    --heatmap-corner-a-shadow: var(--heatmap-month-shadow);
+    --heatmap-corner-b-shadow: var(--heatmap-dow-active-shadow);
+    --timeline-title-size: 1.5rem;
+    --timeline-title-weight: 700;
+    --timeline-title-letter-spacing: 0;
+    --timeline-title-shadow: var(--title-shadow);
+    --timeline-lede-font: 'JetBrains Mono', monospace;
+    --timeline-lede-line-height: 1.6;
+    --timeline-lede-color: #b9a8e0;
+    --timeline-control-font: 'Silkscreen', monospace;
+    --timeline-control-letter-spacing: 0.06em;
+    --timeline-control-bg: rgba(255, 43, 214, 0.04);
+    --timeline-control-border: rgba(255, 43, 214, 0.22);
+    --timeline-control-radius: 0;
+    --timeline-control-color: #b9a8e0;
+    --timeline-control-hover-color: var(--accent-primary);
+    --timeline-control-hover-shadow: 0 0 0.5rem rgba(0, 240, 255, 0.45);
+    --timeline-control-active-bg: rgba(255, 43, 214, 0.12);
+    --timeline-control-active-color: var(--accent-secondary);
+    --timeline-control-active-shadow: inset 0 -2px 0 var(--accent-secondary);
+    --timeline-control-active-text-shadow: var(--heatmap-dow-active-shadow);
+    --timeline-select-bg: rgba(0, 240, 255, 0.03);
+    --timeline-select-border: rgba(0, 240, 255, 0.12);
+    --timeline-select-color: var(--accent-primary);
+    --timeline-select-label-color: var(--text-tertiary);
+    --timeline-select-hover-border: var(--accent-primary);
+    --timeline-select-hover-shadow: 0 0 0.5rem rgba(0, 240, 255, 0.2);
+    --timeline-stats-value-color: var(--accent-signal);
+    --timeline-stats-shadow: 0 0 0.5rem rgba(255, 176, 0, 0.55);
+    --chart-1: 184 100% 50%;
+    --menubar-popover-bg: #16082e;
+    --menubar-popover-border: rgba(255, 43, 214, 0.22);
+    --menubar-popover-shadow: none;
+    --menubar-popover-accent: linear-gradient(to right, var(--accent-primary), var(--accent-secondary), var(--accent-signal));
+    --menubar-popover-overlay: repeating-linear-gradient(to bottom, rgba(0, 0, 0, 0.16) 0, rgba(0, 0, 0, 0.16) 1px, transparent 1px, transparent 3px);
+    --menubar-title-prefix: "▌ ";
+    --menubar-title-font: 'Silkscreen', monospace;
+    --menubar-title-size: 0.625rem;
+    --menubar-title-weight: 700;
+    --menubar-title-letter-spacing: 0.18em;
+    --menubar-title-color: var(--accent-primary);
+    --menubar-title-prefix-color: var(--accent-secondary);
+    --menubar-title-shadow: 0 0 0.5rem rgba(0, 240, 255, 0.55), 0 0 1rem rgba(0, 240, 255, 0.25);
+    --menubar-switch-border: transparent;
+    --menubar-switch-color: var(--text-tertiary);
+    --menubar-switch-hover-border: rgba(0, 240, 255, 0.12);
+    --menubar-switch-hover-color: var(--accent-primary);
+    --menubar-switch-hover-shadow: 0 0 0.5rem rgba(0, 240, 255, 0.45);
+    --menubar-switch-active-color: var(--accent-secondary);
+    --menubar-switch-active-shadow: drop-shadow(0 0 0.375rem rgba(255, 43, 214, 0.6));
+    --menubar-chart-bg: linear-gradient(180deg, rgba(0, 240, 255, 0.04) 0%, rgba(255, 43, 214, 0.02) 100%);
+    --menubar-chart-stroke-start: var(--accent-primary);
+    --menubar-chart-stroke-mid: var(--accent-secondary);
+    --menubar-chart-stroke-end: var(--accent-signal);
+    --menubar-chart-fill-color: var(--accent-secondary);
+    --menubar-chart-fill-opacity: 0.35;
+    --menubar-chart-shadow: drop-shadow(0 0 0.1875rem rgba(255, 43, 214, 0.6));
+    --menubar-chart-peak-color: var(--accent-signal);
+    --menubar-chart-peak-shadow: drop-shadow(0 0 0.5rem var(--accent-signal));
+    --menubar-kpi-font: var(--font-display);
+    --menubar-kpi-size: 1rem;
+    --menubar-kpi-weight: 400;
+    --menubar-kpi-letter-spacing: 0;
+    --menubar-kpi-line-height: 1.1;
+    --menubar-kpi-token-color: var(--accent-primary);
+    --menubar-kpi-session-color: var(--accent-secondary);
+    --menubar-kpi-peak-color: var(--accent-signal);
+    --menubar-kpi-token-shadow: 1px 1px 0 var(--accent-secondary), 0 0 0.375rem rgba(0, 240, 255, 0.4);
+    --menubar-kpi-session-shadow: 1px 1px 0 var(--accent-primary), 0 0 0.375rem rgba(255, 43, 214, 0.4);
+    --menubar-kpi-peak-shadow: 0 0 0.5rem rgba(255, 176, 0, 0.55);
+    --menubar-label-font: 'Silkscreen', monospace;
+    --menubar-label-size: 0.5rem;
+    --menubar-label-weight: 700;
+    --menubar-label-letter-spacing: 0.14em;
+    --menubar-label-color: var(--text-tertiary);
+    --menubar-footer-meta-color: #b6ff3b;
+    --menubar-open-color: var(--accent-secondary);
+    --menubar-open-shadow: 0 0 0.5rem rgba(255, 43, 214, 0.55);
+    --menubar-open-hover-color: var(--accent-primary);
+    --scanline-color: rgba(255, 43, 214, 0.04);
+    --scanline-opacity: 1;
+    --vignette-strength: 0.65;
+    --title-shadow: 0.125rem 0.125rem 0 #ff2bd6, 0.25rem 0.25rem 0 #00f0ff, 0 0 1rem rgba(255, 43, 214, 0.5);
+    --text-glow: 0 0 0.375rem rgba(0, 240, 255, 0.5);
+
+    /* shadcn HSL token bridge */
+    --background: 261 89% 7%;
+    --foreground: 264 100% 95%;
+    --card: 260 61% 15%;
+    --card-foreground: 264 100% 95%;
+    --popover: 260 61% 15%;
+    --popover-foreground: 264 100% 95%;
+    --primary: 184 100% 50%;
+    --primary-foreground: 263 92% 5%;
+    --secondary: 259 58% 21%;
+    --secondary-foreground: 264 100% 95%;
+    --muted: 262 70% 11%;
+    --muted-foreground: 273 21% 53%;
+    --accent: 259 58% 21%;
+    --accent-foreground: 264 100% 95%;
+    --border: 184 100% 50%;
+    --input: 184 100% 50%;
+    --ring: 184 100% 50%;
+  }
+
+  [data-theme='cyberpunk'] {
+    --bg-deep: #06060c;
+    --bg-marketing: #0a0a14;
+    --bg-panel: #11111d;
+    --bg-surface: #1a1a2e;
+    --bg-hover: #242440;
+    --text-primary: #e8e8f0;
+    --text-secondary: #b0b0c8;
+    --text-tertiary: #8a8aa0;
+    --text-quaternary: #5a5a78;
+    --accent-primary: #fcee0a;
+    --accent-secondary: #00f0ff;
+    --accent-signal: #ff003c;
+    --accent-glow: rgba(252, 238, 10, 0.45);
+    --font-display: 'Chakra Petch', sans-serif;
+    --font-body: 'Rajdhani', sans-serif;
+    --font-mono: 'Share Tech Mono', ui-monospace, monospace;
+    --border-subtle: rgba(252, 238, 10, 0.10);
+    --border-standard: rgba(252, 238, 10, 0.22);
+    --border-primary: #2a2a40;
+    --border-accent: rgba(252, 238, 10, 0.40);
+    --heat-0: rgba(252, 238, 10, 0.05);
+    --heat-1: rgba(252, 238, 10, 0.18);
+    --heat-2: rgba(252, 238, 10, 0.38);
+    --heat-3: rgba(252, 238, 10, 0.65);
+    --heat-4: rgba(252, 238, 10, 0.92);
+    --heat-glow-3: 0 0 0.25rem rgba(252, 238, 10, 0.4);
+    --heat-glow-4: 0 0 0.375rem rgba(252, 238, 10, 0.6);
+    --heatmap-panel-bg: var(--bg-panel);
+    --heatmap-panel-radius: 0;
+    --heatmap-panel-clip: polygon(0 0, calc(100% - 1rem) 0, 100% 1rem, 100% 100%, 1rem 100%, 0 calc(100% - 1rem));
+    --heatmap-month-font: var(--font-display);
+    --heatmap-month-weight: 600;
+    --heatmap-month-letter-spacing: 0.16em;
+    --heatmap-month-color: var(--accent-secondary);
+    --heatmap-month-shadow: 0 0 0.375rem rgba(0, 240, 255, 0.45);
+    --heatmap-dow-font: var(--font-display);
+    --heatmap-dow-weight: 600;
+    --heatmap-dow-letter-spacing: 0.10em;
+    --heatmap-dow-color: rgba(252, 238, 10, 0.6);
+    --heatmap-dow-active-color: rgba(252, 238, 10, 0.6);
+    --heatmap-legend-letter-spacing: 0.10em;
+    --heatmap-cell-radius: 0;
+    --heatmap-cell-clip: polygon(0 0, 100% 0, 100% calc(100% - 0.125rem), calc(100% - 0.125rem) 100%, 0 100%);
+    --timeline-title-size: 2.25rem;
+    --timeline-title-weight: 700;
+    --timeline-title-line-height: 1;
+    --timeline-title-letter-spacing: 0.04em;
+    --timeline-title-transform: uppercase;
+    --timeline-title-color: var(--accent-primary);
+    --timeline-title-prefix-color: var(--accent-secondary);
+    --timeline-title-shadow: var(--text-glow);
+    --timeline-title-prefix-shadow: 0 0 0.375rem rgba(0, 240, 255, 0.45);
+    --timeline-lede-weight: 500;
+    --timeline-lede-letter-spacing: 0.02em;
+    --timeline-control-font: var(--font-display);
+    --timeline-control-weight: 600;
+    --timeline-control-letter-spacing: 0.18em;
+    --timeline-control-transform: uppercase;
+    --timeline-control-bg: rgba(252, 238, 10, 0.03);
+    --timeline-control-radius: 0;
+    --timeline-control-clip: polygon(0 0, calc(100% - 0.5rem) 0, 100% 0.5rem, 100% 100%, 0 100%);
+    --timeline-control-color: var(--text-tertiary);
+    --timeline-control-hover-color: var(--accent-primary);
+    --timeline-control-active-bg: var(--accent-primary);
+    --timeline-control-active-color: var(--bg-deep);
+    --timeline-control-active-shadow: inset 0 0 0 1px var(--accent-primary);
+    --timeline-select-bg: rgba(252, 238, 10, 0.03);
+    --timeline-select-border: var(--border-standard);
+    --timeline-select-color: var(--accent-primary);
+    --timeline-select-label-color: var(--text-quaternary);
+    --timeline-select-hover-border: var(--accent-primary);
+    --timeline-select-hover-shadow: var(--text-glow);
+    --timeline-stats-value-color: var(--accent-primary);
+    --timeline-stats-sep-color: var(--accent-secondary);
+    --timeline-stats-shadow: 0 0 0.25rem rgba(252, 238, 10, 0.65);
+    --timeline-stats-letter-spacing: 0.06em;
+    --chart-1: 57 98% 51%;
+    --menubar-popover-bg: #11111d;
+    --menubar-popover-border: transparent;
+    --menubar-popover-shadow: none;
+    --menubar-popover-clip: none;
+    --menubar-popover-accent: transparent;
+    --menubar-popover-corner: transparent;
+    --menubar-title-prefix: "▸ ";
+    --menubar-title-font: var(--font-display);
+    --menubar-title-size: 0.75rem;
+    --menubar-title-weight: 700;
+    --menubar-title-letter-spacing: 0.32em;
+    --menubar-title-color: var(--accent-primary);
+    --menubar-title-prefix-color: var(--accent-secondary);
+    --menubar-title-shadow: var(--text-glow);
+    --menubar-switch-size: 1.5rem;
+    --menubar-switch-radius: 0;
+    --menubar-switch-clip: polygon(0 0, calc(100% - 0.3125rem) 0, 100% 0.3125rem, 100% 100%, 0.3125rem 100%, 0 calc(100% - 0.3125rem));
+    --menubar-switch-color: var(--text-quaternary);
+    --menubar-switch-hover-bg: rgba(0, 240, 255, 0.04);
+    --menubar-switch-hover-border: rgba(252, 238, 10, 0.22);
+    --menubar-switch-hover-color: var(--accent-secondary);
+    --menubar-switch-hover-shadow: 0 0 0.375rem rgba(0, 240, 255, 0.45);
+    --menubar-switch-active-bg: var(--accent-primary);
+    --menubar-switch-active-border: var(--accent-primary);
+    --menubar-switch-active-color: var(--bg-deep);
+    --menubar-switch-active-shadow: drop-shadow(0 0 0.375rem rgba(252, 238, 10, 0.55));
+    --menubar-chart-bg: transparent;
+    --menubar-chart-fill-opacity: 0.4;
+    --menubar-chart-shadow: drop-shadow(0 0 0.25rem rgba(252, 238, 10, 0.7));
+    --menubar-chart-peak-shadow: drop-shadow(0 0 0.375rem var(--accent-primary));
+    --menubar-kpi-font: var(--font-display);
+    --menubar-kpi-size: 1.5rem;
+    --menubar-kpi-weight: 700;
+    --menubar-kpi-letter-spacing: 0.02em;
+    --menubar-kpi-token-color: var(--accent-primary);
+    --menubar-kpi-session-color: var(--accent-secondary);
+    --menubar-kpi-peak-color: var(--accent-signal);
+    --menubar-kpi-token-shadow: 0 0 0.375rem currentColor;
+    --menubar-kpi-session-shadow: 0 0 0.375rem currentColor;
+    --menubar-kpi-peak-shadow: 0 0 0.375rem currentColor;
+    --menubar-label-font: var(--font-display);
+    --menubar-label-size: 0.5625rem;
+    --menubar-label-weight: 600;
+    --menubar-label-letter-spacing: 0.22em;
+    --menubar-footer-meta-color: var(--accent-primary);
+    --menubar-open-color: var(--accent-secondary);
+    --menubar-open-border: transparent;
+    --menubar-open-padding: 0;
+    --menubar-open-clip: none;
+    --menubar-open-shadow: 0 0 0.375rem rgba(0, 240, 255, 0.45);
+    --menubar-open-hover-color: var(--accent-secondary);
+    --scanline-color: rgba(0, 0, 0, 0.10);
+    --scanline-opacity: 1;
+    --vignette-strength: 0.5;
+    --text-glow: 0 0 0.375rem rgba(252, 238, 10, 0.55), 0 0 1rem rgba(252, 238, 10, 0.22);
+    --card-clip: polygon(0 0, calc(100% - 0.5rem) 0, 100% 0.5rem, 100% 100%, 0.5rem 100%, 0 calc(100% - 0.5rem));
+    --panel-notch-size: 0.5rem;
+
+    /* shadcn HSL token bridge */
+    --background: 240 33% 6%;
+    --foreground: 240 21% 93%;
+    --card: 240 28% 14%;
+    --card-foreground: 240 21% 93%;
+    --popover: 240 28% 14%;
+    --popover-foreground: 240 21% 93%;
+    --primary: 57 98% 51%;
+    --primary-foreground: 240 33% 4%;
+    --secondary: 240 28% 20%;
+    --secondary-foreground: 240 21% 93%;
+    --muted: 240 26% 9%;
+    --muted-foreground: 240 10% 58%;
+    --accent: 240 28% 20%;
+    --accent-foreground: 240 21% 93%;
+    --border: 57 98% 51%;
+    --input: 57 98% 51%;
+    --ring: 57 98% 51%;
+  }
+
+  /* ============================================================
+     LEGACY TOKEN DERIVATION — bridges semantic tokens to the
+     legacy aliases consumed by command-palette, timeline, menubar,
+     entity-detail, etc. Applies to ALL themes via [data-theme].
+     ============================================================ */
+  [data-theme] {
+    --surface-base: var(--bg-marketing);
+    --surface-raised: var(--bg-surface);
+    --surface-overlay: var(--bg-surface);
+    --surface-panel: var(--bg-panel);
+    --border-default: var(--border-standard);
+    --border-hover: var(--border-primary);
+    --accent-blue: var(--accent-primary);
+    --accent-blue-hover: var(--accent-secondary);
+    --accent-green: var(--accent-signal);
+    --accent-amber: var(--accent-signal);
+    --accent-cyan: var(--accent-secondary);
+    --accent-purple: var(--accent-secondary);
+    --accent-red: var(--accent-signal);
+  }
+
+  [data-intensity='calm'] {
+    --scanline-opacity: 0;
+    --vignette-strength: 0;
+    --title-shadow: none;
+    --text-glow: none;
+    --heat-glow-2: none;
+    --heat-glow-3: none;
+    --heat-glow-4: none;
+    --heatmap-month-shadow: none;
+    --heatmap-dow-active-shadow: none;
+    --heatmap-corner-size: 0;
+    --heatmap-corner-a-shadow: none;
+    --heatmap-corner-b-shadow: none;
+    --card-clip: none;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    :root, [data-theme], [data-intensity] {
+      --scanline-opacity: 0;
+      --vignette-strength: 0;
+      --title-shadow: none;
+      --text-glow: none;
+      --heat-glow-2: none;
+      --heat-glow-3: none;
+      --heat-glow-4: none;
+      --heatmap-month-shadow: none;
+      --heatmap-dow-active-shadow: none;
+      --heatmap-corner-size: 0;
+      --heatmap-corner-a-shadow: none;
+      --heatmap-corner-b-shadow: none;
+      --card-clip: none;
+    }
   }
 }
 
@@ -148,10 +795,36 @@
     min-height: 100dvh;
     background-color: var(--bg-marketing);
     color: var(--text-primary);
-    font-size: 16px;
+    font-family: var(--font-body);
+    font-size: 1rem;
     line-height: 1.6;
     text-rendering: optimizeLegibility;
     letter-spacing: -0.01em;
+  }
+
+  body::before {
+    content: '';
+    position: fixed; inset: 0;
+    background: repeating-linear-gradient(to bottom,
+      var(--scanline-color) 0, var(--scanline-color) 1px,
+      transparent 1px, transparent 3px);
+    opacity: var(--scanline-opacity, 0);
+    pointer-events: none; z-index: 9999; mix-blend-mode: screen;
+  }
+  body::after {
+    content: '';
+    position: fixed; inset: 0;
+    background: radial-gradient(ellipse at center, transparent 55%,
+      rgba(0, 0, 0, calc(var(--vignette-strength) * 0.55)));
+    opacity: var(--vignette-strength, 0);
+    pointer-events: none; z-index: 9998;
+  }
+
+  [data-theme='cyberpunk'][data-intensity='expressive'] body::before {
+    background-image: linear-gradient(to right, rgba(252, 238, 10, 0.03) 1px, transparent 1px),
+      linear-gradient(to bottom, rgba(0, 240, 255, 0.03) 1px, transparent 1px);
+    background-size: 2rem 2rem;
+    opacity: var(--scanline-opacity, 0); mix-blend-mode: normal;
   }
 
   #root {
@@ -169,8 +842,8 @@
   }
 
   ::-webkit-scrollbar {
-    width: 8px;
-    height: 8px;
+    width: 0.5rem;
+    height: 0.5rem;
   }
 
   ::-webkit-scrollbar-track {
@@ -234,96 +907,36 @@
     border-radius: var(--radius-md);
   }
 
+  .heat-cell,
+  .heat-l0,
+  .heat-l1,
+  .heat-l2,
+  .heat-l3,
+  .heat-l4 {
+    clip-path: var(--heatmap-cell-clip);
+  }
+
   .heat-cell { background: var(--heat-0); }
   .heat-l0 { background: var(--heat-0); }
   .heat-l1 { background: var(--heat-1); }
-  .heat-l2 { background: var(--heat-2); }
-  .heat-l3 { background: var(--heat-3); }
-  .heat-l4 { background: var(--heat-4); }
+  .heat-l2 { background: var(--heat-2); box-shadow: var(--heat-glow-2, none); }
+  .heat-l3 { background: var(--heat-3); box-shadow: var(--heat-glow-3, none); }
+  .heat-l4 { background: var(--heat-4); box-shadow: var(--heat-glow-4, none); }
+
+  .font-display {
+    font-family: var(--font-display);
+  }
+
+  .font-body-theme {
+    font-family: var(--font-body);
+  }
+
+  .font-mono-theme {
+    font-family: var(--font-mono);
+  }
 
   .text-balance {
     text-wrap: balance;
-  }
-
-  .prose-ohmyc {
-    --tw-prose-body: var(--text-secondary);
-    --tw-prose-headings: var(--text-primary);
-    --tw-prose-lead: var(--text-secondary);
-    --tw-prose-links: var(--text-primary);
-    --tw-prose-bold: var(--text-primary);
-    --tw-prose-counters: var(--text-tertiary);
-    --tw-prose-bullets: var(--text-quaternary);
-    --tw-prose-hr: var(--border-default);
-    --tw-prose-quotes: var(--text-secondary);
-    --tw-prose-quote-borders: var(--border-default);
-    --tw-prose-captions: var(--text-tertiary);
-    --tw-prose-code: var(--text-primary);
-    --tw-prose-pre-code: var(--text-primary);
-    --tw-prose-pre-bg: #08090a;
-    --tw-prose-th-borders: var(--border-default);
-    --tw-prose-td-borders: var(--border-default);
-    font-size: 16px;
-    line-height: 1.7;
-    max-width: 72ch;
-  }
-  .prose-ohmyc :where(code):not(:where([class~="not-prose"] *)) {
-    font-family: 'Berkeley Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
-    font-size: 0.9em;
-    background: rgba(255, 255, 255, 0.06);
-    padding: 2px 6px;
-    border-radius: 4px;
-    font-weight: 500;
-  }
-  .prose-ohmyc :where(code):not(:where([class~="not-prose"] *))::before,
-  .prose-ohmyc :where(code):not(:where([class~="not-prose"] *))::after {
-    content: none;
-  }
-  .prose-ohmyc :where(pre):not(:where([class~="not-prose"] *)) {
-    font-family: 'Berkeley Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
-    font-size: 13px;
-    line-height: 1.6;
-    padding: 16px 20px;
-    border-radius: var(--radius-md);
-    border: 1px solid var(--border-default);
-  }
-  .prose-ohmyc :where(pre code):not(:where([class~="not-prose"] *)) {
-    background: transparent;
-    padding: 0;
-    border-radius: 0;
-    font-weight: 400;
-  }
-  .prose-ohmyc :where(h2):not(:where([class~="not-prose"] *)) {
-    font-size: 22px;
-    font-weight: 600;
-    letter-spacing: -0.2px;
-    margin-top: 2em;
-    margin-bottom: 0.6em;
-  }
-  .prose-ohmyc :where(h3):not(:where([class~="not-prose"] *)) {
-    font-size: 18px;
-    font-weight: 600;
-    letter-spacing: -0.15px;
-    margin-top: 1.6em;
-    margin-bottom: 0.5em;
-  }
-  .prose-ohmyc :where(a):not(:where([class~="not-prose"] *)) {
-    text-decoration: underline;
-    text-underline-offset: 3px;
-    text-decoration-color: color-mix(in oklab, var(--text-primary) 40%, transparent);
-    font-weight: 500;
-  }
-  .prose-ohmyc :where(blockquote):not(:where([class~="not-prose"] *)) {
-    border-left: 2px solid var(--border-default);
-    font-style: normal;
-    font-weight: 400;
-    quotes: none;
-  }
-  .prose-ohmyc :where(blockquote p):not(:where([class~="not-prose"] *))::before,
-  .prose-ohmyc :where(blockquote p):not(:where([class~="not-prose"] *))::after {
-    content: none;
-  }
-  .prose-ohmyc :where(table):not(:where([class~="not-prose"] *)) {
-    font-size: 14px;
   }
 
   .text-pretty {

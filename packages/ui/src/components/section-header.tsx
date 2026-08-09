@@ -15,7 +15,7 @@ export function SectionHeader({ title, description }: SectionHeaderProperties) {
       <div className="mb-1 text-[11px] font-[510] tracking-[0.04em] uppercase text-[var(--text-tertiary)]">
         Overview
       </div>
-      <h1 className="text-[24px] font-[590] leading-[1.33] tracking-[-0.2px] text-[var(--text-primary)]">
+      <h1 className="deco-title-shadow font-display text-[24px] font-[590] leading-[1.33] tracking-normal text-[var(--text-primary)]">
         {title}
       </h1>
       {description && (

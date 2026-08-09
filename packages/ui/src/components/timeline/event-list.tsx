@@ -1,11 +1,11 @@
 // Expandable event list for the timeline page.
 // Renders day headings, project rollups (collapsible), and per-session detail rows.
 
-import Claude from '@lobehub/icons/es/Claude'
-import OpenCode from '@lobehub/icons/es/OpenCode'
 import { motion, useReducedMotion } from 'framer-motion'
 import { ChevronRight } from 'lucide-react'
 import { useMemo, useState } from 'react'
+
+import { AgentGlyph } from '@/components/agent-glyph'
 
 import type {
   DayEvents,
@@ -16,26 +16,6 @@ import type {
 const motionEaseOut = [0.23, 1, 0.32, 1] as const
 
 // ── Agent glyph components ────────────────────────────────────────
-
-// Map agent_name → lobehub Mono icon component.
-// `null`/unknown → no glyph (legacy rows without agent attribution).
-function AgentGlyph({
-  name,
-  size = 12,
-  className,
-}: {
-  name: string | null | undefined
-  size?: number
-  className?: string
-}) {
-  if (name === 'claude') {
-    return <Claude size={size} className={className} />
-  }
-  if (name === 'opencode') {
-    return <OpenCode size={size} className={className} />
-  }
-  return null
-}
 
 // Avatar-stack of distinct agents for a project rollup.
 // 16px circular chips with 1px ring + page-bg fill so the overlap reads as
@@ -203,8 +183,8 @@ export function EventList({ days, highlightedDay }: EventListProps) {
   if (days.length === 0) {
     return (
       <div
-        className="my-3 border-y border-[var(--border-subtle)] py-[14px] px-3 text-[12px] text-[var(--text-tertiary)]"
-        style={{ fontFamily: 'Berkeley Mono, ui-monospace, SF Mono, Menlo, monospace' }}
+        className="my-3 border-y border-[var(--border-subtle)] px-3 py-[14px] text-[12px] text-[var(--text-tertiary)]"
+        style={{ fontFamily: 'var(--font-mono)' }}
       >
         No sessions match the current filters.
       </div>
@@ -233,8 +213,7 @@ export function EventList({ days, highlightedDay }: EventListProps) {
             <div
               className="sticky top-0 z-[1] px-2 pb-[6px] pt-[10px] text-[13px] font-[510] text-[var(--text-primary)]"
               style={{
-                fontFamily: 'Berkeley Mono, ui-monospace, SF Mono, Menlo, monospace',
-                letterSpacing: '0.02em',
+                fontFamily: 'var(--font-mono)',
                 background:
                   'linear-gradient(to bottom, var(--bg-marketing) 70%, rgba(8,9,10,0))',
                 outline: isHighlighted ? '1px solid var(--border-default)' : 'none',
@@ -242,7 +221,7 @@ export function EventList({ days, highlightedDay }: EventListProps) {
               }}
             >
               {formatDayHeading(day.day)}
-              <span className="ml-[10px] text-[var(--text-quaternary)] font-normal">
+              <span className="ml-[10px] font-normal text-[var(--text-quaternary)]">
                 {day.session_count}
                 {' '}
                 session
@@ -313,7 +292,7 @@ function ProjectRollup({
         tabIndex={0}
         onClick={onToggle}
         onKeyDown={e => (e.key === 'Enter' || e.key === ' ') && onToggle()}
-        className="flex cursor-pointer items-center gap-3 rounded-md hover:bg-[rgba(255,255,255,0.02)]"
+        className="grid cursor-pointer grid-cols-[auto_minmax(0,1fr)_auto_auto_auto] items-center gap-3 rounded-md hover:bg-[rgba(255,255,255,0.02)]"
           // Expanded state gets taller padding so the chevron/content
           // transition does not feel cramped against the session list below.
         style={{
@@ -326,12 +305,12 @@ function ProjectRollup({
           className={open ? 'text-[var(--text-primary)]' : 'text-[var(--text-tertiary)]'}
           style={{ transition: 'transform 150ms ease-out', transform: open ? 'rotate(90deg)' : undefined, flexShrink: 0 }}
         />
-        <span className="text-[13px] font-[510] text-[var(--text-primary)] tracking-[-0.05px]">
+        <span className="min-w-0 truncate text-[13px] font-[510] tracking-[-0.05px] text-[var(--text-primary)]">
           {group.project}
         </span>
         <span
-          className="flex-1 text-[12px] text-[var(--text-tertiary)]"
-          style={{ fontFamily: 'Berkeley Mono, ui-monospace, SF Mono, Menlo, monospace', letterSpacing: '0.01em' }}
+          className="shrink-0 whitespace-nowrap text-[12px] text-[var(--text-tertiary)]"
+          style={{ fontFamily: 'var(--font-mono)' }}
         >
           {group.session_count}
           {' '}
@@ -351,8 +330,8 @@ function ProjectRollup({
         </span>
         <AgentStack agents={group.agents} />
         <span
-          className="text-[11px] text-[var(--text-quaternary)]"
-          style={{ fontFamily: 'Berkeley Mono, ui-monospace, SF Mono, Menlo, monospace' }}
+          className="shrink-0 text-[11px] text-[var(--text-quaternary)]"
+          style={{ fontFamily: 'var(--font-mono)' }}
         >
           {formatTimeRange(firstStart, lastEnd)}
         </span>
@@ -425,7 +404,7 @@ function SessionItem({ session, bucket }: { session: SessionRow; bucket: 0 | 1 |
         </span>
         <span
           className="shrink-0 text-[11px] text-[var(--text-tertiary)]"
-          style={{ fontFamily: 'Berkeley Mono, ui-monospace, SF Mono, Menlo, monospace', letterSpacing: '0.02em' }}
+          style={{ fontFamily: 'var(--font-mono)' }}
         >
           {start}
           {' · '}
@@ -434,7 +413,7 @@ function SessionItem({ session, bucket }: { session: SessionRow; bucket: 0 | 1 |
       </div>
       <div
         className="mt-1 flex flex-wrap items-center text-[11px] text-[var(--text-tertiary)]"
-        style={{ marginLeft: 20, fontFamily: 'Berkeley Mono, ui-monospace, SF Mono, Menlo, monospace', gap: '0 8px' }}
+        style={{ marginLeft: 20, fontFamily: 'var(--font-mono)', gap: '0 8px' }}
       >
         {session.agent_name && (
           <span

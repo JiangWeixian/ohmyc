@@ -17,12 +17,12 @@ import { TimelineView } from '@/components/timeline/timeline-view'
 import { __setTransportForTests, resetTransportForTests } from '@/lib/transport'
 import { resetMock, setMockHandler } from '@/lib/transport/mock'
 
-function installTimelineHandlers() {
+function installTimelineHandlers(options?: { projects?: string[] }) {
   const currentYear = new Date().getFullYear()
   const capturedHeatmapArgs: unknown[] = []
 
   setMockHandler('timeline.years', async () => ({ years: [currentYear - 1, currentYear] }))
-  setMockHandler('timeline.projects', async () => ({ projects: ['alpha', 'beta'] }))
+  setMockHandler('timeline.projects', async () => ({ projects: options?.projects ?? ['alpha', 'beta'] }))
   setMockHandler('timeline.status', async () => ({ sessionCount: 9, lastSyncAt: Date.UTC(currentYear, 0, 1) }))
   setMockHandler('timeline.heatmap', async (args) => {
     capturedHeatmapArgs.push(args)
@@ -92,7 +92,7 @@ describe('TimelineView', () => {
     expect(container.textContent).toContain('9 sessions')
     expect(container.textContent).toContain('12 turns')
     expect(container.textContent).toContain('1.5k tokens')
-    expect(container.textContent).toContain('earlier sessions truncated')
+    expect(container.textContent).toContain('older sessions hidden')
   })
 
   it('switches heatmap metric, project, and year filters through accessible controls', async () => {
@@ -135,7 +135,7 @@ describe('TimelineView', () => {
     })
   })
 
-  it('uses shared control sizing for the timeline filter row', async () => {
+  it('uses theme-token control classes for the timeline filter row', async () => {
     installTimelineHandlers()
 
     renderWithProviders(<TimelineView />)
@@ -145,19 +145,28 @@ describe('TimelineView', () => {
 
     const tabList = screen.getByText('Activity').closest('[role="tablist"]')
     expect(tabList).not.toBeNull()
-    expect(tabList).toHaveClass('border-[var(--border-default)]')
-    expect(tabList).toHaveClass('bg-[rgba(255,255,255,0.02)]')
-    expect(tabList).not.toHaveClass('h-auto')
+    expect(tabList).toHaveClass('timeline-tabs')
+    expect(tabList).toHaveClass('h-auto')
 
     const tokensTab = screen.getByText('Tokens').closest('[role="tab"]')
     expect(tokensTab).not.toBeNull()
-    expect(tokensTab).toHaveClass('text-[var(--text-tertiary)]')
-    expect(tokensTab).toHaveClass('data-[state=active]:bg-[rgba(255,255,255,0.08)]')
-    expect(tokensTab).toHaveClass('data-[state=active]:text-[var(--text-primary)]')
-    expect(tokensTab).not.toHaveClass('h-auto')
+    expect(tokensTab).toHaveClass('timeline-tab')
+    expect(tokensTab).toHaveClass('h-auto')
     expect(tokensTab).not.toHaveClass('py-[6px]')
 
     expect(screen.getByLabelText('Project')).toHaveAttribute('data-size', 'default')
+    expect(screen.getByLabelText('Project')).toHaveClass('timeline-filter-select')
     expect(screen.getByLabelText('Year')).toHaveAttribute('data-size', 'default')
+    expect(screen.getByLabelText('Year')).toHaveClass('timeline-filter-select')
+  })
+
+  it('renders when the backend returns blank project names', async () => {
+    installTimelineHandlers({ projects: ['', '   ', 'alpha'] })
+
+    renderWithProviders(<TimelineView />)
+    await waitFor(() => {
+      expect(screen.getByText('Timeline work')).toBeInTheDocument()
+    })
+    expect(screen.getByLabelText('Project')).toBeInTheDocument()
   })
 })

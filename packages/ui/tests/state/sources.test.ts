@@ -18,10 +18,15 @@ describe('useSources', () => {
     expect([...selected].toSorted()).toEqual([...REGISTERED_ORIGINS].toSorted())
   })
 
+  it('defaults to codex claude and opencode', () => {
+    useSources.getState().hydrate()
+    expect([...useSources.getState().selected].toSorted()).toEqual(['claude', 'codex', 'opencode'])
+  })
+
   it('toggle removes an origin and persists', () => {
     useSources.getState().toggle('opencode')
     expect(useSources.getState().selected.has('opencode')).toBe(false)
-    expect(JSON.parse(globalThis.localStorage.getItem('ohmyc.sources')!)).toEqual(['claude'])
+    expect(JSON.parse(globalThis.localStorage.getItem('ohmyc.sources')!)).toEqual(['claude', 'codex'])
   })
 
   it('last-on guard: cannot uncheck the final origin', () => {

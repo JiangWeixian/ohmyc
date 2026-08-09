@@ -1,0 +1,643 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>OhMyC · Timeline — Variant B · Amber CRT</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=VT323&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg:        #0a0700;
+    --bg-panel:  #110b00;
+    --bg-surface:#1a1100;
+    --phosphor:  #ffb000;
+    --phosphor-2:#ff8c00;
+    --phosphor-3:#cc7700;
+    --phosphor-dim:#7a5a1f;
+    --tx-1:      #ffd089;
+    --tx-2:      #c89554;
+    --tx-3:      #8a6533;
+    --tx-4:      #4d3a1c;
+    --bd-1:      rgba(255,176,0,0.08);
+    --bd-2:      rgba(255,176,0,0.16);
+    --bd-3:      rgba(255,176,0,0.32);
+    --glow:      rgba(255,176,0,0.45);
+    --crt-glow:  0 0 8px rgba(255,176,0,0.55), 0 0 18px rgba(255,140,0,0.18);
+    --side-w:    220px;
+
+    /* Amber phosphor heatmap buckets */
+    --heat-0: rgba(255,176,0,0.04);
+    --heat-1: rgba(255,176,0,0.18);
+    --heat-2: rgba(255,176,0,0.36);
+    --heat-3: rgba(255,176,0,0.58);
+    --heat-4: rgba(255,176,0,0.92);
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; background: var(--bg); color: var(--phosphor); height: 100%; }
+  body {
+    font-family: 'IBM Plex Mono', 'JetBrains Mono', monospace;
+    -webkit-font-smoothing: antialiased;
+    overflow: hidden;
+    display: flex; align-items: stretch;
+    text-shadow: 0 0 4px rgba(255,176,0,0.25);
+  }
+
+  /* CRT scanlines + curvature + flicker */
+  body::before {
+    content: ""; position: fixed; inset: 0;
+    background: repeating-linear-gradient(to bottom,
+      rgba(0,0,0,0.18) 0, rgba(0,0,0,0.18) 1px,
+      transparent 1px, transparent 3px);
+    pointer-events: none; z-index: 9999;
+  }
+  body::after {
+    content: ""; position: fixed; inset: 0;
+    background:
+      radial-gradient(ellipse at center, transparent 50%, rgba(0,0,0,0.65) 100%),
+      radial-gradient(ellipse at 50% 50%, rgba(255,140,0,0.04) 0%, transparent 60%);
+    pointer-events: none; z-index: 9998;
+    animation: flicker 5s infinite;
+  }
+  @keyframes flicker {
+    0%,100% { opacity: 1; } 97% { opacity: 1; }
+    97.5% { opacity: 0.88; } 98% { opacity: 1; } 99% { opacity: 0.94; }
+  }
+
+  /* ---------- Sidebar ---------- */
+  .sidebar {
+    width: var(--side-w); flex-shrink: 0; height: 100vh;
+    display: flex; flex-direction: column;
+    padding: 22px 16px 16px;
+    background: var(--bg-panel);
+    border-right: 1px solid var(--bd-1);
+    box-shadow: inset -1px 0 0 rgba(255,176,0,0.04);
+    z-index: 50;
+  }
+  .side-brand {
+    font-family: 'VT323', monospace;
+    font-size: 26px; letter-spacing: 0.04em;
+    color: var(--phosphor); text-shadow: var(--crt-glow);
+    display: flex; align-items: center; gap: 4px;
+    padding: 0 6px 10px;
+    border-bottom: 1px solid var(--bd-1);
+    margin-bottom: 10px;
+  }
+  .side-brand .proto { color: var(--tx-3); }
+  .side-brand .cursor {
+    display: inline-block; width: 10px; height: 18px;
+    background: var(--phosphor); box-shadow: var(--crt-glow);
+    animation: blink 1.06s steps(1) infinite;
+    margin-left: 4px;
+  }
+  @keyframes blink { 50% { opacity: 0; } }
+  .side-meta {
+    font-size: 11px; color: var(--tx-3);
+    letter-spacing: 0.06em;
+    padding: 0 6px 14px; line-height: 1.7;
+    border-bottom: 1px solid var(--bd-1);
+    margin-bottom: 14px;
+  }
+  .side-meta b { color: var(--tx-1); font-weight: 500; }
+  .side-section { margin-bottom: 18px; }
+  .side-label {
+    font-size: 10px; color: var(--phosphor-2);
+    letter-spacing: 0.2em; text-transform: uppercase;
+    padding: 0 6px 6px; text-shadow: var(--crt-glow);
+  }
+  .side-nav { display: flex; flex-direction: column; gap: 1px; }
+  .side-nav a {
+    display: flex; align-items: center; gap: 10px;
+    color: var(--tx-2); text-decoration: none;
+    font-size: 13px; padding: 7px 8px;
+    transition: color 120ms, background 120ms;
+  }
+  .side-nav a .key {
+    color: var(--tx-3); font-size: 10px;
+    width: 18px; text-align: center;
+    border: 1px solid var(--bd-1); padding: 1px 0;
+  }
+  .side-nav a:hover { color: var(--phosphor); background: rgba(255,176,0,0.06); }
+  .side-nav a.active {
+    color: var(--phosphor); background: rgba(255,176,0,0.1);
+    text-shadow: var(--crt-glow);
+    box-shadow: inset 2px 0 0 var(--phosphor);
+  }
+  .side-nav a.active .key { color: var(--phosphor); border-color: var(--bd-3); }
+  .side-sub a {
+    display: flex; align-items: center; justify-content: space-between;
+    color: var(--tx-2); text-decoration: none;
+    font-size: 12px; padding: 6px 8px;
+  }
+  .side-sub a:hover { color: var(--phosphor); background: rgba(255,176,0,0.06); }
+  .side-sub a .count { color: var(--tx-3); font-size: 10px; }
+  .side-spacer { flex: 1; }
+  .side-cmdk {
+    display: flex; align-items: center; gap: 8px;
+    padding: 8px 10px; border: 1px solid var(--bd-2);
+    background: rgba(255,176,0,0.03);
+    font-size: 11px; color: var(--tx-2);
+    cursor: pointer; margin-bottom: 12px;
+  }
+  .side-cmdk:hover { border-color: var(--phosphor); color: var(--phosphor); }
+  .side-cmdk .mk { margin-right: auto; }
+  .side-cmdk kbd {
+    border: 1px solid var(--bd-2); padding: 1px 5px;
+    color: var(--phosphor); background: rgba(255,176,0,0.06);
+    font-family: inherit; font-size: 10px;
+  }
+  .side-status {
+    font-size: 11px; color: var(--tx-2);
+    letter-spacing: 0.04em;
+    padding: 8px 6px 0; border-top: 1px solid var(--bd-1);
+    display: flex; align-items: center; gap: 8px;
+  }
+  .side-status .dot {
+    width: 7px; height: 7px;
+    background: var(--phosphor); box-shadow: var(--crt-glow);
+    border-radius: 50%;
+    animation: pulse 2.4s ease-in-out infinite;
+  }
+  @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.4; } }
+
+  /* ---------- Content ---------- */
+  .content {
+    flex: 1; min-width: 0; height: 100vh;
+    overflow-y: auto;
+    padding: 40px 40px 80px;
+  }
+  .content::-webkit-scrollbar { width: 8px; }
+  .content::-webkit-scrollbar-thumb { background: var(--bd-2); border-radius: 4px; }
+  .page { max-width: 920px; margin: 0 auto; }
+
+  .page h1 {
+    font-family: 'VT323', monospace;
+    font-weight: 400; font-size: 44px;
+    letter-spacing: 0.02em; line-height: 1;
+    margin: 0 0 8px; color: var(--phosphor);
+    text-shadow: var(--crt-glow);
+  }
+  .page h1::before { content: "> "; color: var(--tx-3); }
+  .page .lede {
+    font-size: 13px; color: var(--tx-2);
+    margin: 0 0 28px; max-width: 540px;
+    line-height: 1.55;
+  }
+
+  .controls {
+    display: flex; align-items: center; gap: 10px;
+    margin-bottom: 28px; flex-wrap: wrap;
+  }
+  .tabs {
+    display: inline-flex;
+    border: 1px solid var(--bd-2);
+    background: rgba(255,176,0,0.02);
+  }
+  .tabs button {
+    background: transparent; border: 0;
+    padding: 7px 14px;
+    font-family: inherit; font-size: 12px;
+    color: var(--tx-2); cursor: pointer;
+    transition: color 120ms, background 120ms;
+  }
+  .tabs button + button { border-left: 1px solid var(--bd-1); }
+  .tabs button:hover { color: var(--phosphor); }
+  .tabs button.active {
+    background: rgba(255,176,0,0.12);
+    color: var(--phosphor); text-shadow: var(--crt-glow);
+    box-shadow: inset 0 -1px 0 var(--phosphor);
+  }
+  .select {
+    display: inline-flex; align-items: center; gap: 8px;
+    padding: 7px 12px;
+    border: 1px solid var(--bd-2);
+    background: rgba(255,176,0,0.02);
+    font-family: inherit; font-size: 12px; cursor: pointer;
+  }
+  .select:hover { border-color: var(--bd-3); }
+  .select .lbl { color: var(--tx-3); }
+  .select .val { color: var(--phosphor); }
+  .select::after { content: "▾"; color: var(--tx-3); margin-left: 4px; }
+  .stats {
+    margin-left: auto; font-size: 11px;
+    color: var(--tx-3); letter-spacing: 0.02em;
+  }
+  .stats b { color: var(--phosphor); font-weight: 500; text-shadow: var(--crt-glow); }
+  .stats .sep { color: var(--tx-4); margin: 0 4px; }
+
+  .heatmap-card {
+    border: 1px solid var(--bd-2);
+    background: rgba(255,176,0,0.02);
+    padding: 22px; margin-bottom: 36px;
+    box-shadow: inset 0 0 30px rgba(255,140,0,0.04);
+  }
+  .heatmap-grid {
+    display: grid;
+    grid-template-columns: 18px minmax(0, 1fr);
+    grid-template-rows: 16px 1fr;
+    column-gap: 4px; row-gap: 4px;
+  }
+  .heatmap-months {
+    grid-column: 2; display: flex;
+    font-size: 9px; font-weight: 500;
+    color: var(--phosphor-2);
+    letter-spacing: 0.04em; text-transform: uppercase;
+    text-shadow: var(--crt-glow);
+  }
+  .heatmap-months span { overflow: hidden; white-space: nowrap; }
+  .heatmap-dows {
+    grid-column: 1; grid-row: 2;
+    display: grid; grid-template-rows: repeat(7, 1fr); gap: 3px;
+    font-size: 9px; color: var(--tx-4); align-items: center;
+  }
+  .heatmap-dows span { visibility: hidden; }
+  .heatmap-dows span.on { visibility: visible; }
+  .heatmap-cells {
+    grid-column: 2; grid-row: 2;
+    display: grid;
+    grid-template-columns: repeat(53, minmax(0, 1fr));
+    grid-template-rows: repeat(7, 1fr);
+    grid-auto-flow: column; row-gap: 3px; justify-items: center;
+  }
+  .cell {
+    width: 100%; aspect-ratio: 1;
+    max-width: 14px; max-height: 14px;
+    border-radius: 1px;
+  }
+  .cell.l0 { background: var(--heat-0); }
+  .cell.l1 { background: var(--heat-1); }
+  .cell.l2 { background: var(--heat-2); }
+  .cell.l3 { background: var(--heat-3); }
+  .cell.l4 { background: var(--heat-4); box-shadow: 0 0 4px rgba(255,176,0,0.4); }
+  .heatmap-legend {
+    margin-top: 14px;
+    display: flex; align-items: center; justify-content: space-between;
+    font-size: 11px; color: var(--tx-3);
+  }
+  .heatmap-legend .scale {
+    display: inline-flex; align-items: center; gap: 6px; color: var(--tx-4);
+  }
+  .heatmap-legend .scale .swatches { display: inline-flex; gap: 3px; }
+  .heatmap-legend .scale .swatches i {
+    display: block; width: 12px; height: 12px; border-radius: 1px;
+  }
+
+  .events-header {
+    display: flex; align-items: baseline; justify-content: space-between;
+    margin-bottom: 12px;
+  }
+  .events-header h3 {
+    font-size: 13px; color: var(--phosphor);
+    margin: 0; letter-spacing: 0.04em; font-weight: 500;
+    text-shadow: var(--crt-glow);
+  }
+  .events-header h3::before { content: "> "; color: var(--tx-3); }
+  .events-header .meta {
+    font-size: 11px; color: var(--tx-4);
+  }
+
+  .day-block { margin-bottom: 4px; }
+  .day-heading {
+    position: sticky; top: 0; z-index: 2;
+    padding: 10px 8px 6px;
+    font-size: 13px; font-weight: 500;
+    color: var(--phosphor); letter-spacing: 0.02em;
+    text-shadow: var(--crt-glow);
+    background: linear-gradient(to bottom, var(--bg) 70%, rgba(10,7,0,0));
+    display: flex; align-items: baseline; gap: 12px;
+  }
+  .day-heading .today {
+    color: var(--phosphor);
+    animation: todayblink 1.4s ease-in-out infinite;
+  }
+  @keyframes todayblink { 0%,100% { opacity: 1; } 50% { opacity: 0.55; } }
+  .day-heading .summary { color: var(--tx-4); font-weight: 400; }
+  .day-heading .summary b { color: var(--tx-2); font-weight: 400; }
+
+  .project-rollup {
+    display: flex; align-items: center; gap: 12px;
+    padding: 9px 14px; margin-bottom: 1px;
+    cursor: pointer; transition: background 120ms;
+  }
+  .project-rollup:hover { background: rgba(255,176,0,0.04); }
+  .project-rollup.open { padding: 11px 14px; margin-bottom: 2px; }
+  .chev {
+    color: var(--tx-3); flex-shrink: 0;
+    transition: transform 150ms ease-out;
+    font-size: 11px;
+  }
+  .project-rollup.open .chev {
+    transform: rotate(90deg);
+    color: var(--phosphor); text-shadow: var(--crt-glow);
+  }
+  .project-name {
+    font-size: 13px; font-weight: 500;
+    color: var(--phosphor); letter-spacing: -0.05px;
+    text-shadow: 0 0 4px rgba(255,176,0,0.2);
+  }
+  .project-stats { flex: 1; font-size: 12px; color: var(--tx-3); }
+  .project-stats .sep { color: var(--tx-4); margin: 0 6px; }
+  .agent-stack { display: inline-flex; margin-right: 4px; }
+  .agent-stack span {
+    width: 18px; height: 18px; border-radius: 50%;
+    background: var(--bg); border: 1px solid var(--bd-2);
+    display: inline-flex; align-items: center; justify-content: center;
+    font-size: 9px; font-weight: 700;
+    color: var(--phosphor); margin-left: -6px;
+  }
+  .agent-stack span:first-child { margin-left: 0; }
+  .time-range { font-size: 11px; color: var(--tx-4); }
+
+  .session-list {
+    margin: 2px 0 8px 28px;
+    padding-left: 16px;
+    border-left: 1px solid var(--bd-1);
+  }
+  .session-item {
+    padding: 10px 12px; cursor: pointer;
+    transition: background 120ms;
+  }
+  .session-item:hover { background: rgba(255,176,0,0.04); }
+  .session-main { display: flex; align-items: center; gap: 12px; }
+  .session-main .dot {
+    width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0;
+    background: var(--tx-2);
+  }
+  .session-main .dot.l3 { background: var(--phosphor); box-shadow: 0 0 6px var(--glow); }
+  .session-main .dot.l2 { background: rgba(255,176,0,0.55); }
+  .session-summary {
+    flex: 1; min-width: 0;
+    font-size: 13px; font-weight: 500;
+    color: var(--tx-1); letter-spacing: -0.05px;
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  }
+  .session-summary .quote { color: var(--tx-3); }
+  .session-time {
+    font-size: 11px; color: var(--tx-3); flex-shrink: 0;
+  }
+  .session-meta {
+    margin-top: 4px; margin-left: 20px;
+    font-size: 11px; color: var(--tx-3);
+    display: flex; flex-wrap: wrap; gap: 0 8px;
+  }
+  .session-meta .sep { color: var(--tx-4); }
+  .session-meta .agent {
+    display: inline-flex; align-items: center;
+    color: var(--tx-1); opacity: 0.85;
+  }
+  .session-meta .agent::before {
+    content: ""; display: inline-block;
+    width: 6px; height: 6px;
+    background: var(--phosphor); margin-right: 4px;
+    box-shadow: 0 0 3px rgba(255,176,0,0.5);
+  }
+  .session-meta .agent.opencode::before { background: var(--tx-3); box-shadow: none; }
+
+  @media (prefers-reduced-motion: reduce) {
+    .side-brand .cursor, .side-status .dot, .day-heading .today { animation: none; }
+    body::after { animation: none; }
+  }
+  @media (max-width: 760px) {
+    body { flex-direction: column; overflow-y: auto; }
+    .sidebar { width: 100%; height: auto; flex-direction: row; flex-wrap: wrap; padding: 12px; gap: 10px; }
+    .side-brand, .side-meta, .side-section, .side-spacer, .side-status { display: none; }
+    .side-cmdk { margin: 0; }
+    .content { padding: 24px 16px 60px; height: auto; }
+  }
+</style>
+</head>
+<body>
+
+<aside class="sidebar">
+  <div class="side-brand">OHMYC<span class="proto">&gt;</span><span class="cursor"></span></div>
+  <div class="side-meta"><b>v0.4.2</b><br>tty/0 · build 7a3f</div>
+
+  <div class="side-section">
+    <div class="side-label">activity</div>
+    <nav class="side-nav">
+      <a href="#" class="active"><span class="key">T</span> timeline</a>
+      <a href="#"><span class="key">M</span> monitor</a>
+    </nav>
+  </div>
+
+  <div class="side-section">
+    <div class="side-label">explore</div>
+    <nav class="side-nav">
+      <a href="#"><span class="key">A</span> agents</a>
+      <a href="#"><span class="key">S</span> skills</a>
+      <a href="#"><span class="key">C</span> commands</a>
+      <a href="#"><span class="key">P</span> plugins</a>
+    </nav>
+  </div>
+
+  <div class="side-section">
+    <div class="side-label">library</div>
+    <nav class="side-sub">
+      <a href="#">recent <span class="count">42</span></a>
+      <a href="#">favorites <span class="count">8</span></a>
+      <a href="#">all origins <span class="count">142</span></a>
+    </nav>
+  </div>
+
+  <div class="side-spacer"></div>
+  <div class="side-cmdk"><span class="mk">search</span><kbd>⌘K</kbd></div>
+  <div class="side-status"><span class="dot"></span> 14 sessions live</div>
+</aside>
+
+<div class="content">
+  <div class="page">
+    <h1>Timeline</h1>
+    <p class="lede">Every Claude Code session you've run, across every project. Auto-synced via the Stop hook.</p>
+
+    <div class="controls">
+      <div class="tabs">
+        <button class="active">activity</button>
+        <button>tokens</button>
+      </div>
+      <button class="select"><span class="lbl">project:</span><span class="val">all</span></button>
+      <button class="select"><span class="lbl">year:</span><span class="val">2026</span></button>
+      <span class="stats">
+        <b>147</b> sessions<span class="sep">·</span>
+        <b>1,284</b> turns<span class="sep">·</span>
+        <b>8.2M</b> tokens
+      </span>
+    </div>
+
+    <div class="heatmap-card">
+      <div class="heatmap-grid">
+        <div class="heatmap-months" id="months"></div>
+        <div class="heatmap-dows">
+          <span></span><span class="on">M</span><span></span><span class="on">W</span><span></span><span class="on">F</span><span></span>
+        </div>
+        <div class="heatmap-cells" id="cells"></div>
+      </div>
+      <div class="heatmap-legend">
+        <span>Jan 1 → Dec 31, 2026</span>
+        <span class="scale">
+          less
+          <span class="swatches">
+            <i class="cell l0"></i><i class="cell l1"></i><i class="cell l2"></i><i class="cell l3"></i><i class="cell l4"></i>
+          </span>
+          more
+        </span>
+      </div>
+    </div>
+
+    <div class="events-header">
+      <h3>recent activity</h3>
+      <span class="meta">showing 4 days · earlier sessions truncated</span>
+    </div>
+
+    <section class="day-block">
+      <div class="day-heading">
+        <span class="date">Jun 22, 2026 <span class="today">· today</span></span>
+        <span class="summary"><b>3</b> sessions · <b>47</b> turns · <b>128k</b> tokens</span>
+      </div>
+
+      <div class="project-rollup open">
+        <span class="chev">▸</span>
+        <span class="project-name">claudeui</span>
+        <span class="project-stats">
+          3 sessions<span class="sep">·</span>47 turns<span class="sep">·</span>128k tokens<span class="sep">·</span>8 tools<span class="sep">·</span>2 skills
+        </span>
+        <span class="agent-stack"><span title="claude">C</span><span title="opencode">O</span></span>
+        <span class="time-range">08:31 → 11:38</span>
+      </div>
+      <div class="session-list">
+        <div class="session-item">
+          <div class="session-main">
+            <span class="dot l3"></span>
+            <span class="session-summary">implement pixel-card variant B · amber crt</span>
+            <span class="session-time">09:42 · 1h 56m</span>
+          </div>
+          <div class="session-meta">
+            <span class="agent">claude</span><span class="sep">·</span>
+            <span>18 turns</span><span class="sep">·</span>
+            <span>128k tokens</span><span class="sep">·</span>
+            <span>claude-sonnet-4</span>
+          </div>
+        </div>
+        <div class="session-item">
+          <div class="session-main">
+            <span class="dot l2"></span>
+            <span class="session-summary">fix WebGL fallback DOM labels for accessibility</span>
+            <span class="session-time">09:18 · 38 min</span>
+          </div>
+          <div class="session-meta">
+            <span class="agent">claude</span><span class="sep">·</span>
+            <span>12 turns</span><span class="sep">·</span>
+            <span>82k tokens</span><span class="sep">·</span>
+            <span>claude-sonnet-4</span>
+          </div>
+        </div>
+        <div class="session-item">
+          <div class="session-main">
+            <span class="dot l2"></span>
+            <span class="session-summary"><span class="quote">"</span>extract PixelSnow shader params and uniforms<span class="quote">"</span></span>
+            <span class="session-time">08:31 · 22 min</span>
+          </div>
+          <div class="session-meta">
+            <span class="agent opencode">opencode</span><span class="sep">·</span>
+            <span>17 turns</span><span class="sep">·</span>
+            <span>44k tokens</span><span class="sep">·</span>
+            <span>gpt-5-codex</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="day-block">
+      <div class="day-heading">
+        <span class="date">Jun 21, 2026</span>
+        <span class="summary"><b>2</b> sessions · <b>19</b> turns · <b>62k</b> tokens</span>
+      </div>
+      <div class="project-rollup">
+        <span class="chev">▸</span>
+        <span class="project-name">ohmyc/monitor-route</span>
+        <span class="project-stats">1 session<span class="sep">·</span>11 turns<span class="sep">·</span>38k tokens<span class="sep">·</span>3 tools</span>
+        <span class="agent-stack"><span title="claude">C</span></span>
+        <span class="time-range">14:22 → 15:09</span>
+      </div>
+      <div class="project-rollup">
+        <span class="chev">▸</span>
+        <span class="project-name">vendor/react-bits</span>
+        <span class="project-stats">1 session<span class="sep">·</span>8 turns<span class="sep">·</span>24k tokens<span class="sep">·</span>2 tools</span>
+        <span class="agent-stack"><span title="claude">C</span></span>
+        <span class="time-range">10:14 → 10:48</span>
+      </div>
+    </section>
+
+    <section class="day-block">
+      <div class="day-heading">
+        <span class="date">Jun 20, 2026</span>
+        <span class="summary"><b>1</b> session · <b>8</b> turns · <b>18k</b> tokens</span>
+      </div>
+      <div class="project-rollup">
+        <span class="chev">▸</span>
+        <span class="project-name">ohmyc/timeline</span>
+        <span class="project-stats">1 session<span class="sep">·</span>8 turns<span class="sep">·</span>18k tokens<span class="sep">·</span>1 tool</span>
+        <span class="agent-stack"><span title="claude">C</span></span>
+        <span class="time-range">22:48 → 23:09</span>
+      </div>
+    </section>
+
+    <section class="day-block">
+      <div class="day-heading">
+        <span class="date">Jun 19, 2026</span>
+        <span class="summary"><b>4</b> sessions · <b>52</b> turns · <b>184k</b> tokens</span>
+      </div>
+      <div class="project-rollup">
+        <span class="chev">▸</span>
+        <span class="project-name">claudeui</span>
+        <span class="project-stats">4 sessions<span class="sep">·</span>52 turns<span class="sep">·</span>184k tokens<span class="sep">·</span>9 tools<span class="sep">·</span>3 skills</span>
+        <span class="agent-stack"><span title="claude">C</span><span title="opencode">O</span></span>
+        <span class="time-range">09:12 → 18:44</span>
+      </div>
+    </section>
+
+  </div>
+</div>
+
+<script>
+(function(){
+  const monthsEl = document.getElementById('months');
+  const cellsEl  = document.getElementById('cells');
+  if (!monthsEl || !cellsEl) return;
+  const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  const WEEKS = 53;
+  for (let w = 0; w < WEEKS; w++) {
+    const span = monthsEl.appendChild(document.createElement('span'));
+    span.style.flex = '1 1 0'; span.style.minWidth = '0';
+    span.textContent = (w % 4 === 0) ? MONTHS[Math.min(11, Math.floor(w / 4.4))] : '';
+  }
+  for (let w = 0; w < WEEKS; w++) {
+    const recency = (w / WEEKS);
+    const recentBoost = Math.max(0, (recency - 0.6) * 2.5);
+    for (let d = 0; d < 7; d++) {
+      const cell = cellsEl.appendChild(document.createElement('div'));
+      cell.className = 'cell';
+      const r = Math.random();
+      const weekendFactor = (d === 0 || d === 6) ? 0.4 : 1;
+      const score = (r * recency * weekendFactor) + recentBoost * r;
+      let bucket = 'l0';
+      if (score > 0.85) bucket = 'l4';
+      else if (score > 0.65) bucket = 'l3';
+      else if (score > 0.45) bucket = 'l2';
+      else if (score > 0.25) bucket = 'l1';
+      cell.classList.add(bucket);
+    }
+  }
+})();
+document.querySelectorAll('.project-rollup').forEach(el => {
+  el.addEventListener('click', () => {
+    const wasOpen = el.classList.contains('open');
+    el.classList.toggle('open');
+    const list = el.nextElementSibling;
+    if (list && list.classList.contains('session-list')) list.style.display = wasOpen ? 'none' : 'block';
+  });
+});
+document.querySelectorAll('.project-rollup:not(.open) + .session-list').forEach(l => l.style.display = 'none');
+</script>
+</body>
+</html>

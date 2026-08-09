@@ -14,9 +14,9 @@ import { calculateContributionGraphLayout, ContributionGraph } from '@/component
 
 describe('ContributionGraph', () => {
   it('calculates readable square cells while widening the week tracks', () => {
-    expect(calculateContributionGraphLayout(760)).toEqual({ cellSize: 10, rowGap: 4 })
-    expect(calculateContributionGraphLayout(1166)).toEqual({ cellSize: 15, rowGap: 4 })
-    expect(calculateContributionGraphLayout(1800)).toEqual({ cellSize: 18, rowGap: 4 })
+    expect(calculateContributionGraphLayout(760)).toEqual({ cellSize: 14, rowGap: 3 })
+    expect(calculateContributionGraphLayout(1166)).toEqual({ cellSize: 14, rowGap: 3 })
+    expect(calculateContributionGraphLayout(1800)).toEqual({ cellSize: 14, rowGap: 3 })
   })
 
   it('renders the year grid, legend, and clickable populated days', () => {

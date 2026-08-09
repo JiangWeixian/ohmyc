@@ -37,10 +37,6 @@ Object.defineProperty(globalThis, 'localStorage', {
   value: localStorageMock,
   configurable: true,
 })
-Object.defineProperty(globalThis, 'localStorage', {
-  value: localStorageMock,
-  configurable: true,
-})
 
 // jsdom doesn't implement these PointerEvent APIs that Radix uses; stub them
 // so dropdown-menu interactions work under test. Guards keep this idempotent.
@@ -59,6 +55,30 @@ if (!Element.prototype.setPointerCapture) {
 }
 if (!Element.prototype.scrollIntoView) {
   Element.prototype.scrollIntoView = () => {}
+}
+
+// jsdom does not implement matchMedia; components using useSyncExternalStore
+// over a media query (e.g. prefers-reduced-motion) need it to render in tests.
+if (!globalThis.matchMedia) {
+  // @ts-expect-error – minimal stub is sufficient for reads + subscriptions
+  globalThis.matchMedia = (query: string) => ({
+    matches: false,
+    media: query,
+    onchange: null,
+    addEventListener: () => {},
+    removeEventListener: () => {},
+    addListener: () => {},
+    removeListener: () => {},
+    dispatchEvent: () => false,
+  })
+}
+
+// jsdom does not implement canvas.getContext (would log a not-implemented error
+// that fails tests). LetterGlitch bails out gracefully when getContext is null.
+// Intentionally a permanent global stub: jsdom never yields a real context, and
+// vi.clearAllMocks() in afterEach does not touch plain prototype assignments.
+HTMLCanvasElement.prototype.getContext = function getContext() {
+  return null
 }
 
 afterEach(() => {

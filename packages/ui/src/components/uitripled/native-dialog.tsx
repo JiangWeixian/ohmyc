@@ -21,14 +21,8 @@ const motionEaseOut = [0.23, 1, 0.32, 1] as const
 /** Uncontrolled dialog root — opens/closes via trigger interaction. */
 const NativeDialog = DialogPrimitive.Root
 
-/** Element that opens the dialog when activated. */
-const NativeDialogTrigger = DialogPrimitive.Trigger
-
 /** Portals dialog content outside the DOM tree to avoid z-index conflicts. */
 const NativeDialogPortal = DialogPrimitive.Portal
-
-/** Element that closes the dialog. */
-const NativeDialogClose = DialogPrimitive.Close
 
 /** Semi-transparent backdrop with backdrop-blur that fades in/out. */
 const NativeDialogOverlay = React.forwardRef<
@@ -158,7 +152,6 @@ NativeDialogDescription.displayName = 'NativeDialogDescription'
 
 export {
   NativeDialog,
-  NativeDialogClose,
   NativeDialogContent,
   NativeDialogDescription,
   NativeDialogFooter,
@@ -166,5 +159,4 @@ export {
   NativeDialogOverlay,
   NativeDialogPortal,
   NativeDialogTitle,
-  NativeDialogTrigger,
 }

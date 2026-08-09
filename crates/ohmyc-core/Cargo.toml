@@ -19,6 +19,9 @@ gray_matter = { version = "0.2", default-features = false, features = ["yaml"] }
 serde_yaml = "0.9"
 fs2 = "0.4"
 tempfile = { workspace = true }
+toml = "0.8"
+json5 = "0.4"
+sha2 = "0.10"
 
 [dev-dependencies]
 rstest = { workspace = true }

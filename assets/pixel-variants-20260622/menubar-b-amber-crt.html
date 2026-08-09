@@ -1,0 +1,409 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>OhMyC · Menubar — Variant B · Amber CRT</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=VT323&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0a0700;
+    --phosphor: #ffb000; --phosphor-2: #ff8c00; --phosphor-dim: #7a5a1f;
+    --tx-1: #ffd089; --tx-2: #c89554; --tx-3: #8a6533; --tx-4: #4d3a1c;
+    --bd-1: rgba(255,176,0,0.10); --bd-2: rgba(255,176,0,0.20); --bd-3: rgba(255,176,0,0.36);
+    --glow: rgba(255,176,0,0.45);
+    --crt-glow: 0 0 8px rgba(255,176,0,0.55), 0 0 18px rgba(255,140,0,0.18);
+    --popover-w: 340px;
+
+    --heat-0: rgba(255,176,0,0.04);
+    --heat-1: rgba(255,176,0,0.12);
+    --heat-2: rgba(255,176,0,0.26);
+    --heat-3: rgba(255,176,0,0.50);
+    --heat-4: rgba(255,176,0,0.78);
+    --heat-5: rgba(255,176,0,0.95);
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; height: 100%; }
+  body {
+    background:
+      radial-gradient(ellipse at 30% 20%, rgba(60,40,0,0.5), transparent 50%),
+      radial-gradient(ellipse at 70% 80%, rgba(20,10,0,0.8), transparent 60%),
+      #050300;
+    color: var(--phosphor);
+    font-family: 'IBM Plex Mono', monospace;
+    -webkit-font-smoothing: antialiased;
+    display: flex; align-items: center; justify-content: center;
+    min-height: 100vh; padding: 40px 20px; overflow: auto;
+    text-shadow: 0 0 4px rgba(255,176,0,0.25);
+  }
+  body::before {
+    content: ""; position: fixed; inset: 0;
+    background: repeating-linear-gradient(to bottom,
+      rgba(0,0,0,0.18) 0, rgba(0,0,0,0.18) 1px,
+      transparent 1px, transparent 3px);
+    pointer-events: none; z-index: 1;
+  }
+  .stage {
+    position: relative; z-index: 2;
+    display: flex; flex-direction: column; align-items: center; gap: 12px;
+  }
+  .stage-label {
+    font-size: 10px; color: var(--tx-3);
+    letter-spacing: 0.18em; text-transform: uppercase;
+  }
+  .stage-label::before { content: "> "; color: var(--tx-4); }
+
+  .popover {
+    width: var(--popover-w);
+    background: rgba(20, 14, 0, 0.7);
+    backdrop-filter: blur(40px) saturate(1.4);
+    -webkit-backdrop-filter: blur(40px) saturate(1.4);
+    border: 1px solid var(--bd-2);
+    border-radius: 12px;
+    box-shadow:
+      0 24px 60px rgba(0,0,0,0.6),
+      0 0 30px rgba(255,140,0,0.08),
+      inset 0 0 0 0.5px rgba(255,176,0,0.05);
+    padding: 18px 22px;
+    color: var(--phosphor);
+    position: relative;
+    overflow: hidden;
+  }
+  .popover::before {
+    content: ""; position: absolute; inset: 0;
+    background: repeating-linear-gradient(to bottom,
+      rgba(0,0,0,0.14) 0, rgba(0,0,0,0.14) 1px,
+      transparent 1px, transparent 3px);
+    pointer-events: none;
+  }
+  .popover::after {
+    content: ""; position: absolute; inset: 0;
+    background: radial-gradient(ellipse at center, transparent 50%, rgba(0,0,0,0.4) 100%);
+    pointer-events: none;
+  }
+  .popover > * { position: relative; z-index: 1; }
+
+  .header {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-bottom: 12px;
+  }
+  .header .title {
+    font-size: 11px; font-weight: 500;
+    color: var(--phosphor-2);
+    letter-spacing: 0.12em; text-transform: uppercase;
+    text-shadow: var(--crt-glow);
+  }
+  .header .title::before { content: "> "; color: var(--tx-3); }
+  .view-switch { display: inline-flex; gap: 2px; }
+  .view-switch button {
+    background: transparent; border: 0;
+    width: 22px; height: 22px;
+    display: inline-flex; align-items: center; justify-content: center;
+    cursor: pointer; padding: 0;
+    color: var(--tx-3);
+    transition: color 120ms, filter 120ms;
+  }
+  .view-switch button:hover { color: var(--phosphor-2); }
+  .view-switch button.active {
+    color: var(--phosphor);
+    filter: drop-shadow(0 0 6px rgba(255,176,0,0.6));
+  }
+
+  .chart-area {
+    min-height: 168px;
+    margin: 0 -4px;
+    position: relative;
+    background: linear-gradient(180deg, rgba(255,176,0,0.04) 0%, rgba(255,176,0,0.0) 100%);
+    border-radius: 4px;
+  }
+  .chart-area.heatmap-bg { background: transparent; }
+
+  .line-chart {
+    width: 100%; height: 168px;
+    display: block;
+  }
+  .line-chart .area-fill {
+    fill: rgba(255,176,0,0.22);
+  }
+  .line-chart .area-stroke {
+    fill: none;
+    stroke: var(--phosphor);
+    stroke-width: 1.5;
+    stroke-linecap: round; stroke-linejoin: round;
+    filter: drop-shadow(0 0 4px rgba(255,176,0,0.6));
+  }
+  .line-chart .y-tick, .line-chart .x-tick {
+    font-size: 9px;
+    font-family: 'IBM Plex Mono', monospace;
+  }
+  .line-chart .y-tick { fill: var(--tx-3); }
+  .line-chart .x-tick { fill: var(--phosphor-2); }
+  .line-chart .peak-marker {
+    fill: var(--phosphor);
+    filter: drop-shadow(0 0 6px var(--phosphor));
+  }
+  .line-chart .grid-line {
+    stroke: rgba(255,176,0,0.06);
+    stroke-width: 0.5;
+  }
+
+  .heatmap { padding: 8px 4px 4px; font-size: 9px; }
+  .heatmap-grid {
+    display: grid;
+    grid-template-columns: 16px repeat(16, 1fr);
+    grid-template-rows: 12px repeat(7, 16px);
+    column-gap: 3px; row-gap: 3px;
+    align-items: center;
+  }
+  .heatmap-months {
+    grid-column: 2 / -1; grid-row: 1;
+    display: grid;
+    grid-template-columns: repeat(16, 1fr);
+    column-gap: 3px;
+    color: var(--phosphor-2);
+    font-size: 9px; letter-spacing: 0.04em;
+    text-shadow: var(--crt-glow);
+  }
+  .heatmap-dows {
+    grid-column: 1; grid-row: 2 / -1;
+    display: grid;
+    grid-template-rows: repeat(7, 16px);
+    row-gap: 3px;
+    color: var(--tx-3);
+    font-size: 8px;
+    align-items: center;
+  }
+  .heatmap-dows span { visibility: hidden; }
+  .heatmap-dows span.on { visibility: visible; }
+  .heatmap-cells {
+    grid-column: 2 / -1; grid-row: 2 / -1;
+    display: grid;
+    grid-template-columns: repeat(16, 1fr);
+    grid-template-rows: repeat(7, 16px);
+    column-gap: 3px; row-gap: 3px;
+  }
+  .heatmap-cells i {
+    display: block;
+    width: 100%; height: 100%;
+    border-radius: 1px;
+  }
+  .heatmap-cells i.b0 { background: var(--heat-0); }
+  .heatmap-cells i.b1 { background: var(--heat-1); }
+  .heatmap-cells i.b2 { background: var(--heat-2); }
+  .heatmap-cells i.b3 { background: var(--heat-3); box-shadow: 0 0 3px rgba(255,176,0,0.3); }
+  .heatmap-cells i.b4 { background: var(--heat-4); box-shadow: 0 0 5px rgba(255,176,0,0.5); }
+  .heatmap-cells i.b5 { background: var(--heat-5); box-shadow: 0 0 8px rgba(255,176,0,0.7); }
+  .heatmap-legend {
+    margin-top: 10px;
+    display: flex; align-items: center; justify-content: space-between;
+    color: var(--tx-3);
+    font-size: 9px;
+  }
+  .heatmap-legend .scale {
+    display: inline-flex; align-items: center; gap: 4px;
+  }
+  .heatmap-legend .scale .swatches {
+    display: inline-flex; gap: 2px;
+  }
+  .heatmap-legend .scale .swatches i {
+    display: block; width: 10px; height: 10px; border-radius: 1px;
+  }
+
+  .kpi-row {
+    display: flex;
+    margin-top: 14px;
+  }
+  .kpi {
+    flex: 1;
+    display: flex; flex-direction: column; gap: 4px;
+    padding: 0 14px;
+  }
+  .kpi:first-child { padding-left: 0; }
+  .kpi:last-child { padding-right: 0; }
+  .kpi + .kpi { border-left: 1px solid var(--bd-1); }
+  .kpi-value {
+    font-family: 'VT323', monospace;
+    font-size: 30px; font-weight: 400;
+    letter-spacing: 0.02em; line-height: 0.9;
+    color: var(--phosphor);
+    font-variant-numeric: tabular-nums;
+    text-shadow: var(--crt-glow);
+  }
+  .kpi-label {
+    font-size: 9px; font-weight: 500;
+    color: var(--tx-3);
+    letter-spacing: 0.1em; text-transform: uppercase;
+  }
+
+  .footer {
+    margin-top: 14px;
+    padding-top: 12px;
+    border-top: 1px solid var(--bd-1);
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .footer .meta {
+    font-size: 9px; font-weight: 500;
+    color: var(--tx-3);
+    letter-spacing: 0.08em; text-transform: uppercase;
+  }
+  .footer .open {
+    font-size: 11px;
+    color: var(--phosphor-2);
+    background: transparent; border: 0;
+    cursor: pointer; padding: 0;
+    transition: color 120ms;
+    text-shadow: var(--crt-glow);
+  }
+  .footer .open:hover { color: var(--phosphor); }
+  .footer .open::after { content: " →"; }
+
+  @media (prefers-reduced-motion: reduce) {
+    .view-switch button.active { filter: none; }
+  }
+</style>
+</head>
+<body>
+
+<div class="stage">
+  <span class="stage-label">menubar popover · amber crt · 340px wide</span>
+
+  <div class="popover">
+
+    <div class="header">
+      <span class="title">activity</span>
+      <div class="view-switch">
+        <button class="active" data-view="line" aria-label="Line view">
+          <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+            <path d="M1 11 L4 7 L7 9 L10 4 L13 6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </button>
+        <button data-view="heatmap" aria-label="Heatmap view">
+          <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+            <rect x="1.5" y="1.5" width="3" height="3" rx="0.5" fill="currentColor" opacity="0.5"/>
+            <rect x="5.5" y="1.5" width="3" height="3" rx="0.5" fill="currentColor"/>
+            <rect x="9.5" y="1.5" width="3" height="3" rx="0.5" fill="currentColor" opacity="0.3"/>
+            <rect x="1.5" y="5.5" width="3" height="3" rx="0.5" fill="currentColor"/>
+            <rect x="5.5" y="5.5" width="3" height="3" rx="0.5" fill="currentColor" opacity="0.3"/>
+            <rect x="9.5" y="5.5" width="3" height="3" rx="0.5" fill="currentColor" opacity="0.5"/>
+            <rect x="1.5" y="9.5" width="3" height="3" rx="0.5" fill="currentColor" opacity="0.3"/>
+            <rect x="5.5" y="9.5" width="3" height="3" rx="0.5" fill="currentColor" opacity="0.5"/>
+            <rect x="9.5" y="9.5" width="3" height="3" rx="0.5" fill="currentColor"/>
+          </svg>
+        </button>
+      </div>
+    </div>
+
+    <div class="chart-area" id="chart-area">
+
+      <svg class="line-chart" id="line-view" viewBox="0 0 320 168" preserveAspectRatio="none">
+        <line class="grid-line" x1="0" y1="40"  x2="320" y2="40"/>
+        <line class="grid-line" x1="0" y1="84"  x2="320" y2="84"/>
+        <line class="grid-line" x1="0" y1="128" x2="320" y2="128"/>
+        <text class="y-tick" x="2" y="38">128k</text>
+        <text class="y-tick" x="2" y="82">64k</text>
+        <text class="y-tick" x="2" y="126">0</text>
+        <path class="area-fill" d="
+          M0 130
+          L20 120 L40 100 L60 110 L80 90 L100 70 L120 80 L140 60
+          L160 75 L180 50 L200 65 L220 40 L240 55 L260 30 L280 45 L300 25 L320 35
+          L320 168 L0 168 Z"/>
+        <path class="area-stroke" d="
+          M0 130
+          L20 120 L40 100 L60 110 L80 90 L100 70 L120 80 L140 60
+          L160 75 L180 50 L200 65 L220 40 L240 55 L260 30 L280 45 L300 25 L320 35"/>
+        <circle class="peak-marker" cx="300" cy="25" r="2.5"/>
+        <text class="x-tick" x="0"   y="162">Mar</text>
+        <text class="x-tick" x="80"  y="162">Apr</text>
+        <text class="x-tick" x="160" y="162">May</text>
+        <text class="x-tick" x="240" y="162">Jun</text>
+      </svg>
+
+      <div class="heatmap" id="heatmap-view" style="display:none">
+        <div class="heatmap-grid">
+          <div class="heatmap-months">
+            <span>Mar</span><span></span><span></span><span>Apr</span><span></span><span></span>
+            <span>May</span><span></span><span></span><span>Jun</span><span></span><span></span>
+            <span>Jul</span><span></span><span></span><span></span>
+          </div>
+          <div class="heatmap-dows">
+            <span></span><span class="on">M</span><span></span><span class="on">W</span><span></span><span class="on">F</span><span></span>
+          </div>
+          <div class="heatmap-cells" id="heatmap-cells"></div>
+        </div>
+        <div class="heatmap-legend">
+          <span>Mar 5 → Jun 22</span>
+          <span class="scale">
+            less
+            <span class="swatches">
+              <i class="b0"></i><i class="b1"></i><i class="b2"></i><i class="b3"></i><i class="b4"></i><i class="b5"></i>
+            </span>
+            more
+          </span>
+        </div>
+      </div>
+
+    </div>
+
+    <div class="kpi-row">
+      <div class="kpi">
+        <span class="kpi-value">8.2M</span>
+        <span class="kpi-label">tokens</span>
+      </div>
+      <div class="kpi">
+        <span class="kpi-value">147</span>
+        <span class="kpi-label">sessions</span>
+      </div>
+      <div class="kpi">
+        <span class="kpi-value">128k</span>
+        <span class="kpi-label">peak</span>
+      </div>
+    </div>
+
+    <div class="footer">
+      <span class="meta">peak Sun Jun 15</span>
+      <button class="open">Open OhMyC</button>
+    </div>
+
+  </div>
+
+  <span class="stage-label" style="margin-top:8px">click the icons above to toggle line ↔ heatmap</span>
+</div>
+
+<script>
+(function(){
+  const el = document.getElementById('heatmap-cells');
+  if (!el) return;
+  const WEEKS = 16;
+  for (let w = 0; w < WEEKS; w++) {
+    const recency = w / WEEKS;
+    const boost = Math.max(0, (recency - 0.4) * 1.8);
+    for (let d = 0; d < 7; d++) {
+      const cell = el.appendChild(document.createElement('i'));
+      const r = Math.random();
+      const weekend = (d === 0 || d === 6) ? 0.5 : 1;
+      const score = r * recency * weekend + boost * r;
+      let b = 'b0';
+      if (score > 0.92) b = 'b5';
+      else if (score > 0.78) b = 'b4';
+      else if (score > 0.6) b = 'b3';
+      else if (score > 0.4) b = 'b2';
+      else if (score > 0.2) b = 'b1';
+      cell.className = b;
+    }
+  }
+})();
+document.querySelectorAll('.view-switch button').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.view-switch button').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    const view = btn.dataset.view;
+    document.getElementById('line-view').style.display = view === 'line' ? 'block' : 'none';
+    document.getElementById('heatmap-view').style.display = view === 'heatmap' ? 'block' : 'none';
+    document.getElementById('chart-area').classList.toggle('heatmap-bg', view === 'heatmap');
+  });
+});
+</script>
+</body>
+</html>

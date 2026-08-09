@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Island Stage Manager v2 — Right Edge Into Screen</title>
+<style>
+  :root {
+    --bg: #08090a;
+    --tx-1: #f7f8f8;
+    --tx-2: #d0d6e0;
+    --tx-3: #8a8f98;
+    --tx-4: #62666d;
+    --bd: rgba(255,255,255,0.08);
+    --glow: rgba(247,248,248,0.35);
+    --ease: cubic-bezier(0.23, 1, 0.32, 1);
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { height: 100%; background: var(--bg); color: var(--tx-1); overflow: hidden; }
+  body {
+    font-family: -apple-system, 'Inter', system-ui, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    display: flex;
+    align-items: stretch;
+  }
+
+  /* ===== Island on the LEFT ===== */
+  .island-zone {
+    width: 72px;
+    flex-shrink: 0;
+    position: relative;
+    perspective: 1200px;
+    z-index: 100;
+    transition: width 420ms var(--ease);
+  }
+  body.island-hover .island-zone { width: 240px; }
+
+  .island {
+    position: sticky;
+    top: 48px;
+    height: calc(100vh - 66px);
+    display: flex;
+    flex-direction: column;
+    padding: 14px 10px;
+    /* Borderless: no bg, no border */
+    transform-style: preserve-3d;
+    transform-origin: left center;
+    transition: transform 420ms var(--ease);
+    transform: rotateY(0deg);
+  }
+  /* RIGHT EDGE ROTATES INTO SCREEN = positive rotateY with left origin */
+  body.island-hover .island {
+    transform: rotateY(18deg);
+  }
+
+  /* Collapsed keycaps */
+  .keycap-list {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    transition: opacity 200ms var(--ease);
+  }
+  body.island-hover .keycap-list { opacity: 0; pointer-events: none; }
+
+  .keycap {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 44px; height: 44px;
+    margin: 0 auto;
+    border-radius: 8px;
+    font-family: 'JetBrains Mono', ui-monospace, monospace;
+    font-weight: 500;
+    font-size: 14px;
+    color: var(--tx-3);
+    cursor: pointer;
+    transition: all 200ms var(--ease);
+    position: relative;
+  }
+  .keycap:hover {
+    color: var(--tx-1);
+    background: rgba(255,255,255,0.04);
+    box-shadow: inset 0 0 0 1px var(--bd);
+  }
+  .keycap.active {
+    color: var(--tx-1);
+    text-shadow: 0 0 8px var(--glow);
+  }
+  .keycap.active::after {
+    content: "";
+    position: absolute;
+    left: -8px; top: 50%;
+    transform: translateY(-50%);
+    width: 3px; height: 3px;
+    border-radius: 50%;
+    background: var(--tx-1);
+    box-shadow: 0 0 6px var(--glow);
+  }
+
+  /* Expanded nav */
+  .nav-expanded {
+    position: absolute;
+    inset: 14px 10px;
+    display: flex;
+    flex-direction: column;
+    opacity: 0;
+    pointer-events: none;
+    transform: translateX(-8px);
+    transition: opacity 200ms var(--ease) 100ms, transform 300ms var(--ease) 100ms;
+  }
+  body.island-hover .nav-expanded {
+    opacity: 1;
+    pointer-events: auto;
+    transform: translateX(0);
+  }
+
+  .nav-brand {
+    font-family: 'JetBrains Mono', monospace;
+    font-weight: 700; font-size: 14px;
+    letter-spacing: 0.04em; color: var(--tx-1);
+    padding: 0 8px 16px;
+    border-bottom: 1px solid var(--bd);
+    margin-bottom: 14px;
+  }
+  .nav-brand .proto { color: var(--tx-3); font-weight: 400; }
+
+  .nav-section { margin-bottom: 16px; }
+  .nav-label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px; color: var(--tx-4);
+    letter-spacing: 0.16em; text-transform: uppercase;
+    padding: 0 8px 6px;
+  }
+  .nav-items { display: flex; flex-direction: column; gap: 1px; }
+  .nav-item {
+    display: flex; align-items: center; gap: 10px;
+    padding: 7px 8px; border-radius: 6px;
+    font-size: 13px; font-weight: 510; color: var(--tx-3);
+    cursor: pointer; transition: all 120ms;
+    text-decoration: none; white-space: nowrap;
+  }
+  .nav-item:hover { color: var(--tx-1); background: rgba(255,255,255,0.04); }
+  .nav-item.active { color: var(--tx-1); background: rgba(255,255,255,0.08); }
+  .nav-item .key {
+    font-family: 'JetBrains Mono', monospace; font-size: 11px;
+    color: var(--tx-4); width: 16px; text-align: center;
+  }
+  .nav-item.active .key { color: var(--tx-1); }
+
+  .nav-cmd {
+    margin-top: auto;
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 7px 10px; border-radius: 6px;
+    box-shadow: inset 0 0 0 1px var(--bd);
+    background: rgba(255,255,255,0.02);
+    font-size: 12px; color: var(--tx-3); cursor: pointer;
+    transition: all 120ms;
+  }
+  .nav-cmd:hover { background: rgba(255,255,255,0.04); color: var(--tx-2); }
+  .nav-cmd kbd {
+    font-family: 'JetBrains Mono', monospace; font-size: 10px;
+    color: var(--tx-4); box-shadow: inset 0 0 0 1px var(--bd);
+    border-radius: 3px; padding: 1px 5px;
+  }
+
+  /* ===== Page content (blurs on hover) ===== */
+  .page-content {
+    flex: 1; padding: 60px 48px;
+    transition: filter 400ms var(--ease), transform 400ms var(--ease);
+  }
+  body.island-hover .page-content {
+    filter: blur(8px) brightness(0.5);
+    transform: scale(0.96);
+  }
+  .page-content h1 { font-size: 28px; font-weight: 590; letter-spacing: -0.3px; margin-bottom: 8px; }
+  .page-content .lede { color: var(--tx-3); font-size: 14px; margin-bottom: 32px; }
+  .page-content .card-row { display: flex; gap: 16px; margin-bottom: 24px; }
+  .page-content .mock-card {
+    flex: 1; height: 120px; border-radius: 8px;
+    box-shadow: inset 0 0 0 1px var(--bd);
+    background: rgba(255,255,255,0.02);
+    padding: 16px;
+  }
+  .page-content .mock-card .mc-title { font-size: 13px; color: var(--tx-2); margin-bottom: 6px; }
+  .page-content .mock-card .mc-body { font-size: 11px; color: var(--tx-4); line-height: 1.5; }
+  .page-content .mock-heatmap {
+    display: grid; grid-template-columns: repeat(30, 1fr); gap: 3px; margin-top: 16px;
+  }
+  .page-content .mock-heatmap div { aspect-ratio: 1; border-radius: 2px; background: rgba(255,255,255,0.06); }
+
+  /* Dim overlay */
+  .dim-overlay {
+    position: fixed; inset: 0;
+    background: rgba(0,0,0,0);
+    pointer-events: none; z-index: 50;
+    transition: background 400ms var(--ease);
+  }
+  body.island-hover .dim-overlay { background: rgba(0,0,0,0.3); }
+
+  /* Hint */
+  .hint {
+    position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%);
+    font-size: 12px; color: var(--tx-4);
+    font-family: 'JetBrains Mono', monospace; letter-spacing: 0.04em;
+    padding: 8px 16px; box-shadow: inset 0 0 0 1px var(--bd);
+    border-radius: 6px; background: rgba(8,9,10,0.8);
+    backdrop-filter: blur(12px); z-index: 200;
+    transition: opacity 300ms;
+  }
+  body.island-hover .hint { opacity: 0; }
+</style>
+</head>
+<body>
+
+<!-- ISLAND ON LEFT -->
+<div class="island-zone" id="islandZone">
+  <div class="island" id="island">
+    <div class="keycap-list">
+      <div class="keycap active">M</div>
+      <div class="keycap">T</div>
+      <div class="keycap">A</div>
+      <div class="keycap">C</div>
+      <div class="keycap">S</div>
+      <div class="keycap">P</div>
+    </div>
+    <div class="nav-expanded">
+      <div class="nav-brand">OhMyC <span class="proto">// coding_monitor</span></div>
+      <div class="nav-section">
+        <div class="nav-label">// Signal</div>
+        <div class="nav-items">
+          <a class="nav-item active"><span class="key">M</span>Monitor</a>
+          <a class="nav-item"><span class="key">T</span>Timeline</a>
+        </div>
+      </div>
+      <div class="nav-section">
+        <div class="nav-label">// Explore</div>
+        <div class="nav-items">
+          <a class="nav-item"><span class="key">A</span>Agents</a>
+          <a class="nav-item"><span class="key">C</span>Commands</a>
+          <a class="nav-item"><span class="key">S</span>Skills</a>
+          <a class="nav-item"><span class="key">P</span>Plugins</a>
+        </div>
+      </div>
+      <div class="nav-cmd"><span>⌘K Command</span><kbd>⌘K</kbd></div>
+    </div>
+  </div>
+</div>
+
+<div class="dim-overlay"></div>
+
+<!-- PAGE CONTENT ON RIGHT -->
+<div class="page-content">
+  <h1>Timeline</h1>
+  <p class="lede">Every Claude Code session you've run, across every project.</p>
+  <div class="card-row">
+    <div class="mock-card"><div class="mc-title">Sessions</div><div class="mc-body">842 total · 18.4M tokens</div></div>
+    <div class="mock-card"><div class="mc-title">This Week</div><div class="mc-body">23 sessions · 2.1M tokens</div></div>
+    <div class="mock-card"><div class="mc-title">Projects</div><div class="mc-body">12 active projects</div></div>
+  </div>
+  <div class="mock-heatmap" id="heatmap"></div>
+</div>
+
+<div class="hint">← Hover the keycaps to trigger Stage Manager</div>
+
+<script>
+  const heatmap = document.getElementById('heatmap')
+  for (let i = 0; i < 90; i++) {
+    const cell = document.createElement('div')
+    const r = Math.random()
+    if (r > 0.7) cell.style.background = 'rgba(255,255,255,0.5)'
+    else if (r > 0.4) cell.style.background = 'rgba(255,255,255,0.2)'
+    heatmap.appendChild(cell)
+  }
+
+  const zone = document.getElementById('islandZone')
+  zone.addEventListener('mouseenter', () => document.body.classList.add('island-hover'))
+  zone.addEventListener('mouseleave', () => document.body.classList.remove('island-hover'))
+
+  document.querySelectorAll('.keycap').forEach(kc => {
+    kc.addEventListener('click', (e) => {
+      e.stopPropagation()
+      document.querySelectorAll('.keycap').forEach(k => k.classList.remove('active'))
+      kc.classList.add('active')
+    })
+  })
+</script>
+
+</body>
+</html>

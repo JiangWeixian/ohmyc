@@ -1,8 +1,10 @@
 import typography from '@tailwindcss/typography'
+import plugin from 'tailwindcss/plugin'
 import tailwindcssAnimate from 'tailwindcss-animate'
 
 /** @type {import('tailwindcss').Config} */
 export default {
+  darkMode: ['class', '[data-theme]'],
   content: [
     './index.html',
     './src/**/*.{js,ts,jsx,tsx}',
@@ -54,5 +56,10 @@ export default {
   plugins: [
     tailwindcssAnimate,
     typography,
+    plugin(({ addUtilities }) => addUtilities({
+      '.deco-glow-text': { textShadow: 'var(--text-glow)' },
+      '.deco-notch': { clipPath: 'var(--card-clip)' },
+      '.deco-title-shadow': { textShadow: 'var(--title-shadow)' },
+    })),
   ],
 }

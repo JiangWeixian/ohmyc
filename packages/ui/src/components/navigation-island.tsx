@@ -1,213 +1,153 @@
 import {
-  AnimatePresence,
   motion,
   useReducedMotion,
+  useTransform,
 } from 'framer-motion'
-import {
-  Activity,
-  Blocks,
-  Bot,
-  Code2,
-  PanelLeftClose,
-  Search,
-  Sparkles,
-  TerminalSquare,
-} from 'lucide-react'
-import {
-  useEffect,
-  useRef,
-  useState,
-} from 'react'
+import { Search } from 'lucide-react'
+import { useState } from 'react'
 import { NavLink } from 'react-router-dom'
 
 import { useCommandPalette } from '@/components/command-palette'
-import { Button } from '@/components/ui/button'
+import { NAV_ITEMS, type NavItem } from '@/components/nav-items'
 import { cn } from '@/lib/utils'
+import { useIslandStore } from '@/state/island-store'
 
-import type { LucideIcon } from 'lucide-react'
+const SIGNAL_IDS = new Set(['monitor', 'timeline'])
 
-interface IslandItem {
-  id: string
-  label: string
-  to: string
-  icon: LucideIcon
+const SIGNAL_ITEMS = NAV_ITEMS.filter(item => SIGNAL_IDS.has(item.id))
+const EXPLORE_ITEMS = NAV_ITEMS.filter(item => !SIGNAL_IDS.has(item.id))
+const ALL_ITEMS = NAV_ITEMS
+
+const COLLAPSED_WIDTH = 56
+const EXPANDED_WIDTH = 220
+const ROTATION_DEG = 18
+
+function detectTouch(): boolean {
+  if (typeof globalThis.matchMedia !== 'function') {
+    return false
+  }
+  return globalThis.matchMedia('(hover: none)').matches
 }
 
-const SIGNAL_ITEMS: IslandItem[] = [
-  { id: 'monitor', label: 'Monitor', to: '/explore/monitor', icon: Code2 },
-  { id: 'timeline', label: 'Timeline', to: '/explore/timeline', icon: Activity },
-]
-
-const EXPLORE_ITEMS: IslandItem[] = [
-  { id: 'agents', label: 'Agents', to: '/explore/agents', icon: Bot },
-  { id: 'commands', label: 'Commands', to: '/explore/commands', icon: TerminalSquare },
-  { id: 'skills', label: 'Skills', to: '/explore/skills', icon: Sparkles },
-  { id: 'plugins', label: 'Plugins', to: '/explore/plugins', icon: Blocks },
-]
-
-const SHELL_TRANSITION = {
-  duration: 0.22,
-  ease: [0.22, 1, 0.36, 1],
-} as const
-
-const CONTENT_TRANSITION = {
-  duration: 0.16,
-  ease: [0.25, 1, 0.5, 1],
-} as const
-
 export function NavigationIsland() {
-  const [collapsed, setCollapsed] = useState(false)
+  const { hoverProgress, isHovered, setHovered, toggle } = useIslandStore()
+  const { open: openPalette } = useCommandPalette()
   const hookReduceMotion = useReducedMotion()
   const reduceMotion = hookReduceMotion
-    || (
-      typeof globalThis.matchMedia === 'function'
-      && globalThis.matchMedia('(prefers-reduced-motion: reduce)').matches
-    )
-  const { open } = useCommandPalette()
-  const hasToggledRef = useRef(false)
-  const expandButtonRef = useRef<HTMLButtonElement>(null)
-  const collapseButtonRef = useRef<HTMLButtonElement>(null)
-  const motionMode = reduceMotion ? 'reduced' : 'full'
-  const shellLayout = !reduceMotion
-  const shellLayoutId = reduceMotion ? undefined : 'primary-navigation-island-shell'
+    || (typeof globalThis.matchMedia === 'function'
+      && globalThis.matchMedia('(prefers-reduced-motion: reduce)').matches)
 
-  useEffect(() => {
-    if (!hasToggledRef.current) {
-      return
+  const [isTouch] = useState(detectTouch)
+
+  const containerWidth = useTransform(
+    hoverProgress,
+    v => `${COLLAPSED_WIDTH + v * (EXPANDED_WIDTH - COLLAPSED_WIDTH)}px`,
+  )
+  const rotateY = useTransform(hoverProgress, [0, 1], [0, ROTATION_DEG])
+  const keycapOpacity = useTransform(hoverProgress, [0, 0.35], [1, 0])
+  const keycapPointer = useTransform(keycapOpacity, v => (v < 0.5 ? 'none' : 'auto'))
+  const navOpacity = useTransform(hoverProgress, [0.25, 1], [0, 1])
+  const navX = useTransform(hoverProgress, [0.25, 1], [-8, 0])
+  const navPointer = useTransform(navOpacity, v => (v > 0.5 ? 'auto' : 'none'))
+
+  function handleMouseEnter() {
+    if (!isTouch && !reduceMotion) {
+      setHovered(true)
     }
+  }
 
-    if (collapsed) {
-      expandButtonRef.current?.focus()
-    } else {
-      collapseButtonRef.current?.focus()
+  function handleMouseLeave() {
+    if (!isTouch && !reduceMotion) {
+      setHovered(false)
     }
-  }, [collapsed])
-
-  function updateCollapsed(nextCollapsed: boolean) {
-    hasToggledRef.current = true
-    setCollapsed(nextCollapsed)
   }
 
   function handleNavigate() {
-    if (
-      globalThis.window !== undefined
-      && typeof globalThis.matchMedia === 'function'
-      && globalThis.matchMedia('(max-width: 767px)').matches
-    ) {
-      updateCollapsed(true)
+    if (isTouch) {
+      setHovered(false)
     }
   }
 
   return (
-    <AnimatePresence initial={false} mode="sync">
-      {collapsed
-        ? (
-            <motion.div
-              key="collapsed"
-              layout={shellLayout}
-              layoutId={shellLayoutId}
-              data-motion-mode={motionMode}
-              className="fixed left-[18px] top-[48px] z-40 max-sm:left-[14px] max-sm:top-[14px]"
-              initial={reduceMotion ? false : { opacity: 0, scale: 0.96, filter: 'blur(4px)' }}
-              animate={{ opacity: 1, scale: 1, filter: 'blur(0px)' }}
-              exit={reduceMotion ? { opacity: 0 } : { opacity: 0, scale: 0.98, filter: 'blur(3px)' }}
-              whileHover={undefined}
-              transition={SHELL_TRANSITION}
-            >
-              <Button
-                ref={expandButtonRef}
-                type="button"
-                variant="ghost"
-                size="icon"
-                aria-label="Expand navigation"
-                aria-controls="primary-navigation-island"
-                aria-expanded={false}
-                onClick={() => updateCollapsed(false)}
-                className={cn(
-                  'size-12 rounded-[14px] border border-[rgba(255,255,255,0.05)] bg-[rgba(15,16,17,0.72)]',
-                  'text-[var(--text-primary)] [box-shadow:0_0_0_0.5px_rgba(255,255,255,0.10),0_8px_30px_rgba(0,0,0,0.38),0_24px_60px_rgba(0,0,0,0.22)]',
-                  '[backdrop-filter:saturate(180%)_blur(24px)] [-webkit-backdrop-filter:saturate(180%)_blur(24px)]',
-                  'hover:bg-[rgba(255,255,255,0.04)]',
-                  'motion-safe:transition-transform motion-safe:duration-150 motion-safe:ease-out [@media(hover:hover)_and_(pointer:fine)]:hover:scale-[1.02]',
-                )}
-              >
-                <Code2 size={16} aria-hidden="true" />
-              </Button>
-            </motion.div>
-          )
-        : (
-            <motion.nav
-              key="expanded"
-              layout={shellLayout}
-              layoutId={shellLayoutId}
-              data-motion-mode={motionMode}
-              id="primary-navigation-island"
-              aria-label="Primary"
-              className={cn(
-                'fixed left-[18px] top-[48px] z-40 flex h-[calc(100dvh-66px)] w-[220px] flex-col overflow-hidden rounded-[14px]',
-                'border border-[rgba(255,255,255,0.05)] bg-[rgba(15,16,17,0.72)]',
-                'p-3 [box-shadow:0_0_0_0.5px_rgba(255,255,255,0.10),0_8px_30px_rgba(0,0,0,0.38),0_24px_60px_rgba(0,0,0,0.22)]',
-                '[backdrop-filter:saturate(180%)_blur(24px)] [-webkit-backdrop-filter:saturate(180%)_blur(24px)]',
-                'max-sm:left-[14px] max-sm:top-[14px] max-sm:h-[calc(100dvh-28px)] max-sm:w-[216px]',
-              )}
-              initial={reduceMotion ? false : { opacity: 0, x: -6, filter: 'blur(4px)' }}
-              animate={{ opacity: 1, x: 0, filter: 'blur(0px)' }}
-              exit={reduceMotion ? { opacity: 0 } : { opacity: 0, x: -4, filter: 'blur(3px)' }}
-              transition={SHELL_TRANSITION}
-            >
-              <motion.div
-                className="flex h-full flex-col"
-                initial={reduceMotion ? false : { opacity: 0, x: -6 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ ...CONTENT_TRANSITION, delay: 0.04 }}
-              >
-                <div className="mb-5 flex min-h-11 items-start justify-between gap-3">
-                  <div className="min-w-0 px-1">
-                    <div className="truncate text-[14px] font-[590] text-[var(--text-primary)]">OhMyC</div>
-                    <div className="truncate font-mono text-[10px] uppercase tracking-[0.04em] text-[var(--text-tertiary)]">
-                      coding monitor
-                    </div>
-                  </div>
-                  <Button
-                    ref={collapseButtonRef}
-                    type="button"
-                    variant="ghost"
-                    size="icon"
-                    aria-label="Collapse navigation"
-                    aria-controls="primary-navigation-island"
-                    aria-expanded={true}
-                    onClick={() => updateCollapsed(true)}
-                    className="size-8 shrink-0 rounded-lg text-[var(--text-tertiary)] hover:bg-[rgba(255,255,255,0.03)] hover:text-[var(--text-primary)]"
-                  >
-                    <PanelLeftClose size={15} aria-hidden="true" />
-                  </Button>
-                </div>
-
-                <IslandGroup label="Signal" items={SIGNAL_ITEMS} onNavigate={handleNavigate} />
-                <IslandGroup label="Explore" items={EXPLORE_ITEMS} className="mt-4" onNavigate={handleNavigate} />
-
-                <Button
+    <motion.nav
+      aria-label="Primary"
+      style={{ width: containerWidth }}
+      className="fixed left-[18px] top-[48px] z-40 max-sm:left-[14px] max-sm:top-[14px]"
+      onMouseEnter={handleMouseEnter}
+      onMouseLeave={handleMouseLeave}
+      onFocus={() => {
+        if (!isTouch) {
+          setHovered(true)
+        }
+      }}
+      onBlur={(e) => {
+        if (!e.currentTarget.contains(e.relatedTarget as Node) && !isTouch) {
+          setHovered(false)
+        }
+      }}
+    >
+      <div style={{ perspective: 1200 }}>
+        <motion.div
+          style={{
+            rotateY: reduceMotion ? 0 : rotateY,
+            transformOrigin: 'left center',
+            transformStyle: 'preserve-3d',
+          }}
+          className="flex h-[calc(100dvh-66px)] flex-col overflow-hidden max-sm:h-[calc(100dvh-28px)]"
+        >
+          <motion.div
+            style={{ opacity: keycapOpacity, pointerEvents: keycapPointer }}
+            className="flex flex-col gap-1 pt-2"
+          >
+            {ALL_ITEMS.map((item) => {
+              const Icon = item.icon
+              return (
+                <button
+                  key={item.keycap}
                   type="button"
-                  variant="ghost"
-                  onClick={open}
+                  onClick={isTouch ? toggle : undefined}
                   className={cn(
-                    'mt-auto flex h-8 w-full items-center justify-between rounded-md border border-[rgba(255,255,255,0.08)]',
-                    'bg-[rgba(255,255,255,0.02)] px-2.5 text-[12px] text-[var(--text-tertiary)]',
-                    'transition-colors hover:bg-[rgba(255,255,255,0.04)] hover:text-[var(--text-secondary)]',
+                    'flex size-11 items-center justify-center rounded-lg',
+                    'text-[var(--text-tertiary)] transition-colors',
+                    'hover:bg-[var(--bg-hover)] hover:text-[var(--text-primary)]',
                   )}
+                  aria-label={item.label}
+                  aria-expanded={isHovered}
                 >
-                  <span className="flex items-center gap-2">
-                    <Search size={13} aria-hidden="true" />
-                    Command
-                  </span>
-                  <kbd className="rounded border border-[rgba(255,255,255,0.08)] px-1.5 py-0.5 text-[10px] text-[var(--text-quaternary)]">
-                    Cmd K
-                  </kbd>
-                </Button>
-              </motion.div>
-            </motion.nav>
-          )}
-    </AnimatePresence>
+                  <Icon size={16} aria-hidden="true" />
+                </button>
+              )
+            })}
+          </motion.div>
+
+          <motion.div
+            style={{ opacity: navOpacity, x: navX, pointerEvents: navPointer }}
+            className="absolute inset-0 flex flex-col p-3"
+          >
+            <IslandGroup label="Signal" items={SIGNAL_ITEMS} onNavigate={handleNavigate} />
+            <IslandGroup label="Explore" items={EXPLORE_ITEMS} className="mt-4" onNavigate={handleNavigate} />
+
+            <button
+              type="button"
+              onClick={openPalette}
+              className={cn(
+                'mt-auto flex h-8 w-full items-center justify-between rounded-md border border-[var(--border-standard)]',
+                'bg-[var(--surface-raised)] px-2.5 text-[12px] text-[var(--text-tertiary)]',
+                'transition-colors hover:bg-[var(--bg-hover)] hover:text-[var(--text-secondary)]',
+              )}
+            >
+              <span className="flex items-center gap-2">
+                <Search size={13} aria-hidden="true" />
+                Command
+              </span>
+              <kbd className="rounded border border-[var(--border-standard)] px-1.5 py-0.5 text-[10px] text-[var(--text-quaternary)]">
+                Cmd K
+              </kbd>
+            </button>
+          </motion.div>
+        </motion.div>
+      </div>
+    </motion.nav>
   )
 }
 
@@ -218,7 +158,7 @@ function IslandGroup({
   onNavigate,
 }: {
   label: string
-  items: IslandItem[]
+  items: NavItem[]
   className?: string
   onNavigate: () => void
 }) {
@@ -230,15 +170,15 @@ function IslandGroup({
       <div className="space-y-0.5">
         {items.map(item => (
           <NavLink
-            key={item.id}
-            to={item.to}
+            key={item.keycap}
+            to={item.path}
             onClick={onNavigate}
             className={({ isActive }) =>
               cn(
-                'flex h-8 items-center gap-2 rounded-md px-2.5 text-[13px] font-[510] transition-colors',
+                'flex h-8 items-center gap-2.5 rounded-md px-2.5 text-[13px] font-[510] transition-colors',
                 isActive
-                  ? 'bg-[rgba(255,255,255,0.08)] text-[var(--text-primary)] shadow-[inset_0_0_0_0.5px_rgba(255,255,255,0.06)]'
-                  : 'text-[var(--text-secondary)] hover:bg-[rgba(255,255,255,0.03)] hover:text-[var(--text-primary)]',
+                  ? 'bg-[var(--bg-hover)] text-[var(--text-primary)] shadow-[inset_0_0_0_0.5px_var(--border-standard)]'
+                  : 'text-[var(--text-secondary)] hover:bg-[var(--bg-hover)] hover:text-[var(--text-primary)]',
               )}
           >
             {({ isActive }) => (

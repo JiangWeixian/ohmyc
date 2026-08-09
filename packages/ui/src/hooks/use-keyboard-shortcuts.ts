@@ -9,6 +9,7 @@ import { useNavigate } from 'react-router-dom'
  * - `g` then `a` -> Agents
  * - `g` then `s` -> Skills
  * - `g` then `c` -> Commands
+ * - `g` then `p` -> Plugins
  * - `g` then `t` -> Timeline
  *
  * Silently ignored when an input, textarea, or contenteditable is focused.
@@ -58,6 +59,7 @@ export function useGlobalKeyboardShortcuts() {
           a: '/explore/agents',
           s: '/explore/skills',
           c: '/explore/commands',
+          p: '/explore/plugins',
           t: '/explore/timeline',
         }
 

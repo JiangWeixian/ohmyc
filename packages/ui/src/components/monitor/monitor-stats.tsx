@@ -16,7 +16,7 @@ import {
   useTimelineStatus,
 } from '@/hooks/use-timeline'
 
-export interface MonitorStats {
+interface MonitorStats {
   sessions: number
   tokens: number
   turns: number
@@ -52,8 +52,7 @@ export function useMonitorStats(): {
   }
 }
 
-// eslint-disable-next-line react-refresh/only-export-components
-export function deriveMonitorStats(events?: EventsResult): MonitorStats {
+function deriveMonitorStats(events?: EventsResult): MonitorStats {
   const days = events?.days ?? []
   const sessions = days.reduce((sum, day) => sum + day.session_count, 0)
   const tokens = days.reduce((sum, day) => sum + day.token_count, 0)

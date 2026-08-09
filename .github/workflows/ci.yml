@@ -80,12 +80,21 @@ jobs:
           name: cli
           working-directory: packages/cli
 
+      - name: Install Playwright browsers
+        run: pnpm --filter @ohmyc/ui exec playwright install --with-deps chromium
+
+      - name: Test Storybook
+        run: pnpm --filter @ohmyc/ui exec vitest --project=storybook --run
+
+      - name: Test E2E
+        run: pnpm --filter @ohmyc/ui exec playwright test
+
   desktop-test:
     runs-on: macos-14
     steps:
       - uses: actions/checkout@v5
       - name: Install Rust toolchain
-        uses: dtolnay/rust-toolchain@stable
+        uses: dtolnay/rust-toolchain@1.97.0
       - name: Cache cargo
         uses: Swatinem/rust-cache@v2
         with:

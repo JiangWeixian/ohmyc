@@ -1,13 +1,18 @@
 // Menubar popover page — owns view state, fetches data, switches between
-// dual-line and heatmap views. Lives at /menubar.
+// area chart and heatmap views. Lives at /menubar.
 
 import { useMemo, useState } from 'react'
 
-import { DualLineChart } from './dual-line-chart'
+import { AreaTrendChart } from './area-trend-chart'
+import { MenubarOnboard } from './menubar-onboard'
 import { RecentHeatmap } from './recent-heatmap'
+import { menubarPopoverStyles } from './styles'
 import { type MenubarView, ViewSwitch } from './view-switch'
 import { useFsChanged } from '@/hooks/use-fs-changed'
+import { useSetupStatus } from '@/hooks/use-setup-status'
 import { useTimelineHeatmapRange } from '@/hooks/use-timeline'
+
+import type { SetupStatus } from '@/hooks/use-setup-status'
 
 function isoDate(d: Date): string {
   return d.toISOString().slice(0, 10)
@@ -49,17 +54,15 @@ function shortDayLabel(iso: string): string {
   return `${dow[d.getUTCDay()]} ${mon[d.getUTCMonth()]} ${d.getUTCDate()}`
 }
 
-const MONO = '"Berkeley Mono", ui-monospace, SF Mono, Menlo, monospace'
-
-export function MenubarPage() {
+function MenubarActivity() {
   useFsChanged()
-  const [view, setView] = useState<MenubarView>('line')
+  const [view, setView] = useState<MenubarView>('area')
 
   const today = useMemo(() => new Date(), [])
   const todayIso = isoDate(today)
   const fourMonthAgoIso = isoDate(subDays(today, 16 * 7 - 1))
 
-  // Both views share the same 16-week rolling window — the line and heatmap
+  // Both views share the same 16-week rolling window — the area chart and heatmap
   // are two visualizations of the same data, not different time scopes.
   const tokensRecent = useTimelineHeatmapRange({ from: fourMonthAgoIso, to: todayIso, metric: 'tokens' })
   const sessionsRecent = useTimelineHeatmapRange({ from: fourMonthAgoIso, to: todayIso, metric: 'sessions' })
@@ -78,111 +81,109 @@ export function MenubarPage() {
     : 'no activity yet'
 
   return (
-    <div
-      className="min-h-dvh w-full py-[18px] px-6 text-[var(--text-primary)] overflow-hidden rounded-[12px]"
-      style={{
-        // macOS NSVisualEffectView (HudWindow) is applied to the Tauri window
-        // and provides the desktop-blur. Light dark tint sits on top to
-        // ensure text contrast against bright desktop content.
-        background: 'rgba(25, 26, 27, 0.45)',
-      }}
-      data-menubar-page
-    >
-      <header className="flex items-center justify-between gap-3 mb-3">
-        <span
-          className="text-[12px] font-medium uppercase tracking-[0.08em] text-[var(--text-secondary)]"
-          style={{ fontFamily: MONO }}
-        >
-          Activity
-        </span>
-        <ViewSwitch value={view} onChange={setView} />
-      </header>
-
-      {/* No overflow-hidden here: the heatmap tooltip escapes the slot upward
-          for top-row cells. The gradient is a background and cannot overflow. */}
+    <>
+      <style>{menubarPopoverStyles}</style>
       <div
-        className="min-h-[168px]"
-        style={view === 'line'
-          ? { background: 'linear-gradient(180deg, rgba(255,255,255,0.02) 0%, rgba(255,255,255,0.0) 100%)' }
-          : undefined}
+        className="relative mx-auto w-full max-w-sm overflow-hidden px-5 py-[18px] text-[var(--text-primary)] menubar-popover"
+        data-menubar-page
       >
-        {view === 'line'
-          ? (
-              <DualLineChart tokens={tokensRecent.data ?? []} sessions={sessionsRecent.data ?? []} />
-            )
-          : (
-              <RecentHeatmap tokens={tokensRecent.data ?? []} sessions={sessionsRecent.data ?? []} />
-            )}
-      </div>
+        <span className="menubar-popover-corner" aria-hidden="true" />
+        <div className="relative z-[1] menubar-content">
+          <header className="mb-3 flex items-center justify-between gap-3">
+            <span className="menubar-title">Activity</span>
+            <ViewSwitch value={view} onChange={setView} />
+          </header>
 
-      {/* KPI row — three mono numbers with hairline dividers */}
-      <div className="flex mt-3.5">
-        <div className="flex flex-1 flex-col gap-1 pr-3.5">
-          <span
-            className="text-[22px] font-medium tracking-[-0.5px] leading-none text-[var(--text-primary)] tabular-nums"
-            style={{ fontFamily: MONO }}
-          >
-            {formatTokens(totalTokens)}
-          </span>
-          <span
-            className="text-[10px] font-medium uppercase tracking-[0.06em] text-[var(--text-quaternary)]"
-            style={{ fontFamily: MONO }}
-          >
-            Tokens
-          </span>
-        </div>
-        <div className="flex flex-1 flex-col gap-1 pl-3.5 pr-3.5 border-l border-[var(--border-subtle)]">
-          <span
-            className="text-[22px] font-medium tracking-[-0.5px] leading-none text-[var(--text-primary)] tabular-nums"
-            style={{ fontFamily: MONO }}
-          >
-            {/* exact count — unlike tokens, sessions are never compressed to k/M */}
-            {totalSessions.toLocaleString()}
-          </span>
-          <span
-            className="text-[10px] font-medium uppercase tracking-[0.06em] text-[var(--text-quaternary)]"
-            style={{ fontFamily: MONO }}
-          >
-            Sessions
-          </span>
-        </div>
-        <div className="flex flex-1 flex-col gap-1 pl-3.5 border-l border-[var(--border-subtle)]">
-          <span
-            className="text-[22px] font-medium tracking-[-0.5px] leading-none text-[var(--text-primary)] tabular-nums"
-            style={{ fontFamily: MONO }}
-          >
-            {peak ? formatTokens(peak.value) : '—'}
-          </span>
-          <span
-            className="text-[10px] font-medium uppercase tracking-[0.06em] text-[var(--text-quaternary)]"
-            style={{ fontFamily: MONO }}
-          >
-            Peak
-          </span>
-        </div>
-      </div>
+          {/* No overflow-hidden here: the heatmap tooltip escapes the slot upward
+              for top-row cells. */}
+          <div className={view === 'area' ? 'relative -mx-1 min-h-[168px] rounded menubar-chart-area' : 'relative -mx-1 min-h-[168px]'}>
+            {view === 'area'
+              ? (
+                  <AreaTrendChart tokens={tokensRecent.data ?? []} sessions={sessionsRecent.data ?? []} />
+                )
+              : (
+                  <RecentHeatmap tokens={tokensRecent.data ?? []} sessions={sessionsRecent.data ?? []} />
+                )}
+          </div>
 
-      {/* Footer — peak-day eyebrow + Open link on one row */}
-      <div className="mt-3.5 pt-3 border-t border-[var(--border-subtle)] flex items-center justify-between">
-        <span
-          className="text-[10px] font-medium uppercase tracking-[0.06em] text-[var(--text-quaternary)]"
-          style={{ fontFamily: MONO }}
-        >
-          {peakMeta}
-        </span>
-        <button
-          type="button"
-          onClick={async () => {
-            const { invoke } = await import('@tauri-apps/api/core')
-            await invoke('open_main_window')
-            await invoke('hide_popover')
-          }}
-          className="text-[11px] text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors"
-          style={{ fontFamily: MONO }}
-        >
-          Open OhMyC →
-        </button>
+          <div className="mt-3.5 flex">
+            <div className="flex flex-1 flex-col gap-1 pr-3.5">
+              <span className="menubar-kpi-value" data-kpi="tokens">
+                {formatTokens(totalTokens)}
+              </span>
+              <span className="menubar-label">Tokens</span>
+            </div>
+            <div className="flex flex-1 flex-col gap-1 border-l border-[var(--border-subtle)] px-3.5">
+              <span className="menubar-kpi-value" data-kpi="sessions">
+                {/* exact count — unlike tokens, sessions are never compressed to k/M */}
+                {totalSessions.toLocaleString()}
+              </span>
+              <span className="menubar-label">Sessions</span>
+            </div>
+            <div className="flex flex-1 flex-col gap-1 border-l border-[var(--border-subtle)] pl-3.5">
+              <span className="menubar-kpi-value" data-kpi="peak">
+                {peak ? formatTokens(peak.value) : '—'}
+              </span>
+              <span className="menubar-label">Peak</span>
+            </div>
+          </div>
+
+          <div className="mt-3.5 flex items-center justify-between border-t border-[var(--border-subtle)] pt-3">
+            <span className="menubar-label menubar-footer-meta">
+              {peakMeta}
+            </span>
+            <button
+              type="button"
+              onClick={async () => {
+                // Tauri supplies this module at runtime in the desktop shell.
+                // eslint-disable-next-line import/no-extraneous-dependencies
+                const { invoke } = await import('@tauri-apps/api/core')
+                await invoke('open_main_window')
+                await invoke('hide_popover')
+              }}
+              className="menubar-label menubar-open transition-colors"
+            >
+              Open OhMyC →
+            </button>
+          </div>
+        </div>
       </div>
-    </div>
+    </>
   )
+}
+
+/** Compact status line for the popover (mirrors the main gate). */
+function menubarStatusLine(state: SetupStatus['state']): string | undefined {
+  switch (state) {
+    case 'unreadable_store': {
+      return 'Local monitor store exists but could not be opened.'
+    }
+    case 'internal_error': {
+      return 'OhMyC could not confirm the monitor connection.'
+    }
+    default: {
+      return undefined
+    }
+  }
+}
+
+/**
+ * Menubar popover page. Owns view state, fetches data, switches between
+ * area chart and heatmap views. When the monitor store is not ready it shows
+ * the compact MenubarOnboard instead of an empty activity chart. Lives at
+ * /menubar — outside the main-window setup gate.
+ */
+export function MenubarPage() {
+  const { data, isLoading } = useSetupStatus()
+
+  // While the readiness check is in flight, render nothing — the popover is
+  // transient and a flash of empty space is preferable to a flash of the
+  // wrong surface.
+  if (isLoading || !data) {
+    return null
+  }
+  if (data.state !== 'ready') {
+    return <MenubarOnboard statusLine={menubarStatusLine(data.state)} />
+  }
+  return <MenubarActivity />
 }

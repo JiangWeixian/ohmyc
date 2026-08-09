@@ -8,9 +8,8 @@ import {
   NativeDialogDescription,
   NativeDialogTitle,
 } from '@/components/uitripled/native-dialog'
-import { cn } from '@/lib/utils'
 
-interface CommandItem {
+export interface CommandItem {
   id: string
   label: string
   shortcut?: string
@@ -96,7 +95,7 @@ export function CommandPalette({ commands, placeholder = 'Search commands...' }:
       <NativeDialogContent motionPreset="instant" className="w-[calc(100vw-32px)] max-w-[720px] gap-0 overflow-hidden rounded-[var(--radius-xl)] border-[var(--border-default)] bg-[var(--surface-overlay)] p-0 sm:w-[calc(100vw-64px)] lg:w-[720px]">
         <NativeDialogTitle className="sr-only">Command palette</NativeDialogTitle>
         <NativeDialogDescription className="sr-only">
-          Search and run OhMyC navigation and command actions.
+          Search local resources and run OhMyC actions.
         </NativeDialogDescription>
         <Command className="[&_[cmdk-group-heading]]:text-[11px] [&_[cmdk-group-heading]]:font-medium [&_[cmdk-group-heading]]:text-[var(--text-tertiary)] [&_[cmdk-group-heading]]:uppercase [&_[cmdk-group-heading]]:tracking-wide [&_[cmdk-group-heading]]:px-4 [&_[cmdk-group-heading]]:py-2">
           {/* Search Input */}
@@ -112,7 +111,7 @@ export function CommandPalette({ commands, placeholder = 'Search commands...' }:
           {/* Commands List */}
           <Command.List className="max-h-80 overflow-y-auto py-2">
             <Command.Empty>
-              <div className="px-4 py-8 text-center text-[var(--text-tertiary)] text-[14px]">No commands found</div>
+              <div className="px-4 py-8 text-center text-[var(--text-tertiary)] text-[14px]">No matching actions or resources</div>
             </Command.Empty>
             {/* Group commands by category */}
             {groupedCommands.map(([category, items]) => (
@@ -126,7 +125,7 @@ export function CommandPalette({ commands, placeholder = 'Search commands...' }:
                       cmd.action()
                       close()
                     }}
-                    className="mx-1 flex cursor-pointer items-center gap-3 rounded px-4 py-2.5 text-[14px] text-[var(--text-primary)] data-[selected=true]:bg-[rgba(255,255,255,0.06)]"
+                    className="mx-1 flex cursor-pointer items-center gap-3 rounded px-4 py-2.5 text-[14px] text-[var(--text-primary)] data-[selected=true]:bg-[var(--bg-hover)]"
                   >
                     {cmd.icon && <span className="w-5 shrink-0 text-[var(--text-secondary)]">{cmd.icon}</span>}
                     <span className="min-w-0 flex-1 truncate">{cmd.label}</span>
@@ -151,44 +150,5 @@ export function CommandPalette({ commands, placeholder = 'Search commands...' }:
         </Command>
       </NativeDialogContent>
     </NativeDialog>
-  )
-}
-
-function getKeyLabel(key: string): string {
-  if (key === 'meta') {
-    return '⌘'
-  }
-
-  if (key === 'ctrl') {
-    return 'Ctrl'
-  }
-
-  if (key === 'shift') {
-    return '⇧'
-  }
-
-  return key
-}
-
-// Keyboard shortcut hint component
-export function KeyboardShortcut({ shortcut }: { shortcut: string }) {
-  const keys = shortcut.split('+')
-  return (
-    <div className="flex items-center gap-0.5">
-      {keys.map((key, index) => (
-        <React.Fragment key={key}>
-          <kbd
-            className={cn(
-              'px-1.5 py-0.5 text-[10px] font-mono',
-              'bg-[var(--surface-overlay)] border border-[var(--border-default)]',
-              'rounded-[var(--radius-sm)] text-[var(--text-tertiary)]',
-            )}
-          >
-            {getKeyLabel(key)}
-          </kbd>
-          {index < keys.length - 1 && <span className="text-[var(--text-tertiary)] mx-0.5">+</span>}
-        </React.Fragment>
-      ))}
-    </div>
   )
 }

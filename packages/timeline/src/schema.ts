@@ -13,7 +13,7 @@ export interface SessionRow {
   session_id: string
   /** Display-friendly project path (e.g. `~/projects/my-app`). */
   project: string
-  /** Name of the agent that produced this session (e.g. `claude`, `opencode`). */
+  /** Name of the agent that produced this session (e.g. `codex`, `claude`, `opencode`). */
   agent_name: string | null
   /** Session start time as Unix epoch milliseconds. */
   started_at: number

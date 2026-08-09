@@ -22,6 +22,7 @@ function buildOriginsParam(selected: Set<Origin>): string | null {
 
 export interface ItemLocator {
   name: string
+  locatorId?: string
   source?: string
   pluginId?: string
   scope?: 'global' | 'project'
@@ -45,9 +46,12 @@ export function useAgents() {
 
 export function useAgent(locator: ItemLocator | null) {
   return useQuery({
-    queryKey: ['agents', locator?.name, locator?.source, locator?.pluginId, locator?.scope],
+    queryKey: ['agents', locator?.locatorId, locator?.name, locator?.source, locator?.pluginId, locator?.scope],
     queryFn: async () => {
       const args: Record<string, unknown> = { name: locator!.name }
+      if (locator!.locatorId) {
+        args.locator_id = locator!.locatorId
+      }
       if (locator!.source) {
         args.source = locator!.source
       }

@@ -66,8 +66,8 @@ export function installTimelineHandlers({
 
 export function MenubarFrame({ children }: { children: ReactNode }) {
   return (
-    <div className="rounded-[18px] bg-[#050607] p-8">
-      <div className="h-[304px] w-[390px] overflow-hidden rounded-[12px] border border-white/10 bg-[rgba(25,26,27,0.45)] shadow-[0_24px_80px_rgba(0,0,0,0.45)]">
+    <div className="p-8">
+      <div className="flex min-h-[360px] w-[390px] justify-center overflow-visible p-3">
         {children}
       </div>
     </div>

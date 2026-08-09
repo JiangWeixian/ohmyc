@@ -10,6 +10,7 @@ import {
 
 import { ContributionGraph } from './contribution-graph'
 import { EventList } from './event-list'
+import { timelinePageStyles } from './styles'
 import {
   Select,
   SelectContent,
@@ -101,110 +102,114 @@ export function TimelineView() {
   const yearOptions = years ?? [currentYear]
 
   return (
-    <div className="w-full max-w-[920px]">
-      <h1 className="mb-1 text-[24px] font-[590] tracking-[-0.2px] text-[var(--text-primary)]">
-        Timeline
-      </h1>
-      <p className="mb-7 max-w-screen-sm text-[14px] text-[var(--text-tertiary)]">
-        Every Claude Code session you've run, across every project. Auto-synced via the Stop hook.
-      </p>
+    <>
+      <style>{timelinePageStyles}</style>
+      <div className="w-full max-w-4xl">
+        <h1 className="timeline-page-title mb-1">
+          Timeline
+        </h1>
+        <p className="timeline-page-lede mb-7 max-w-screen-sm">
+          Your local AI coding sessions across agents, projects, and time.
+        </p>
 
-      {/* Controls bar */}
-      <div className="mb-7 flex items-center gap-2.5">
-        <Tabs
-          value={metric}
-          onValueChange={value => setMetric(value as 'activity' | 'tokens')}
-        >
-          <TabsList className="border border-[var(--border-default)] bg-[rgba(255,255,255,0.02)] text-[var(--text-tertiary)]">
-            <TabsTrigger
-              value="activity"
-              className="text-[var(--text-tertiary)] hover:text-[var(--text-secondary)] data-[state=active]:border-transparent data-[state=active]:bg-[rgba(255,255,255,0.08)] data-[state=active]:text-[var(--text-primary)] dark:data-[state=active]:border-transparent dark:data-[state=active]:bg-[rgba(255,255,255,0.08)] dark:data-[state=active]:text-[var(--text-primary)]"
-            >
-              Activity
-            </TabsTrigger>
-            <TabsTrigger
-              value="tokens"
-              className="text-[var(--text-tertiary)] hover:text-[var(--text-secondary)] data-[state=active]:border-transparent data-[state=active]:bg-[rgba(255,255,255,0.08)] data-[state=active]:text-[var(--text-primary)] dark:data-[state=active]:border-transparent dark:data-[state=active]:bg-[rgba(255,255,255,0.08)] dark:data-[state=active]:text-[var(--text-primary)]"
-            >
-              Tokens
-            </TabsTrigger>
-          </TabsList>
-        </Tabs>
-        <TimelineSelect
-          label="Project"
-          value={project ?? '__all__'}
-          onChange={v => setProject(v === '__all__' ? undefined : v)}
-          options={[
-            { value: '__all__', label: 'All projects' },
-            ...(projects ?? []).map(p => ({ value: p, label: p })),
-          ]}
-        />
-        <TimelineSelect
-          label="Year"
-          value={String(year)}
-          onChange={v => setYear(Number(v))}
-          options={yearOptions.map(y => ({ value: String(y), label: String(y) }))}
-        />
-        <span className="flex-1" />
-        <span
-          className="text-[11px] text-[var(--text-quaternary)]"
-          style={{ fontFamily: 'Berkeley Mono, ui-monospace, SF Mono, Menlo, monospace', letterSpacing: '0.02em' }}
-        >
-          {(status?.sessionCount ?? 0).toLocaleString()}
-          {' sessions · '}
-          {totals.turns.toLocaleString()}
-          {' turns · '}
-          {formatTokensCompact(totals.tokens)}
-          {' tokens'}
-        </span>
-      </div>
-
-      {/* Heatmap */}
-      <div className="mb-9">
-        {heatmapLoading || !heatmap
-          ? (
-              <div className="rounded-[10px] border border-[var(--border-default)] bg-[rgba(255,255,255,0.02)] px-[22px] py-[18px] text-[12px] text-[var(--text-tertiary)]">
-                Loading…
-              </div>
-            )
-          : (
-              <ContributionGraph
-                year={year}
-                metric={heatmapMetric}
-                data={heatmap}
-                onSelectDay={handleSelectDay}
-              />
-            )}
-      </div>
-
-      {/* Events header */}
-      <div className="mb-3 flex items-baseline justify-between">
-        <h3 className="text-[13px] font-[590] tracking-[-0.05px] text-[var(--text-primary)]">
-          Recent activity
-        </h3>
-        {events?.nextCursor && (
-          <span
-            className="text-[11px] text-[var(--text-quaternary)]"
-            style={{ fontFamily: 'Berkeley Mono, ui-monospace, SF Mono, Menlo, monospace' }}
+        {/* Controls bar */}
+        <div className="mb-7 flex items-center gap-2.5">
+          <Tabs
+            value={metric}
+            onValueChange={value => setMetric(value as 'activity' | 'tokens')}
           >
-            Showing {events.days.length} days · earlier sessions truncated
-          </span>
-        )}
-      </div>
-
-      <div ref={eventsRef}>
-        {eventsLoading || !events
-          ? (
-              <div
-                className="my-3 border-y border-[var(--border-subtle)] px-3 py-[14px] text-[12px] text-[var(--text-tertiary)]"
-                style={{ fontFamily: 'Berkeley Mono, ui-monospace, SF Mono, Menlo, monospace' }}
+            <TabsList className="h-auto overflow-hidden p-0 timeline-tabs">
+              <TabsTrigger
+                value="activity"
+                className="h-auto px-3 py-2 timeline-tab"
               >
-                Loading…
-              </div>
-            )
-          : <EventList days={events.days} highlightedDay={highlightedDay} />}
+                Activity
+              </TabsTrigger>
+              <TabsTrigger
+                value="tokens"
+                className="h-auto px-3 py-2 timeline-tab"
+              >
+                Tokens
+              </TabsTrigger>
+            </TabsList>
+          </Tabs>
+          <TimelineSelect
+            label="Project"
+            value={project ?? '__all__'}
+            onChange={v => setProject(v === '__all__' ? undefined : v)}
+            options={[
+              { value: '__all__', label: 'All projects' },
+              ...(projects ?? []).map(p => ({ value: p, label: p })),
+            ]}
+          />
+          <TimelineSelect
+            label="Year"
+            value={String(year)}
+            onChange={v => setYear(Number(v))}
+            options={yearOptions.map(y => ({ value: String(y), label: String(y) }))}
+          />
+          <span className="flex-1" />
+          <span className="text-xs timeline-stats">
+            <b>{(status?.sessionCount ?? 0).toLocaleString()}</b>
+            {' sessions '}
+            <span className="sep mx-1">·</span>
+            {' '}
+            <b>{totals.turns.toLocaleString()}</b>
+            {' turns '}
+            <span className="sep mx-1">·</span>
+            {' '}
+            <b>{formatTokensCompact(totals.tokens)}</b>
+            {' tokens'}
+          </span>
+        </div>
+
+        {/* Heatmap */}
+        <div className="mb-9">
+          {heatmapLoading || !heatmap
+            ? (
+                <div className="rounded-lg border border-[var(--border-default)] bg-[rgba(255,255,255,0.02)] px-5 py-4 text-xs text-[var(--text-tertiary)]">
+                  Loading heatmap…
+                </div>
+              )
+            : (
+                <ContributionGraph
+                  year={year}
+                  metric={heatmapMetric}
+                  data={heatmap}
+                  onSelectDay={handleSelectDay}
+                />
+              )}
+        </div>
+
+        {/* Events header */}
+        <div className="mb-3 flex items-baseline justify-between">
+          <h3 className="text-sm font-[590] tracking-normal text-[var(--text-primary)]">
+            Recent activity
+          </h3>
+          {events?.nextCursor && (
+            <span
+              className="text-xs text-[var(--text-quaternary)]"
+              style={{ fontFamily: 'var(--font-mono)' }}
+            >
+              Showing {events.days.length} days · older sessions hidden
+            </span>
+          )}
+        </div>
+
+        <div ref={eventsRef}>
+          {eventsLoading || !events
+            ? (
+                <div
+                  className="my-3 border-y border-[var(--border-subtle)] px-3 py-3.5 text-xs text-[var(--text-tertiary)]"
+                  style={{ fontFamily: 'var(--font-mono)' }}
+                >
+                  Loading sessions…
+                </div>
+              )
+            : <EventList days={events.days} highlightedDay={highlightedDay} />}
+        </div>
       </div>
-    </div>
+    </>
   )
 }
 
@@ -235,10 +240,10 @@ function TimelineSelect({
     <Select value={value} onValueChange={onChange}>
       <SelectTrigger
         aria-label={label}
-        className="rounded-md border-[var(--border-default)] bg-[rgba(255,255,255,0.02)] px-3 py-[7px] text-[12px] font-[510] text-[var(--text-secondary)] hover:border-[var(--border-hover)] focus-visible:ring-0 data-[state=open]:border-[var(--border-hover)] [&_svg]:size-3"
+        className="h-auto px-3 py-2 timeline-filter-select focus-visible:ring-0 [&_svg]:size-3"
       >
-        <span className="text-[var(--text-tertiary)]">{label}</span>
-        <span className="text-[var(--text-primary)]">
+        <span className="timeline-filter-label">{label}</span>
+        <span className="timeline-filter-value">
           <SelectValue />
         </span>
       </SelectTrigger>
@@ -250,7 +255,7 @@ function TimelineSelect({
           <SelectItem
             key={o.value}
             value={o.value}
-            className="text-[12px] text-[var(--text-secondary)] focus:bg-white/[0.06] focus:text-[var(--text-primary)]"
+            className="text-xs text-[var(--text-secondary)] focus:bg-white/[0.06] focus:text-[var(--text-primary)]"
           >
             {o.label}
           </SelectItem>

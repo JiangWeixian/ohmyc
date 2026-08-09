@@ -4,7 +4,7 @@ import type { AgentFrontmatter } from './agent-schema'
 import type { CommandFrontmatter } from './command-schema'
 import type { SkillFrontmatter } from './skill-schema'
 
-export type Origin = 'agents' | 'claude' | 'opencode'
+export type Origin = 'claude' | 'codex' | 'opencode'
 
 export interface ParsedAgent {
   id: string
@@ -65,4 +65,4 @@ export const RenderBadgeSchema = z.object({
   tone: z.enum(['neutral', 'warn']).optional(),
 })
 
-export const OriginEnum = z.enum(['agents', 'claude', 'opencode'])
+export const OriginEnum = z.enum(['codex', 'claude', 'opencode'])

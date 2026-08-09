@@ -1,0 +1,587 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>OhMyC — Drawer A · Phosphor Mono</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #08090a; --bg-panel: #0f1011; --bg-surface: #191a1b;
+    --tx-1: #f7f8f8; --tx-2: #d0d6e0; --tx-3: #8a8f98; --tx-4: #62666d;
+    --bd-1: rgba(255,255,255,0.06); --bd-2: rgba(255,255,255,0.10); --bd-3: rgba(255,255,255,0.18);
+    --phosphor: #f7f8f8; --glow: rgba(247,248,248,0.35);
+    --side-w: 240px;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; background: var(--bg); color: var(--tx-1); height: 100%; }
+  body {
+    font-family: 'Inter', system-ui, sans-serif;
+    font-feature-settings: "cv01","ss03";
+    -webkit-font-smoothing: antialiased;
+    overflow: hidden;
+  }
+  body::before {
+    content: ""; position: fixed; inset: 0;
+    background: repeating-linear-gradient(to bottom,
+      rgba(255,255,255,0.018) 0, rgba(255,255,255,0.018) 1px,
+      transparent 1px, transparent 3px);
+    pointer-events: none; z-index: 9999; mix-blend-mode: screen;
+  }
+  body::after {
+    content: ""; position: fixed; inset: 0;
+    background: radial-gradient(ellipse at center, transparent 55%, rgba(0,0,0,0.55) 100%);
+    pointer-events: none; z-index: 9998;
+  }
+
+  /* ---------- Drawer (slide-in sidebar) ---------- */
+  .drawer-backdrop {
+    position: fixed; inset: 0;
+    background: rgba(0,0,0,0);
+    backdrop-filter: blur(0);
+    z-index: 90;
+    pointer-events: none;
+    transition: background 240ms ease-out, backdrop-filter 240ms ease-out;
+  }
+  body.drawer-open .drawer-backdrop {
+    background: rgba(0,0,0,0.45);
+    backdrop-filter: blur(4px);
+    pointer-events: auto;
+  }
+
+  .drawer {
+    position: fixed; top: 0; left: 0; bottom: 0;
+    width: var(--side-w);
+    background: var(--bg-panel);
+    z-index: 100;
+    display: flex; flex-direction: column;
+    padding: 18px 16px 16px;
+    transform: translateX(-100%);
+    transition: transform 320ms cubic-bezier(0.23, 1, 0.32, 1);
+    /* No border-right. Visual separation via layered shadow + accent glow on the edge. */
+    box-shadow:
+      0 0 0 0 transparent,
+      inset 0 0 0 0 transparent;
+    overflow: hidden;
+  }
+  body.drawer-open .drawer {
+    transform: translateX(0);
+    box-shadow:
+      16px 0 40px rgba(0,0,0,0.55),
+      1px 0 0 rgba(247,248,248,0.04);
+  }
+  /* Subtle accent line on the right edge — appears only when open */
+  .drawer::after {
+    content: ""; position: absolute; top: 0; right: 0; bottom: 0; width: 1px;
+    background: linear-gradient(to bottom,
+      transparent 0%,
+      rgba(247,248,248,0.18) 30%,
+      rgba(247,248,248,0.30) 50%,
+      rgba(247,248,248,0.18) 70%,
+      transparent 100%);
+    opacity: 0;
+    transition: opacity 320ms 120ms ease-out;
+    box-shadow: 0 0 12px rgba(247,248,248,0.18);
+  }
+  body.drawer-open .drawer::after { opacity: 1; }
+
+  /* Drawer content fade-in (staggered) */
+  .drawer > * {
+    opacity: 0;
+    transform: translateX(-12px);
+    transition: opacity 280ms ease-out, transform 280ms ease-out;
+  }
+  body.drawer-open .drawer > * { opacity: 1; transform: translateX(0); }
+  body.drawer-open .drawer > *:nth-child(1) { transition-delay: 120ms; }
+  body.drawer-open .drawer > *:nth-child(2) { transition-delay: 150ms; }
+  body.drawer-open .drawer > *:nth-child(3) { transition-delay: 180ms; }
+  body.drawer-open .drawer > *:nth-child(4) { transition-delay: 210ms; }
+  body.drawer-open .drawer > *:nth-child(5) { transition-delay: 240ms; }
+  body.drawer-open .drawer > *:nth-child(6) { transition-delay: 270ms; }
+  body.drawer-open .drawer > *:nth-child(7) { transition-delay: 300ms; }
+
+  /* Drawer contents (same structure as before) */
+  .side-brand {
+    font-family: 'JetBrains Mono', monospace;
+    font-weight: 700; font-size: 15px;
+    letter-spacing: 0.06em; color: var(--tx-1);
+    display: flex; align-items: center; gap: 6px;
+    padding: 0 6px 14px;
+    border-bottom: 1px solid var(--bd-1);
+    margin-bottom: 14px;
+  }
+  .side-brand .proto { color: var(--tx-3); font-weight: 400; }
+  .side-brand .cursor {
+    display: inline-block; width: 8px; height: 14px;
+    background: var(--phosphor); box-shadow: 0 0 8px var(--glow);
+    animation: blink 1s steps(1) infinite; margin-left: 2px;
+  }
+  @keyframes blink { 50% { opacity: 0; } }
+  .side-meta {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px; color: var(--tx-4);
+    letter-spacing: 0.06em; text-transform: uppercase;
+    padding: 0 6px 14px; line-height: 1.6;
+    border-bottom: 1px solid var(--bd-1); margin-bottom: 14px;
+  }
+  .side-meta b { color: var(--tx-3); font-weight: 400; }
+  .side-section { margin-bottom: 18px; }
+  .side-label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px; color: var(--tx-4);
+    letter-spacing: 0.18em; text-transform: uppercase;
+    padding: 0 6px 6px;
+  }
+  .side-label::before { content: "// "; color: var(--tx-4); }
+  .side-nav { display: flex; flex-direction: column; gap: 1px; }
+  .side-nav a {
+    display: flex; align-items: center; gap: 10px;
+    color: var(--tx-3); text-decoration: none;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px; letter-spacing: 0.04em;
+    padding: 7px 8px; border-radius: 2px; cursor: pointer;
+    transition: color 120ms, background 120ms;
+  }
+  .side-nav a .key {
+    color: var(--tx-4); font-size: 10px;
+    width: 18px; text-align: center;
+    border: 1px solid var(--bd-1); border-radius: 2px; padding: 1px 0;
+  }
+  .side-nav a:hover { color: var(--tx-1); background: rgba(255,255,255,0.04); }
+  .side-nav a.active {
+    color: var(--tx-1); background: rgba(255,255,255,0.06);
+    box-shadow: inset 2px 0 0 var(--phosphor);
+  }
+  .side-nav a.active .key { color: var(--tx-1); border-color: var(--bd-3); }
+  .side-sub a {
+    display: flex; align-items: center; justify-content: space-between;
+    color: var(--tx-3); text-decoration: none;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px; padding: 6px 8px; border-radius: 2px;
+  }
+  .side-sub a:hover { color: var(--tx-1); background: rgba(255,255,255,0.04); }
+  .side-sub a .count { color: var(--tx-4); font-size: 10px; }
+  .side-spacer { flex: 1; }
+  .side-cmdk {
+    display: flex; align-items: center; gap: 8px;
+    padding: 8px 10px; border: 1px solid var(--bd-2); border-radius: 4px;
+    background: rgba(255,255,255,0.02);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px; color: var(--tx-3); cursor: pointer;
+    margin-bottom: 12px;
+  }
+  .side-cmdk:hover { border-color: var(--bd-3); color: var(--tx-1); }
+  .side-cmdk .mk { margin-right: auto; }
+  .side-cmdk kbd {
+    border: 1px solid var(--bd-2); border-radius: 2px; padding: 1px 5px;
+    color: var(--tx-2); background: rgba(255,255,255,0.03);
+    font-family: inherit; font-size: 10px;
+  }
+  .side-status {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px; color: var(--tx-4);
+    letter-spacing: 0.06em; text-transform: uppercase;
+    padding: 8px 6px 0; border-top: 1px solid var(--bd-1);
+    display: flex; align-items: center; gap: 8px;
+  }
+  .side-status .dot {
+    width: 6px; height: 6px; background: var(--phosphor);
+    box-shadow: 0 0 6px var(--glow); border-radius: 50%;
+    animation: pulse 2.4s ease-in-out infinite;
+  }
+  @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.4; } }
+
+  /* ---------- Floating trigger (hamburger) ---------- */
+  .trigger {
+    position: fixed; top: 20px; left: 20px;
+    z-index: 80;
+    width: 42px; height: 42px;
+    background: rgba(15, 16, 17, 0.7);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid var(--bd-2);
+    color: var(--tx-1);
+    cursor: pointer;
+    display: inline-flex; align-items: center; justify-content: center;
+    transition: all 180ms ease-out;
+    border-radius: 4px;
+  }
+  .trigger:hover {
+    background: rgba(25, 26, 27, 0.85);
+    border-color: var(--bd-3);
+    box-shadow: 0 0 12px rgba(247,248,248,0.15);
+  }
+  .trigger svg { display: block; }
+  .trigger .ham-line {
+    transition: transform 220ms ease-out, opacity 180ms;
+    transform-origin: center;
+  }
+  body.drawer-open .trigger .ham-line:nth-child(1) {
+    transform: translateY(5px) rotate(45deg);
+  }
+  body.drawer-open .trigger .ham-line:nth-child(2) { opacity: 0; }
+  body.drawer-open .trigger .ham-line:nth-child(3) {
+    transform: translateY(-5px) rotate(-45deg);
+  }
+
+  /* Trigger pulse hint when closed */
+  body:not(.drawer-open) .trigger::after {
+    content: ""; position: absolute; inset: -4px;
+    border: 1px solid rgba(247,248,248,0.15);
+    border-radius: 6px;
+    animation: hintpulse 2.4s ease-out infinite;
+    pointer-events: none;
+  }
+  @keyframes hintpulse {
+    0% { opacity: 1; transform: scale(1); }
+    100% { opacity: 0; transform: scale(1.4); }
+  }
+
+  /* ---------- Content (full-bleed, no sidebar offset) ---------- */
+  .content {
+    height: 100vh;
+    overflow-y: auto;
+    padding: 40px 32px 80px 32px;
+    transition: padding-left 320ms cubic-bezier(0.23, 1, 0.32, 1);
+  }
+  /* Content can optionally shift right when drawer opens (push layout) — here we keep overlay mode */
+  .content-inner { max-width: 1100px; margin: 0 auto; }
+
+  /* Hero (compact, since no sidebar taking space) */
+  .hero {
+    position: relative; overflow: hidden;
+    border: 1px solid var(--bd-1);
+    border-radius: 6px;
+    background: #050506;
+    height: 280px; margin-bottom: 28px;
+  }
+  .hero canvas.snow {
+    position: absolute; inset: 0;
+    width: 100%; height: 100%; display: block; opacity: 0.85;
+  }
+  .hero-inner {
+    position: relative; z-index: 2;
+    height: 100%; padding: 44px 32px;
+    display: flex; flex-direction: column; justify-content: center;
+  }
+  .hero-eyebrow {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px; color: var(--tx-3);
+    letter-spacing: 0.18em; text-transform: uppercase;
+    margin-bottom: 14px;
+    display: flex; align-items: center; gap: 10px;
+  }
+  .hero-eyebrow::before {
+    content: ""; display: inline-block;
+    width: 8px; height: 8px;
+    background: var(--phosphor); box-shadow: 0 0 6px var(--glow);
+  }
+  .hero h1 {
+    font-family: 'JetBrains Mono', monospace;
+    font-weight: 700; font-size: 52px;
+    line-height: 1; letter-spacing: -0.04em;
+    margin: 0 0 14px; color: var(--tx-1);
+    text-shadow: 0 0 18px rgba(247,248,248,0.18);
+  }
+  .hero p {
+    font-size: 16px; line-height: 1.55;
+    color: var(--tx-2); max-width: 580px; margin: 0;
+  }
+  .hero .readout {
+    position: absolute; right: 28px; bottom: 22px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px; color: var(--tx-3);
+    letter-spacing: 0.06em; text-align: right; line-height: 1.7;
+  }
+  .hero .readout b { color: var(--tx-1); font-weight: 500; }
+
+  /* Hint banner — shows only when drawer closed */
+  .hint {
+    display: flex; align-items: center; gap: 10px;
+    padding: 12px 16px; margin-bottom: 22px;
+    background: rgba(247,248,248,0.03);
+    border: 1px solid var(--bd-1);
+    border-left: 2px solid var(--phosphor);
+    border-radius: 4px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px; color: var(--tx-3);
+    box-shadow: 0 0 8px rgba(247,248,248,0.05);
+  }
+  body.drawer-open .hint { display: none; }
+  .hint b { color: var(--tx-1); font-weight: 500; }
+  .hint kbd {
+    border: 1px solid var(--bd-2); border-radius: 2px;
+    padding: 1px 6px; color: var(--tx-1);
+    background: rgba(255,255,255,0.04);
+    font-family: inherit; font-size: 11px;
+  }
+  .hint .arrow {
+    color: var(--phosphor); animation: pointRight 1.6s ease-in-out infinite;
+  }
+  @keyframes pointRight {
+    0%,100% { transform: translateX(0); opacity: 0.6; }
+    50%     { transform: translateX(4px); opacity: 1; }
+  }
+
+  /* Stat grid */
+  .section-label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px; color: var(--tx-3);
+    letter-spacing: 0.18em; text-transform: uppercase;
+    margin: 0 0 14px;
+  }
+  .section-label::before { content: "// "; color: var(--tx-4); }
+  .grid {
+    display: grid; grid-template-columns: repeat(4, 1fr);
+    gap: 12px; margin-bottom: 28px;
+  }
+  @media (max-width: 900px) { .grid { grid-template-columns: repeat(2, 1fr); } }
+  @media (max-width: 540px) { .grid { grid-template-columns: 1fr; } }
+  .pcard {
+    background: var(--bg-panel); border: 1px solid var(--bd-1);
+    border-radius: 4px; padding: 18px;
+    transition: border-color 160ms, background 160ms;
+  }
+  .pcard:hover { border-color: var(--bd-3); background: #131415; }
+  .pcard-label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px; letter-spacing: 0.18em;
+    text-transform: uppercase; color: var(--tx-3);
+  }
+  .pcard-value {
+    font-family: 'JetBrains Mono', monospace;
+    font-weight: 700; font-size: 32px;
+    line-height: 1.1; margin: 14px 0 6px;
+    color: var(--tx-1); letter-spacing: -0.02em;
+  }
+  .pcard-delta {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px; color: var(--tx-2);
+  }
+  .pcard-delta.up::before   { content: "▲ "; color: var(--tx-1); }
+  .pcard-delta.down::before { content: "▼ "; color: var(--tx-3); }
+
+  /* System note */
+  .system {
+    margin-top: 36px;
+    padding: 22px 24px;
+    background: var(--bg-panel);
+    border: 1px solid var(--bd-1);
+    border-radius: 4px;
+  }
+  .system h2 {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px; color: var(--tx-1);
+    margin: 0 0 12px;
+    letter-spacing: 0.18em; text-transform: uppercase;
+  }
+  .system p {
+    margin: 0; font-size: 13px;
+    color: var(--tx-3); line-height: 1.6;
+    font-family: 'JetBrains Mono', monospace;
+  }
+  .system p b { color: var(--tx-1); font-weight: 500; }
+
+  @media (prefers-reduced-motion: reduce) {
+    .drawer, .drawer > *, .trigger .ham-line, .hint .arrow, .trigger::after {
+      transition: none !important; animation: none !important;
+    }
+  }
+  @media (max-width: 600px) {
+    .trigger { top: 12px; left: 12px; }
+    .content { padding: 70px 16px 60px 16px; }
+  }
+</style>
+</head>
+<body>
+
+<!-- Floating trigger -->
+<button class="trigger" id="trigger" aria-label="Toggle drawer">
+  <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+    <line class="ham-line" x1="3" y1="6" x2="17" y2="6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+    <line class="ham-line" x1="3" y1="10" x2="17" y2="10" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+    <line class="ham-line" x1="3" y1="14" x2="17" y2="14" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+  </svg>
+</button>
+
+<!-- Drawer backdrop -->
+<div class="drawer-backdrop" id="backdrop"></div>
+
+<!-- Drawer (slide-in sidebar) -->
+<aside class="drawer" id="drawer">
+  <div class="side-brand">
+    OHMYC<span class="proto">://</span><span class="cursor"></span>
+  </div>
+  <div class="side-meta"><b>v0.4.2</b><br>local · build 7a3f</div>
+
+  <div class="side-section">
+    <div class="side-label">activity</div>
+    <nav class="side-nav">
+      <a href="#" class="active"><span class="key">M</span> monitor</a>
+      <a href="#"><span class="key">T</span> timeline</a>
+    </nav>
+  </div>
+
+  <div class="side-section">
+    <div class="side-label">explore</div>
+    <nav class="side-nav">
+      <a href="#"><span class="key">A</span> agents</a>
+      <a href="#"><span class="key">S</span> skills</a>
+      <a href="#"><span class="key">C</span> commands</a>
+      <a href="#"><span class="key">P</span> plugins</a>
+    </nav>
+  </div>
+
+  <div class="side-section">
+    <div class="side-label">library</div>
+    <nav class="side-sub">
+      <a href="#">recent <span class="count">42</span></a>
+      <a href="#">favorites <span class="count">8</span></a>
+      <a href="#">all origins <span class="count">142</span></a>
+    </nav>
+  </div>
+
+  <div class="side-spacer"></div>
+
+  <div class="side-cmdk"><span class="mk">search</span><kbd>⌘K</kbd></div>
+  <div class="side-status"><span class="dot"></span> 14 sessions live</div>
+</aside>
+
+<!-- Main content (full-bleed) -->
+<div class="content">
+  <div class="content-inner">
+
+    <!-- Hint banner (only when drawer closed) -->
+    <div class="hint">
+      <span class="arrow">←</span>
+      <span><b>sidebar hidden.</b> click the <kbd>≡</kbd> button top-left, or hit <kbd>[</kbd> to slide it in.</span>
+    </div>
+
+    <section class="hero">
+      <canvas class="snow" id="snow"></canvas>
+      <div class="hero-inner">
+        <div class="hero-eyebrow">SIGNAL · LOCAL · LIVE</div>
+        <h1>coding monitor</h1>
+        <p>Your AI coding activity, rendered as signal. Full-bleed layout with a slide-in drawer — more room for content, sidebar appears on demand.</p>
+      </div>
+      <div class="readout">
+        <b>14</b> active sessions<br>
+        <b>2.4M</b> tokens today<br>
+        <b>38</b> turns · last 09:42:11
+      </div>
+    </section>
+
+    <div class="section-label">last 7 days</div>
+    <div class="grid">
+      <article class="pcard">
+        <div class="pcard-label">sessions</div>
+        <div class="pcard-value">147</div>
+        <div class="pcard-delta up">+18.4% vs prev</div>
+      </article>
+      <article class="pcard">
+        <div class="pcard-label">tokens in</div>
+        <div class="pcard-value">8.2M</div>
+        <div class="pcard-delta up">+4.1%</div>
+      </article>
+      <article class="pcard">
+        <div class="pcard-label">tokens out</div>
+        <div class="pcard-value">1.9M</div>
+        <div class="pcard-delta down">−2.3%</div>
+      </article>
+      <article class="pcard">
+        <div class="pcard-label">avg turns</div>
+        <div class="pcard-value">42</div>
+        <div class="pcard-delta up">+6</div>
+      </article>
+    </div>
+
+    <section class="system">
+      <h2>// drawer · phosphor mono</h2>
+      <p>
+        <b>Behavior:</b> default hidden. Trigger is the <kbd style="border:1px solid var(--bd-2);border-radius:2px;padding:1px 5px;color:var(--tx-1);background:rgba(255,255,255,0.04)">≡</kbd> button
+        top-left or the <kbd style="border:1px solid var(--bd-2);border-radius:2px;padding:1px 5px;color:var(--tx-1);background:rgba(255,255,255,0.04)">[</kbd> hotkey.
+        Slides in 240px wide, no right border — the visual edge is a soft phosphor glow strip + 16px drop shadow.
+        Items stagger in 30ms apart for a calm cascade. Hamburger morphs into an <kbd style="border:1px solid var(--bd-2);border-radius:2px;padding:1px 5px;color:var(--tx-1);background:rgba(255,255,255,0.04)">×</kbd>.
+        Click backdrop or hit <kbd style="border:1px solid var(--bd-2);border-radius:2px;padding:1px 5px;color:var(--tx-1);background:rgba(255,255,255,0.04)">esc</kbd> to dismiss.
+      </p>
+    </section>
+
+  </div>
+</div>
+
+<script>
+const drawer = document.getElementById('drawer');
+const trigger = document.getElementById('trigger');
+const backdrop = document.getElementById('backdrop');
+
+function openDrawer()  { document.body.classList.add('drawer-open'); }
+function closeDrawer() { document.body.classList.remove('drawer-open'); }
+function toggleDrawer() {
+  document.body.classList.toggle('drawer-open');
+}
+
+trigger.addEventListener('click', toggleDrawer);
+backdrop.addEventListener('click', closeDrawer);
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape') closeDrawer();
+  if (e.key === '[' && !e.metaKey && !e.ctrlKey) {
+    e.preventDefault();
+    toggleDrawer();
+  }
+});
+
+/* PixelSnow canvas */
+(function(){
+  const c = document.getElementById('snow');
+  if (!c) return;
+  const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const ctx = c.getContext('2d');
+  let W, H, dpr = Math.min(window.devicePixelRatio || 1, 2);
+  function resize(){
+    const r = c.getBoundingClientRect();
+    W = r.width; H = r.height;
+    c.width = W * dpr; c.height = H * dpr;
+    ctx.setTransform(dpr,0,0,dpr,0,0);
+  }
+  resize();
+  window.addEventListener('resize', resize);
+  const PX = 4;
+  let cols, rows, flakes;
+  function init(){
+    cols = Math.ceil(W / PX); rows = Math.ceil(H / PX); flakes = [];
+    for (let i = 0; i < cols; i++) {
+      flakes.push({
+        x: i, y: Math.random() * rows,
+        speed: 0.04 + Math.random() * 0.16,
+        depth: 0.2 + Math.random() * 0.8,
+        drift: (Math.random() - 0.5) * 0.06
+      });
+    }
+  }
+  init();
+  window.addEventListener('resize', init);
+  function frame(t){
+    if (reduced) return;
+    const dt = Math.min(33, t - (frame.last || t));
+    frame.last = t;
+    ctx.fillStyle = 'rgba(5,5,6,0.35)';
+    ctx.fillRect(0,0,W,H);
+    for (const f of flakes) {
+      f.y += f.speed * (dt / 16);
+      f.x += f.drift;
+      if (f.y > rows) { f.y = -2; f.x = Math.floor(f.x); f.depth = 0.2 + Math.random()*0.8; }
+      if (f.x < 0) f.x = cols;
+      if (f.x > cols) f.x = 0;
+      const alpha = f.depth * 0.9;
+      ctx.fillStyle = `rgba(247,248,248,${alpha})`;
+      ctx.fillRect(f.x * PX, f.y * PX, PX, PX);
+    }
+    requestAnimationFrame(frame);
+  }
+  if (!reduced) requestAnimationFrame(frame);
+})();
+</script>
+</body>
+</html>

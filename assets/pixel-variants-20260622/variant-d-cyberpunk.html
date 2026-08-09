@@ -1,0 +1,704 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>OhMyC — Variant D · Cyberpunk 2077</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@400;500;600;700&family=Rajdhani:wght@400;500;600;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --cp-bg:        #0a0a14;
+    --cp-bg-panel:  #11111d;
+    --cp-bg-surface:#1a1a2e;
+    --cp-bg-deep:   #06060c;
+    --cp-yellow:    #fcee0a;
+    --cp-yellow-d:  rgba(252,238,10,0.6);
+    --cp-yellow-f:  rgba(252,238,10,0.12);
+    --cp-cyan:      #00f0ff;
+    --cp-cyan-d:    rgba(0,240,255,0.55);
+    --cp-red:       #ff003c;
+    --cp-red-d:     rgba(255,0,60,0.5);
+    --cp-text:      #e8e8f0;
+    --cp-text-dim:  #8a8aa0;
+    --cp-text-mute: #5a5a78;
+    --cp-border:    rgba(252,238,10,0.22);
+    --cp-border-b:  rgba(252,238,10,0.55);
+    --cp-glow-y:    0 0 6px rgba(252,238,10,0.55), 0 0 14px rgba(252,238,10,0.22);
+    --cp-glow-c:    0 0 6px rgba(0,240,255,0.55), 0 0 14px rgba(0,240,255,0.22);
+    --side-w: 230px;
+
+    /* CP yellow luminance buckets for heatmap */
+    --heat-0: rgba(252,238,10,0.05);
+    --heat-1: rgba(252,238,10,0.18);
+    --heat-2: rgba(252,238,10,0.38);
+    --heat-3: rgba(252,238,10,0.65);
+    --heat-4: rgba(252,238,10,0.92);
+  }
+
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; background: var(--cp-bg); color: var(--cp-text); }
+  body {
+    font-family: 'Rajdhani', 'Chakra Petch', system-ui, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    overflow-x: hidden;
+    display: flex; align-items: stretch; min-height: 100vh;
+  }
+  .mono { font-family: 'Share Tech Mono', 'JetBrains Mono', ui-monospace, monospace; }
+
+  /* Global wireframe grid + scanlines */
+  body::before {
+    content: ""; position: fixed; inset: 0;
+    background-image:
+      linear-gradient(to right, rgba(252,238,10,0.03) 1px, transparent 1px),
+      linear-gradient(to bottom, rgba(0,240,255,0.03) 1px, transparent 1px);
+    background-size: 32px 32px;
+    pointer-events: none; z-index: 9997;
+    mask-image: linear-gradient(to bottom, transparent, black 20%, black 80%, transparent);
+  }
+  body::after {
+    content: ""; position: fixed; inset: 0;
+    background: repeating-linear-gradient(to bottom,
+      rgba(0,0,0,0.10) 0, rgba(0,0,0,0.10) 1px,
+      transparent 1px, transparent 3px);
+    pointer-events: none; z-index: 9998; mix-blend-mode: multiply;
+  }
+
+  /* ---------- Sidebar ---------- */
+  .sidebar {
+    position: sticky; top: 0;
+    width: var(--side-w); flex-shrink: 0; height: 100vh;
+    display: flex; flex-direction: column;
+    padding: 22px 16px 16px;
+    background: var(--cp-bg-deep);
+    border-right: 1px solid var(--cp-border);
+    box-shadow: 4px 0 18px rgba(252,238,10,0.08);
+    z-index: 50;
+  }
+  /* hazard stripe at top of sidebar */
+  .sidebar::before {
+    content: ""; position: absolute; top: 0; left: 0; right: 0; height: 4px;
+    background: repeating-linear-gradient(
+      135deg,
+      var(--cp-yellow) 0, var(--cp-yellow) 8px,
+      var(--cp-bg-deep) 8px, var(--cp-bg-deep) 16px);
+    opacity: 0.7;
+  }
+
+  .side-brand {
+    font-family: 'Chakra Petch', sans-serif;
+    font-weight: 700; font-size: 18px;
+    letter-spacing: 0.16em; text-transform: uppercase;
+    color: var(--cp-yellow);
+    text-shadow: var(--cp-glow-y);
+    display: flex; align-items: center; gap: 8px;
+    padding: 0 6px 14px;
+    border-bottom: 1px solid var(--cp-border);
+    margin-bottom: 14px;
+  }
+  .side-brand::before {
+    content: "◢";
+    color: var(--cp-cyan); text-shadow: var(--cp-glow-c);
+    font-size: 14px;
+  }
+  .side-brand .cursor {
+    display: inline-block; width: 9px; height: 16px;
+    background: var(--cp-yellow); box-shadow: var(--cp-glow-y);
+    animation: blink 1s steps(1) infinite; margin-left: 4px;
+  }
+  @keyframes blink { 50% { opacity: 0; } }
+
+  .side-meta {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 11px; color: var(--cp-text-mute);
+    letter-spacing: 0.06em;
+    padding: 0 6px 14px; line-height: 1.7;
+    border-bottom: 1px solid var(--cp-border);
+    margin-bottom: 14px;
+  }
+  .side-meta b { color: var(--cp-cyan); font-weight: 400; }
+
+  .side-section { margin-bottom: 18px; }
+  .side-label {
+    font-family: 'Chakra Petch', sans-serif;
+    font-size: 10px; font-weight: 600;
+    color: var(--cp-text-dim);
+    letter-spacing: 0.22em; text-transform: uppercase;
+    padding: 0 6px 8px;
+  }
+  .side-label::before { content: "▸ "; color: var(--cp-yellow); }
+
+  .side-nav { display: flex; flex-direction: column; gap: 3px; }
+  .side-nav a {
+    display: flex; align-items: center; gap: 10px;
+    color: var(--cp-text-dim); text-decoration: none;
+    font-family: 'Chakra Petch', sans-serif;
+    font-size: 13px; font-weight: 500;
+    letter-spacing: 0.1em; text-transform: uppercase;
+    padding: 8px 12px; cursor: pointer;
+    clip-path: polygon(0 0, calc(100% - 10px) 0, 100% 10px, 100% 100%, 10px 100%, 0 calc(100% - 10px));
+    transition: all 120ms;
+    position: relative;
+  }
+  .side-nav a .key {
+    font-family: 'Share Tech Mono', monospace;
+    color: var(--cp-text-mute); font-size: 10px;
+    width: 18px; height: 18px;
+    display: inline-flex; align-items: center; justify-content: center;
+    border: 1px solid var(--cp-border);
+    background: rgba(252,238,10,0.04);
+  }
+  .side-nav a:hover {
+    color: var(--cp-yellow);
+    background: rgba(252,238,10,0.06);
+    text-shadow: 0 0 4px var(--cp-yellow-d);
+  }
+  .side-nav a.active {
+    color: var(--cp-bg-deep);
+    background: var(--cp-yellow);
+    box-shadow: var(--cp-glow-y);
+    text-shadow: none;
+  }
+  .side-nav a.active .key {
+    color: var(--cp-bg-deep);
+    background: var(--cp-bg-deep);
+    border-color: var(--cp-bg-deep);
+  }
+  .side-sub a {
+    display: flex; align-items: center; justify-content: space-between;
+    color: var(--cp-text-dim); text-decoration: none;
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 12px; padding: 6px 12px;
+  }
+  .side-sub a:hover { color: var(--cp-cyan); }
+  .side-sub a .count {
+    color: var(--cp-yellow); font-size: 11px;
+  }
+  .side-spacer { flex: 1; }
+  .side-cmdk {
+    display: flex; align-items: center; gap: 8px;
+    padding: 9px 12px;
+    border: 1px solid var(--cp-border);
+    background: rgba(252,238,10,0.04);
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 11px; color: var(--cp-yellow);
+    cursor: pointer;
+    clip-path: polygon(0 0, calc(100% - 8px) 0, 100% 8px, 100% 100%, 8px 100%, 0 calc(100% - 8px));
+    margin-bottom: 12px;
+    letter-spacing: 0.08em;
+  }
+  .side-cmdk:hover {
+    border-color: var(--cp-yellow);
+    box-shadow: var(--cp-glow-y);
+  }
+  .side-cmdk .mk { margin-right: auto; }
+  .side-cmdk kbd {
+    border: 1px solid var(--cp-border);
+    padding: 1px 5px;
+    color: var(--cp-cyan);
+    background: rgba(0,240,255,0.06);
+    font-family: inherit; font-size: 10px;
+  }
+  .side-status {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 10px; color: var(--cp-text-mute);
+    letter-spacing: 0.1em; text-transform: uppercase;
+    padding: 10px 6px 0; border-top: 1px solid var(--cp-border);
+    display: flex; align-items: center; gap: 8px;
+  }
+  .side-status .dot {
+    width: 8px; height: 8px;
+    background: var(--cp-yellow);
+    box-shadow: var(--cp-glow-y);
+    animation: pulse 1.6s ease-in-out infinite;
+  }
+  @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.3; } }
+
+  /* ---------- Content ---------- */
+  .content {
+    flex: 1; min-width: 0; display: flex; flex-direction: column;
+  }
+
+  /* ---------- Hero (CP2077 data band) ---------- */
+  .hero {
+    position: relative; overflow: hidden;
+    border-bottom: 1px solid var(--cp-border);
+    background: var(--cp-bg-deep);
+    height: 340px;
+  }
+  /* Hexagonal wireframe backdrop */
+  .hero::before {
+    content: ""; position: absolute; inset: 0;
+    background-image:
+      radial-gradient(circle at 20% 30%, rgba(252,238,10,0.08) 0, transparent 30%),
+      radial-gradient(circle at 80% 70%, rgba(0,240,255,0.06) 0, transparent 35%);
+    pointer-events: none;
+  }
+  .hero::after {
+    content: ""; position: absolute; inset: 0;
+    background-image:
+      linear-gradient(60deg, transparent 49%, rgba(252,238,10,0.04) 49%, rgba(252,238,10,0.04) 51%, transparent 51%),
+      linear-gradient(-60deg, transparent 49%, rgba(0,240,255,0.03) 49%, rgba(0,240,255,0.03) 51%, transparent 51%);
+    background-size: 28px 48px;
+    pointer-events: none;
+    mask-image: linear-gradient(to right, transparent, black 30%, black 70%, transparent);
+  }
+  .hero-inner {
+    position: relative; z-index: 2;
+    height: 100%; max-width: 1100px; margin: 0 auto;
+    padding: 60px 32px 40px;
+    display: flex; flex-direction: column; justify-content: center;
+  }
+  .hero-eyebrow {
+    font-family: 'Chakra Petch', sans-serif;
+    font-size: 11px; font-weight: 600;
+    color: var(--cp-cyan);
+    letter-spacing: 0.32em; text-transform: uppercase;
+    margin-bottom: 18px;
+    display: flex; align-items: center; gap: 12px;
+    text-shadow: var(--cp-glow-c);
+  }
+  .hero-eyebrow::before {
+    content: ""; display: inline-block;
+    width: 12px; height: 2px;
+    background: var(--cp-cyan);
+    box-shadow: var(--cp-glow-c);
+  }
+  .hero-eyebrow::after {
+    content: ""; display: inline-block;
+    width: 12px; height: 2px;
+    background: var(--cp-cyan);
+    box-shadow: var(--cp-glow-c);
+  }
+  .hero h1 {
+    font-family: 'Chakra Petch', sans-serif;
+    font-weight: 700; font-size: 60px;
+    line-height: 1; letter-spacing: 0.02em;
+    margin: 0 0 18px;
+    color: var(--cp-yellow);
+    text-transform: uppercase;
+    text-shadow: var(--cp-glow-y);
+  }
+  .hero h1 .accent {
+    color: var(--cp-text);
+    text-shadow: 2px 2px 0 var(--cp-red), var(--cp-glow-y);
+  }
+  .hero p {
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 17px; font-weight: 500;
+    line-height: 1.5; color: var(--cp-text-dim);
+    max-width: 600px; margin: 0;
+    letter-spacing: 0.02em;
+  }
+  .hero .readout {
+    position: absolute; right: 32px; bottom: 24px;
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 11px; color: var(--cp-text-dim);
+    letter-spacing: 0.08em; text-transform: uppercase;
+    text-align: right; line-height: 1.9;
+  }
+  .hero .readout b {
+    color: var(--cp-yellow); font-weight: 400;
+    text-shadow: 0 0 4px var(--cp-yellow-d);
+  }
+
+  /* ---------- Main ---------- */
+  main { max-width: 1100px; width: 100%; margin: 0 auto; padding: 36px 32px 80px; }
+  .section-label {
+    font-family: 'Chakra Petch', sans-serif;
+    font-size: 11px; font-weight: 600;
+    color: var(--cp-yellow);
+    letter-spacing: 0.28em; text-transform: uppercase;
+    margin: 0 0 16px;
+    text-shadow: var(--cp-glow-y);
+    display: flex; align-items: center; gap: 10px;
+  }
+  .section-label::before { content: "▌▌"; color: var(--cp-cyan); }
+
+  /* CP2077 notched panel */
+  .grid {
+    display: grid; grid-template-columns: repeat(4, 1fr);
+    gap: 14px; margin-bottom: 32px;
+  }
+  @media (max-width: 1100px) { .grid { grid-template-columns: repeat(2, 1fr); } }
+  @media (max-width: 640px)  { .grid { grid-template-columns: 1fr; } }
+
+  .pcard {
+    position: relative;
+    background: var(--cp-bg-panel);
+    border: 1px solid var(--cp-border);
+    padding: 20px;
+    cursor: pointer;
+    transition: all 160ms;
+    clip-path: polygon(0 0, calc(100% - 14px) 0, 100% 14px, 100% 100%, 14px 100%, 0 calc(100% - 14px));
+  }
+  .pcard::before {
+    content: ""; position: absolute; top: 0; left: 0; width: 30%; height: 2px;
+    background: var(--cp-yellow);
+    box-shadow: var(--cp-glow-y);
+    opacity: 0.6;
+  }
+  .pcard::after {
+    content: ""; position: absolute; bottom: 0; right: 0; width: 14px; height: 14px;
+    border-right: 2px solid var(--cp-yellow);
+    border-bottom: 2px solid var(--cp-yellow);
+    opacity: 0;
+    transition: opacity 160ms;
+  }
+  .pcard:hover {
+    background: var(--cp-bg-surface);
+    box-shadow: 0 0 14px rgba(252,238,10,0.18);
+  }
+  .pcard:hover::before { opacity: 1; }
+  .pcard:hover::after { opacity: 1; }
+  .pcard-label {
+    font-family: 'Chakra Petch', sans-serif;
+    font-size: 10px; font-weight: 600;
+    letter-spacing: 0.24em; text-transform: uppercase;
+    color: var(--cp-text-dim);
+    position: relative; z-index: 2;
+  }
+  .pcard-value {
+    font-family: 'Chakra Petch', sans-serif;
+    font-weight: 700; font-size: 36px;
+    line-height: 1; margin: 16px 0 8px;
+    color: var(--cp-yellow);
+    position: relative; z-index: 2;
+    letter-spacing: 0.02em;
+    text-shadow: var(--cp-glow-y);
+    font-variant-numeric: tabular-nums;
+  }
+  .pcard-delta {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 11px; color: var(--cp-text);
+    position: relative; z-index: 2;
+    letter-spacing: 0.06em;
+  }
+  .pcard-delta.up { color: var(--cp-cyan); }
+  .pcard-delta.down { color: var(--cp-red); }
+  .pcard-delta.up::before { content: "▲ "; }
+  .pcard-delta.down::before { content: "▼ "; }
+
+  /* Two-col body */
+  .cols { display: grid; grid-template-columns: 2fr 1fr; gap: 18px; }
+  @media (max-width: 1100px) { .cols { grid-template-columns: 1fr; } }
+
+  .panel {
+    background: var(--cp-bg-panel);
+    border: 1px solid var(--cp-border);
+    padding: 22px;
+    position: relative;
+    clip-path: polygon(0 0, calc(100% - 16px) 0, 100% 16px, 100% 100%, 16px 100%, 0 calc(100% - 16px));
+  }
+  .panel h3 {
+    font-family: 'Chakra Petch', sans-serif;
+    font-size: 14px; font-weight: 600;
+    color: var(--cp-yellow);
+    margin: 0 0 4px;
+    letter-spacing: 0.16em; text-transform: uppercase;
+    text-shadow: var(--cp-glow-y);
+  }
+  .panel .panel-sub {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 11px; color: var(--cp-text-mute);
+    margin: 0 0 18px;
+    letter-spacing: 0.06em;
+  }
+
+  .session-list { font-family: 'Share Tech Mono', monospace; font-size: 12px; }
+  .session {
+    display: grid;
+    grid-template-columns: 90px 1fr 80px 70px;
+    gap: 12px;
+    padding: 10px 0;
+    border-bottom: 1px solid rgba(252,238,10,0.06);
+    color: var(--cp-text);
+    align-items: center;
+  }
+  .session:last-child { border-bottom: none; }
+  .session .ts { color: var(--cp-text-mute); }
+  .session .proj {
+    color: var(--cp-yellow); font-weight: normal;
+    text-shadow: 0 0 3px var(--cp-yellow-d);
+  }
+  .session .proj small {
+    color: var(--cp-text-dim); display: block;
+    font-size: 10px; margin-top: 2px;
+    text-shadow: none; letter-spacing: 0.04em;
+  }
+  .session .tokens { color: var(--cp-cyan); text-align: right; text-shadow: 0 0 3px var(--cp-cyan-d); }
+  .session .bar {
+    height: 6px;
+    background: linear-gradient(to right,
+      var(--cp-yellow) var(--w,0%),
+      rgba(252,238,10,0.08) var(--w,0%));
+    box-shadow: 0 0 6px var(--cp-yellow-d);
+    clip-path: polygon(0 0, 100% 0, calc(100% - 3px) 100%, 0 100%);
+  }
+
+  .heatmap {
+    display: grid; grid-template-columns: repeat(26, 1fr);
+    gap: 3px; margin-top: 8px;
+  }
+  .heatmap span {
+    aspect-ratio: 1;
+    background: rgba(252,238,10,0.04);
+  }
+
+  .lib-row {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 10px 0;
+    border-bottom: 1px solid rgba(252,238,10,0.06);
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 12px;
+  }
+  .lib-row:last-child { border-bottom: none; }
+  .lib-row .name { color: var(--cp-cyan); text-shadow: 0 0 3px var(--cp-cyan-d); }
+  .lib-row .kind {
+    font-family: 'Chakra Petch', sans-serif;
+    font-size: 9px; font-weight: 600;
+    color: var(--cp-yellow);
+    padding: 2px 8px;
+    border: 1px solid var(--cp-border);
+    letter-spacing: 0.14em; text-transform: uppercase;
+    clip-path: polygon(0 0, calc(100% - 4px) 0, 100% 4px, 100% 100%, 4px 100%, 0 calc(100% - 4px));
+  }
+
+  /* System panel */
+  .system {
+    margin-top: 36px;
+    padding: 24px;
+    border: 1px solid var(--cp-border);
+    background: var(--cp-bg-panel);
+    clip-path: polygon(0 0, calc(100% - 18px) 0, 100% 18px, 100% 100%, 18px 100%, 0 calc(100% - 18px));
+    position: relative;
+  }
+  .system::before {
+    content: ""; position: absolute; top: 0; left: 0; width: 40%; height: 2px;
+    background: linear-gradient(to right, var(--cp-yellow), transparent);
+    box-shadow: var(--cp-glow-y);
+  }
+  .system h2 {
+    font-family: 'Chakra Petch', sans-serif;
+    font-size: 12px; font-weight: 600;
+    color: var(--cp-yellow);
+    margin: 0 0 16px;
+    letter-spacing: 0.28em; text-transform: uppercase;
+    text-shadow: var(--cp-glow-y);
+  }
+  .system-grid {
+    display: grid; grid-template-columns: repeat(4, 1fr); gap: 22px;
+  }
+  @media (max-width: 900px) { .system-grid { grid-template-columns: repeat(2, 1fr); } }
+  .swatch {
+    display: flex; align-items: center; gap: 10px;
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 11px;
+  }
+  .swatch i {
+    display: block; width: 26px; height: 26px;
+    clip-path: polygon(0 0, calc(100% - 5px) 0, 100% 5px, 100% 100%, 5px 100%, 0 calc(100% - 5px));
+  }
+  .swatch .label {
+    color: var(--cp-text-mute); display: block;
+    font-family: 'Chakra Petch', sans-serif;
+    font-size: 9px; font-weight: 600;
+    letter-spacing: 0.18em; text-transform: uppercase;
+  }
+  .swatch .hex { color: var(--cp-yellow); }
+
+  @media (prefers-reduced-motion: reduce) {
+    .side-brand .cursor, .side-status .dot { animation: none; }
+  }
+  @media (max-width: 760px) {
+    body { flex-direction: column; }
+    .sidebar { position: relative; width: 100%; height: auto; flex-direction: row; flex-wrap: wrap; padding: 12px; gap: 10px; }
+    .side-brand, .side-meta, .side-section, .side-spacer, .side-status { display: none; }
+    .side-cmdk { margin: 0; }
+    .content { padding: 24px 16px 60px; }
+  }
+</style>
+</head>
+<body>
+
+<aside class="sidebar">
+  <div class="side-brand">OHMYC<span class="cursor"></span></div>
+  <div class="side-meta"><b>v0.4.2</b> // BUILD_7A3F<br>LOCAL // SYNCED</div>
+
+  <div class="side-section">
+    <div class="side-label">activity</div>
+    <nav class="side-nav">
+      <a href="#" class="active"><span class="key">M</span> monitor</a>
+      <a href="#"><span class="key">T</span> timeline</a>
+    </nav>
+  </div>
+
+  <div class="side-section">
+    <div class="side-label">explore</div>
+    <nav class="side-nav">
+      <a href="#"><span class="key">A</span> agents</a>
+      <a href="#"><span class="key">S</span> skills</a>
+      <a href="#"><span class="key">C</span> commands</a>
+      <a href="#"><span class="key">P</span> plugins</a>
+    </nav>
+  </div>
+
+  <div class="side-section">
+    <div class="side-label">library</div>
+    <nav class="side-sub">
+      <a href="#">RECENT <span class="count">[42]</span></a>
+      <a href="#">FAVORITES <span class="count">[08]</span></a>
+      <a href="#">ALL ORIGINS <span class="count">[142]</span></a>
+    </nav>
+  </div>
+
+  <div class="side-spacer"></div>
+  <div class="side-cmdk"><span class="mk">SEARCH</span><kbd>⌘K</kbd></div>
+  <div class="side-status"><span class="dot"></span> 14 SESSIONS LIVE</div>
+</aside>
+
+<div class="content">
+
+<section class="hero">
+  <div class="hero-inner">
+    <div class="hero-eyebrow">SIGNAL // LOCAL // LIVE</div>
+    <h1>coding <span class="accent">monitor</span></h1>
+    <p>Your AI coding activity, rendered as signal. Sessions, turns, tokens, momentum — emerging from the data stream.</p>
+  </div>
+  <div class="readout">
+    <b>14</b> ACTIVE SESSIONS<br>
+    <b>2.4M</b> TOKENS TODAY<br>
+    <b>38</b> TURNS · LAST 09:42:11
+  </div>
+</section>
+
+<main>
+
+  <div class="section-label">LAST 7 DAYS</div>
+  <div class="grid">
+    <article class="pcard">
+      <div class="pcard-label">sessions</div>
+      <div class="pcard-value">147</div>
+      <div class="pcard-delta up">+18.4%</div>
+    </article>
+    <article class="pcard">
+      <div class="pcard-label">tokens in</div>
+      <div class="pcard-value">8.2M</div>
+      <div class="pcard-delta up">+4.1%</div>
+    </article>
+    <article class="pcard">
+      <div class="pcard-label">tokens out</div>
+      <div class="pcard-value">1.9M</div>
+      <div class="pcard-delta down">−2.3%</div>
+    </article>
+    <article class="pcard">
+      <div class="pcard-label">avg turns</div>
+      <div class="pcard-value">42</div>
+      <div class="pcard-delta up">+6</div>
+    </article>
+  </div>
+
+  <div class="cols">
+    <section class="panel">
+      <h3>recent sessions</h3>
+      <p class="panel-sub">// LIVE FEED // DATA STREAM ACTIVE</p>
+      <div class="session-list">
+        <div class="session">
+          <span class="ts">09:42:11</span>
+          <span class="proj">claudeui/design-system<small>IMPLEMENT PIXEL-CARD VARIANT D</small></span>
+          <span class="tokens">128k</span>
+          <span class="bar" style="--w:78%"></span>
+        </div>
+        <div class="session">
+          <span class="ts">09:18:04</span>
+          <span class="proj">ohmyc/monitor-route<small>FIX WEBGL FALLBACK DOM LABELS</small></span>
+          <span class="tokens">82k</span>
+          <span class="bar" style="--w:51%"></span>
+        </div>
+        <div class="session">
+          <span class="ts">08:55:22</span>
+          <span class="proj">ohmyc/agents-library<small>ADD PROVIDERREGISTRY TESTS</small></span>
+          <span class="tokens">214k</span>
+          <span class="bar" style="--w:92%"></span>
+        </div>
+        <div class="session">
+          <span class="ts">08:31:09</span>
+          <span class="proj">vendor/react-bits<small>EXTRACT PIXELSNOW SHADER PARAMS</small></span>
+          <span class="tokens">44k</span>
+          <span class="bar" style="--w:28%"></span>
+        </div>
+        <div class="session">
+          <span class="ts">08:02:47</span>
+          <span class="proj">ohmyc/timeline<small>CALIBRATE LUMINANCE STEPS</small></span>
+          <span class="tokens">156k</span>
+          <span class="bar" style="--w:64%"></span>
+        </div>
+      </div>
+    </section>
+
+    <aside class="panel">
+      <h3>library</h3>
+      <p class="panel-sub">// 6 ORIGINS // 142 RESOURCES</p>
+      <div class="lib-row"><span class="name">/investigate</span><span class="kind">skill</span></div>
+      <div class="lib-row"><span class="name">/qa</span><span class="kind">skill</span></div>
+      <div class="lib-row"><span class="name">/ship</span><span class="kind">skill</span></div>
+      <div class="lib-row"><span class="name">codex-engineer</span><span class="kind">agent</span></div>
+      <div class="lib-row"><span class="name">/design-review</span><span class="kind">skill</span></div>
+      <div class="lib-row"><span class="name">commit-wip</span><span class="kind">cmd</span></div>
+    </aside>
+  </div>
+
+  <section class="panel" style="margin-top:18px">
+    <h3>activity // 26 weeks</h3>
+    <p class="panel-sub">// YELLOW DENSITY // PIXEL-GRID HEATMAP</p>
+    <div class="heatmap" id="heatmap"></div>
+  </section>
+
+  <section class="system">
+    <h2>variant d // cyberpunk 2077</h2>
+    <div class="system-grid">
+      <div class="swatch"><i style="background:#0a0a14"></i><div><span class="label">bg</span><span class="hex">#0a0a14</span></div></div>
+      <div class="swatch"><i style="background:#1a1a2e"></i><div><span class="label">surface</span><span class="hex">#1a1a2e</span></div></div>
+      <div class="swatch"><i style="background:#fcee0a;box-shadow:0 0 6px #fcee0a"></i><div><span class="label">yellow</span><span class="hex">#fcee0a</span></div></div>
+      <div class="swatch"><i style="background:#00f0ff;box-shadow:0 0 6px #00f0ff"></i><div><span class="label">cyan</span><span class="hex">#00f0ff</span></div></div>
+      <div class="swatch"><i style="background:#ff003c;box-shadow:0 0 6px #ff003c"></i><div><span class="label">red</span><span class="hex">#ff003c</span></div></div>
+      <div class="swatch"><i style="background:rgba(252,238,10,0.22)"></i><div><span class="label">border</span><span class="hex">y/.22</span></div></div>
+      <div class="swatch"><i style="font-family:'Chakra Petch';display:flex;align-items:center;justify-content:center;color:#fcee0a;font-size:11px;font-weight:700;text-shadow:0 0 4px #fcee0a">Aa</i><div><span class="label">display</span><span class="hex">Chakra Petch</span></div></div>
+      <div class="swatch"><i style="font-family:'Rajdhani';display:flex;align-items:center;justify-content:center;color:#fcee0a;font-size:11px;font-weight:600">Aa</i><div><span class="label">body</span><span class="hex">Rajdhani</span></div></div>
+    </div>
+    <p style="margin:18px 0 0;font-size:13px;color:var(--cp-text-dim);line-height:1.6;font-family:'Rajdhani',sans-serif;letter-spacing:0.02em">
+      <b style="color:var(--cp-yellow);text-shadow:var(--cp-glow-y)">POSTURE:</b> Cyberpunk 2077 / Night City HUD.
+      Notched corner panels (clip-path), signature yellow + cyan with red alert accent. Chakra Petch display,
+      Rajdhani body, Share Tech Mono for data. All caps with wide 0.2em+ letter-spacing. Hazard stripes on the sidebar
+      top edge. Hexagonal wireframe backdrop on hero. Breaks PRODUCT.md chromatic ban harder than C — full HUD aesthetic.
+    </p>
+  </section>
+
+</main>
+
+</div>
+
+<script>
+/* Heatmap render — yellow luminance buckets */
+(function(){
+  const el = document.getElementById('heatmap');
+  if (!el) return;
+  const total = 26 * 7;
+  for (let i = 0; i < total; i++) {
+    const cell = document.createElement('span');
+    const v = Math.random();
+    let bg, glow;
+    if (v < 0.55)      bg = 'rgba(252,238,10,0.04)';
+    else if (v < 0.75) bg = 'rgba(252,238,10,0.20)';
+    else if (v < 0.88) bg = 'rgba(252,238,10,0.42)';
+    else if (v < 0.96) bg = 'rgba(252,238,10,0.70)', glow = '0 0 4px rgba(252,238,10,0.4)';
+    else               bg = 'rgba(252,238,10,0.95)', glow = '0 0 6px rgba(252,238,10,0.6)';
+    cell.style.background = bg;
+    if (glow) cell.style.boxShadow = glow;
+    el.appendChild(cell);
+  }
+})();
+</script>
+</body>
+</html>

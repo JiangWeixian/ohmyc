@@ -4,9 +4,17 @@ on:
   workflow_dispatch:
     inputs:
       tag:
-        description: Release tag (e.g. v0.2.0)
-        required: true
+        description: Official only — release tag (e.g. v0.2.0). Ignored for draft.
+        required: false
         type: string
+      release_kind:
+        description: Draft builds use the selected branch (per-branch fixed slot); official builds from the tag.
+        required: true
+        default: draft
+        type: choice
+        options:
+          - draft
+          - official
 
 jobs:
   build:
@@ -14,10 +22,86 @@ jobs:
       matrix:
         platform: [macos-14, windows-latest]
     runs-on: ${{ matrix.platform }}
+    env:
+      NODE_OPTIONS: --max-old-space-size=4096
     permissions:
       contents: write
     steps:
-      - uses: actions/checkout@v5
+      - name: Checkout selected ref
+        if: ${{ inputs.release_kind == 'draft' }}
+        uses: actions/checkout@v5
+
+      - name: Checkout release tag
+        if: ${{ inputs.release_kind == 'official' }}
+        uses: actions/checkout@v5
+        with:
+          ref: ${{ inputs.tag }}
+          fetch-depth: 0
+
+      - name: Resolve release identity
+        id: identity
+        shell: bash
+        env:
+          RELEASE_KIND: ${{ inputs.release_kind }}
+          INPUT_TAG: ${{ inputs.tag }}
+          BRANCH_NAME: ${{ github.ref_name }}
+        run: |
+          set -euo pipefail
+
+          if [[ "$RELEASE_KIND" == "draft" ]]; then
+            # Per-branch fixed slot: same branch always updates one draft release.
+            SLUG=$(
+              printf '%s' "$BRANCH_NAME" \
+                | tr '[:upper:]' '[:lower:]' \
+                | sed -E 's/[^a-z0-9]+/-/g; s/^-+//; s/-+$//; s/-+/-/g' \
+                | cut -c1-40 \
+                | sed -E 's/-+$//'
+            )
+            if [[ -z "$SLUG" ]]; then
+              echo "Could not derive branch slug from: $BRANCH_NAME"
+              exit 1
+            fi
+
+            RELEASE_TAG="v0.0.0-draft-${SLUG}"
+            RELEASE_NAME="OhMyC draft (${BRANCH_NAME})"
+            # Windows MSI only accepts small numeric prerelease ids (<=65535).
+            if [[ "${RUNNER_OS}" == "Windows" ]]; then
+              BUNDLE_VERSION="0.0.0-1"
+            else
+              BUNDLE_VERSION="0.0.0-draft-${SLUG}"
+            fi
+            IS_PRERELEASE=true
+          else
+            if [[ -z "${INPUT_TAG// }" ]]; then
+              echo "Official builds require a release tag input (e.g. v0.2.0)."
+              exit 1
+            fi
+            RELEASE_TAG="$INPUT_TAG"
+            RELEASE_NAME="OhMyC ${INPUT_TAG}"
+            BUNDLE_VERSION="${INPUT_TAG#v}"
+            if [[ ! "$BUNDLE_VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+([-.+][0-9A-Za-z.-]+)?$ ]]; then
+              echo "Invalid release tag: $INPUT_TAG"
+              exit 1
+            fi
+            if [[ "$BUNDLE_VERSION" == *-* ]]; then
+              IS_PRERELEASE=true
+            else
+              IS_PRERELEASE=false
+            fi
+          fi
+
+          {
+            echo "release_tag=$RELEASE_TAG"
+            echo "release_name=$RELEASE_NAME"
+            echo "bundle_version=$BUNDLE_VERSION"
+            echo "is_prerelease=$IS_PRERELEASE"
+          } >> "$GITHUB_OUTPUT"
+
+          echo "release_kind=$RELEASE_KIND"
+          echo "release_tag=$RELEASE_TAG"
+          echo "release_name=$RELEASE_NAME"
+          echo "bundle_version=$BUNDLE_VERSION"
+          echo "is_prerelease=$IS_PRERELEASE"
 
       - uses: pnpm/action-setup@v4
         with:
@@ -39,7 +123,55 @@ jobs:
 
       - run: pnpm install --frozen-lockfile=false
 
-      - uses: dtolnay/rust-toolchain@stable
+      - name: Set desktop bundle version
+        shell: bash
+        env:
+          RELEASE_KIND: ${{ inputs.release_kind }}
+          BUNDLE_VERSION: ${{ steps.identity.outputs.bundle_version }}
+        run: |
+          set -euo pipefail
+          BUNDLE_VERSION="$BUNDLE_VERSION" RELEASE_KIND="$RELEASE_KIND" node - <<'NODE'
+          const fs = require('node:fs')
+          const releaseKind = process.env.RELEASE_KIND
+          let bundleVersion = process.env.BUNDLE_VERSION
+          const configPath = 'packages/desktop/src-tauri/tauri.conf.json'
+          const config = JSON.parse(fs.readFileSync(configPath, 'utf8'))
+
+          // Official Windows prerelease tags still need MSI-safe numeric ids.
+          if (
+            releaseKind === 'official' &&
+            process.env.RUNNER_OS === 'Windows' &&
+            bundleVersion.includes('-')
+          ) {
+            const [core, prereleaseAndMetadata] = bundleVersion.split('-', 2)
+            const prerelease = prereleaseAndMetadata.split('+', 1)[0]
+            const numericIdentifier = prerelease.match(/(?:^|[.-])(\d+)(?:$|[.-])/)?.[1]
+            if (!numericIdentifier) {
+              console.error(
+                `Windows MSI requires numeric prerelease identifiers, but ${bundleVersion} has none.`,
+              )
+              process.exit(1)
+            }
+            const numericValue = Number(numericIdentifier)
+            if (!Number.isInteger(numericValue) || numericValue > 65535) {
+              console.error(
+                `Windows MSI prerelease identifier must be an integer <= 65535, got ${numericIdentifier}.`,
+              )
+              process.exit(1)
+            }
+            const normalized = `${core}-${numericIdentifier}`
+            console.log(
+              `Windows MSI bundle version normalized from ${bundleVersion} to ${normalized}.`,
+            )
+            bundleVersion = normalized
+          }
+
+          config.version = bundleVersion
+          fs.writeFileSync(configPath, `${JSON.stringify(config, null, 2)}\n`)
+          console.log(`Desktop bundle version set to ${config.version}`)
+          NODE
+
+      - uses: dtolnay/rust-toolchain@1.97.0
 
       - uses: Swatinem/rust-cache@v2
         with:
@@ -52,9 +184,9 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          tagName: ${{ inputs.tag }}
-          releaseName: "OhMyC ${{ inputs.tag }}"
-          releaseDraft: true
-          prerelease: false
+          tagName: ${{ steps.identity.outputs.release_tag }}
+          releaseName: ${{ steps.identity.outputs.release_name }}
+          releaseDraft: ${{ inputs.release_kind == 'draft' }}
+          prerelease: ${{ steps.identity.outputs.is_prerelease == 'true' }}
           projectPath: packages/desktop
           tauriScript: pnpm tauri

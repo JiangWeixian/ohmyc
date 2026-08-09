@@ -1,0 +1,908 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>OhMyC — Variant C · Retro Wave (Sidebar)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Silkscreen:wght@400;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg:        #0d0221;
+    --bg-panel:  #16082e;
+    --bg-surface:#1f0c3d;
+    --bg-hover:  #2a1150;
+    --cyan:      #00f0ff;
+    --magenta:   #ff2bd6;
+    --amber:     #ffb000;
+    --lime:      #b6ff3b;
+    --pink:      #ff5cb6;
+    --tx-1:      #f0e6ff;
+    --tx-2:      #b9a8e0;
+    --tx-3:      #7e6aa8;
+    --tx-4:      #4d3f70;
+    --bd-1:      rgba(0,240,255,0.12);
+    --bd-2:      rgba(255,43,214,0.22);
+    --bd-3:      rgba(255,43,214,0.45);
+    --glow-c:    0 0 8px rgba(0,240,255,0.55), 0 0 16px rgba(0,240,255,0.25);
+    --glow-m:    0 0 8px rgba(255,43,214,0.55), 0 0 16px rgba(255,43,214,0.25);
+    --glow-a:    0 0 8px rgba(255,176,0,0.55);
+    --side-w:    230px;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; background: var(--bg); color: var(--tx-1); }
+  body {
+    font-family: 'JetBrains Mono', monospace;
+    -webkit-font-smoothing: antialiased;
+    overflow-x: hidden;
+    display: flex;
+    align-items: stretch;
+    min-height: 100vh;
+  }
+
+  body::before {
+    content: "";
+    position: fixed; inset: 0;
+    background:
+      repeating-linear-gradient(to bottom,
+        rgba(0,0,0,0.18) 0, rgba(0,0,0,0.18) 1px,
+        transparent 1px, transparent 3px),
+      linear-gradient(to bottom,
+        rgba(255,43,214,0.04) 0%,
+        transparent 35%,
+        rgba(0,240,255,0.04) 75%,
+        transparent 100%);
+    pointer-events: none;
+    z-index: 9999;
+  }
+  body::after {
+    content: "";
+    position: fixed; inset: 0;
+    background-image:
+      linear-gradient(to right, rgba(0,240,255,0.05) 1px, transparent 1px),
+      linear-gradient(to bottom, rgba(255,43,214,0.05) 1px, transparent 1px);
+    background-size: 24px 24px;
+    pointer-events: none;
+    z-index: 9997;
+    mask-image: linear-gradient(to bottom, transparent, black 30%, black 70%, transparent);
+  }
+
+  /* ---------- Sidebar ---------- */
+  .sidebar {
+    position: sticky; top: 0;
+    width: var(--side-w);
+    flex-shrink: 0;
+    height: 100vh;
+    display: flex; flex-direction: column;
+    padding: 22px 16px 16px;
+    background: var(--bg-panel);
+    border-right: 2px solid var(--bd-2);
+    box-shadow: 4px 0 16px rgba(255,43,214,0.18);
+    z-index: 50;
+  }
+  .sidebar::before {
+    content: "";
+    position: absolute; top: 0; left: 0; right: 0; height: 2px;
+    background: linear-gradient(to right, var(--cyan), var(--magenta), var(--amber));
+    box-shadow: 0 0 8px rgba(255,43,214,0.5);
+  }
+
+  .side-brand {
+    font-family: 'Press Start 2P', monospace;
+    font-size: 14px;
+    letter-spacing: 0.02em;
+    color: var(--cyan);
+    text-shadow: var(--glow-c);
+    display: flex; align-items: center; gap: 8px;
+    padding: 0 6px 14px;
+    border-bottom: 1px solid var(--bd-1);
+    margin-bottom: 10px;
+  }
+  .side-brand::before {
+    content: "▣";
+    color: var(--magenta);
+    text-shadow: var(--glow-m);
+    animation: pulse 1.2s ease-in-out infinite;
+    font-family: inherit;
+  }
+  @keyframes pulse {
+    0%,100% { opacity: 1; transform: scale(1); }
+    50%     { opacity: 0.6; transform: scale(0.85); }
+  }
+  .side-meta {
+    font-family: 'Silkscreen', monospace;
+    font-size: 9px;
+    color: var(--tx-3);
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    padding: 0 6px 14px;
+    line-height: 1.8;
+    border-bottom: 1px solid var(--bd-1);
+    margin-bottom: 14px;
+  }
+  .side-meta b { color: var(--amber); font-weight: 700; text-shadow: var(--glow-a); }
+
+  .side-section { margin-bottom: 18px; }
+  .side-label {
+    font-family: 'Silkscreen', monospace;
+    font-size: 10px;
+    color: var(--magenta);
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    padding: 0 6px 8px;
+    text-shadow: var(--glow-m);
+    display: flex; align-items: center; gap: 6px;
+  }
+  .side-label::before { content: "▌"; color: var(--cyan); text-shadow: var(--glow-c); }
+
+  .side-nav { display: flex; flex-direction: column; gap: 2px; }
+  .side-nav a {
+    display: flex; align-items: center; gap: 10px;
+    color: var(--tx-2);
+    text-decoration: none;
+    font-family: 'Silkscreen', monospace;
+    font-size: 11px;
+    letter-spacing: 0.04em;
+    padding: 8px 8px;
+    border: 1px solid transparent;
+    transition: all 120ms;
+  }
+  .side-nav a .key {
+    color: var(--tx-3);
+    font-size: 9px;
+    width: 18px;
+    text-align: center;
+    border: 1px solid var(--bd-1);
+    padding: 1px 0;
+    font-family: 'JetBrains Mono', monospace;
+  }
+  .side-nav a:hover {
+    color: var(--cyan);
+    border-color: var(--bd-1);
+    background: rgba(0,240,255,0.06);
+    text-shadow: var(--glow-c);
+  }
+  .side-nav a:hover .key { border-color: var(--bd-1); color: var(--cyan); }
+  .side-nav a.active {
+    color: var(--magenta);
+    border-color: var(--bd-2);
+    background: rgba(255,43,214,0.1);
+    text-shadow: var(--glow-m);
+    box-shadow: inset 3px 0 0 var(--magenta), 0 0 8px rgba(255,43,214,0.15);
+  }
+  .side-nav a.active .key { color: var(--magenta); border-color: var(--bd-3); }
+
+  .side-sub a {
+    display: flex; align-items: center; justify-content: space-between;
+    color: var(--tx-2);
+    text-decoration: none;
+    font-family: 'Silkscreen', monospace;
+    font-size: 10px;
+    letter-spacing: 0.06em;
+    padding: 6px 8px;
+  }
+  .side-sub a:hover { color: var(--cyan); background: rgba(0,240,255,0.06); text-shadow: var(--glow-c); }
+  .side-sub a .count { color: var(--tx-3); font-size: 9px; }
+
+  .side-spacer { flex: 1; }
+
+  .side-cmdk {
+    display: flex; align-items: center; gap: 8px;
+    padding: 8px 10px;
+    border: 1px solid var(--bd-2);
+    background: rgba(255,43,214,0.05);
+    font-family: 'Silkscreen', monospace;
+    font-size: 10px;
+    color: var(--magenta);
+    cursor: pointer;
+    text-shadow: var(--glow-m);
+    margin-bottom: 12px;
+  }
+  .side-cmdk:hover { border-color: var(--magenta); box-shadow: 0 0 10px rgba(255,43,214,0.3); }
+  .side-cmdk .mk { margin-right: auto; }
+  .side-cmdk kbd {
+    border: 1px solid var(--bd-2);
+    padding: 1px 5px;
+    color: var(--cyan);
+    background: rgba(0,240,255,0.06);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 9px;
+    text-shadow: var(--glow-c);
+  }
+  .side-status {
+    font-family: 'Silkscreen', monospace;
+    font-size: 9px;
+    color: var(--lime);
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    padding: 8px 6px 0;
+    border-top: 1px solid var(--bd-1);
+    display: flex; align-items: center; gap: 8px;
+    text-shadow: 0 0 4px rgba(182,255,59,0.5);
+  }
+  .side-status .dot {
+    width: 7px; height: 7px;
+    background: var(--lime);
+    box-shadow: 0 0 6px var(--lime);
+    border-radius: 50%;
+    animation: dotpulse 2.4s ease-in-out infinite;
+  }
+  @keyframes dotpulse { 0%,100% { opacity: 1; } 50% { opacity: 0.4; } }
+
+  /* ---------- Content ---------- */
+  .content {
+    flex: 1;
+    min-width: 0;
+    display: flex; flex-direction: column;
+  }
+
+  /* ---------- Hero (LetterGlitch band) ---------- */
+  .hero {
+    position: relative;
+    overflow: hidden;
+    border-bottom: 2px solid var(--bd-2);
+    height: 320px;
+    background: #050010;
+  }
+  .hero canvas.glitch {
+    position: absolute; inset: 0;
+    width: 100%; height: 100%;
+    display: block;
+    opacity: 0.7;
+  }
+  .hero::before {
+    content: "";
+    position: absolute;
+    left: 50%; bottom: -80px;
+    transform: translateX(-50%);
+    width: 320px; height: 320px;
+    border-radius: 50%;
+    background: linear-gradient(to bottom, #ffb000 0%, #ff2bd6 50%, #b300ff 100%);
+    filter: blur(2px);
+    opacity: 0.35;
+    z-index: 1;
+  }
+  .hero::after {
+    content: "";
+    position: absolute;
+    left: 50%; bottom: -80px;
+    transform: translateX(-50%);
+    width: 320px; height: 320px;
+    border-radius: 50%;
+    background-image: repeating-linear-gradient(to bottom,
+      transparent 0, transparent 12px,
+      rgba(13,2,33,0.9) 12px, rgba(13,2,33,0.9) 16px);
+    z-index: 1;
+  }
+  .hero-inner {
+    position: relative; z-index: 3;
+    height: 100%;
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 50px 32px 32px;
+    display: flex; flex-direction: column;
+    justify-content: center;
+  }
+  .hero-eyebrow {
+    font-family: 'Silkscreen', monospace;
+    font-size: 11px;
+    color: var(--cyan);
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    margin-bottom: 14px;
+    text-shadow: var(--glow-c);
+    display: flex; align-items: center; gap: 10px;
+  }
+  .hero-eyebrow::before { content: "◆"; color: var(--magenta); text-shadow: var(--glow-m); }
+  .hero h1 {
+    font-family: 'Press Start 2P', monospace;
+    font-size: 42px;
+    line-height: 1.05;
+    letter-spacing: 0;
+    margin: 0 0 16px;
+    color: var(--tx-1);
+    text-shadow:
+      3px 3px 0 var(--magenta),
+      6px 6px 0 var(--cyan),
+      0 0 18px rgba(255,43,214,0.5);
+  }
+  .hero p {
+    font-size: 14px;
+    line-height: 1.6;
+    color: var(--tx-2);
+    max-width: 580px;
+    margin: 0;
+  }
+  .hero .readout {
+    position: absolute;
+    right: 32px; bottom: 24px;
+    font-family: 'Silkscreen', monospace;
+    font-size: 11px;
+    color: var(--amber);
+    letter-spacing: 0.06em;
+    text-align: right;
+    line-height: 1.9;
+    text-shadow: var(--glow-a);
+    z-index: 4;
+  }
+  .hero .readout b { color: var(--cyan); font-weight: 700; text-shadow: var(--glow-c); }
+
+  /* ---------- Main grid ---------- */
+  main { max-width: 1100px; width: 100%; margin: 0 auto; padding: 36px 32px 80px; }
+  .section-label {
+    font-family: 'Silkscreen', monospace;
+    font-size: 11px;
+    color: var(--magenta);
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    margin: 0 0 14px;
+    text-shadow: var(--glow-m);
+    display: flex; align-items: center; gap: 8px;
+  }
+  .section-label::before { content: "▌"; color: var(--cyan); text-shadow: var(--glow-c); }
+
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 12px;
+    margin-bottom: 32px;
+  }
+  @media (max-width: 1100px) { .grid { grid-template-columns: repeat(2, 1fr); } }
+  @media (max-width: 640px)  { .grid { grid-template-columns: 1fr; } }
+
+  .pcard {
+    position: relative;
+    background: var(--bg-panel);
+    border: 1px solid var(--bd-1);
+    padding: 18px;
+    cursor: pointer;
+    transition: all 160ms;
+    overflow: hidden;
+  }
+  .pcard::before {
+    content: "";
+    position: absolute; top: 0; left: 0; right: 0; height: 2px;
+    background: linear-gradient(to right, var(--cyan), var(--magenta), var(--amber));
+    opacity: 0.65;
+  }
+  .pcard:hover {
+    background: var(--bg-surface);
+    border-color: var(--magenta);
+    box-shadow: 0 0 16px rgba(255,43,214,0.35);
+    transform: translateY(-2px);
+  }
+  .pcard canvas.pixels {
+    position: absolute; inset: 0;
+    width: 100%; height: 100%;
+    pointer-events: none;
+    opacity: 0.75;
+  }
+  .pcard-label {
+    font-family: 'Silkscreen', monospace;
+    font-size: 9px;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--cyan);
+    position: relative; z-index: 2;
+    text-shadow: var(--glow-c);
+  }
+  .pcard-value {
+    font-family: 'Press Start 2P', monospace;
+    font-size: 24px;
+    line-height: 1.1;
+    margin: 16px 0 8px;
+    color: var(--tx-1);
+    position: relative; z-index: 2;
+    text-shadow: 2px 2px 0 var(--magenta), 0 0 8px rgba(255,43,214,0.4);
+  }
+  .pcard-delta {
+    font-family: 'Silkscreen', monospace;
+    font-size: 10px;
+    color: var(--lime);
+    position: relative; z-index: 2;
+    text-shadow: 0 0 4px rgba(182,255,59,0.5);
+  }
+  .pcard-delta.up::before   { content: "▲ "; }
+  .pcard-delta.down::before { content: "▼ "; color: var(--magenta); }
+  .pcard-delta.down { color: var(--magenta); }
+
+  .cols { display: grid; grid-template-columns: 2fr 1fr; gap: 20px; }
+  @media (max-width: 1100px) { .cols { grid-template-columns: 1fr; } }
+
+  .panel {
+    background: var(--bg-panel);
+    border: 1px solid var(--bd-1);
+    padding: 22px;
+    position: relative;
+  }
+  .panel::before {
+    content: "";
+    position: absolute; top: -1px; left: -1px;
+    width: 12px; height: 12px;
+    border-top: 2px solid var(--cyan);
+    border-left: 2px solid var(--cyan);
+    box-shadow: var(--glow-c);
+  }
+  .panel::after {
+    content: "";
+    position: absolute; bottom: -1px; right: -1px;
+    width: 12px; height: 12px;
+    border-bottom: 2px solid var(--magenta);
+    border-right: 2px solid var(--magenta);
+    box-shadow: var(--glow-m);
+  }
+  .panel h3 {
+    font-family: 'Press Start 2P', monospace;
+    font-size: 12px;
+    color: var(--cyan);
+    margin: 0 0 6px;
+    letter-spacing: 0.04em;
+    text-shadow: var(--glow-c);
+  }
+  .panel .panel-sub {
+    font-family: 'Silkscreen', monospace;
+    font-size: 10px;
+    color: var(--tx-3);
+    margin: 0 0 18px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+
+  .session-list { font-size: 12px; }
+  .session {
+    display: grid;
+    grid-template-columns: 90px 1fr 80px 70px;
+    gap: 12px;
+    padding: 10px 0;
+    border-bottom: 1px dashed var(--bd-1);
+    color: var(--tx-1);
+    align-items: center;
+  }
+  .session:last-child { border-bottom: none; }
+  .session .ts { color: var(--tx-3); }
+  .session .proj { color: var(--cyan); text-shadow: 0 0 4px rgba(0,240,255,0.3); }
+  .session .proj small { color: var(--tx-2); display:block; font-size: 10px; margin-top: 2px; text-shadow: none; }
+  .session .tokens { color: var(--amber); text-align: right; text-shadow: var(--glow-a); }
+  .session .bar {
+    height: 6px;
+    background: linear-gradient(to right,
+      var(--magenta) var(--w,0%),
+      rgba(255,43,214,0.08) var(--w,0%));
+    box-shadow: 0 0 6px rgba(255,43,214,0.45);
+  }
+
+  .heatmap {
+    display: grid;
+    grid-template-columns: repeat(26, 1fr);
+    gap: 3px;
+    margin-top: 8px;
+  }
+  .heatmap span {
+    aspect-ratio: 1;
+    background: rgba(255,43,214,0.04);
+  }
+
+  .lib-row {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 9px 0;
+    border-bottom: 1px dashed var(--bd-1);
+    font-size: 12px;
+  }
+  .lib-row:last-child { border-bottom: none; }
+  .lib-row .name { color: var(--magenta); text-shadow: 0 0 4px rgba(255,43,214,0.3); }
+  .lib-row .kind {
+    font-family: 'Silkscreen', monospace;
+    font-size: 9px;
+    color: var(--cyan);
+    padding: 2px 6px;
+    border: 1px solid var(--bd-1);
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    text-shadow: var(--glow-c);
+  }
+
+  .system {
+    margin-top: 36px;
+    padding: 24px;
+    border: 1px solid var(--bd-2);
+    background: var(--bg-panel);
+    box-shadow: 0 0 24px rgba(255,43,214,0.15);
+  }
+  .system h2 {
+    font-family: 'Press Start 2P', monospace;
+    font-size: 12px;
+    color: var(--magenta);
+    margin: 0 0 16px;
+    letter-spacing: 0.04em;
+    text-shadow: var(--glow-m);
+  }
+  .system-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 24px;
+  }
+  @media (max-width: 900px) { .system-grid { grid-template-columns: repeat(2, 1fr); } }
+  .swatch {
+    display: flex; align-items: center; gap: 10px;
+    font-size: 11px;
+  }
+  .swatch i {
+    display: block;
+    width: 26px; height: 26px;
+    border: 1px solid var(--bd-1);
+  }
+  .swatch .label {
+    color: var(--tx-3);
+    display: block;
+    font-family: 'Silkscreen', monospace;
+    font-size: 9px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+  }
+  .swatch .hex { color: var(--tx-1); }
+
+  @media (prefers-reduced-motion: reduce) {
+    .side-brand::before, .side-status .dot, .hero canvas.glitch, .pcard canvas.pixels { animation: none; }
+  }
+
+  @media (max-width: 760px) {
+    body { flex-direction: column; }
+    .sidebar {
+      position: relative;
+      width: 100%; height: auto;
+      flex-direction: row;
+      flex-wrap: wrap;
+      align-items: center;
+      padding: 12px;
+      gap: 10px;
+    }
+    .side-brand { padding: 0; border: none; margin: 0; font-size: 12px; }
+    .side-meta, .side-section, .side-spacer, .side-status { display: none; }
+    .side-nav { flex-direction: row; flex-wrap: wrap; }
+    .side-cmdk { margin: 0; }
+  }
+</style>
+</head>
+<body>
+
+<aside class="sidebar">
+  <div class="side-brand">OHMYC</div>
+  <div class="side-meta">
+    <b>v0.4.2</b><br>
+    build 7a3f · ONLINE
+  </div>
+
+  <div class="side-section">
+    <div class="side-label">monitor</div>
+    <nav class="side-nav">
+      <a href="#" class="active"><span class="key">M</span> monitor</a>
+      <a href="#"><span class="key">A</span> agents</a>
+      <a href="#"><span class="key">S</span> skills</a>
+      <a href="#"><span class="key">C</span> commands</a>
+      <a href="#"><span class="key">T</span> timeline</a>
+    </nav>
+  </div>
+
+  <div class="side-section">
+    <div class="side-label">library</div>
+    <nav class="side-sub">
+      <a href="#">recent <span class="count">42</span></a>
+      <a href="#">favorites <span class="count">8</span></a>
+      <a href="#">all origins <span class="count">142</span></a>
+    </nav>
+  </div>
+
+  <div class="side-spacer"></div>
+
+  <div class="side-cmdk">
+    <span class="mk">search</span>
+    <kbd>⌘K</kbd>
+  </div>
+  <div class="side-status">
+    <span class="dot"></span> 14 sessions live
+  </div>
+</aside>
+
+<div class="content">
+
+<section class="hero">
+  <canvas class="glitch" id="glitch"></canvas>
+  <div class="hero-inner">
+    <div class="hero-eyebrow">SIGNAL · LOCAL · LIVE</div>
+    <h1>coding<br>monitor</h1>
+    <p>Your AI coding activity, rendered as signal. Sessions, turns, tokens, momentum — emerging from chromatic pixel storm.</p>
+  </div>
+  <div class="readout">
+    <b>14</b> active sessions<br>
+    <b>2.4M</b> tokens today<br>
+    <b>38</b> turns · last 09:42:11
+  </div>
+</section>
+
+<main>
+
+  <div class="section-label">last 7 days</div>
+  <div class="grid">
+    <article class="pcard">
+      <canvas class="pixels"></canvas>
+      <div class="pcard-label">sessions</div>
+      <div class="pcard-value">147</div>
+      <div class="pcard-delta up">+18.4%</div>
+    </article>
+    <article class="pcard">
+      <canvas class="pixels"></canvas>
+      <div class="pcard-label">tokens in</div>
+      <div class="pcard-value">8.2M</div>
+      <div class="pcard-delta up">+4.1%</div>
+    </article>
+    <article class="pcard">
+      <canvas class="pixels"></canvas>
+      <div class="pcard-label">tokens out</div>
+      <div class="pcard-value">1.9M</div>
+      <div class="pcard-delta down">−2.3%</div>
+    </article>
+    <article class="pcard">
+      <canvas class="pixels"></canvas>
+      <div class="pcard-label">avg turns</div>
+      <div class="pcard-value">42</div>
+      <div class="pcard-delta up">+6</div>
+    </article>
+  </div>
+
+  <div class="cols">
+    <section class="panel">
+      <h3>recent sessions</h3>
+      <p class="panel-sub">live feed · letter-glitch render</p>
+      <div class="session-list">
+        <div class="session">
+          <span class="ts">09:42:11</span>
+          <span class="proj">claudeui/design-system<small>implement pixel-card variant C</small></span>
+          <span class="tokens">128k</span>
+          <span class="bar" style="--w:78%"></span>
+        </div>
+        <div class="session">
+          <span class="ts">09:18:04</span>
+          <span class="proj">ohmyc/monitor-route<small>fix WebGL fallback DOM labels</small></span>
+          <span class="tokens">82k</span>
+          <span class="bar" style="--w:51%"></span>
+        </div>
+        <div class="session">
+          <span class="ts">08:55:22</span>
+          <span class="proj">ohmyc/agents-library<small>add ProviderRegistry tests</small></span>
+          <span class="tokens">214k</span>
+          <span class="bar" style="--w:92%"></span>
+        </div>
+        <div class="session">
+          <span class="ts">08:31:09</span>
+          <span class="proj">vendor/react-bits<small>extract PixelSnow shader params</small></span>
+          <span class="tokens">44k</span>
+          <span class="bar" style="--w:28%"></span>
+        </div>
+        <div class="session">
+          <span class="ts">08:02:47</span>
+          <span class="proj">ohmyc/timeline<small>calibrate chromatic aberration</small></span>
+          <span class="tokens">156k</span>
+          <span class="bar" style="--w:64%"></span>
+        </div>
+      </div>
+    </section>
+
+    <aside class="panel">
+      <h3>library</h3>
+      <p class="panel-sub">6 origins · 142 resources</p>
+      <div class="lib-row"><span class="name">/investigate</span><span class="kind">skill</span></div>
+      <div class="lib-row"><span class="name">/qa</span><span class="kind">skill</span></div>
+      <div class="lib-row"><span class="name">/ship</span><span class="kind">skill</span></div>
+      <div class="lib-row"><span class="name">codex-engineer</span><span class="kind">agent</span></div>
+      <div class="lib-row"><span class="name">/design-review</span><span class="kind">skill</span></div>
+      <div class="lib-row"><span class="name">commit-wip</span><span class="kind">cmd</span></div>
+    </aside>
+  </div>
+
+  <section class="panel" style="margin-top:20px">
+    <h3>activity · 26 weeks</h3>
+    <p class="panel-sub">chromatic density · pixel-grid heatmap</p>
+    <div class="heatmap" id="heatmap"></div>
+  </section>
+
+  <section class="system">
+    <h2>variant c · retro wave · sidebar layout</h2>
+    <div class="system-grid">
+      <div class="swatch"><i style="background:#0d0221"></i><div><span class="label">bg</span><span class="hex">#0d0221</span></div></div>
+      <div class="swatch"><i style="background:#1f0c3d"></i><div><span class="label">surface</span><span class="hex">#1f0c3d</span></div></div>
+      <div class="swatch"><i style="background:#00f0ff;box-shadow:0 0 8px #00f0ff"></i><div><span class="label">cyan</span><span class="hex">#00f0ff</span></div></div>
+      <div class="swatch"><i style="background:#ff2bd6;box-shadow:0 0 8px #ff2bd6"></i><div><span class="label">magenta</span><span class="hex">#ff2bd6</span></div></div>
+      <div class="swatch"><i style="background:#ffb000;box-shadow:0 0 8px #ffb000"></i><div><span class="label">amber</span><span class="hex">#ffb000</span></div></div>
+      <div class="swatch"><i style="background:#b6ff3b;box-shadow:0 0 8px #b6ff3b"></i><div><span class="label">lime</span><span class="hex">#b6ff3b</span></div></div>
+      <div class="swatch"><i style="font-family:'Press Start 2P';display:flex;align-items:center;justify-content:center;color:#ff2bd6;font-size:9px;text-shadow:1px 1px 0 #00f0ff">Aa</i><div><span class="label">display</span><span class="hex">Press Start 2P</span></div></div>
+      <div class="swatch"><i style="font-family:'JetBrains Mono';display:flex;align-items:center;justify-content:center;color:#00f0ff;font-size:11px">Aa</i><div><span class="label">body</span><span class="hex">JetBrains Mono</span></div></div>
+    </div>
+    <p style="margin:18px 0 0;font-size:12px;color:var(--tx-1);line-height:1.6">
+      <b style="color:var(--magenta);text-shadow:var(--glow-m)">POSTURE:</b> Full chromatic retro-wave with vertical sidebar.
+      Sidebar gets the same neon treatment — magenta active state with cyan key caps, animated ▣ brand mark, lime status
+      indicator. Top edge gets the cyan-magenta-amber gradient stripe. Hard break with PRODUCT.md anti-references.
+    </p>
+  </section>
+
+</main>
+
+</div><!-- /.content -->
+
+<script>
+/* ---------- LetterGlitch-style background (chromatic, Canvas) ---------- */
+(function(){
+  const c = document.getElementById('glitch');
+  if (!c) return;
+  const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const ctx = c.getContext('2d');
+  const dpr = Math.min(window.devicePixelRatio || 1, 2);
+  let W, H;
+  function resize(){
+    const r = c.getBoundingClientRect();
+    W = r.width; H = r.height;
+    c.width = W * dpr; c.height = H * dpr;
+    ctx.setTransform(dpr,0,0,dpr,0,0);
+  }
+  resize();
+  window.addEventListener('resize', resize);
+
+  const CHARS = "ABCDEFGHIJKLMNOPQRSTUVWXYZ!@#$&*()-_+=/[]{};:<>.,0123456789";
+  const COLORS = ['#00f0ff','#ff2bd6','#ffb000','#b6ff3b','#ff5cb6'];
+  const CELL_W = 10, CELL_H = 18, FONT = 14;
+  let cols, rows, letters;
+  function init(){
+    cols = Math.ceil(W / CELL_W);
+    rows = Math.ceil(H / CELL_H);
+    letters = [];
+    for (let i = 0; i < cols * rows; i++) {
+      letters.push({
+        ch: CHARS[Math.floor(Math.random() * CHARS.length)],
+        color: COLORS[Math.floor(Math.random() * COLORS.length)],
+        target: COLORS[Math.floor(Math.random() * COLORS.length)]
+      });
+    }
+  }
+  init();
+  window.addEventListener('resize', init);
+
+  function draw(){
+    ctx.fillStyle = 'rgba(5,0,16,0.55)';
+    ctx.fillRect(0,0,W,H);
+    ctx.font = `${FONT}px 'JetBrains Mono', monospace`;
+    ctx.textBaseline = 'top';
+    const upd = Math.floor(letters.length * 0.04);
+    for (let i = 0; i < upd; i++) {
+      const idx = Math.floor(Math.random() * letters.length);
+      letters[idx].ch = CHARS[Math.floor(Math.random() * CHARS.length)];
+      letters[idx].target = COLORS[Math.floor(Math.random() * COLORS.length)];
+    }
+    let i = 0;
+    for (let y = 0; y < rows; y++) {
+      for (let x = 0; x < cols; x++) {
+        const l = letters[i++];
+        l.color = l.target;
+        ctx.fillStyle = l.color;
+        ctx.globalAlpha = 0.35 + ((x + y) % 7) * 0.07;
+        ctx.fillText(l.ch, x * CELL_W, y * CELL_H);
+      }
+    }
+    ctx.globalAlpha = 1;
+    if (Math.random() > 0.85) {
+      const gy = Math.floor(Math.random() * rows) * CELL_H;
+      const gh = CELL_H * (1 + Math.floor(Math.random() * 3));
+      const img = ctx.getImageData(0, gy * dpr, W * dpr, gh * dpr);
+      ctx.globalCompositeOperation = 'screen';
+      ctx.putImageData(img, 4, gy);
+      ctx.putImageData(img, -4, gy);
+      ctx.globalCompositeOperation = 'source-over';
+    }
+    if (!reduced) requestAnimationFrame(draw);
+  }
+  if (reduced) draw(); else requestAnimationFrame(draw);
+})();
+
+/* ---------- PixelCard hover particles (chromatic) ---------- */
+(function(){
+  const cards = document.querySelectorAll('.pcard');
+  const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  cards.forEach((card, idx) => {
+    const canvas = card.querySelector('canvas.pixels');
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    const dpr = Math.min(window.devicePixelRatio || 1, 2);
+    const GAP = 6;
+    let pixels = [];
+    let animId = null;
+    let hover = false;
+    const palettes = [
+      ['#00f0ff','#3affff','#b8fbff'],
+      ['#ff2bd6','#ff6ce6','#ffb8ec'],
+      ['#ffb000','#ffcc55','#ffe2a8'],
+      ['#b6ff3b','#d0ff7a','#e8ffc0']
+    ];
+    const pal = palettes[idx % palettes.length];
+    function size(){
+      const r = card.getBoundingClientRect();
+      canvas.width = r.width * dpr; canvas.height = r.height * dpr;
+      canvas.style.width = r.width + 'px'; canvas.style.height = r.height + 'px';
+      ctx.setTransform(dpr,0,0,dpr,0,0);
+    }
+    function makePixels(){
+      const r = card.getBoundingClientRect();
+      pixels = [];
+      const cx = r.width/2, cy = r.height/2;
+      for (let x = 0; x < r.width; x += GAP) {
+        for (let y = 0; y < r.height; y += GAP) {
+          const dx = x - cx, dy = y - cy;
+          const dist = Math.sqrt(dx*dx + dy*dy);
+          pixels.push({
+            x, y, size: 0, target: 1.5 + Math.random() * 1.5, delay: dist,
+            counter: 0, counterStep: Math.random() * 4 + (r.width + r.height) * 0.005,
+            color: pal[Math.floor(Math.random() * pal.length)]
+          });
+        }
+      }
+    }
+    function draw(){
+      const r = card.getBoundingClientRect();
+      ctx.clearRect(0,0,r.width,r.height);
+      let active = false;
+      for (const p of pixels) {
+        if (hover) {
+          if (p.counter <= p.delay) { p.counter += p.counterStep; continue; }
+          p.size = Math.min(p.target, p.size + 0.28);
+        } else {
+          p.size = Math.max(0, p.size - 0.2); p.counter = 0;
+        }
+        if (p.size > 0.1) {
+          active = true;
+          ctx.fillStyle = p.color;
+          ctx.shadowColor = p.color;
+          ctx.shadowBlur = 4;
+          ctx.fillRect(p.x + (p.target-p.size)/2, p.y + (p.target-p.size)/2, p.size, p.size);
+        }
+      }
+      ctx.shadowBlur = 0;
+      if (active || hover) animId = requestAnimationFrame(draw); else animId = null;
+    }
+    size();
+    new ResizeObserver(() => { size(); makePixels(); }).observe(card);
+    if (!reduced) makePixels();
+    card.addEventListener('mouseenter', () => {
+      if (reduced) return;
+      hover = true; if (!animId) draw();
+    });
+    card.addEventListener('mouseleave', () => { hover = false; if (!animId) draw(); });
+  });
+})();
+
+/* ---------- Heatmap render (chromatic) ---------- */
+(function(){
+  const el = document.getElementById('heatmap');
+  if (!el) return;
+  const colors = [
+    'rgba(255,43,214,0.04)',
+    'rgba(0,240,255,0.25)',
+    'rgba(0,240,255,0.55)',
+    'rgba(255,43,214,0.75)',
+    'rgba(255,176,0,0.95)'
+  ];
+  const total = 26 * 7;
+  for (let i = 0; i < total; i++) {
+    const cell = document.createElement('span');
+    const v = Math.random();
+    let idx;
+    if (v < 0.55)      idx = 0;
+    else if (v < 0.75) idx = 1;
+    else if (v < 0.88) idx = 2;
+    else if (v < 0.96) idx = 3;
+    else               idx = 4;
+    cell.style.background = colors[idx];
+    if (idx >= 3) cell.style.boxShadow = `0 0 4px ${colors[idx]}`;
+    el.appendChild(cell);
+  }
+})();
+</script>
+</body>
+</html>

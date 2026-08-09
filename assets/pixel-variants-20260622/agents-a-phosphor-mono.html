@@ -1,0 +1,735 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>OhMyC · Agents — Variant A · Phosphor Mono</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #08090a; --bg-panel: #0f1011; --bg-surface: #191a1b;
+    --tx-1: #f7f8f8; --tx-2: #d0d6e0; --tx-3: #8a8f98; --tx-4: #62666d;
+    --bd-1: rgba(255,255,255,0.06); --bd-2: rgba(255,255,255,0.10); --bd-3: rgba(255,255,255,0.18);
+    --phosphor: #f7f8f8; --glow: rgba(247,248,248,0.35);
+    --side-w: 220px;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; background: var(--bg); color: var(--tx-1); height: 100%; }
+  body {
+    font-family: 'Inter', system-ui, sans-serif;
+    font-feature-settings: "cv01","ss03";
+    -webkit-font-smoothing: antialiased;
+    overflow: hidden; display: flex; align-items: stretch;
+  }
+  body::before {
+    content: ""; position: fixed; inset: 0;
+    background: repeating-linear-gradient(to bottom,
+      rgba(255,255,255,0.018) 0, rgba(255,255,255,0.018) 1px,
+      transparent 1px, transparent 3px);
+    pointer-events: none; z-index: 9999; mix-blend-mode: screen;
+  }
+  body::after {
+    content: ""; position: fixed; inset: 0;
+    background: radial-gradient(ellipse at center, transparent 55%, rgba(0,0,0,0.55) 100%);
+    pointer-events: none; z-index: 9998;
+  }
+
+  /* ---------- Sidebar ---------- */
+  .sidebar {
+    width: var(--side-w); flex-shrink: 0; height: 100vh;
+    display: flex; flex-direction: column;
+    padding: 18px 14px 14px;
+    background: var(--bg-panel);
+    border-right: 1px solid var(--bd-1);
+    z-index: 50;
+  }
+  .side-brand {
+    font-family: 'JetBrains Mono', monospace;
+    font-weight: 700; font-size: 15px; letter-spacing: 0.06em;
+    color: var(--tx-1);
+    display: flex; align-items: center; gap: 6px;
+    padding: 0 6px 14px;
+    border-bottom: 1px solid var(--bd-1); margin-bottom: 14px;
+  }
+  .side-brand .proto { color: var(--tx-3); font-weight: 400; }
+  .side-brand .cursor {
+    display: inline-block; width: 8px; height: 14px;
+    background: var(--phosphor); box-shadow: 0 0 8px var(--glow);
+    animation: blink 1s steps(1) infinite; margin-left: 2px;
+  }
+  @keyframes blink { 50% { opacity: 0; } }
+  .side-meta {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px; color: var(--tx-4);
+    letter-spacing: 0.06em; text-transform: uppercase;
+    padding: 0 6px 14px; line-height: 1.6;
+    border-bottom: 1px solid var(--bd-1); margin-bottom: 14px;
+  }
+  .side-meta b { color: var(--tx-3); font-weight: 400; }
+  .side-section { margin-bottom: 18px; }
+  .side-label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px; color: var(--tx-4);
+    letter-spacing: 0.18em; text-transform: uppercase;
+    padding: 0 6px 6px;
+  }
+  .side-label::before { content: "// "; color: var(--tx-4); }
+  .side-nav { display: flex; flex-direction: column; gap: 1px; }
+  .side-nav a {
+    display: flex; align-items: center; gap: 10px;
+    color: var(--tx-3); text-decoration: none;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px; letter-spacing: 0.04em;
+    padding: 7px 8px; border-radius: 2px; cursor: pointer;
+    transition: color 120ms, background 120ms;
+  }
+  .side-nav a .key {
+    color: var(--tx-4); font-size: 10px;
+    width: 18px; text-align: center;
+    border: 1px solid var(--bd-1); border-radius: 2px; padding: 1px 0;
+  }
+  .side-nav a:hover { color: var(--tx-1); background: rgba(255,255,255,0.04); }
+  .side-nav a.active {
+    color: var(--tx-1); background: rgba(255,255,255,0.06);
+    box-shadow: inset 2px 0 0 var(--phosphor);
+  }
+  .side-nav a.active .key { color: var(--tx-1); border-color: var(--bd-3); }
+  .side-spacer { flex: 1; }
+  .side-cmdk {
+    display: flex; align-items: center; gap: 8px;
+    padding: 8px 10px; border: 1px solid var(--bd-2); border-radius: 4px;
+    background: rgba(255,255,255,0.02);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px; color: var(--tx-3); cursor: pointer;
+    margin-bottom: 12px;
+  }
+  .side-cmdk:hover { border-color: var(--bd-3); color: var(--tx-1); }
+  .side-cmdk .mk { margin-right: auto; }
+  .side-cmdk kbd {
+    border: 1px solid var(--bd-2); border-radius: 2px; padding: 1px 5px;
+    color: var(--tx-2); background: rgba(255,255,255,0.03);
+    font-family: inherit; font-size: 10px;
+  }
+  .side-status {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px; color: var(--tx-4);
+    letter-spacing: 0.06em; text-transform: uppercase;
+    padding: 8px 6px 0; border-top: 1px solid var(--bd-1);
+    display: flex; align-items: center; gap: 8px;
+  }
+  .side-status .dot {
+    width: 6px; height: 6px; background: var(--phosphor);
+    box-shadow: 0 0 6px var(--glow); border-radius: 50%;
+    animation: pulse 2.4s ease-in-out infinite;
+  }
+  @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.4; } }
+
+  /* ---------- Content ---------- */
+  .content {
+    flex: 1; min-width: 0; height: 100vh;
+    overflow-y: auto; padding: 40px 40px 80px;
+  }
+  .content::-webkit-scrollbar { width: 8px; }
+  .content::-webkit-scrollbar-thumb { background: var(--bd-2); border-radius: 4px; }
+  .page { max-width: 920px; margin: 0 auto; display: none; }
+  .page.active { display: block; }
+
+  /* Section header */
+  .section-header {
+    margin-bottom: 32px;
+    padding-bottom: 20px;
+    border-bottom: 1px solid var(--bd-1);
+  }
+  .section-header .overline {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px; color: var(--tx-3);
+    letter-spacing: 0.18em; text-transform: uppercase;
+    margin-bottom: 4px;
+  }
+  .section-header .overline::before { content: "// "; color: var(--tx-4); }
+  .section-header h1 {
+    font-family: 'JetBrains Mono', monospace;
+    font-weight: 700; font-size: 28px;
+    letter-spacing: -0.04em; line-height: 1.2;
+    margin: 0 0 6px; color: var(--tx-1);
+    text-shadow: 0 0 12px rgba(247,248,248,0.18);
+  }
+  .section-header p {
+    font-size: 14px; color: var(--tx-3);
+    margin: 0; max-width: 640px; line-height: 1.55;
+  }
+
+  /* Entity grid */
+  .grid-2col {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 16px;
+  }
+  @media (max-width: 760px) { .grid-2col { grid-template-columns: 1fr; } }
+
+  .entity-card {
+    background: rgba(255,255,255,0.02);
+    border: 1px solid var(--bd-2);
+    border-radius: 6px;
+    padding: 24px;
+    cursor: pointer;
+    transition: border-color 150ms, background 150ms;
+    position: relative;
+    overflow: hidden;
+  }
+  .entity-card::before {
+    content: ""; position: absolute; top: 0; left: 0; width: 2px; height: 0;
+    background: var(--phosphor); box-shadow: 0 0 6px var(--glow);
+    transition: height 200ms ease-out;
+  }
+  .entity-card:hover {
+    border-color: var(--bd-3);
+    background: rgba(255,255,255,0.04);
+  }
+  .entity-card:hover::before { height: 100%; }
+  .card-head {
+    display: flex; align-items: flex-start; gap: 14px;
+    margin-bottom: 14px;
+  }
+  .card-icon {
+    width: 40px; height: 40px; flex-shrink: 0;
+    background: var(--phosphor);
+    display: flex; align-items: center; justify-content: center;
+    border-radius: 8px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 18px; color: var(--bg);
+    font-weight: 700;
+    image-rendering: pixelated;
+  }
+  .card-title-wrap { flex: 1; min-width: 0; padding-top: 2px; }
+  .card-title {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 15px; font-weight: 700;
+    color: var(--tx-1);
+    letter-spacing: -0.02em;
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  }
+  .card-badges {
+    margin-top: 6px;
+    display: flex; flex-wrap: wrap; gap: 6px;
+  }
+  .origin-badge, .render-badge {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px; letter-spacing: 0.04em;
+    padding: 2px 6px;
+    border: 1px solid var(--bd-2);
+    border-radius: 2px;
+    color: var(--tx-2);
+    background: rgba(255,255,255,0.02);
+  }
+  .render-badge {
+    color: var(--tx-1);
+    border-color: var(--bd-3);
+  }
+  .card-desc {
+    font-size: 13px; line-height: 1.55;
+    color: var(--tx-2);
+    margin: 0;
+    display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+
+  /* ---------- Detail view ---------- */
+  .back-btn {
+    display: inline-flex; align-items: center; gap: 6px;
+    background: transparent; border: 0;
+    margin: 0 0 20px -8px;
+    padding: 6px 10px; border-radius: 4px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 13px; color: var(--tx-2);
+    cursor: pointer;
+  }
+  .back-btn:hover { background: rgba(255,255,255,0.04); color: var(--tx-1); }
+  .back-btn::before { content: "← "; }
+
+  .frontmatter-card {
+    background: rgba(255,255,255,0.02);
+    border: 1px solid var(--bd-2);
+    border-radius: 8px;
+    padding: 28px;
+    margin-bottom: 24px;
+  }
+  .frontmatter-card .fm-head {
+    display: flex; align-items: flex-start; justify-content: space-between;
+    gap: 16px;
+  }
+  .frontmatter-card h1 {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 28px; font-weight: 700;
+    letter-spacing: -0.04em; margin: 0 0 6px;
+    color: var(--tx-1);
+    text-shadow: 0 0 12px rgba(247,248,248,0.18);
+  }
+  .frontmatter-card .fm-desc {
+    font-size: 15px; color: var(--tx-2);
+    margin: 0; max-width: 62ch; line-height: 1.55;
+  }
+  .fm-actions { display: flex; gap: 6px; flex-shrink: 0; }
+  .fm-btn {
+    padding: 6px 12px;
+    border: 1px solid var(--bd-2); border-radius: 4px;
+    background: rgba(255,255,255,0.04);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px; color: var(--tx-1);
+    cursor: pointer;
+  }
+  .fm-btn:hover { background: rgba(255,255,255,0.08); }
+  .fm-meta-strip {
+    margin-top: 18px; padding-top: 14px;
+    border-top: 1px solid var(--bd-1);
+    display: flex; flex-wrap: wrap; gap: 6px 18px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px; color: var(--tx-3);
+  }
+  .fm-meta-strip span span:first-child { color: var(--tx-4); }
+  .fm-meta-strip span span:last-child { color: var(--tx-1); }
+
+  .prose-card {
+    background: rgba(255,255,255,0.02);
+    border: 1px solid var(--bd-2);
+    border-radius: 8px;
+    padding: 32px;
+    font-size: 14px; color: var(--tx-2); line-height: 1.65;
+  }
+  .prose-card h2 {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 18px; font-weight: 700;
+    color: var(--tx-1); margin: 24px 0 10px;
+    letter-spacing: -0.02em;
+  }
+  .prose-card h2:first-child { margin-top: 0; }
+  .prose-card h2::before { content: "## "; color: var(--tx-4); }
+  .prose-card p { margin: 10px 0; }
+  .prose-card code {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px; color: var(--tx-1);
+    background: rgba(255,255,255,0.05);
+    padding: 1px 5px; border-radius: 2px;
+  }
+  .prose-card ul { padding-left: 20px; }
+  .prose-card li { margin: 4px 0; }
+
+  /* ---------- Plugins ---------- */
+  .plugin-card {
+    background: rgba(255,255,255,0.02);
+    border: 1px solid var(--bd-2);
+    border-radius: 6px;
+    padding: 24px;
+    cursor: pointer;
+    transition: border-color 150ms, background 150ms;
+  }
+  .plugin-card:hover { border-color: var(--bd-3); background: rgba(255,255,255,0.04); }
+  .plugin-head {
+    display: flex; align-items: flex-start; justify-content: space-between;
+    gap: 12px; margin-bottom: 18px;
+  }
+  .plugin-name {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 16px; font-weight: 700;
+    color: var(--tx-1); margin: 0;
+    letter-spacing: -0.02em;
+  }
+  .plugin-id {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px; color: var(--tx-3);
+    margin: 2px 0 0;
+  }
+  .plugin-state {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px; font-weight: 500;
+    padding: 4px 10px; border-radius: 3px;
+    letter-spacing: 0.04em;
+  }
+  .plugin-state.enabled {
+    background: var(--phosphor); color: var(--bg);
+  }
+  .plugin-state.disabled {
+    background: rgba(255,255,255,0.02);
+    color: var(--tx-3);
+    border: 1px solid var(--bd-2);
+  }
+  .plugin-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 13px; color: var(--tx-2);
+  }
+  .plugin-grid div::before {
+    content: ""; display: inline-block;
+    width: 4px; height: 4px;
+    background: var(--tx-4); margin-right: 6px;
+    vertical-align: middle;
+  }
+  .plugin-marketplace {
+    margin-top: 16px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px; color: var(--tx-3);
+  }
+  .plugin-marketplace::before { content: "// "; color: var(--tx-4); }
+
+  /* Empty state */
+  .empty {
+    text-align: center; padding: 80px 20px;
+  }
+  .empty .icon {
+    width: 48px; height: 48px;
+    border: 1px solid var(--bd-2);
+    background: rgba(255,255,255,0.02);
+    border-radius: 8px;
+    display: inline-flex; align-items: center; justify-content: center;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 22px; color: var(--tx-3);
+    margin-bottom: 12px;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .side-brand .cursor, .side-status .dot { animation: none; }
+  }
+  @media (max-width: 760px) {
+    body { flex-direction: column; overflow-y: auto; }
+    .sidebar { width: 100%; height: auto; flex-direction: row; flex-wrap: wrap; padding: 12px; gap: 10px; }
+    .side-brand, .side-meta, .side-section, .side-spacer, .side-status { display: none; }
+    .side-cmdk { margin: 0; }
+    .content { padding: 24px 16px 60px; height: auto; }
+  }
+</style>
+</head>
+<body>
+
+<aside class="sidebar">
+  <div class="side-brand">OHMYC<span class="proto">://</span><span class="cursor"></span></div>
+  <div class="side-meta"><b>v0.4.2</b><br>local · build 7a3f</div>
+
+  <div class="side-section">
+    <div class="side-label">activity</div>
+    <nav class="side-nav">
+      <a data-page="timeline-link"><span class="key">T</span> timeline</a>
+      <a data-page="monitor-link"><span class="key">M</span> monitor</a>
+    </nav>
+  </div>
+
+  <div class="side-section">
+    <div class="side-label">explore</div>
+    <nav class="side-nav">
+      <a data-page="agents" class="active"><span class="key">A</span> agents</a>
+      <a data-page="skills"><span class="key">S</span> skills</a>
+      <a data-page="commands"><span class="key">C</span> commands</a>
+      <a data-page="plugins"><span class="key">P</span> plugins</a>
+    </nav>
+  </div>
+
+  <div class="side-spacer"></div>
+  <div class="side-cmdk"><span class="mk">search</span><kbd>⌘K</kbd></div>
+  <div class="side-status"><span class="dot"></span> 14 sessions live</div>
+</aside>
+
+<div class="content">
+
+  <!-- ===== Agents ===== -->
+  <div class="page active" data-page="agents">
+    <div class="section-header">
+      <div class="overline">overview</div>
+      <h1>Agents</h1>
+      <p>Discover and manage your autonomous team. Each agent has unique capabilities tailored for different development tasks.</p>
+    </div>
+    <div class="grid-2col" id="agents-grid"></div>
+  </div>
+
+  <!-- ===== Agent Detail ===== -->
+  <div class="page" data-page="detail"></div>
+
+  <!-- ===== Skills ===== -->
+  <div class="page" data-page="skills">
+    <div class="section-header">
+      <div class="overline">overview</div>
+      <h1>Skills</h1>
+      <p>Extend Claude's capabilities with custom skills. Each skill provides specialized instructions for specific tasks.</p>
+    </div>
+    <div class="grid-2col" id="skills-grid"></div>
+  </div>
+
+  <!-- ===== Commands ===== -->
+  <div class="page" data-page="commands">
+    <div class="section-header">
+      <div class="overline">overview</div>
+      <h1>Commands</h1>
+      <p>Custom slash commands you can invoke with <code style="font-family:'JetBrains Mono',monospace;font-size:13px;color:var(--tx-2);background:rgba(255,255,255,0.05);padding:1px 5px;border-radius:2px">/command-name</code>.</p>
+    </div>
+    <div class="grid-2col" id="commands-grid"></div>
+  </div>
+
+  <!-- ===== Plugins ===== -->
+  <div class="page" data-page="plugins">
+    <div class="section-header">
+      <div class="overline">overview</div>
+      <h1>Plugins</h1>
+      <p>Inspect installed plugins, enabled state, and bundled component counts for the current environment.</p>
+    </div>
+    <div class="grid-2col" id="plugins-grid"></div>
+  </div>
+
+</div>
+
+<script>
+/* ── Mock data ────────────────────────────────────────── */
+const AGENTS = [
+  { icon:'◆', name:'codex-engineer', desc:'OpenAI Codex-powered engineer for review, challenge, and consult. Three modes via flags. The 200-IQ second opinion.', origin:'opencode', badge:'v2', detail:{
+    fm: [['scope','global'],['source','~/.opencode/agents'],['model','gpt-5-codex'],['mode','review, challenge, consult']],
+    body: `## Modes
+
+\`codex review\` — independent diff review via \`codex review\` with pass/fail gate. Use when you want a second pair of eyes on a PR.
+
+\`codex challenge\` — adversarial mode that tries to break your code. Use before landing risky changes.
+
+\`codex consult\` — ask codex anything with session continuity for follow-ups.
+
+## When to use
+
+- You want a second opinion from a different model family
+- Pre-landing review of non-trivial diffs
+- Stress-testing error handling and edge cases
+
+## Anti-patterns
+
+Don't use for trivial typo fixes or formatting. Don't use as a replacement for human review on critical infra changes.`
+  }},
+  { icon:'◆', name:'investigator', desc:'Systematic debugging with root cause investigation. Four phases: investigate, analyze, hypothesize, implement. Iron Law: no fixes without root cause.', origin:'claude', badge:null, detail:{
+    fm: [['scope','global'],['source','~/.claude/skills/gstack'],['tools','Bash, Read, Grep, Glob']],
+    body: `## Workflow
+
+**Phase 1 — Investigate.** Reproduce the failure. Capture the exact error, stack trace, and conditions.
+
+**Phase 2 — Analyze.** Map symptoms to possible causes. Eliminate hypotheses that don't fit the evidence.
+
+**Phase 3 — Hypothesize.** Commit to a single root cause hypothesis. State it explicitly.
+
+**Phase 4 — Implement.** Fix the root cause. Verify the fix. Document the trail.
+
+## Iron Law
+
+> No fixes without root cause.
+
+Symptom-fixes create regressions. The Investigator never patches over a problem it doesn't understand.`
+  }},
+  { icon:'◆', name:'ship-captain', desc:'Ship workflow: detect + merge base branch, run tests, review diff, bump VERSION, update CHANGELOG, commit, push, create PR. End-to-end release automation.', origin:'claude', badge:'stable', detail:{
+    fm: [['scope','global'],['source','~/.claude/skills/gstack'],['tools','Bash, Git, GitHub CLI']],
+    body: `## Ship sequence
+
+1. Detect base branch and merge latest
+2. Run the test suite (\`pnpm test\`)
+3. Review the diff against base
+4. Bump VERSION via changesets
+5. Update CHANGELOG
+6. Commit with semantic message
+7. Push and create PR
+
+## Safety rails
+
+- Never force-push without explicit user request
+- Never commit secrets or .env files
+- Stops on any test failure for human triage`
+  }},
+  { icon:'◆', name:'design-reviewer', desc:'Designer\'s eye QA: finds visual inconsistency, spacing issues, hierarchy problems, AI slop patterns, and slow interactions — then fixes them iteratively.', origin:'claude', badge:null, detail:{
+    fm: [['scope','global'],['source','~/.claude/skills/gstack'],['tools','Bash, Read, Browse']],
+    body: `## What it catches
+
+- Spacing drift from the 4/8px grid
+- Type hierarchy inversions (body weight > heading weight)
+- AI slop patterns: purple gradients, generic 3-col SaaS grid, bubble radius everywhere
+- Slow hover transitions (>200ms is suspicious)
+- Missing focus states and reduced-motion fallbacks
+
+## Workflow
+
+Screenshot before. Fix atomically. Screenshot after. Commit. Repeat.`
+  }},
+  { icon:'◆', name:'qa-hunter', desc:'Systematically QA test a web application and fix bugs found. Three tiers: Quick (critical/high), Standard (+medium), Exhaustive (+cosmetic).', origin:'claude', badge:'v3', detail:{
+    fm: [['scope','global'],['source','~/.claude/skills/gstack'],['tools','Browse, Bash, Read']],
+    body: `## Tiers
+
+**Quick** — critical and high-severity only. ~5 min run. Use before a demo.
+
+**Standard** — adds medium-severity issues. ~15 min run. Use before a release.
+
+**Exhaustive** — adds cosmetic polish. ~40 min run. Use when "make it perfect".
+
+## Output
+
+Health score 0-100, before/after screenshots per fix, ship-readiness summary. For report-only mode see \`/qa-only\`.`
+  }},
+  { icon:'◆', name:'doc-curator', desc:'Post-ship documentation update. Reads project docs, cross-references the diff, updates README/ARCHITECTURE/CHANGELOG to match what shipped.', origin:'agents', badge:null, detail:{
+    fm: [['scope','shared'],['source','~/.agents/skills']],
+    body: `## Triggers
+
+Run after every PR merge or code shipment.
+
+## What it syncs
+
+- README — feature lists, install steps, usage examples
+- ARCHITECTURE — module relationships, data flow
+- CHANGELOG — entry voice and structure
+- CLAUDE.md / AGENTS.md — agent-facing project context
+
+## Anti-patterns
+
+Never deletes sections wholesale. Preserves voice. Flags uncertain edits for human review.`
+  }},
+];
+
+const SKILLS = [
+  { icon:'✦', name:'investigate', desc:'Systematic debugging with root cause investigation. Four phases: investigate, analyze, hypothesize, implement.', origin:'claude', badge:null },
+  { icon:'✦', name:'qa', desc:'Systematically QA test a web application and fix bugs found. Three tiers: Quick, Standard, Exhaustive.', origin:'claude', badge:'v3' },
+  { icon:'✦', name:'ship', desc:'Ship workflow: detect + merge base, run tests, review diff, bump VERSION, update CHANGELOG, push, create PR.', origin:'claude', badge:'stable' },
+  { icon:'✦', name:'design-review', desc:'Designer\'s eye QA: finds visual inconsistency, spacing issues, hierarchy problems, and AI slop patterns.', origin:'claude', badge:null },
+  { icon:'✦', name:'brainstorming', desc:'Explore user intent, requirements and design before implementation. Use before any creative work.', origin:'agents', badge:null },
+  { icon:'✦', name:'context-save', desc:'Save working context. Captures git state, decisions made, and remaining work so any future session can pick up.', origin:'claude', badge:null },
+];
+
+const COMMANDS = [
+  { icon:'▶', name:'/commit-wip', desc:'Quickly stage all current changes and commit them with an automatically selected commit message.', origin:'claude', badge:null },
+  { icon:'▶', name:'/release-notes', desc:'Generate release notes from recent commits. Optionally bump VERSION and update CHANGELOG.', origin:'claude', badge:null },
+  { icon:'▶', name:'/clean-branches', desc:'Delete local branches that have been merged into the main branch. Dry-run by default.', origin:'agents', badge:null },
+  { icon:'▶', name:'/sync-forks', desc:'Pull updates from upstream remotes for all forked plugins. Conflicts surface for manual resolve.', origin:'agents', badge:null },
+  { icon:'▶', name:'/rebuild-cache', desc:'Force rebuild the agent/skill/command cache. Use after manual edits to ~/.claude or ~/.opencode.', origin:'claude', badge:null },
+  { icon:'▶', name:'/export-profile', desc:'Export your full agent+skill+command profile as a tarball. Shareable setup for new machines.', origin:'claude', badge:'new' },
+];
+
+const PLUGINS = [
+  { name:'gstack', id:'@gstack/cli', enabled:true, agents:24, skills:89, commands:12, installs:3, marketplace:'gstack-marketplace' },
+  { name:'superpowers', id:'@superpowers/core', enabled:true, agents:6, skills:42, commands:8, installs:1, marketplace:'obra-marketplace' },
+  { name:'lobehub-icons', id:'@lobehub/icons', enabled:true, agents:0, skills:0, commands:0, installs:1, marketplace:null },
+  { name:'impeccable', id:'@impeccable/ui', enabled:false, agents:2, skills:14, commands:4, installs:0, marketplace:'internal' },
+];
+
+/* ── Render helpers ───────────────────────────────────── */
+function renderCard({icon,name,desc,origin,badge}) {
+  return `
+    <article class="entity-card" data-name="${name}">
+      <div class="card-head">
+        <div class="card-icon">${icon}</div>
+        <div class="card-title-wrap">
+          <div class="card-title">${name}</div>
+          <div class="card-badges">
+            <span class="origin-badge">${origin}</span>
+            ${badge ? `<span class="render-badge">${badge}</span>` : ''}
+          </div>
+        </div>
+      </div>
+      <p class="card-desc">${desc}</p>
+    </article>`;
+}
+
+function renderAgents() {
+  document.getElementById('agents-grid').innerHTML = AGENTS.map(renderCard).join('');
+}
+function renderSkills() {
+  document.getElementById('skills-grid').innerHTML = SKILLS.map(renderCard).join('');
+}
+function renderCommands() {
+  document.getElementById('commands-grid').innerHTML = COMMANDS.map(renderCard).join('');
+}
+function renderPlugins() {
+  document.getElementById('plugins-grid').innerHTML = PLUGINS.map(p => `
+    <article class="plugin-card">
+      <div class="plugin-head">
+        <div>
+          <h3 class="plugin-name">${p.name}</h3>
+          <p class="plugin-id">${p.id}</p>
+        </div>
+        <span class="plugin-state ${p.enabled ? 'enabled' : 'disabled'}">${p.enabled ? 'Enabled' : 'Disabled'}</span>
+      </div>
+      <div class="plugin-grid">
+        <div>Agents: ${p.agents}</div>
+        <div>Skills: ${p.skills}</div>
+        <div>Commands: ${p.commands}</div>
+        <div>Installs: ${p.installs}</div>
+      </div>
+      ${p.marketplace ? `<p class="plugin-marketplace">Marketplace: ${p.marketplace}</p>` : ''}
+    </article>`).join('');
+}
+
+function renderDetail(name) {
+  const a = AGENTS.find(x => x.name === name);
+  if (!a) return;
+  const fm = a.detail.fm.map(([k,v]) => `<span><span>${k}</span> · <span>${v}</span></span>`).join('');
+  const body = a.detail.body
+    .split('\n\n').map(block => {
+      if (block.startsWith('## ')) return `<h2>${block.slice(3)}</h2>`;
+      if (block.startsWith('> ')) return `<blockquote style="margin:14px 0;padding:10px 14px;border-left:2px solid var(--bd-3);color:var(--tx-2);font-style:italic">${block.slice(2)}</blockquote>`;
+      if (block.match(/^\d+\./)) return `<ol style="padding-left:24px;margin:10px 0">${block.split('\n').map(l=>`<li>${l.replace(/^\d+\.\s/,'')}</li>`).join('')}</ol>`;
+      if (block.startsWith('- ')) return `<ul>${block.split('\n').map(l=>`<li>${l.slice(2)}</li>`).join('')}</ul>`;
+      return `<p>${block.replace(/`([^`]+)`/g,'<code>$1</code>')}</p>`;
+    }).join('');
+  document.querySelector('[data-page="detail"]').innerHTML = `
+    <button class="back-btn" data-page="agents">back to agents</button>
+    <div class="frontmatter-card">
+      <div class="fm-head">
+        <div>
+          <h1>${a.name}</h1>
+          <p class="fm-desc">${a.desc}</p>
+        </div>
+        <div class="fm-actions">
+          <button class="fm-btn">✎ edit</button>
+          <button class="fm-btn">🗑</button>
+        </div>
+      </div>
+      <div class="fm-meta-strip">${fm}</div>
+    </div>
+    <article class="prose-card">${body}</article>
+  `;
+}
+
+/* ── Initial render ───────────────────────────────────── */
+renderAgents();
+renderSkills();
+renderCommands();
+renderPlugins();
+
+/* ── Page navigation ──────────────────────────────────── */
+function showPage(name) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  const target = document.querySelector(`.page[data-page="${name}"]`);
+  if (target) {
+    target.classList.add('active');
+    document.querySelector('.content').scrollTop = 0;
+  }
+  document.querySelectorAll('.side-nav a').forEach(a => {
+    a.classList.toggle('active', a.dataset.page === name);
+  });
+}
+
+document.querySelectorAll('.side-nav a').forEach(a => {
+  a.addEventListener('click', (e) => {
+    e.preventDefault();
+    const target = a.dataset.page;
+    if (target === 'timeline-link' || target === 'monitor-link') return; // external links
+    showPage(target);
+  });
+});
+
+document.addEventListener('click', (e) => {
+  // Back button
+  const back = e.target.closest('.back-btn');
+  if (back) { showPage(back.dataset.page); return; }
+
+  // Entity card click (only on agents page)
+  const card = e.target.closest('.entity-card');
+  if (card) {
+    const page = card.closest('.page');
+    if (page.dataset.page === 'agents') {
+      renderDetail(card.dataset.name);
+      showPage('detail');
+    }
+  }
+});
+</script>
+</body>
+</html>

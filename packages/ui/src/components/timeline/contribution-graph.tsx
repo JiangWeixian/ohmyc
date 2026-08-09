@@ -9,6 +9,8 @@ import {
   useState,
 } from 'react'
 
+import { heatmapCardStyles } from './styles'
+
 import type { HeatmapPoint, TimelineMetric } from '@/hooks/use-timeline'
 
 const MONTH_NAMES = [
@@ -68,8 +70,8 @@ export interface ContributionGraphProps {
 export function calculateContributionGraphLayout(containerWidth: number) {
   const graphWidth = Math.max(DEFAULT_GRID_WIDTH, containerWidth - DAY_LABEL_WIDTH - LABEL_GAP)
   const trackWidth = graphWidth / WEEK_COUNT
-  const cellSize = Math.max(8, Math.min(18, Math.floor(trackWidth * 0.72)))
-  const rowGap = cellSize >= 10 ? 4 : 3
+  const cellSize = Math.max(10, Math.min(14, Math.round(trackWidth)))
+  const rowGap = 3
 
   return { cellSize, rowGap }
 }
@@ -177,167 +179,164 @@ export function ContributionGraph({ year, metric, data, onSelectDay }: Contribut
   }, [year, valueByDate])
 
   return (
-    <div
-      ref={cardRef}
-      data-testid="timeline-heatmap-card"
-      className="rounded-[10px] border border-[var(--border-default)] bg-[rgba(255,255,255,0.02)] px-[22px] py-[18px]"
-      style={{
-        '--heatmap-cell': `${cellSize}px`,
-        '--heatmap-row-gap': `${rowGap}px`,
-      } as CSSProperties}
-    >
+    <>
+      <style>{heatmapCardStyles}</style>
       <div
-        className="relative"
+        ref={cardRef}
+        data-testid="timeline-heatmap-card"
+        className="relative p-5 timeline-heatmap-card"
         style={{
-          display: 'grid',
-          gridTemplateColumns: `${DAY_LABEL_WIDTH}px minmax(0, 1fr)`,
-          gridTemplateRows: '16px 1fr',
-          columnGap: LABEL_GAP,
-          rowGap,
-        }}
+          '--heatmap-cell': `${cellSize}px`,
+          '--heatmap-row-gap': `${rowGap}px`,
+        } as CSSProperties}
       >
-        {/* Months strip */}
         <div
-          data-testid="timeline-heatmap-months"
+          className="relative"
           style={{
-            gridColumn: 2,
-            display: 'flex',
-            fontSize: 10,
-            fontWeight: 510,
-            color: 'var(--text-quaternary)',
-            fontFamily: 'Berkeley Mono, ui-monospace, SF Mono, Menlo, monospace',
-            letterSpacing: '0.04em',
-            textTransform: 'uppercase',
-          }}
-        >
-          {monthSpans.map((s, i) => (
-            <span key={i} style={{ flex: `${s.weeks} ${s.weeks} 0`, minWidth: 0 }}>{s.label}</span>
-          ))}
-        </div>
-
-        {/* Day-of-week labels */}
-        <div
-          style={{
-            gridColumn: 1,
-            gridRow: 2,
             display: 'grid',
-            gridTemplateRows: 'repeat(7, var(--heatmap-cell))',
-            gap: 'var(--heatmap-row-gap)',
-            fontSize: 9,
-            fontWeight: 510,
-            color: 'var(--text-quaternary)',
-            fontFamily: 'Berkeley Mono, ui-monospace, SF Mono, Menlo, monospace',
-            textTransform: 'uppercase',
-            alignItems: 'center',
+            gridTemplateColumns: `${DAY_LABEL_WIDTH}px minmax(0, 1fr)`,
+            gridTemplateRows: '1rem 1fr',
+            columnGap: LABEL_GAP,
+            rowGap,
           }}
         >
-          {DOW_LABELS.map((label, i) => (
-            <span key={i} style={{ lineHeight: 'var(--heatmap-cell)', height: 'var(--heatmap-cell)', visibility: label ? 'visible' : 'hidden' }}>
-              {label}
-            </span>
-          ))}
-        </div>
+          {/* Months strip */}
+          <div
+            data-testid="timeline-heatmap-months"
+            style={{
+              gridColumn: 2,
+              display: 'flex',
+            }}
+            className="text-xs uppercase timeline-heatmap-months"
+          >
+            {monthSpans.map((s, i) => (
+              <span key={i} style={{ flex: `${s.weeks} ${s.weeks} 0`, minWidth: 0 }}>{s.label}</span>
+            ))}
+          </div>
 
-        {/* Cells grid */}
-        <div
-          data-testid="timeline-heatmap-grid"
-          style={{
-            gridColumn: 2,
-            gridRow: 2,
-            display: 'grid',
-            gridTemplateColumns: `repeat(${WEEK_COUNT}, minmax(0, 1fr))`,
-            gridTemplateRows: 'repeat(7, var(--heatmap-cell))',
-            gridAutoFlow: 'column',
-            rowGap: 'var(--heatmap-row-gap)',
-            justifyItems: 'center',
-          }}
-        >
-          {cells.map((c, i) => {
-            const bucket = c.inYear ? bucketFor(c.value, max) : 0
-            const cls = HEAT_CLASSES[bucket]
-            return (
-              <div
-                key={i}
-                role={c.inYear && c.value > 0 ? 'button' : undefined}
-                onClick={() => {
-                  if (c.inYear && c.value > 0 && onSelectDay) {
-                    onSelectDay(c.date)
-                  }
-                }}
-                onMouseEnter={(e) => {
-                  if (!c.inYear) {
-                    return
-                  }
-                  const rect = (e.currentTarget as HTMLElement).getBoundingClientRect()
-                  const parent = (e.currentTarget.closest('.relative') as HTMLElement | null)?.getBoundingClientRect()
-                  setHover({
-                    x: rect.left - (parent?.left ?? 0) + 14,
-                    y: rect.top - (parent?.top ?? 0) - 8,
-                    point: { date: c.date, value: c.value },
-                  })
-                }}
-                onMouseLeave={() => setHover(null)}
-                className={`heat-cell ${cls}`}
-                style={{
-                  width: 'var(--heatmap-cell)',
-                  height: 'var(--heatmap-cell)',
-                  borderRadius: 2,
-                  cursor: c.inYear && c.value > 0 ? 'pointer' : 'default',
-                }}
-              />
-            )
-          })}
-        </div>
-
-        {/* Tooltip: labels adapt to the active metric (tokens suffix vs metric name). */}
-        {hover && (
+          {/* Day-of-week labels */}
           <div
             style={{
-              position: 'absolute',
-              left: hover.x,
-              top: hover.y,
-              transform: 'translate(-50%, -100%)',
-              background: 'var(--surface-overlay)',
-              border: '1px solid var(--border-default)',
-              borderRadius: 6,
-              padding: '8px 10px',
-              boxShadow: 'var(--shadow-md, 0 4px 12px rgba(0,0,0,0.4))',
-              fontSize: 11,
-              color: 'var(--text-primary)',
-              fontFamily: 'Berkeley Mono, ui-monospace, SF Mono, Menlo, monospace',
-              pointerEvents: 'none',
-              whiteSpace: 'nowrap',
-              zIndex: 10,
+              gridColumn: 1,
+              gridRow: 2,
+              display: 'grid',
+              gridTemplateRows: 'repeat(7, var(--heatmap-cell))',
+              gap: 'var(--heatmap-row-gap)',
+              alignItems: 'center',
+            }}
+            className="text-xs timeline-heatmap-dows"
+          >
+            {DOW_LABELS.map((label, i) => (
+              <span
+                key={i}
+                className={label ? 'timeline-heatmap-dow-visible' : undefined}
+                style={{ lineHeight: 'var(--heatmap-cell)', height: 'var(--heatmap-cell)', visibility: label ? 'visible' : 'hidden' }}
+              >
+                {label}
+              </span>
+            ))}
+          </div>
+
+          {/* Cells grid */}
+          <div
+            data-testid="timeline-heatmap-grid"
+            style={{
+              gridColumn: 2,
+              gridRow: 2,
+              display: 'grid',
+              gridTemplateColumns: `repeat(${WEEK_COUNT}, minmax(0, 1fr))`,
+              gridTemplateRows: 'repeat(7, var(--heatmap-cell))',
+              gridAutoFlow: 'column',
+              rowGap: 'var(--heatmap-row-gap)',
+              justifyItems: 'center',
             }}
           >
-            {metric === 'tokens'
-              ? `${formatNumber(hover.point.value)} tokens`
-              : `${formatNumber(hover.point.value)} ${metric}`}
-            <span style={{ display: 'block', color: 'var(--text-tertiary)', fontSize: 10, marginTop: 2 }}>
-              {formatDay(hover.point.date)}
-            </span>
+            {cells.map((c, i) => {
+              const bucket = c.inYear ? bucketFor(c.value, max) : 0
+              const cls = HEAT_CLASSES[bucket]
+              return (
+                <div
+                  key={i}
+                  role={c.inYear && c.value > 0 ? 'button' : undefined}
+                  onClick={() => {
+                    if (c.inYear && c.value > 0 && onSelectDay) {
+                      onSelectDay(c.date)
+                    }
+                  }}
+                  onMouseEnter={(e) => {
+                    if (!c.inYear) {
+                      return
+                    }
+                    const rect = (e.currentTarget as HTMLElement).getBoundingClientRect()
+                    const parent = (e.currentTarget.closest('.relative') as HTMLElement | null)?.getBoundingClientRect()
+                    setHover({
+                      x: rect.left - (parent?.left ?? 0) + 14,
+                      y: rect.top - (parent?.top ?? 0) - 8,
+                      point: { date: c.date, value: c.value },
+                    })
+                  }}
+                  onMouseLeave={() => setHover(null)}
+                  className={`heat-cell ${cls}`}
+                  style={{
+                    width: 'var(--heatmap-cell)',
+                    height: 'var(--heatmap-cell)',
+                    borderRadius: 'var(--heatmap-cell-radius)',
+                    cursor: c.inYear && c.value > 0 ? 'pointer' : 'default',
+                  }}
+                />
+              )
+            })}
           </div>
-        )}
-      </div>
 
-      <div
-        className="mt-[14px] flex items-center justify-between text-[11px] text-[var(--text-tertiary)]"
-        style={{ fontFamily: 'Berkeley Mono, ui-monospace, SF Mono, Menlo, monospace' }}
-      >
-        <span>
-          Jan 1 → Dec 31, {year}
-        </span>
-        <span className="inline-flex items-center gap-[6px] text-[var(--text-quaternary)]">
-          Less
-          <span className="inline-flex gap-[3px]">
-            {(['heat-l0', 'heat-l1', 'heat-l2', 'heat-l3', 'heat-l4'] as const).map(k => (
-              <span key={k} className={`heat-cell ${k}`} style={{ width: 'var(--heatmap-cell)', height: 'var(--heatmap-cell)', borderRadius: 2 }} />
-            ))}
+          {/* Tooltip: labels adapt to the active metric (tokens suffix vs metric name). */}
+          {hover && (
+            <div
+              style={{
+                position: 'absolute',
+                left: hover.x,
+                top: hover.y,
+                transform: 'translate(-50%, -100%)',
+                background: 'var(--surface-overlay)',
+                border: '1px solid var(--border-default)',
+                borderRadius: '0.375rem',
+                padding: '0.5rem 0.75rem',
+                boxShadow: 'var(--shadow-md, 0 0.25rem 0.75rem rgba(0,0,0,0.4))',
+                fontSize: '0.75rem',
+                color: 'var(--text-primary)',
+                fontFamily: 'var(--font-mono)',
+                pointerEvents: 'none',
+                whiteSpace: 'nowrap',
+                zIndex: 10,
+              }}
+            >
+              {metric === 'tokens'
+                ? `${formatNumber(hover.point.value)} tokens`
+                : `${formatNumber(hover.point.value)} ${metric}`}
+              <span style={{ display: 'block', color: 'var(--text-tertiary)', fontSize: '0.75rem', marginTop: '0.25rem' }}>
+                {formatDay(hover.point.date)}
+              </span>
+            </div>
+          )}
+        </div>
+
+        <div
+          className="timeline-heatmap-legend mt-3.5 flex items-center justify-between"
+        >
+          <span>
+            Jan 1 → Dec 31, {year}
           </span>
-          More
-        </span>
+          <span className="inline-flex items-center gap-1.5 text-[var(--text-quaternary)]">
+            Less
+            <span className="inline-flex gap-1">
+              {(['heat-l0', 'heat-l1', 'heat-l2', 'heat-l3', 'heat-l4'] as const).map(k => (
+                <span key={k} className={`heat-cell ${k}`} style={{ width: 'var(--heatmap-cell)', height: 'var(--heatmap-cell)', borderRadius: 'var(--heatmap-cell-radius)' }} />
+              ))}
+            </span>
+            More
+          </span>
+        </div>
       </div>
-    </div>
+    </>
   )
 }
 

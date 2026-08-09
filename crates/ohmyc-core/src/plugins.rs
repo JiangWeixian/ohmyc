@@ -12,7 +12,10 @@ use std::path::{Path, PathBuf};
 use serde::{Deserialize, Serialize};
 use serde_json::{Map, Value};
 
+use crate::components::{locator_id, ComponentKind, ComponentSource, Origin, Scope, SourceKind, SourceProvider};
 use crate::error::ApiError;
+
+const ENV_CODEX_PLUGINS_CACHE: &str = "OHMYC_CODEX_PLUGINS_CACHE";
 
 /// One install record from `installed_plugins.json`. Known fields are
 /// surfaced; arbitrary extras (passthrough on the TS side) ride in
@@ -97,6 +100,22 @@ pub struct InstalledPlugin {
     pub installs: Vec<PluginInstall>,
     pub manifest: Option<PluginManifest>,
     pub components: PluginComponentSummary,
+    #[serde(rename = "locatorId", default)]
+    pub locator_id: String,
+    #[serde(rename = "sourceProvider", default = "default_plugin_source_provider")]
+    pub source_provider: SourceProvider,
+    #[serde(rename = "sourceKind", default = "default_plugin_source_kind")]
+    pub source_kind: SourceKind,
+    #[serde(default)]
+    pub origins: Vec<Origin>,
+}
+
+fn default_plugin_source_provider() -> SourceProvider {
+    SourceProvider::Claude
+}
+
+fn default_plugin_source_kind() -> SourceKind {
+    SourceKind::Plugin
 }
 
 /// Marketplace source — `{ source, repo?, url? }` with passthrough.
@@ -183,6 +202,10 @@ pub fn read_enabled_plugins_from(settings_path: &Path) -> Result<BTreeMap<String
 pub fn load_manifest(install_path: &Path) -> Result<Option<PluginManifest>, ApiError> {
     let primary = install_path.join("plugin.json");
     if let Some(m) = read_manifest_or_none(&primary)? {
+        return Ok(Some(m));
+    }
+    let codex = install_path.join(".codex-plugin").join("plugin.json");
+    if let Some(m) = read_manifest_or_none(&codex)? {
         return Ok(Some(m));
     }
     let fallback = install_path.join(".claude-plugin").join("plugin.json");
@@ -296,13 +319,209 @@ pub fn list_plugins(plugins_dir: &Path, settings_path: &Path) -> Result<Vec<Inst
             name: name.to_string(),
             marketplace: marketplace.to_string(),
             enabled: enabled_map.get(id).copied().unwrap_or(false),
+            locator_id: locator_id(
+                ComponentKind::Plugins,
+                SourceProvider::Claude,
+                ComponentSource::Plugin,
+                Scope::Global,
+                Some(id),
+                id,
+                installs.first().map(|install| Path::new(&install.install_path)),
+            ),
             installs,
             manifest,
             components,
+            source_provider: SourceProvider::Claude,
+            source_kind: SourceKind::Plugin,
+            origins: vec![Origin::Claude],
         });
     }
     out.sort_by(|a, b| a.name.cmp(&b.name));
     Ok(out)
+}
+
+pub fn codex_plugins_cache_dir() -> Result<PathBuf, ApiError> {
+    if let Ok(v) = std::env::var(ENV_CODEX_PLUGINS_CACHE) {
+        if !v.trim().is_empty() {
+            return Ok(PathBuf::from(v));
+        }
+    }
+    let home = dirs::home_dir().ok_or_else(|| ApiError::Internal("could not determine home dir".to_string()))?;
+    Ok(home.join(".codex").join("plugins").join("cache"))
+}
+
+pub fn list_codex_plugins(cache_dir: &Path) -> Result<Vec<InstalledPlugin>, ApiError> {
+    if !cache_dir.exists() {
+        return Ok(Vec::new());
+    }
+    let enabled_plugins = read_codex_enabled_plugins(&codex_config_path_for_cache(cache_dir))?;
+    let mut install_dirs = Vec::new();
+    collect_codex_install_dirs(cache_dir, &mut install_dirs)?;
+
+    let mut by_id: BTreeMap<String, InstalledPlugin> = BTreeMap::new();
+    for install_path in install_dirs {
+        let manifest = load_manifest(&install_path)?;
+        let components = scan_components(&install_path)?;
+        let (marketplace, fallback_name, version) = codex_cache_identity(cache_dir, &install_path);
+        let name = manifest
+            .as_ref()
+            .and_then(|m| m.name.as_deref())
+            .filter(|s| !s.is_empty())
+            .unwrap_or(&fallback_name)
+            .to_string();
+        let id = format!("{name}@{marketplace}");
+        if enabled_plugins
+            .as_ref()
+            .is_some_and(|enabled| !enabled.get(&id).copied().unwrap_or(false))
+        {
+            continue;
+        }
+        let installs = vec![PluginInstall {
+            version,
+            installed_at: String::new(),
+            last_updated: String::new(),
+            install_path: install_path.to_string_lossy().to_string(),
+            git_commit_sha: None,
+            is_local: Some(false),
+            scope: "user".to_string(),
+            project_path: None,
+            source: Some("codex".to_string()),
+            installed_by_presets: None,
+            extra: Map::new(),
+        }];
+        let plugin = InstalledPlugin {
+            locator_id: locator_id(
+                ComponentKind::Plugins,
+                SourceProvider::Codex,
+                ComponentSource::Plugin,
+                Scope::Global,
+                Some(&id),
+                &id,
+                installs.first().map(|install| Path::new(&install.install_path)),
+            ),
+            id: id.clone(),
+            name,
+            marketplace,
+            enabled: true,
+            installs,
+            manifest,
+            components,
+            source_provider: SourceProvider::Codex,
+            source_kind: SourceKind::Plugin,
+            origins: vec![Origin::Codex],
+        };
+        by_id
+            .entry(id)
+            .and_modify(|current| {
+                if codex_plugin_is_newer(&plugin, current) {
+                    *current = plugin.clone();
+                }
+            })
+            .or_insert(plugin);
+    }
+    let mut out: Vec<_> = by_id.into_values().collect();
+    out.sort_by(|a, b| a.name.cmp(&b.name).then_with(|| a.marketplace.cmp(&b.marketplace)));
+    Ok(out)
+}
+
+fn codex_config_path_for_cache(cache_dir: &Path) -> PathBuf {
+    cache_dir
+        .parent()
+        .and_then(|plugins_dir| plugins_dir.parent())
+        .map(|codex_home| codex_home.join("config.toml"))
+        .unwrap_or_else(|| cache_dir.join("config.toml"))
+}
+
+fn read_codex_enabled_plugins(config_path: &Path) -> Result<Option<BTreeMap<String, bool>>, ApiError> {
+    let raw = match std::fs::read_to_string(config_path) {
+        Ok(raw) => raw,
+        Err(e) if e.kind() == std::io::ErrorKind::NotFound => return Ok(None),
+        Err(e) => return Err(ApiError::Io(format!("read {}: {e}", config_path.display()))),
+    };
+    let parsed = toml::from_str::<toml::Value>(&raw)
+        .map_err(|e| ApiError::Parse(format!("toml {}: {e}", config_path.display())))?;
+    let Some(plugins) = parsed.get("plugins").and_then(|value| value.as_table()) else {
+        return Ok(Some(BTreeMap::new()));
+    };
+    let mut out = BTreeMap::new();
+    for (id, value) in plugins {
+        if let Some(enabled) = value.get("enabled").and_then(|enabled| enabled.as_bool()) {
+            out.insert(id.to_string(), enabled);
+        }
+    }
+    Ok(Some(out))
+}
+
+fn codex_plugin_is_newer(candidate: &InstalledPlugin, current: &InstalledPlugin) -> bool {
+    let candidate_version = candidate
+        .installs
+        .first()
+        .map(|install| install.version.as_str())
+        .unwrap_or_default();
+    let current_version = current
+        .installs
+        .first()
+        .map(|install| install.version.as_str())
+        .unwrap_or_default();
+    candidate_version > current_version
+}
+
+fn collect_codex_install_dirs(dir: &Path, out: &mut Vec<PathBuf>) -> Result<(), ApiError> {
+    if dir.join(".codex-plugin").join("plugin.json").is_file() {
+        out.push(dir.to_path_buf());
+        return Ok(());
+    }
+    let entries = match std::fs::read_dir(dir) {
+        Ok(it) => it,
+        Err(e) if e.kind() == std::io::ErrorKind::NotFound => return Ok(()),
+        Err(e) => return Err(ApiError::Io(format!("read_dir {}: {e}", dir.display()))),
+    };
+    for entry in entries {
+        let entry = entry.map_err(ApiError::from)?;
+        let path = entry.path();
+        if path.is_dir() {
+            if is_ignored_codex_cache_dir(&path) {
+                continue;
+            }
+            collect_codex_install_dirs(&path, out)?;
+        }
+    }
+    Ok(())
+}
+
+fn is_ignored_codex_cache_dir(path: &Path) -> bool {
+    path.file_name()
+        .and_then(|name| name.to_str())
+        .is_some_and(|name| name.starts_with('.') || name == "backup" || name == "staging")
+}
+
+fn codex_cache_identity(cache_dir: &Path, install_path: &Path) -> (String, String, String) {
+    let parts: Vec<String> = install_path
+        .strip_prefix(cache_dir)
+        .ok()
+        .map(|p| {
+            p.components()
+                .filter_map(|c| c.as_os_str().to_str().map(ToString::to_string))
+                .collect()
+        })
+        .unwrap_or_default();
+    let marketplace = parts.first().cloned().unwrap_or_else(|| "codex".to_string());
+    let fallback_name = parts
+        .get(parts.len().saturating_sub(2))
+        .cloned()
+        .or_else(|| {
+            install_path
+                .file_name()
+                .and_then(|s| s.to_str())
+                .map(ToString::to_string)
+        })
+        .unwrap_or_else(|| "plugin".to_string());
+    let version = install_path
+        .file_name()
+        .and_then(|s| s.to_str())
+        .unwrap_or("")
+        .to_string();
+    (marketplace, fallback_name, version)
 }
 
 pub fn get_plugin(plugins_dir: &Path, settings_path: &Path, id: &str) -> Result<Option<InstalledPlugin>, ApiError> {
@@ -315,6 +534,95 @@ fn split_id(id: &str) -> (&str, &str) {
         Some(i) => (&id[..i], &id[i + 1..]),
         None => (id, ""),
     }
+}
+
+#[derive(Debug, Clone, Default)]
+pub struct PluginResources {
+    pub agents: Vec<crate::components::agents::Agent>,
+    pub skills: Vec<crate::components::skills::Skill>,
+    pub commands: Vec<crate::components::commands::Command>,
+}
+
+pub fn parse_claude_plugin_resources(install_path: &Path, plugin_id: &str) -> Result<PluginResources, ApiError> {
+    // Used by focused tests and future full-inventory callers. Production
+    // list APIs should prefer resource-specific plugin parsers so a skills
+    // request does not parse plugin agents and commands unnecessarily.
+    Ok(PluginResources {
+        agents: parse_claude_plugin_agents(install_path, plugin_id)?,
+        skills: parse_claude_plugin_skills(install_path, plugin_id)?,
+        commands: parse_claude_plugin_commands(install_path, plugin_id)?,
+    })
+}
+
+pub fn parse_claude_plugin_agents(
+    install_path: &Path,
+    plugin_id: &str,
+) -> Result<Vec<crate::components::agents::Agent>, ApiError> {
+    crate::components::agents::list_with_meta(
+        &install_path.join("agents"),
+        Origin::Claude,
+        SourceProvider::Claude,
+        ComponentSource::Plugin,
+        Scope::Global,
+        SourceKind::Plugin,
+        Some(plugin_id.to_string()),
+    )
+}
+
+pub fn parse_claude_plugin_skills(
+    install_path: &Path,
+    plugin_id: &str,
+) -> Result<Vec<crate::components::skills::Skill>, ApiError> {
+    crate::components::skills::list_with_origins_and_meta(
+        &install_path.join("skills"),
+        vec![Origin::Claude, Origin::Opencode],
+        SourceProvider::Claude,
+        ComponentSource::Plugin,
+        Scope::Global,
+        SourceKind::Plugin,
+        Some(plugin_id.to_string()),
+    )
+}
+
+pub fn parse_claude_plugin_commands(
+    install_path: &Path,
+    plugin_id: &str,
+) -> Result<Vec<crate::components::commands::Command>, ApiError> {
+    crate::components::commands::list_with_meta(
+        &install_path.join("commands"),
+        Origin::Claude,
+        SourceProvider::Claude,
+        ComponentSource::Plugin,
+        Scope::Global,
+        SourceKind::Plugin,
+        Some(plugin_id.to_string()),
+    )
+}
+
+pub fn parse_codex_plugin_resources(install_path: &Path, plugin_id: &str) -> Result<PluginResources, ApiError> {
+    // Codex plugins currently expose skills only. Keep this parser explicit
+    // so future agent/command support does not silently change skills-list
+    // performance or behavior.
+    Ok(PluginResources {
+        agents: Vec::new(),
+        skills: parse_codex_plugin_skills(install_path, plugin_id)?,
+        commands: Vec::new(),
+    })
+}
+
+pub fn parse_codex_plugin_skills(
+    install_path: &Path,
+    plugin_id: &str,
+) -> Result<Vec<crate::components::skills::Skill>, ApiError> {
+    crate::components::skills::list_with_origins_and_meta(
+        &install_path.join("skills"),
+        vec![Origin::Codex],
+        SourceProvider::Codex,
+        ComponentSource::Plugin,
+        Scope::Global,
+        SourceKind::Plugin,
+        Some(plugin_id.to_string()),
+    )
 }
 
 #[cfg(test)]
@@ -666,5 +974,87 @@ mod tests {
         let found = get_plugin(dir.path(), &settings, "test@market").unwrap().unwrap();
         assert_eq!(found.name, "test");
         assert!(get_plugin(dir.path(), &settings, "nope").unwrap().is_none());
+    }
+
+    fn write_codex_plugin(cache_dir: &Path, marketplace: &str, name: &str, version: &str) -> PathBuf {
+        let install = cache_dir.join(marketplace).join(name).join(version);
+        std::fs::create_dir_all(install.join(".codex-plugin")).unwrap();
+        std::fs::write(
+            install.join(".codex-plugin/plugin.json"),
+            format!(r#"{{"name":"{name}","description":"{name} plugin"}}"#),
+        )
+        .unwrap();
+        install
+    }
+
+    #[test]
+    fn list_codex_plugins_filters_disabled_plugins_from_config() {
+        let codex_home = tempfile::tempdir().unwrap();
+        let cache = codex_home.path().join("plugins/cache");
+        write_codex_plugin(&cache, "market", "enabled", "1.0.0");
+        write_codex_plugin(&cache, "market", "disabled", "1.0.0");
+        std::fs::write(
+            codex_home.path().join("config.toml"),
+            r#"
+[plugins."enabled@market"]
+enabled = true
+
+[plugins."disabled@market"]
+enabled = false
+"#,
+        )
+        .unwrap();
+
+        let plugins = list_codex_plugins(&cache).unwrap();
+        let ids: Vec<_> = plugins.iter().map(|plugin| plugin.id.as_str()).collect();
+        assert_eq!(ids, vec!["enabled@market"]);
+    }
+
+    #[test]
+    fn list_codex_plugins_keeps_one_enabled_version_per_plugin() {
+        let codex_home = tempfile::tempdir().unwrap();
+        let cache = codex_home.path().join("plugins/cache");
+        write_codex_plugin(&cache, "market", "toolbox", "1.0.0");
+        write_codex_plugin(&cache, "market", "toolbox", "2.0.0");
+        std::fs::write(
+            codex_home.path().join("config.toml"),
+            r#"
+[plugins."toolbox@market"]
+enabled = true
+"#,
+        )
+        .unwrap();
+
+        let plugins = list_codex_plugins(&cache).unwrap();
+        assert_eq!(plugins.len(), 1);
+        assert_eq!(plugins[0].id, "toolbox@market");
+        assert_eq!(plugins[0].installs[0].version, "2.0.0");
+    }
+
+    #[test]
+    fn list_codex_plugins_ignores_staging_and_backup_cache_dirs() {
+        let codex_home = tempfile::tempdir().unwrap();
+        let cache = codex_home.path().join("plugins/cache");
+        write_codex_plugin(&cache, "market", "live", "1.0.0");
+        write_codex_plugin(&cache.join("staging"), "market", "staged", "9.0.0");
+        write_codex_plugin(&cache.join("backup"), "market", "backup", "9.0.0");
+        std::fs::write(
+            codex_home.path().join("config.toml"),
+            r#"
+[plugins."live@market"]
+enabled = true
+
+[plugins."staged@staging"]
+enabled = true
+
+[plugins."backup@backup"]
+enabled = true
+"#,
+        )
+        .unwrap();
+
+        let plugins = list_codex_plugins(&cache).unwrap();
+        let ids: Vec<_> = plugins.iter().map(|plugin| plugin.id.as_str()).collect();
+        assert_eq!(ids, vec!["live@market"]);
     }
 }

@@ -17,11 +17,59 @@ export const entityMeta = [
 
 export const entityMarkdown = `# Review agent
 
-Use this agent when a change needs a focused implementation review.
+Use this agent when a change needs a focused **implementation review**. It checks behavior, boundaries, and *missing tests*.
 
-- Check behavior against the request
-- Inspect error handling and state boundaries
-- Call out missing tests
+## When to use
+
+Trigger this agent when a pull request touches:
+
+1. Data-fetching hooks or query boundaries
+2. Component state lifecycle (\`useEffect\` cleanup, race conditions)
+3. Accessibility contracts — keyboard, ARIA, focus order
+
+> A good review names the risk, not just the fix. Surface the *why* before the *what*.
+
+### Checklist
+
+- [ ] Behavior matches the original request
+- [ ] Error states are handled, not swallowed
+- [x] Tests cover the happy path
+- [ ] No unhandled promise rejections
+
+## Inline styles
+
+You can use \`inline code\`, **bold**, _italics_, and ~~strikethrough~~ freely. Links like [the docs](https://example.com) render with underlines.
+
+## Code block
+
+\`\`\`ts
+function useDebouncedValue<T>(value: T, delay = 300): T {
+  const [debounced, setDebounced] = useState(value)
+  useEffect(() => {
+    const id = setTimeout(() => setDebounced(value), delay)
+    return () => clearTimeout(id)
+  }, [value, delay])
+  return debounced
+}
+\`\`\`
+
+## Comparison table
+
+| Hook        | Returns            | Cancellable |
+| ----------- | ------------------ | ----------- |
+| \`useAgent\`   | \`Agent \| null\`     | No          |
+| \`useAgents\`  | \`Agent[]\`          | No          |
+| \`useDebounce\`| \`T\`                | Yes         |
+
+---
+
+Nested list:
+
+- Signals
+  - Monitor — full-bleed dashboard
+  - Timeline — session activity
+- Resources
+  - Agents, Skills, Commands
 `
 
 export const entityDescriptions = {

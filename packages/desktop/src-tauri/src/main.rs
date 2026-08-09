@@ -5,7 +5,9 @@ use ohmyc_desktop_lib::tray::{classify_click, TrayClick, TrayMenuId};
 use std::sync::Mutex;
 use tauri::menu::{Menu, MenuItem};
 use tauri::tray::{MouseButton, MouseButtonState, TrayIconBuilder, TrayIconEvent};
-use tauri::{Manager, PhysicalSize, WindowEvent};
+#[cfg(not(debug_assertions))]
+use tauri::WindowEvent;
+use tauri::{Manager, PhysicalSize};
 
 struct PopoverGuard(Mutex<PopoverState>);
 
@@ -21,6 +23,7 @@ fn main() {
             ohmyc_desktop_lib::api::timeline::timeline_projects,
             ohmyc_desktop_lib::api::timeline::timeline_years,
             ohmyc_desktop_lib::api::timeline::timeline_status,
+            ohmyc_desktop_lib::api::setup::setup_status,
             ohmyc_desktop_lib::api::agents::agents_list,
             ohmyc_desktop_lib::api::agents::agents_get,
             ohmyc_desktop_lib::api::skills::skills_list,
@@ -128,34 +131,59 @@ fn main() {
                 })
                 .build(app)?;
 
-            // Focus-loss auto-hide for popover
             let popover_window = app.get_webview_window("popover").unwrap();
 
-            // Apply macOS vibrancy (NSVisualEffectView "HUD window" material)
-            // for the canonical translucent popover look — true desktop-blur,
-            // not the CSS backdrop-filter approximation.
-            #[cfg(target_os = "macos")]
+            // The web layer paints the popover chrome. Avoid macOS vibrancy here:
+            // it adds a second rounded shell around the opaque card and can wash
+            // out small labels against light desktop content.
+            #[cfg(not(debug_assertions))]
             {
-                use window_vibrancy::{apply_vibrancy, NSVisualEffectMaterial, NSVisualEffectState};
-                let _ = apply_vibrancy(
-                    &popover_window,
-                    NSVisualEffectMaterial::HudWindow,
-                    Some(NSVisualEffectState::Active),
-                    Some(12.0),
-                );
+                let app_handle = app.handle().clone();
+                popover_window.on_window_event(move |event| {
+                    if let WindowEvent::Focused(false) = event {
+                        if let Some(win) = app_handle.get_webview_window("popover") {
+                            let _ = win.hide();
+                            let guard = app_handle.state::<PopoverGuard>();
+                            let mut state = guard.0.lock().unwrap();
+                            *state = state.hide();
+                        }
+                    }
+                });
             }
 
-            let app_handle = app.handle().clone();
-            popover_window.on_window_event(move |event| {
-                if let WindowEvent::Focused(false) = event {
-                    if let Some(win) = app_handle.get_webview_window("popover") {
-                        let _ = win.hide();
-                        let guard = app_handle.state::<PopoverGuard>();
-                        let mut state = guard.0.lock().unwrap();
-                        *state = state.hide();
-                    }
-                }
-            });
+            // Dev builds show the popover on launch (the tray icon is often
+            // occluded by the notch) and skip blur auto-hide so devtools stay usable.
+            // Position under a synthetic top-right tray rect so layout matches production.
+            #[cfg(debug_assertions)]
+            {
+                let size = popover_window.outer_size().unwrap_or(PhysicalSize::new(360, 440));
+                let monitor = popover_window
+                    .current_monitor()
+                    .ok()
+                    .flatten()
+                    .map(|m| MonitorBounds {
+                        x: m.position().x,
+                        y: m.position().y,
+                        width: m.size().width,
+                        height: m.size().height,
+                    })
+                    .unwrap_or(MonitorBounds {
+                        x: 0,
+                        y: 0,
+                        width: 1920,
+                        height: 1080,
+                    });
+                let tray = TrayRect {
+                    x: monitor.x + monitor.width as i32 - 48,
+                    y: monitor.y,
+                    width: 24,
+                    height: 24,
+                };
+                let pos = position_under_tray(tray, size, monitor);
+                let _ = popover_window.set_position(pos);
+                let _ = popover_window.show();
+                *app.state::<PopoverGuard>().0.lock().unwrap() = PopoverState::Visible;
+            }
 
             // Filesystem watcher → frontend "fs:changed" events.
             ohmyc_desktop_lib::events::spawn_watcher(&app.handle().clone());

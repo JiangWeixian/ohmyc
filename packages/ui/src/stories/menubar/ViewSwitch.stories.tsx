@@ -29,12 +29,12 @@ export default meta
 
 type Story = StoryObj<typeof meta>
 
-export const Line: Story = {
+export const Area: Story = {
   args: {
-    value: 'line',
+    value: 'area',
     onChange: () => {},
   },
-  render: () => <StatefulSwitch initial="line" />,
+  render: () => <StatefulSwitch initial="area" />,
 }
 
 export const Heatmap: Story = {
