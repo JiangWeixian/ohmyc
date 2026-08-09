@@ -89,6 +89,13 @@
       "sourceType": "github",
       "computedHash": "7db385e4c5370e5a7fca9704a1361b056e4504ea6a03924bb86f33a4f00b5c73"
     },
+    "image": {
+      "source": "git@github.com:coreyhaines31/marketingskills.git",
+      "sourceUrl": "git@github.com:coreyhaines31/marketingskills.git",
+      "sourceType": "git",
+      "skillPath": "skills/image/SKILL.md",
+      "computedHash": "e4b5511566d08a79f6f5fd26319eaaac0e18e1e238848c5a3fb2e9839e306ebe"
+    },
     "industrial-brutalist-ui": {
       "source": "Leonxlnx/taste-skill",
       "sourceType": "github",
