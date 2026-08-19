@@ -46,6 +46,35 @@ and desktop draft releases use mutable branches for testing. Stable package and
 official desktop releases add a review or immutable version boundary before
 publication.
 
+## Code Signing
+
+Desktop builds are **unsigned today**. `tauri.conf.json` carries
+`bundle.macOS.signingIdentity: "-"`, an ad-hoc signature that lets the app run
+on Apple Silicon but does not satisfy Gatekeeper. Users who download a build hit
+"cannot be verified" on macOS and SmartScreen on Windows.
+
+The workflow plumbing is already in place. Signing turns on the moment these
+repository secrets exist — no workflow edit needed:
+
+| Secret | What it is |
+| --- | --- |
+| `APPLE_SIGNING_IDENTITY` | Certificate name, e.g. `Developer ID Application: Your Name (TEAMID)` |
+| `APPLE_CERTIFICATE` | Base64 of the exported `.p12` |
+| `APPLE_CERTIFICATE_PASSWORD` | Password set when exporting the `.p12` |
+| `APPLE_ID` | Apple account email (notarization) |
+| `APPLE_PASSWORD` | App-specific password for that account (notarization) |
+| `APPLE_TEAM_ID` | Team ID from the membership page (notarization) |
+
+All six come from a paid Apple Developer Program membership; a free account
+cannot notarize. When `APPLE_SIGNING_IDENTITY` is present the build removes the
+ad-hoc `signingIdentity` from the config first, so the certificate is the only
+signing source in play. When it is absent every signing step is skipped and the
+build produces the same unsigned artifacts as today.
+
+Windows signing is **not** wired up. It needs a separate code-signing
+certificate; evaluate Azure Trusted Signing or SignPath's open-source program
+before buying an OV/EV certificate outright.
+
 ## Build a Desktop Draft
 
 Use a draft to test installers built from a branch before creating an official
