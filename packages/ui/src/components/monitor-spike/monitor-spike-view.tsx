@@ -4,7 +4,7 @@ import { ComputerBackdrop } from './computer-backdrop'
 import { formatCompactNumber, useMonitorStats } from '@/components/monitor/monitor-stats'
 
 export function MonitorSpikeView() {
-  const { stats, isError, isLoading } = useMonitorStats()
+  const { stats, isError, isLoading, isEmpty } = useMonitorStats()
   const sceneStats = useMemo(
     () => ({
       sessions: formatCompactNumber(stats.sessions),
@@ -23,6 +23,19 @@ export function MonitorSpikeView() {
     <section className="relative h-dvh min-h-[720px] overflow-hidden bg-[var(--bg-marketing)] font-[var(--font-display)] text-[var(--text-primary)] max-md:h-auto max-md:min-h-dvh max-md:overflow-y-auto">
       <ComputerBackdrop stats={sceneStats} />
       <SignalField />
+
+      {/* A wall of zeros reads as broken. Say why it is empty — but keep it to
+          one quiet line so the identity surface stays a monitor, not a banner. */}
+      {isEmpty
+        ? (
+            <p
+              className="pointer-events-none absolute inset-x-0 bottom-10 z-[3] text-center text-xs text-[var(--text-tertiary)]"
+              style={{ fontFamily: 'var(--font-mono)' }}
+            >
+              No sessions recorded yet — run one with your agent and it shows up here.
+            </p>
+          )
+        : null}
 
       <main className="sr-only">
         <h1>Personal Coding Monitor</h1>

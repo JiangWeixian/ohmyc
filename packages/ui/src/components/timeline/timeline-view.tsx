@@ -66,6 +66,11 @@ export function TimelineView() {
     year,
   })
 
+  // Nothing has ever been recorded — distinct from "your filters match nothing".
+  // Telling a first-run user to reset filters they never set is the fastest way
+  // to make a working install look broken.
+  const neverRecorded = (status?.sessionCount ?? 0) === 0
+
   // Snap to the latest available year when the selected year is no longer
   // present in the backend data (e.g. after a data reset or year-list refresh).
   useEffect(() => {
@@ -206,7 +211,9 @@ export function TimelineView() {
                   Loading sessions…
                 </div>
               )
-            : <EventList days={events.days} highlightedDay={highlightedDay} />}
+            : (neverRecorded
+                ? <NeverRecorded />
+                : <EventList days={events.days} highlightedDay={highlightedDay} />)}
         </div>
       </div>
     </>
@@ -262,5 +269,24 @@ function TimelineSelect({
         ))}
       </SelectContent>
     </Select>
+  )
+}
+
+/**
+ * Shown when the store holds no sessions at all — the state a user lands in
+ * right after installing the plugin, before their next session ends.
+ * See DESIGN.md → Timeline → States.
+ */
+function NeverRecorded() {
+  return (
+    <div className="my-3 flex flex-col items-center gap-2 border-y border-[var(--border-subtle)] px-3 py-10 text-center">
+      <p className="text-sm text-[var(--text-secondary)]">No sessions recorded yet.</p>
+      <p
+        className="text-xs text-[var(--text-tertiary)]"
+        style={{ fontFamily: 'var(--font-mono)' }}
+      >
+        Run a session with Claude Code, Codex, or OpenCode and it shows up here.
+      </p>
+    </div>
   )
 }
