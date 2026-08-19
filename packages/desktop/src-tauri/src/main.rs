@@ -24,6 +24,8 @@ fn main() {
             ohmyc_desktop_lib::api::timeline::timeline_years,
             ohmyc_desktop_lib::api::timeline::timeline_status,
             ohmyc_desktop_lib::api::setup::setup_status,
+            ohmyc_desktop_lib::api::setup::setup_detect_agents,
+            ohmyc_desktop_lib::api::setup::setup_install,
             ohmyc_desktop_lib::api::agents::agents_list,
             ohmyc_desktop_lib::api::agents::agents_get,
             ohmyc_desktop_lib::api::skills::skills_list,
