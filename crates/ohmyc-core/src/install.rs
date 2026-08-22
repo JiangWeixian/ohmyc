@@ -563,6 +563,33 @@ mod tests {
     }
 
     #[test]
+    fn opencode_install_keeps_the_users_key_order() {
+        let dir = TempDir::new().unwrap();
+        let config = dir.path().join(OPENCODE_CONFIG_FILE);
+        write(
+            &config,
+            r#"{"$schema":"https://opencode.ai/config.json","theme":"tokyonight","model":"anthropic/claude-opus-5"}"#,
+        );
+
+        assert_eq!(
+            install_opencode_at(&config, OPENCODE_PACKAGE),
+            InstallOutcome::Installed
+        );
+
+        // Depends on serde_json's `preserve_order` feature. Without it Map is a
+        // BTreeMap and this rewrite alphabetises somebody's hand-ordered config,
+        // turning a one-key addition into a whole-file diff.
+        let text = std::fs::read_to_string(&config).unwrap();
+        let position = |key: &str| text.find(key).unwrap_or_else(|| panic!("missing {key}"));
+        assert!(position("$schema") < position("theme"));
+        assert!(position("theme") < position("model"));
+        assert!(
+            position("model") < position("\"plugin\""),
+            "a newly added key belongs at the end, not sorted into the middle"
+        );
+    }
+
+    #[test]
     fn opencode_install_is_idempotent() {
         let dir = TempDir::new().unwrap();
         let config = dir.path().join(OPENCODE_CONFIG_FILE);
