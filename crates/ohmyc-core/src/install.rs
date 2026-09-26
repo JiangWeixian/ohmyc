@@ -43,12 +43,7 @@ const OPENCODE_SCHEMA: &str = "https://opencode.ai/config.json";
 /// Directories to search for an agent CLI. A GUI app inherits the launchd
 /// environment, not the user's shell, so `PATH` alone finds nothing — these are
 /// where the agents actually install themselves.
-const BIN_DIRS: [&str; 4] = [
-    ".local/bin",
-    "/usr/local/bin",
-    "/opt/homebrew/bin",
-    ".bun/bin",
-];
+const BIN_DIRS: [&str; 4] = [".local/bin", "/usr/local/bin", "/opt/homebrew/bin", ".bun/bin"];
 
 /// Which agent an [`AgentStatus`] or [`AgentInstallResult`] refers to.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
@@ -132,9 +127,7 @@ pub fn detect() -> Result<Vec<AgentStatus>, ApiError> {
                 .as_deref()
                 .and_then(Path::parent)
                 .is_some_and(Path::is_dir),
-            installed: opencode_config
-                .as_deref()
-                .is_some_and(opencode_is_installed_at),
+            installed: opencode_config.as_deref().is_some_and(opencode_is_installed_at),
             automatic: true,
         },
     ])
@@ -169,9 +162,7 @@ pub fn install(agent: AgentKind) -> InstallOutcome {
     match agent {
         AgentKind::Opencode => match opencode_config_path() {
             Ok(path) => install_opencode_at(&path, OPENCODE_PACKAGE),
-            Err(e) => InstallOutcome::Failed {
-                reason: e.to_string(),
-            },
+            Err(e) => InstallOutcome::Failed { reason: e.to_string() },
         },
         AgentKind::Claude | AgentKind::Codex => {
             let Some(binary) = agent.binary() else {
@@ -342,14 +333,12 @@ pub fn install_opencode_at(config_path: &Path, package: &str) -> InstallOutcome 
 }
 
 fn opencode_list_has(root: &Value, package: &str) -> bool {
-    root.get("plugin")
-        .and_then(Value::as_array)
-        .is_some_and(|plugins| {
-            plugins
-                .iter()
-                .filter_map(Value::as_str)
-                .any(|entry| entry == package || entry.starts_with(&format!("{package}@")))
-        })
+    root.get("plugin").and_then(Value::as_array).is_some_and(|plugins| {
+        plugins
+            .iter()
+            .filter_map(Value::as_str)
+            .any(|entry| entry == package || entry.starts_with(&format!("{package}@")))
+    })
 }
 
 // ------------------------------------------------------------------
@@ -367,12 +356,9 @@ fn read_json(path: &Path) -> Result<Option<Value>, String> {
     if raw.trim().is_empty() {
         return Ok(None);
     }
-    serde_json::from_str(&raw).map(Some).map_err(|e| {
-        format!(
-            "{} is not valid JSON ({e}); leaving it untouched",
-            path.display()
-        )
-    })
+    serde_json::from_str(&raw)
+        .map(Some)
+        .map_err(|e| format!("{} is not valid JSON ({e}); leaving it untouched", path.display()))
 }
 
 /// Temp-file + rename in the destination directory, mirroring `settings::write`.
@@ -382,11 +368,9 @@ fn write_json_atomic(path: &Path, value: &Value) -> Result<(), String> {
         .ok_or_else(|| format!("{} has no parent directory", path.display()))?;
     std::fs::create_dir_all(dir).map_err(|e| format!("mkdir {}: {e}", dir.display()))?;
 
-    let serialized = serde_json::to_string_pretty(value)
-        .map_err(|e| format!("serialize {}: {e}", path.display()))?;
+    let serialized = serde_json::to_string_pretty(value).map_err(|e| format!("serialize {}: {e}", path.display()))?;
 
-    let mut tmp = tempfile::NamedTempFile::new_in(dir)
-        .map_err(|e| format!("create temp in {}: {e}", dir.display()))?;
+    let mut tmp = tempfile::NamedTempFile::new_in(dir).map_err(|e| format!("create temp in {}: {e}", dir.display()))?;
     use std::io::Write;
     tmp.write_all(serialized.as_bytes())
         .map_err(|e| format!("write temp: {e}"))?;
@@ -452,10 +436,7 @@ mod tests {
 
     #[test]
     fn manual_hints_name_the_real_commands() {
-        assert_eq!(
-            manual_hint(AgentKind::Claude),
-            "claude plugin install timeline@ohmyc"
-        );
+        assert_eq!(manual_hint(AgentKind::Claude), "claude plugin install timeline@ohmyc");
         assert_eq!(manual_hint(AgentKind::Codex), "codex plugin add timeline@ohmyc");
     }
 
@@ -670,9 +651,7 @@ mod tests {
     fn result_flattens_agent_and_outcome_onto_one_object() {
         let value = serde_json::to_value(AgentInstallResult {
             agent: AgentKind::Codex,
-            outcome: InstallOutcome::Failed {
-                reason: "boom".into(),
-            },
+            outcome: InstallOutcome::Failed { reason: "boom".into() },
         })
         .unwrap();
         assert_eq!(value["agent"], "codex");
