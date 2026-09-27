@@ -288,11 +288,9 @@ function ProjectRollup({
         onClick={onToggle}
         onKeyDown={e => (e.key === 'Enter' || e.key === ' ') && onToggle()}
         className="grid cursor-pointer grid-cols-[auto_minmax(0,1fr)_auto_auto_auto] items-center gap-3 rounded-md hover:bg-[rgba(255,255,255,0.02)]"
-          // Expanded state gets taller padding so the chevron/content
-          // transition does not feel cramped against the session list below.
         style={{
-          padding: open ? '10px 14px' : '7px 14px',
-          marginBottom: open ? 2 : 1,
+          padding: '7px 14px',
+          marginBottom: 1,
         }}
       >
         <ChevronRight
