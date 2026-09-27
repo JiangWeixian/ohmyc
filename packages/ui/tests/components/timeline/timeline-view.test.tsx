@@ -34,7 +34,7 @@ function installTimelineHandlers(options?: { projects?: string[] }) {
         day: `${currentYear}-06-16`,
         session_count: 1,
         turn_count: 12,
-        token_count: 1500,
+        token_count: 4_238_700_000,
         project_groups: [{
           project: 'alpha',
           sessions: [{
@@ -57,7 +57,7 @@ function installTimelineHandlers(options?: { projects?: string[] }) {
           }],
           session_count: 1,
           turn_count: 12,
-          token_count: 1500,
+          token_count: 4_238_700_000,
           tool_count: 2,
           skill_count: 1,
           agents: ['claude'],
@@ -91,7 +91,7 @@ describe('TimelineView', () => {
     })
     expect(container.textContent).toContain('9 sessions')
     expect(container.textContent).toContain('12 turns')
-    expect(container.textContent).toContain('1.5k tokens')
+    expect(container.textContent).toContain('4.2B tokens')
     expect(container.textContent).toContain('older sessions hidden')
   })
 

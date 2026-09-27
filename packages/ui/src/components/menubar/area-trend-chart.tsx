@@ -16,12 +16,12 @@ import {
   YAxis,
 } from 'recharts'
 
-import { formatTokens } from './format-tokens'
 import {
   type ChartConfig,
   ChartContainer,
   ChartTooltip,
 } from '@/components/chart'
+import { formatTokens } from '@/lib/format-tokens'
 
 import type { HeatmapPoint } from '@/hooks/use-timeline'
 

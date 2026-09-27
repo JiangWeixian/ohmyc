@@ -4,9 +4,9 @@ import {
   it,
 } from 'vitest'
 
-import { formatTokens } from '../src/components/menubar/format-tokens'
+import { formatTokens } from '../src/lib/format-tokens'
 
-describe('menu bar token units', () => {
+describe('shared token units', () => {
   it.each([
     [0, '0'],
     [999, '999'],
@@ -16,6 +16,7 @@ describe('menu bar token units', () => {
     [4_487_865, '4.5M'],
     [999_999_999, '1B'],
     [2_722_942_212, '2.7B'],
+    [4_238_700_000, '4.2B'],
     [999_999_999_999, '1T'],
     [1_250_000_000_000, '1.3T'],
   ])('formats %i as %s', (value, expected) => {

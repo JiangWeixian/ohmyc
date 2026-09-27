@@ -6,6 +6,7 @@ import { ChevronRight } from 'lucide-react'
 import { useMemo, useState } from 'react'
 
 import { AgentGlyph } from '@/components/agent-glyph'
+import { formatTokens as formatTokenValue } from '@/lib/format-tokens'
 import { totalSessionTokens } from '@/lib/token-usage'
 
 import type {
@@ -71,15 +72,8 @@ function formatDayHeading(day: string): string {
   return day === TODAY_ISO ? `${text} · Today` : text
 }
 
-// Compact k/M formatting matches the heatmap legend for page-wide consistency.
 function formatTokens(n: number): string {
-  if (n >= 1_000_000) {
-    return `${(n / 1_000_000).toFixed(1)}M tokens`
-  }
-  if (n >= 1000) {
-    return `${Math.round(n / 1000)}k tokens`
-  }
-  return `${n} tokens`
+  return `${formatTokenValue(n)} tokens`
 }
 
 function pickDotClass(bucket: number): 'l0' | 'l1' | 'l2' | 'l3' {

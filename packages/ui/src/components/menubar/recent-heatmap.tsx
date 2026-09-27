@@ -4,7 +4,7 @@
 
 import { useState } from 'react'
 
-import { formatTokens } from './format-tokens'
+import { formatTokens } from '@/lib/format-tokens'
 
 import type { HeatmapPoint } from '@/hooks/use-timeline'
 

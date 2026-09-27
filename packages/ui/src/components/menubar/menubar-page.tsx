@@ -4,7 +4,6 @@
 import { useEffect, useState } from 'react'
 
 import { AreaTrendChart } from './area-trend-chart'
-import { formatTokens } from './format-tokens'
 import { MenubarOnboard } from './menubar-onboard'
 import { RecentHeatmap } from './recent-heatmap'
 import { menubarPopoverStyles } from './styles'
@@ -16,6 +15,7 @@ import {
   useTimelineRangeSummary,
   useTimelineStatus,
 } from '@/hooks/use-timeline'
+import { formatTokens } from '@/lib/format-tokens'
 
 import type { SetupStatus } from '@/hooks/use-setup-status'
 

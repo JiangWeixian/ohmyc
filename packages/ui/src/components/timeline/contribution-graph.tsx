@@ -10,6 +10,7 @@ import {
 } from 'react'
 
 import { heatmapCardStyles } from './styles'
+import { formatTokens } from '@/lib/format-tokens'
 
 import type { HeatmapPoint, TimelineMetric } from '@/hooks/use-timeline'
 
@@ -310,7 +311,7 @@ export function ContributionGraph({ year, metric, data, onSelectDay }: Contribut
               }}
             >
               {metric === 'tokens'
-                ? `${formatNumber(hover.point.value)} tokens`
+                ? `${formatTokens(hover.point.value)} tokens`
                 : `${formatNumber(hover.point.value)} ${metric}`}
               <span style={{ display: 'block', color: 'var(--text-tertiary)', fontSize: '0.75rem', marginTop: '0.25rem' }}>
                 {formatDay(hover.point.date)}
