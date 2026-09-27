@@ -149,7 +149,7 @@ export function TimelineView() {
             options={yearOptions.map(y => ({ value: String(y), label: String(y) }))}
           />
           <span className="flex-1" />
-          <span title="Session lifetime totals; recent list may be paginated" className="text-xs timeline-stats">
+          <span className="text-xs timeline-stats">
             <b>{(status?.sessionCount ?? 0).toLocaleString()}</b>
             {' sessions '}
             <span className="sep mx-1">·</span>
@@ -163,10 +163,6 @@ export function TimelineView() {
           </span>
         </div>
 
-        <p className="mb-2 text-xs text-[var(--text-secondary)]">
-          {status?.usageMode === 'events' ? 'Activity by usage time' : 'Activity by session start'}
-          {metric === 'tokens' && status?.usageIncomplete ? ' · Partial history: some sessions lack timestamped usage' : ''}
-        </p>
         {/* Heatmap */}
         <div className="mb-9">
           {heatmapLoading || !heatmap
@@ -188,7 +184,7 @@ export function TimelineView() {
         {/* Events header */}
         <div className="mb-3 flex items-baseline justify-between">
           <h3 className="text-sm font-[590] tracking-normal text-[var(--text-primary)]">
-            Sessions · lifetime totals
+            Recent activity
           </h3>
           {events?.nextCursor && (
             <span

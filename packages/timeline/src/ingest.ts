@@ -192,6 +192,8 @@ function parseCodexTranscript(
   let tokensInput = 0
   let tokensOutput = 0
   let tokensCached = 0
+  let hasCumulativeUsage = false
+  const turnUsage = { input: 0, output: 0, cached: 0 }
   const toolCounts = new Map<string, number>()
   const skills = new Set<string>()
 
@@ -221,9 +223,9 @@ function parseCodexTranscript(
     if (parsed.type === 'turn.completed') {
       const usage = extractCodexTokenUsage(parsed.usage)
       if (usage) {
-        tokensInput = usage.input ?? tokensInput
-        tokensOutput = usage.output ?? tokensOutput
-        tokensCached = usage.cached ?? tokensCached
+        turnUsage.input += usage.input ?? 0
+        turnUsage.output += usage.output ?? 0
+        turnUsage.cached += usage.cached ?? 0
       }
     }
 
@@ -248,6 +250,7 @@ function parseCodexTranscript(
     if (parsed.type === 'event_msg' && payload.type === 'token_count') {
       const usage = extractCodexTokenUsage(payload.info)
       if (usage) {
+        hasCumulativeUsage = true
         tokensInput = usage.input ?? tokensInput
         tokensOutput = usage.output ?? tokensOutput
         tokensCached = usage.cached ?? tokensCached
@@ -282,6 +285,12 @@ function parseCodexTranscript(
         }
       }
     }
+  }
+
+  if (!hasCumulativeUsage) {
+    tokensInput = turnUsage.input
+    tokensOutput = turnUsage.output
+    tokensCached = turnUsage.cached
   }
 
   const summary = firstUserMessage

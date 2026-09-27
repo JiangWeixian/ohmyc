@@ -415,7 +415,7 @@ There is no standard header chrome. Breadcrumbs, source switchers, search trigge
 
 | Date | Decision | Rationale |
 |------|----------|-----------|
-| 2026-09-27 | Preserve original popover layout with usage-time statistics | User requested removal of the added scope text and restoration of the original height. UI additions require an explicit request. Legacy statistics remain available from the tray menu. |
+| 2026-09-27 | Preserve existing layouts with usage-time statistics | User requested removal of the added scope text and restoration of the original popover height. UI additions require an explicit request; do not add scope labels to Timeline or rename existing Monitor/Timeline labels. Legacy statistics and scope explanations remain available from the native tray menu and tooltip. |
 | 2026-09-27 | Native menu bar aggregates the current local calendar week | Monday-to-Sunday totals match the user’s calendar-week expectation; both metrics share the window and the tooltip identifies it. |
 | 2026-09-26 | Show today's tokens and sessions directly in the macOS menu bar | Two compact label-over-value columns make activity visible without opening the app. Native template rendering adapts to menu bar appearance; a background read-only aggregate keeps updates independent of the React popover. Fixed width prevents neighboring items moving as totals change. |
 | 2026-04-25 | Spacing: Tailwind classes | User prefers Tailwind over CSS variables for spacing |

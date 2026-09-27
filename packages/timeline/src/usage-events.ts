@@ -20,12 +20,25 @@ export function parseUsageEvents(content: string, source: string): UsageDetails 
   if (!['codex', 'claude', 'claude-cli'].includes(source)) {
     return { events: [], status: 'unavailable' }
   }
+  const lines = content.split('\n')
+  // Native rollouts and SDK turn streams have different counter semantics.
+  // Prefer the cumulative stream when both representations are present.
+  const usesCumulative = source === 'codex' && lines.some((line) => {
+    try {
+      const row = record(JSON.parse(line))
+      const payload = record(row?.payload)
+      const info = row?.type === 'event_msg' && payload?.type === 'token_count' ? record(payload.info) : undefined
+      return !!(record(info?.total_token_usage) ?? (info && 'input_tokens' in info ? info : undefined))
+    } catch {
+      return false
+    }
+  })
   let partial = false
   let model: string | null = null
   let offset = 0
   let previous = { input: 0, output: 0, cached: 0 }
   const events = new Map<string, UsageEvent>()
-  for (const line of content.split('\n')) {
+  for (const line of lines) {
     const position = offset
     offset += Buffer.byteLength(line, 'utf8') + 1
     if (!line.trim()) {
@@ -47,6 +60,10 @@ export function parseUsageEvents(content: string, source: string): UsageDetails 
     }
     const occurredAt = typeof row.timestamp === 'string' ? Date.parse(row.timestamp) : Number.NaN
     if (source === 'codex') {
+      const perTurn = row.type === 'turn.completed'
+      if (perTurn && usesCumulative) {
+        continue
+      }
       const info = row.type === 'event_msg' && payload?.type === 'token_count' ? record(payload.info) : undefined
       const usage = record(info?.total_token_usage) ?? (info && 'input_tokens' in info ? info : undefined)
         ?? (row.type === 'turn.completed' ? record(row.usage) : undefined)
@@ -60,8 +77,10 @@ export function parseUsageEvents(content: string, source: string): UsageDetails 
         partial = true
         continue
       }
-      const delta = { input: input - previous.input, output: output - previous.output, cached: cached - previous.cached }
-      previous = { input, output, cached }
+      const delta = perTurn ? { input, output, cached } : { input: input - previous.input, output: output - previous.output, cached: cached - previous.cached }
+      if (!perTurn) {
+        previous = { input, output, cached }
+      }
       if (!Number.isFinite(occurredAt) || delta.input < 0 || delta.output < 0 || delta.cached < 0 || delta.cached > delta.input) {
         partial = true
         continue

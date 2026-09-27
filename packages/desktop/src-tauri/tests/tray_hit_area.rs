@@ -6,6 +6,9 @@ fn main() {
     use ohmyc_desktop_lib::tray_stats::macos::resize_hit_targets;
 
     let mtm = MainThreadMarker::new().expect("AppKit main thread");
+    // This standalone harness has no Tauri application to initialize AppKit.
+    // Establish its WindowServer connection before creating a status item.
+    let _app = objc2_app_kit::NSApplication::sharedApplication(mtm);
     let tray = tray_icon::TrayIconBuilder::new().build().unwrap();
     let item = tray.ns_status_item().unwrap();
     let button = item.button(mtm).unwrap();

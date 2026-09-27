@@ -91,4 +91,28 @@ describe('parseTranscript (Codex JSONL)', () => {
       expect(data.tokensCached).toBe(45)
     })
   })
+  it.each([50, 150])('sums per-turn usage including a second input of %i', (secondInput) => {
+    withTranscript([
+      JSON.stringify({ timestamp: '2026-09-20T12:00:00Z', type: 'turn.completed', usage: { input_tokens: 100, cached_input_tokens: 40, output_tokens: 10 } }),
+      JSON.stringify({ timestamp: '2026-09-21T12:00:00Z', type: 'turn.completed', usage: { input_tokens: secondInput, cached_input_tokens: 20, output_tokens: 20 } }),
+    ], (transcriptPath) => {
+      const data = parseTranscript('turns', transcriptPath, { agentName: 'codex' })
+      expect(data.tokensInput).toBe(100 + secondInput)
+      expect(data.tokensOutput).toBe(30)
+      expect(data.tokensCached).toBe(60)
+      expect(data.usageDetails?.events.map(e => e.tokensInput + e.tokensOutput + e.tokensCached)).toEqual([110, secondInput + 20])
+      expect(data.usageDetails?.status).toBe('complete')
+    })
+  })
+
+  it('uses cumulative snapshots without adding a duplicate turn summary', () => {
+    withTranscript([
+      JSON.stringify({ timestamp: '2026-09-20T12:00:00Z', type: 'event_msg', payload: { type: 'token_count', info: { total_token_usage: { input_tokens: 100, cached_input_tokens: 40, output_tokens: 10 } } } }),
+      JSON.stringify({ timestamp: '2026-09-20T12:01:00Z', type: 'turn.completed', usage: { input_tokens: 100, cached_input_tokens: 40, output_tokens: 10 } }),
+    ], (transcriptPath) => {
+      const data = parseTranscript('mixed', transcriptPath, { agentName: 'codex' })
+      expect(data.tokensInput + data.tokensOutput).toBe(110)
+      expect(data.usageDetails?.events).toHaveLength(1)
+    })
+  })
 })
