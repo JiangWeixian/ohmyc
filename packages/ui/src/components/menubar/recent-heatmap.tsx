@@ -4,6 +4,8 @@
 
 import { useState } from 'react'
 
+import { formatTokens } from './format-tokens'
+
 import type { HeatmapPoint } from '@/hooks/use-timeline'
 
 interface RecentHeatmapProps {
@@ -38,16 +40,6 @@ function bucketFor(value: number, max: number): 0 | 1 | 2 | 3 | 4 {
     return 3
   }
   return 4
-}
-
-function formatTokens(n: number): string {
-  if (n >= 1_000_000) {
-    return `${Math.round(n / 100_000) / 10}M`
-  }
-  if (n >= 1000) {
-    return `${Math.round(n / 100) / 10}k`
-  }
-  return String(n)
 }
 
 function isoDate(d: Date): string {

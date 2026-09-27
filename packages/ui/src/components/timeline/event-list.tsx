@@ -6,6 +6,7 @@ import { ChevronRight } from 'lucide-react'
 import { useMemo, useState } from 'react'
 
 import { AgentGlyph } from '@/components/agent-glyph'
+import { totalSessionTokens } from '@/lib/token-usage'
 
 import type {
   DayEvents,
@@ -356,7 +357,7 @@ function ProjectRollup({
 // ── SessionItem ───────────────────────────────────────────────────
 
 function SessionItem({ session, bucket }: { session: SessionRow; bucket: 0 | 1 | 2 | 3 }) {
-  const totalTokens = session.tokens_input + session.tokens_output + session.tokens_cached
+  const totalTokens = totalSessionTokens(session)
   // Summaries sourced from the user's first message are wrapped in quotes to
   // visually distinguish verbatim prompts from AI-generated summaries.
   const isQuoted = session.summary_source === 'first_message'

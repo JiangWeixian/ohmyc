@@ -16,6 +16,7 @@ import {
   YAxis,
 } from 'recharts'
 
+import { formatTokens } from './format-tokens'
 import {
   type ChartConfig,
   ChartContainer,
@@ -35,16 +36,6 @@ const MONTH_NAMES = [
   'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
 ] as const
 const FUTURE_PADDING_DAYS = 14
-
-function formatTokens(n: number): string {
-  if (n >= 1_000_000) {
-    return `${Math.round(n / 100_000) / 10}M`
-  }
-  if (n >= 1000) {
-    return `${Math.round(n / 100) / 10}k`
-  }
-  return String(n)
-}
 
 function longDate(iso: string): string {
   const d = new Date(`${iso}T00:00:00Z`)

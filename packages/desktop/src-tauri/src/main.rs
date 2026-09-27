@@ -131,6 +131,9 @@ fn main() {
                 })
                 .build(app)?;
 
+            #[cfg(target_os = "macos")]
+            ohmyc_desktop_lib::tray_stats::macos::start(_tray)?;
+
             let popover_window = app.get_webview_window("popover").unwrap();
 
             // The web layer paints the popover chrome. Avoid macOS vibrancy here:

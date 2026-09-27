@@ -23,7 +23,7 @@ export interface SessionRow {
   duration_ms: number
   /** Number of user turns (natural-language messages only). */
   turns: number
-  /** Total input tokens consumed across all assistant turns. */
+  /** Raw input total. Codex includes cached input; do not add its cache again. */
   tokens_input: number
   /** Total output tokens generated across all assistant turns. */
   tokens_output: number
@@ -85,7 +85,7 @@ export interface ParsedSessionData {
   durationMs: number
   /** Number of user turns (natural-language messages only). */
   turns: number
-  /** Total input tokens consumed. */
+  /** Raw input total. Codex includes cached input; readers handle source semantics. */
   tokensInput: number
   /** Total output tokens generated. */
   tokensOutput: number

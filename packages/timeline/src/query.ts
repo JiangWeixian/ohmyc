@@ -4,6 +4,8 @@
 // list, year list, and sync-status queries against the SQLite DB.
 // ============================================================
 
+import { TOKEN_TOTAL_SQL, totalSessionTokens } from './tokens.js'
+
 import type {
   DayEvents,
   EventsParams,
@@ -85,7 +87,8 @@ export function getHeatmap(
       break
     }
     case 'tokens': {
-      selectMetric = 'SUM(tokens_input + tokens_output + tokens_cached)'
+      // Codex input already includes cached input; preserve the raw stored fields.
+      selectMetric = `SUM(${TOKEN_TOTAL_SQL})`
       break
     }
     default: {
@@ -214,7 +217,7 @@ export function getEvents(
     group.sessions.push(session)
     group.session_count += 1
     group.turn_count += session.turns
-    group.token_count += session.tokens_input + session.tokens_output + session.tokens_cached
+    group.token_count += totalSessionTokens(session)
     if (session.agent_name && !group.agents.includes(session.agent_name)) {
       group.agents.push(session.agent_name)
     }

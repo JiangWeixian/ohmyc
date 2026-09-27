@@ -29,7 +29,7 @@ describe('parseTranscript (Claude JSONL)', () => {
     expect(data.turns).toBe(2)
     expect(data.tokensInput).toBe(18)
     expect(data.tokensOutput).toBe(37)
-    expect(data.tokensCached).toBe(30)
+    expect(data.tokensCached).toBe(80)
     expect(data.model).toBe('claude-sonnet-4')
     expect(data.summary).toBe('Helped user set up timeline feature in their project. Next: review the wireframe. (disable recaps in /config)')
     expect(data.summarySource).toBe('auto')

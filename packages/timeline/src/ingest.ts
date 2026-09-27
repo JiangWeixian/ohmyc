@@ -3,11 +3,11 @@
 // Parses Claude Code JSONL transcript files and upserts
 // session data (turns, tokens, tools, skills) into SQLite.
 // ============================================================
-
 import { readFileSync, statSync } from 'node:fs'
 import os from 'node:os'
 import path from 'node:path'
 
+import { collectClaudeUsage } from './claude-usage.js'
 import { createWriter } from './writer.js'
 
 import type { IngestResult, ParsedSessionData } from './schema.js'
@@ -56,9 +56,7 @@ export function parseTranscript(
   let lastTimestamp: number | null = null
   let turns = 0
   let firstUserMessage: string | null = null
-  let tokensInput = 0
-  let tokensOutput = 0
-  let tokensCached = 0
+  const usageRecords: unknown[] = []
   const toolCounts = new Map<string, number>()
   const skills = new Set<string>()
   let summary: string | null = null
@@ -113,27 +111,7 @@ export function parseTranscript(
         if (typeof message.model === 'string') {
           model = message.model
         }
-        const usage = message.usage as Record<string, unknown> | undefined
-        if (usage) {
-          const iterations = usage.iterations as Array<Record<string, unknown>> | undefined
-          if (iterations && iterations.length > 0) {
-            for (const iter of iterations) {
-              tokensInput += Number(iter.input_tokens) || 0
-              tokensOutput += Number(iter.output_tokens) || 0
-            }
-            // Only record cache from the last assistant message (cumulative state)
-            const lastIter = iterations.at(-1)
-            if (lastIter) {
-              tokensCached = Number(lastIter.cache_read_input_tokens) || 0
-              tokensCached += Number(lastIter.cache_creation_input_tokens) || 0
-            }
-          } else {
-            tokensInput += Number(usage.input_tokens) || 0
-            tokensOutput += Number(usage.output_tokens) || 0
-            tokensCached = Number(usage.cache_read_input_tokens) || 0
-            tokensCached += Number(usage.cache_creation_input_tokens) || 0
-          }
-        }
+        usageRecords.push(parsed)
 
         const content = message.content as Array<Record<string, unknown>> | undefined
         if (Array.isArray(content)) {
@@ -184,9 +162,7 @@ export function parseTranscript(
     endedAt,
     durationMs,
     turns,
-    tokensInput,
-    tokensOutput,
-    tokensCached,
+    ...collectClaudeUsage(usageRecords),
     summary,
     summarySource,
     transcriptPath,
@@ -357,6 +333,7 @@ function extractCodexTokenUsage(value: unknown): CodexTokenUsage | null {
     return null
   }
 
+  // Preserve Codex raw totals: input includes cache; readers must count cache once.
   const usage: CodexTokenUsage = {}
   const input = numberValue(candidate.input_tokens)
   const output = numberValue(candidate.output_tokens)

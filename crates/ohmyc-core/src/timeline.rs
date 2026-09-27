@@ -13,6 +13,19 @@ mod test_db;
 
 const ENV_HOME: &str = "OHMYC_HOME";
 const DB_FILENAME: &str = "timeline.db";
+// Mirrors @ohmyc/timeline/tokens: Codex input already contains cache.
+const TOKEN_TOTAL_SQL: &str =
+    "tokens_input + tokens_output + CASE WHEN agent_name = 'codex' THEN 0 ELSE tokens_cached END";
+
+fn total_session_tokens(session: &SessionRow) -> i64 {
+    session.tokens_input
+        + session.tokens_output
+        + if session.agent_name.as_deref() == Some("codex") {
+            0
+        } else {
+            session.tokens_cached
+        }
+}
 
 /// Returns the SQLite path used by the dashboard plugin and read by this crate.
 ///
@@ -177,6 +190,40 @@ fn generate_date_range(from: &str, to: &str) -> Result<Vec<String>, ApiError> {
     Ok(out)
 }
 
+/// Recorded session totals in a half-open timestamp range.
+/// Codex input includes cached input; other sources store it separately.
+#[derive(Debug, Default, Clone, Copy, PartialEq, Eq)]
+pub struct TimelineSummary {
+    pub sessions: i64,
+    pub tokens: i64,
+}
+
+pub fn summary(conn: &Connection, from_ms: i64, to_ms: i64) -> Result<TimelineSummary, ApiError> {
+    if from_ms >= to_ms {
+        return Err(ApiError::InvalidInput("summary requires from < to".into()));
+    }
+    conn.query_row(
+        &format!("SELECT COUNT(*), COALESCE(SUM({TOKEN_TOTAL_SQL}), 0) FROM sessions WHERE started_at >= ?1 AND started_at < ?2"),
+        rusqlite::params![from_ms, to_ms],
+        |row| {
+            Ok(TimelineSummary {
+                sessions: row.get(0)?,
+                tokens: row.get(1)?,
+            })
+        },
+    )
+    .map_err(|e| ApiError::Internal(format!("query summary: {e}")))
+}
+
+/// Read an existing store without creating files, changing pragmas, or migrating schema.
+pub fn read_summary(path: &std::path::Path, from_ms: i64, to_ms: i64) -> Result<TimelineSummary, ApiError> {
+    let conn = Connection::open_with_flags(path, rusqlite::OpenFlags::SQLITE_OPEN_READ_ONLY)
+        .map_err(|e| ApiError::Io(format!("open timeline: {e}")))?;
+    conn.busy_timeout(std::time::Duration::from_millis(250))
+        .map_err(|e| ApiError::Internal(format!("set read timeout: {e}")))?;
+    summary(&conn, from_ms, to_ms)
+}
+
 pub fn heatmap(conn: &Connection, q: HeatmapQuery) -> Result<Vec<HeatmapPoint>, ApiError> {
     let dates = generate_date_range(&q.from, &q.to)?;
     if dates.is_empty() {
@@ -187,9 +234,9 @@ pub fn heatmap(conn: &Connection, q: HeatmapQuery) -> Result<Vec<HeatmapPoint>, 
     let end_ms = date_to_utc_ms(parse_ymd(&q.to)?) + MS_PER_DAY - 1;
 
     let select_metric = match q.metric {
-        Metric::Sessions => "COUNT(*)",
-        Metric::Turns => "SUM(turns)",
-        Metric::Tokens => "SUM(tokens_input + tokens_output + tokens_cached)",
+        Metric::Sessions => "COUNT(*)".to_string(),
+        Metric::Turns => "SUM(turns)".to_string(),
+        Metric::Tokens => format!("SUM({TOKEN_TOTAL_SQL})"),
     };
 
     let mut sql = format!(
@@ -344,7 +391,7 @@ pub fn events(conn: &Connection, q: EventsQuery) -> Result<EventsResult, ApiErro
         group.sessions.push(session.clone());
         group.session_count += 1;
         group.turn_count += session.turns;
-        group.token_count += session.tokens_input + session.tokens_output + session.tokens_cached;
+        group.token_count += total_session_tokens(session);
         if let Some(agent) = session.agent_name.as_ref() {
             if !group.agents.contains(agent) {
                 group.agents.push(agent.clone());
@@ -623,6 +670,82 @@ mod tests {
 
     use super::test_db::{date_ms, empty_db, insert_session};
     use rusqlite::Connection;
+
+    #[test]
+    fn summary_uses_half_open_timestamp_range_and_all_token_kinds() {
+        let conn = empty_db();
+        insert_session(&conn, "before", "a", 999, 1, 900, 0, 0);
+        insert_session(&conn, "start", "a", 1000, 1, 100, 20, 5);
+        insert_session(&conn, "inside", "b", 1999, 1, 200, 40, 10);
+        insert_session(&conn, "end", "b", 2000, 1, 900, 0, 0);
+        assert_eq!(
+            summary(&conn, 1000, 2000).unwrap(),
+            TimelineSummary {
+                sessions: 2,
+                tokens: 375
+            }
+        );
+        assert_eq!(summary(&conn, 3000, 4000).unwrap(), TimelineSummary::default());
+        assert!(summary(&conn, 2000, 1000).is_err());
+    }
+
+    #[test]
+    fn read_summary_does_not_create_a_missing_store_and_recovers_when_created() {
+        let dir = tempfile::tempdir().unwrap();
+        let path = dir.path().join("timeline.db");
+        assert!(read_summary(&path, 0, 2000).is_err());
+        assert!(!path.exists());
+        let conn = Connection::open(&path).unwrap();
+        conn.execute_batch("CREATE TABLE sessions(started_at INTEGER, tokens_input INTEGER, tokens_output INTEGER, tokens_cached INTEGER, agent_name TEXT);
+            INSERT INTO sessions VALUES(1000, 10, 20, 30, NULL);").unwrap();
+        assert_eq!(
+            read_summary(&path, 0, 2000).unwrap(),
+            TimelineSummary {
+                sessions: 1,
+                tokens: 60
+            }
+        );
+        drop(conn);
+        std::fs::write(&path, b"invalid sqlite").unwrap();
+        assert!(read_summary(&path, 0, 2000).is_err());
+    }
+
+    #[test]
+    fn codex_cached_input_is_not_added_twice() {
+        let conn = empty_db();
+        let start = date_ms("2026-09-27");
+        insert_session(&conn, "codex", "p", start, 1, 100, 20, 80);
+        insert_session(&conn, "claude", "p", start, 1, 100, 20, 80);
+        conn.execute(
+            "UPDATE sessions SET agent_name = 'codex' WHERE session_id = 'codex'",
+            [],
+        )
+        .unwrap();
+        assert_eq!(summary(&conn, start, start + MS_PER_DAY).unwrap().tokens, 320);
+        let points = heatmap(
+            &conn,
+            HeatmapQuery {
+                from: "2026-09-27".into(),
+                to: "2026-09-27".into(),
+                metric: Metric::Tokens,
+                project: None,
+            },
+        )
+        .unwrap();
+        assert_eq!(points[0].value, 320);
+        let grouped = events(
+            &conn,
+            EventsQuery {
+                from: Some("2026-09-27".into()),
+                to: Some("2026-09-27".into()),
+                project: None,
+                limit: None,
+                cursor: None,
+            },
+        )
+        .unwrap();
+        assert_eq!(grouped.days[0].token_count, 320);
+    }
 
     fn seeded_three_days() -> Connection {
         let conn = empty_db();

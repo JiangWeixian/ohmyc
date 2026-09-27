@@ -4,6 +4,7 @@
 import { useMemo, useState } from 'react'
 
 import { AreaTrendChart } from './area-trend-chart'
+import { formatTokens } from './format-tokens'
 import { MenubarOnboard } from './menubar-onboard'
 import { RecentHeatmap } from './recent-heatmap'
 import { menubarPopoverStyles } from './styles'
@@ -22,16 +23,6 @@ function subDays(d: Date, n: number): Date {
   const copy = new Date(d)
   copy.setUTCDate(copy.getUTCDate() - n)
   return copy
-}
-
-function formatTokens(n: number): string {
-  if (n >= 1_000_000) {
-    return `${Math.round(n / 100_000) / 10}M`
-  }
-  if (n >= 1000) {
-    return `${Math.round(n / 100) / 10}k`
-  }
-  return String(n)
 }
 
 function findPeak(points: { date: string; value: number }[]): { date: string; value: number } | null {

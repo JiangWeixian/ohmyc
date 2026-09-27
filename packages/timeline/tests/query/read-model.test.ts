@@ -70,6 +70,15 @@ describe('query', () => {
     rmSync(tmpDir, { recursive: true, force: true })
   })
 
+  it('counts Codex cached input once while retaining other sources cache usage', () => {
+    db.prepare("UPDATE sessions SET agent_name = 'codex' WHERE session_id = 's2'").run()
+    const points = getHeatmap(db, { from: '2026-04-29', to: '2026-04-29', metric: 'tokens' })
+    expect(points).toEqual([{ date: '2026-04-29', value: 930 }])
+    const result = getEvents(db, { from: '2026-04-29', to: '2026-04-29' })
+    expect(result.days[0].projectGroups.find(p => p.project === 'project-a')?.token_count).toBe(130)
+    expect(getSession(db, 's2')?.tokens_cached).toBe(20)
+  })
+
   describe('getHeatmap', () => {
     it('returns correct daily session counts', () => {
       const result = getHeatmap(db, {
