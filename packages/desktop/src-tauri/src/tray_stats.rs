@@ -51,7 +51,7 @@ impl Display {
                 tokens: compact(total.tokens),
                 sessions: compact(total.sessions),
                 description: format!(
-                    "OhMyC — This week (Mon–Sun, local time; today {date}): {} tokens, {} sessions. Tokens include input and output, with cache counted once, for sessions started in this local calendar week. Recorded data; refreshes every 30 seconds.",
+                    "OhMyC — This week (Mon–Sun, local time; today {date}): {} tokens, {} sessions. Tokens include input and output, with cache counted once, within the selected statistics basis. Recorded data; refreshes every 30 seconds.",
                     total.tokens, total.sessions
                 ),
             },

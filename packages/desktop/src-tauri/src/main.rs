@@ -3,11 +3,11 @@
 use ohmyc_desktop_lib::popover::{position_under_tray, MonitorBounds, PopoverState, TrayRect};
 use ohmyc_desktop_lib::tray::{classify_click, TrayClick, TrayMenuId};
 use std::sync::Mutex;
-use tauri::menu::{Menu, MenuItem};
+use tauri::menu::{CheckMenuItem, Menu, MenuItem};
 use tauri::tray::{MouseButton, MouseButtonState, TrayIconBuilder, TrayIconEvent};
 #[cfg(not(debug_assertions))]
 use tauri::WindowEvent;
-use tauri::{Manager, PhysicalSize};
+use tauri::{Emitter, Manager, PhysicalSize};
 
 struct PopoverGuard(Mutex<PopoverState>);
 
@@ -23,6 +23,7 @@ fn main() {
             ohmyc_desktop_lib::api::timeline::timeline_projects,
             ohmyc_desktop_lib::api::timeline::timeline_years,
             ohmyc_desktop_lib::api::timeline::timeline_status,
+            ohmyc_desktop_lib::api::timeline::timeline_summary,
             ohmyc_desktop_lib::api::setup::setup_status,
             ohmyc_desktop_lib::api::agents::agents_list,
             ohmyc_desktop_lib::api::agents::agents_get,
@@ -73,7 +74,19 @@ fn main() {
                 Some("CmdOrCtrl+O"),
             )?;
             let quit_item = MenuItem::with_id(app, TrayMenuId::Quit.as_str(), "Quit OhMyC", true, Some("CmdOrCtrl+Q"))?;
-            let menu = Menu::with_items(app, &[&open_item, &quit_item])?;
+            let current_mode = ohmyc_core::timeline::default_db_path()
+                .ok()
+                .and_then(|p| ohmyc_core::timeline::open_db(&p).ok())
+                .is_some_and(|c| ohmyc_core::timeline::usage::event_mode(&c));
+            let usage_item = CheckMenuItem::with_id(
+                app,
+                "usage-events",
+                "Count usage when it occurred",
+                true,
+                current_mode,
+                None::<&str>,
+            )?;
+            let menu = Menu::with_items(app, &[&open_item, &usage_item, &quit_item])?;
 
             // Tray icon
             let _tray = TrayIconBuilder::with_id("main")
@@ -81,12 +94,27 @@ fn main() {
                 .icon_as_template(true)
                 .menu(&menu)
                 .show_menu_on_left_click(false)
-                .on_menu_event(|app, event| match TrayMenuId::from_id(event.id.as_ref()) {
-                    Some(TrayMenuId::Quit) => app.exit(0),
-                    Some(TrayMenuId::OpenMain) => {
-                        let _ = ohmyc_desktop_lib::windows::open_main_window(app.clone());
+                .on_menu_event(move |app, event| {
+                    if event.id.as_ref() == "usage-events" {
+                        let enabled = usage_item.is_checked().unwrap_or(false);
+                        let result = ohmyc_core::timeline::default_db_path()
+                            .and_then(|p| ohmyc_core::timeline::open_db(&p))
+                            .and_then(|c| ohmyc_core::timeline::usage::set_mode(&c, enabled));
+                        if let Err(error) = result {
+                            let _ = usage_item.set_checked(!enabled);
+                            eprintln!("Could not switch usage mode: {error}");
+                        } else {
+                            let _ = app.emit("fs:changed", serde_json::json!({ "kind": "timeline_db", "path": "" }));
+                        }
+                        return;
                     }
-                    None => {}
+                    match TrayMenuId::from_id(event.id.as_ref()) {
+                        Some(TrayMenuId::Quit) => app.exit(0),
+                        Some(TrayMenuId::OpenMain) => {
+                            let _ = ohmyc_desktop_lib::windows::open_main_window(app.clone());
+                        }
+                        None => {}
+                    }
                 })
                 .on_tray_icon_event(|tray, event| {
                     if let TrayIconEvent::Click {

@@ -1,6 +1,9 @@
 //! Timeline read layer — mirrors packages/timeline/src/query.ts behavior
-//! exactly. Reads SQLite at `$OHMYC_HOME/timeline.db` (default
-//! `~/.config/ohmyc/timeline.db`) via rusqlite. All date math is UTC.
+//! and reads SQLite at `$OHMYC_HOME/timeline.db` (default
+//! `~/.config/ohmyc/timeline.db`) via rusqlite. Legacy session dates are UTC;
+//! usage-event days follow the local calendar.
+
+pub mod usage;
 
 use std::path::PathBuf;
 
@@ -139,6 +142,8 @@ pub struct EventsResult {
 
 #[derive(Debug, Clone, Serialize, PartialEq)]
 pub struct TimelineStatus {
+    pub usage_mode: String,
+    pub usage_incomplete: i64,
     pub session_count: i64,
     pub last_sync_at: Option<i64>,
 }
@@ -192,7 +197,7 @@ fn generate_date_range(from: &str, to: &str) -> Result<Vec<String>, ApiError> {
 
 /// Recorded session totals in a half-open timestamp range.
 /// Codex input includes cached input; other sources store it separately.
-#[derive(Debug, Default, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Default, Clone, Copy, PartialEq, Eq, Serialize)]
 pub struct TimelineSummary {
     pub sessions: i64,
     pub tokens: i64,
@@ -201,6 +206,9 @@ pub struct TimelineSummary {
 pub fn summary(conn: &Connection, from_ms: i64, to_ms: i64) -> Result<TimelineSummary, ApiError> {
     if from_ms >= to_ms {
         return Err(ApiError::InvalidInput("summary requires from < to".into()));
+    }
+    if usage::event_mode(conn) {
+        return usage::summary(conn, from_ms, to_ms);
     }
     conn.query_row(
         &format!("SELECT COUNT(*), COALESCE(SUM({TOKEN_TOTAL_SQL}), 0) FROM sessions WHERE started_at >= ?1 AND started_at < ?2"),
@@ -225,6 +233,9 @@ pub fn read_summary(path: &std::path::Path, from_ms: i64, to_ms: i64) -> Result<
 }
 
 pub fn heatmap(conn: &Connection, q: HeatmapQuery) -> Result<Vec<HeatmapPoint>, ApiError> {
+    if usage::event_mode(conn) && !matches!(q.metric, Metric::Turns) {
+        return usage::heatmap(conn, &q);
+    }
     let dates = generate_date_range(&q.from, &q.to)?;
     if dates.is_empty() {
         return Ok(Vec::new());
@@ -570,6 +581,14 @@ pub fn projects(conn: &Connection) -> Result<Vec<String>, ApiError> {
 }
 
 pub fn years(conn: &Connection) -> Result<Vec<i64>, ApiError> {
+    if usage::event_mode(conn) {
+        let mut stmt = conn.prepare("SELECT CAST(strftime('%Y',started_at/1000,'unixepoch') AS INTEGER) AS year FROM sessions UNION SELECT CAST(strftime('%Y',e.occurred_at/1000,'unixepoch','localtime') AS INTEGER) FROM token_usage_events e JOIN sessions s ON s.session_id=e.session_id AND COALESCE(s.agent_name,'unknown')=e.source ORDER BY year").map_err(|e| ApiError::Internal(e.to_string()))?;
+        return stmt
+            .query_map([], |r| r.get(0))
+            .map_err(|e| ApiError::Internal(e.to_string()))?
+            .collect::<Result<Vec<i64>, _>>()
+            .map_err(|e| ApiError::Internal(e.to_string()));
+    }
     let mut stmt = conn
         .prepare(
             "SELECT DISTINCT CAST(strftime('%Y', started_at / 1000, 'unixepoch') AS INTEGER) AS year \
@@ -599,6 +618,8 @@ pub fn status(conn: &Connection) -> Result<TimelineStatus, ApiError> {
         .flatten();
 
     Ok(TimelineStatus {
+        usage_mode: if usage::event_mode(conn) { "events" } else { "session" }.into(),
+        usage_incomplete: usage::incomplete(conn)?,
         session_count,
         last_sync_at,
     })
@@ -608,7 +629,7 @@ use rusqlite::OptionalExtension;
 
 /// Open the timeline database at the given path. Returns an `Io` error if the
 /// file does not exist (we never create it — the dashboard plugin owns
-/// schema + writes; this crate is read-only).
+/// schema + session writes; only the usage-mode preference is writable here).
 pub fn open_db(path: &std::path::Path) -> Result<Connection, ApiError> {
     if !path.exists() {
         return Err(ApiError::Io(format!("timeline db not found at {}", path.display())));

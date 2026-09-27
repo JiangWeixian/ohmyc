@@ -27,6 +27,8 @@ vi.mock('@tauri-apps/api/core', () => ({
 }))
 
 function setupTimelineMock() {
+  setMockHandler('timeline.status', async () => ({ sessionCount: 5, usageMode: 'session' }))
+  setMockHandler('timeline.summary', async () => ({ tokens: 15_000, sessions: 4 }))
   setMockHandler('timeline.heatmap', async (args) => {
     const { metric } = args as { metric: string }
     if (metric === 'tokens') {
@@ -223,4 +225,13 @@ describe('MenubarPage (setup gate)', () => {
     expect(screen.queryByText(/^Activity$/i)).not.toBeInTheDocument()
     expect(container.querySelector('.menubar-popover')).not.toBeInTheDocument()
   })
+})
+
+it('counts a session active on two days once', async () => {
+  __setTransportForTests('mock')
+  setupTimelineMock()
+  setMockHandler('setup.status', async () => ({ state: 'ready' }))
+  setMockHandler('timeline.status', async () => ({ sessionCount: 5, usageMode: 'events', usageIncomplete: 1 }))
+  render(<MenubarPage />, { wrapper })
+  await waitFor(() => expect(document.querySelector('[data-kpi="sessions"]')).toHaveTextContent('4'))
 })

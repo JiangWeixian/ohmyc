@@ -70,7 +70,7 @@ describe('useTimelineStatus', () => {
     }))
     const { result } = renderHook(() => useTimelineStatus(), { wrapper: wrapper() })
     await waitFor(() => expect(result.current.isSuccess).toBe(true))
-    expect(result.current.data).toEqual({ sessionCount: 7, lastSyncAt: 1_700_000_000_000 })
+    expect(result.current.data).toEqual({ usageMode: 'session', usageIncomplete: 0, sessionCount: 7, lastSyncAt: 1_700_000_000_000 })
   })
 
   it('normalizes snake_case keys from the Rust backend', async () => {
@@ -80,7 +80,7 @@ describe('useTimelineStatus', () => {
     }))
     const { result } = renderHook(() => useTimelineStatus(), { wrapper: wrapper() })
     await waitFor(() => expect(result.current.isSuccess).toBe(true))
-    expect(result.current.data).toEqual({ sessionCount: 9, lastSyncAt: 1_700_000_000_001 })
+    expect(result.current.data).toEqual({ usageMode: 'session', usageIncomplete: 0, sessionCount: 9, lastSyncAt: 1_700_000_000_001 })
   })
 })
 

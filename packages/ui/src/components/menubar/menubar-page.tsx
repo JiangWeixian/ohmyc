@@ -1,7 +1,7 @@
 // Menubar popover page — owns view state, fetches data, switches between
 // area chart and heatmap views. Lives at /menubar.
 
-import { useMemo, useState } from 'react'
+import { useEffect, useState } from 'react'
 
 import { AreaTrendChart } from './area-trend-chart'
 import { formatTokens } from './format-tokens'
@@ -11,17 +11,21 @@ import { menubarPopoverStyles } from './styles'
 import { type MenubarView, ViewSwitch } from './view-switch'
 import { useFsChanged } from '@/hooks/use-fs-changed'
 import { useSetupStatus } from '@/hooks/use-setup-status'
-import { useTimelineHeatmapRange } from '@/hooks/use-timeline'
+import {
+  useTimelineHeatmapRange,
+  useTimelineRangeSummary,
+  useTimelineStatus,
+} from '@/hooks/use-timeline'
 
 import type { SetupStatus } from '@/hooks/use-setup-status'
 
 function isoDate(d: Date): string {
-  return d.toISOString().slice(0, 10)
+  return [d.getFullYear(), String(d.getMonth() + 1).padStart(2, '0'), String(d.getDate()).padStart(2, '0')].join('-')
 }
 
 function subDays(d: Date, n: number): Date {
   const copy = new Date(d)
-  copy.setUTCDate(copy.getUTCDate() - n)
+  copy.setDate(copy.getDate() - n)
   return copy
 }
 
@@ -49,7 +53,12 @@ function MenubarActivity() {
   useFsChanged()
   const [view, setView] = useState<MenubarView>('area')
 
-  const today = useMemo(() => new Date(), [])
+  const [today, setToday] = useState(() => new Date())
+  useEffect(() => {
+    const timer = setInterval(() => setToday(new Date()), 30_000)
+    return () => clearInterval(timer)
+  }, [])
+  const { data: status } = useTimelineStatus()
   const todayIso = isoDate(today)
   const fourMonthAgoIso = isoDate(subDays(today, 16 * 7 - 1))
 
@@ -58,9 +67,11 @@ function MenubarActivity() {
   const tokensRecent = useTimelineHeatmapRange({ from: fourMonthAgoIso, to: todayIso, metric: 'tokens' })
   const sessionsRecent = useTimelineHeatmapRange({ from: fourMonthAgoIso, to: todayIso, metric: 'sessions' })
 
+  const rangeSummary = useTimelineRangeSummary(fourMonthAgoIso, todayIso)
+
   // KPI row: 16-week totals across the same window.
   const totalTokens = (tokensRecent.data ?? []).reduce((s, p) => s + p.value, 0)
-  const totalSessions = (sessionsRecent.data ?? []).reduce((s, p) => s + p.value, 0)
+  const totalSessions = status?.usageMode === 'events' ? rangeSummary.data?.sessions : (sessionsRecent.data ?? []).reduce((s, p) => s + p.value, 0)
 
   // Footer: peak day only — peak token value and session count are now
   // surfaced in the KPI row above.
@@ -93,7 +104,7 @@ function MenubarActivity() {
                   <AreaTrendChart tokens={tokensRecent.data ?? []} sessions={sessionsRecent.data ?? []} />
                 )
               : (
-                  <RecentHeatmap tokens={tokensRecent.data ?? []} sessions={sessionsRecent.data ?? []} />
+                  <RecentHeatmap today={today} tokens={tokensRecent.data ?? []} sessions={sessionsRecent.data ?? []} />
                 )}
           </div>
 
@@ -107,7 +118,7 @@ function MenubarActivity() {
             <div className="flex flex-1 flex-col gap-1 border-l border-[var(--border-subtle)] px-3.5">
               <span className="menubar-kpi-value" data-kpi="sessions">
                 {/* exact count — unlike tokens, sessions are never compressed to k/M */}
-                {totalSessions.toLocaleString()}
+                {totalSessions?.toLocaleString() ?? '—'}
               </span>
               <span className="menubar-label">Sessions</span>
             </div>

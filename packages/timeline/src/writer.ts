@@ -1,9 +1,10 @@
+import { storeUsageDetails } from './usage-storage.js'
+
 // ============================================================
 // @ohmyc/timeline — Session Writer
 // Prepares parameterized SQL statements upfront and provides a
 // transactional write method for upserting session data.
 // ============================================================
-
 import type { IngestResult, ParsedSessionData } from './schema.js'
 
 export type { IngestResult } from './schema.js'
@@ -48,11 +49,20 @@ export interface Writer {
 export function createWriter(db: SqliteDatabase): Writer {
   const checkExisting = db.prepare('SELECT 1 FROM sessions WHERE session_id = ?')
   const upsertSession = db.prepare(`
-    INSERT OR REPLACE INTO sessions (
+    INSERT INTO sessions (
       session_id, project, agent_name, started_at, ended_at, duration_ms,
       turns, tokens_input, tokens_output, tokens_cached,
-      summary, summary_source, transcript_path, last_offset, ingested_at, model
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      summary, summary_source, transcript_path, last_offset, ingested_at, model, token_status
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    ON CONFLICT(session_id) DO UPDATE SET
+      project=excluded.project, agent_name=excluded.agent_name,
+      started_at=excluded.started_at, ended_at=excluded.ended_at,
+      duration_ms=excluded.duration_ms, turns=excluded.turns,
+      tokens_input=excluded.tokens_input, tokens_output=excluded.tokens_output,
+      tokens_cached=excluded.tokens_cached, summary=excluded.summary,
+      summary_source=excluded.summary_source, transcript_path=excluded.transcript_path,
+      last_offset=excluded.last_offset, ingested_at=excluded.ingested_at,
+      model=excluded.model, token_status=excluded.token_status
   `)
   const deleteTools = db.prepare('DELETE FROM session_tools WHERE session_id = ?')
   const insertTool = db.prepare('INSERT OR REPLACE INTO session_tools (session_id, tool_name, call_count) VALUES (?, ?, ?)')
@@ -87,7 +97,18 @@ export function createWriter(db: SqliteDatabase): Writer {
           data.fileSize,
           ingestedAt,
           data.model,
+          data.tokenStatus ?? 'legacy',
         )
+
+        if (data.usageDetails) {
+          storeUsageDetails(db, {
+            session_id: data.sessionId,
+            agent_name: data.agentName,
+            tokens_input: data.tokensInput,
+            tokens_output: data.tokensOutput,
+            tokens_cached: data.tokensCached,
+          }, data.usageDetails, ingestedAt)
+        }
 
         deleteTools.run(data.sessionId)
         for (const tool of data.tools) {

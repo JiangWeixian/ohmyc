@@ -8,6 +8,7 @@ import os from 'node:os'
 import path from 'node:path'
 
 import { collectClaudeUsage } from './claude-usage.js'
+import { parseUsageEvents } from './usage-events.js'
 import { createWriter } from './writer.js'
 
 import type { IngestResult, ParsedSessionData } from './schema.js'
@@ -163,6 +164,7 @@ export function parseTranscript(
     durationMs,
     turns,
     ...collectClaudeUsage(usageRecords),
+    usageDetails: parseUsageEvents(content, agentName),
     summary,
     summarySource,
     transcriptPath,
@@ -292,6 +294,7 @@ function parseCodexTranscript(
     sessionId,
     project: displayProject(project),
     agentName: 'codex',
+    usageDetails: parseUsageEvents(readFileSync(transcriptPath, 'utf8'), 'codex'),
     startedAt,
     endedAt,
     durationMs: endedAt - startedAt,

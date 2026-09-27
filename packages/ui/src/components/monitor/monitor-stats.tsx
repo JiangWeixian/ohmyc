@@ -62,7 +62,7 @@ function deriveMonitorStats(events?: EventsResult): MonitorStats {
     sessions,
     tokens,
     turns,
-    scopeLabel: 'latest timeline window',
+    scopeLabel: 'session lifetime totals',
   }
 }
 

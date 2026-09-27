@@ -91,11 +91,20 @@ pub fn start(tray: TrayIcon) -> std::io::Result<()> {
             let mut previous: Option<Display> = None;
             loop {
                 let now = Local::now();
+                let mut basis = String::new();
                 let totals = week_bounds(now).and_then(|(from, to)| {
                     let path = timeline::default_db_path().ok()?;
-                    timeline::read_summary(&path, from, to).ok()
+                    let conn = timeline::open_db(&path).ok()?;
+                    basis = if timeline::usage::event_mode(&conn) {
+                        let missing = timeline::usage::incomplete(&conn).ok()?;
+                        format!("Usage time. {missing} sessions have incomplete timestamped history.")
+                    } else {
+                        "Session start; tokens are session lifetime totals.".into()
+                    };
+                    timeline::summary(&conn, from, to).ok()
                 });
-                let display = Display::new(&now.format("%Y-%m-%d").to_string(), totals);
+                let mut display = Display::new(&now.format("%Y-%m-%d").to_string(), totals);
+                display.description.push_str(&basis);
                 if previous.as_ref() != Some(&display) {
                     let redraw = previous
                         .as_ref()

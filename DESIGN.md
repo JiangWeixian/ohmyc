@@ -299,13 +299,14 @@ Timeline entry sits in the navigation island under the `Signal` group. Timeline 
 ### Menubar Popover
 The macOS menu bar itself displays two fixed-width columns: `Tokens` and `Sessions` above their values, in a compact 22pt-high native template image. Labels use the system font; values use larger monospaced digits. macOS supplies foreground contrast for light/dark backgrounds and selection. The drawing is 120pt wide (128pt including native button insets) and keeps the existing left-click popover and right-click menu.
 
-- **Period:** Current local calendar week (Monday 00:00 inclusive to next Monday 00:00 exclusive), counting sessions whose start timestamp falls within that window. Tokens count input, output, and cache once: Codex input already includes cache; other stored sources add cache separately. This definition is shared with Timeline. These are recorded totals, not live inference throughput.
+- **Usage basis:** Right-click “Count usage when it occurred” switches token/session charts and menu bar totals between timestamped usage and legacy session-start totals. Switching preserves both datasets. Do not add explanatory text above the popover chart; preserve the original layout. Popover session totals count distinct sessions over the entire range.
+- **Period:** Current local calendar week (Monday 00:00 inclusive to next Monday 00:00 exclusive), counting distinct sessions with usage in that window in usage-time mode; legacy mode counts sessions started within it. Tokens count input, output, and cache once: Codex input already includes cache; other stored sources add cache separately. This definition is shared with Timeline. These are recorded totals, not live inference throughput.
 - **Refresh:** A Rust background worker reads SQLite immediately and every 30 seconds, independently of webview visibility. Recompute local calendar-week boundaries on each read, including timezone/DST changes; update the native image only when displayed values change.
 - **States:** A valid empty day shows `0`. Missing/unreadable data shows an em dash for both values, never fabricated zeros. Tooltip and accessibility text identify OhMyC, the local date, exact totals, and the token definition. No count-up or ambient motion. Other platforms retain their existing tray icon.
 
 The desktop menubar popover is a compact monitor surface, not a miniature full page. It should feel like the same activity instrument as Timeline, compressed into a Tauri popover window.
 
-- **Container:** Fill the available popover window with a responsive `w-full max-w-sm` content box rather than hard-coding the pixel width from the reference HTML. Height is content-driven. The Tauri window supplies transparent desktop blur; UI chrome supplies the themed tint, border, clipping, and overlays.
+- **Container:** The native popover retains its original 367 × 340pt size. Fill the available popover window with a responsive `w-full max-w-sm` content box rather than hard-coding the pixel width from the reference HTML. Height is content-driven. The Tauri window supplies transparent desktop blur; UI chrome supplies the themed tint, border, clipping, and overlays.
 - **Token contract:** Components consume `--menubar-*` tokens for popover background/border/shadow/optional clip/stripe, title prefix/type/glow, view-switch states, chart stroke/fill/peak, KPI typography/color, label type, footer meta, and Open action. `:root` provides reusable defaults; themes override only their visible differences.
 - **Header:** `Activity` stays a compact uppercase signal label. Prefix is themeable (`//`, `>`, `▌`, `▸`) through CSS, not duplicated in JSX.
 - **View switch:** Icon-only line/heatmap buttons. Active/hover states are tokenized. No segmented pill or explanatory copy.
@@ -414,6 +415,7 @@ There is no standard header chrome. Breadcrumbs, source switchers, search trigge
 
 | Date | Decision | Rationale |
 |------|----------|-----------|
+| 2026-09-27 | Preserve original popover layout with usage-time statistics | User requested removal of the added scope text and restoration of the original height. UI additions require an explicit request. Legacy statistics remain available from the tray menu. |
 | 2026-09-27 | Native menu bar aggregates the current local calendar week | Monday-to-Sunday totals match the user’s calendar-week expectation; both metrics share the window and the tooltip identifies it. |
 | 2026-09-26 | Show today's tokens and sessions directly in the macOS menu bar | Two compact label-over-value columns make activity visible without opening the app. Native template rendering adapts to menu bar appearance; a background read-only aggregate keeps updates independent of the React popover. Fixed width prevents neighboring items moving as totals change. |
 | 2026-04-25 | Spacing: Tailwind classes | User prefers Tailwind over CSS variables for spacing |
