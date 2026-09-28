@@ -3,6 +3,12 @@
 // Provides heatmap, paginated events, session detail, project
 // list, year list, and sync-status queries against the SQLite DB.
 // ============================================================
+import { TOKEN_TOTAL_SQL, totalSessionTokens } from './tokens.js'
+import {
+  localDateMs,
+  usageCoverage,
+  usageMode,
+} from './usage-query.js'
 
 import type {
   DayEvents,
@@ -70,6 +76,18 @@ export function getHeatmap(
     return []
   }
 
+  if (usageMode(db) === 'events' && metric !== 'turns') {
+    const last = new Date(localDateMs(to))
+    last.setDate(last.getDate() + 1)
+    const value = metric === 'tokens' ? 'SUM(e.tokens_input + e.tokens_output + e.tokens_cached)' : 'COUNT(DISTINCT e.session_id)'
+    const rows = db.prepare(`SELECT date(e.occurred_at/1000, 'unixepoch', 'localtime') AS day, ${value} AS value
+      FROM token_usage_events e JOIN sessions s ON s.session_id=e.session_id AND COALESCE(s.agent_name,'unknown')=e.source
+      WHERE e.occurred_at >= ? AND e.occurred_at < ? ${project ? 'AND s.project = ?' : ''} GROUP BY day`)
+      .all(localDateMs(from), last.getTime(), ...(project ? [project] : [])) as { day: string; value: number }[]
+    const values = new Map(rows.map(r => [r.day, r.value]))
+    return dates.map(date => ({ date, value: values.get(date) ?? 0 }))
+  }
+
   const startMs = dateToMs(from)
   // End-of-day boundary: subtracting 1ms from the next midnight includes the entire last day
   const endMs = dateToMs(to) + 86_400_000 - 1
@@ -85,7 +103,8 @@ export function getHeatmap(
       break
     }
     case 'tokens': {
-      selectMetric = 'SUM(tokens_input + tokens_output + tokens_cached)'
+      // Codex input already includes cached input; preserve the raw stored fields.
+      selectMetric = `SUM(${TOKEN_TOTAL_SQL})`
       break
     }
     default: {
@@ -214,7 +233,7 @@ export function getEvents(
     group.sessions.push(session)
     group.session_count += 1
     group.turn_count += session.turns
-    group.token_count += session.tokens_input + session.tokens_output + session.tokens_cached
+    group.token_count += totalSessionTokens(session)
     if (session.agent_name && !group.agents.includes(session.agent_name)) {
       group.agents.push(session.agent_name)
     }
@@ -341,6 +360,12 @@ export function getProjects(db: SqliteDatabase): string[] {
  * @returns Sorted array of years (e.g. `[2024, 2025]`).
  */
 export function getYears(db: SqliteDatabase): number[] {
+  if (usageMode(db) === 'events') {
+    return (db.prepare(`SELECT CAST(strftime('%Y',started_at/1000,'unixepoch') AS INTEGER) AS year FROM sessions
+      UNION SELECT CAST(strftime('%Y',e.occurred_at/1000,'unixepoch','localtime') AS INTEGER)
+      FROM token_usage_events e JOIN sessions s ON s.session_id=e.session_id AND COALESCE(s.agent_name,'unknown')=e.source
+      ORDER BY year`).all() as { year: number }[]).map(row => row.year)
+  }
   const rows = db
     .prepare("SELECT DISTINCT CAST(strftime('%Y', started_at / 1000, 'unixepoch') AS INTEGER) AS year FROM sessions ORDER BY year")
     .all() as { year: number }[]
@@ -358,7 +383,7 @@ export function getYears(db: SqliteDatabase): number[] {
  * @param db - Database handle conforming to {@link SqliteDatabase}.
  * @returns Session count and optional last-sync timestamp (epoch ms).
  */
-export function getStatus(db: SqliteDatabase): { sessionCount: number; lastSyncAt?: number } {
+export function getStatus(db: SqliteDatabase): { sessionCount: number; lastSyncAt?: number; usageMode: 'events' | 'session'; usageIncomplete: number } {
   const countRow = db
     .prepare('SELECT COUNT(*) AS cnt FROM sessions')
     .get() as { cnt: number }
@@ -368,6 +393,7 @@ export function getStatus(db: SqliteDatabase): { sessionCount: number; lastSyncA
     .get() as { value: string } | undefined
 
   return {
+    ...usageCoverage(db),
     sessionCount: countRow.cnt,
     lastSyncAt: syncRow ? Number.parseInt(syncRow.value, 10) : undefined,
   }

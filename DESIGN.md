@@ -297,14 +297,22 @@ Timeline entry sits in the navigation island under the `Signal` group. Timeline 
   - Filter empty: inline `text-tertiary` Berkeley Mono row with `border-subtle` top and bottom — `No sessions match the current filters. [Reset filters]`.
 
 ### Menubar Popover
+The macOS menu bar itself displays two fixed-width columns: `Tokens` and `Sessions` above their values, in a compact 22pt-high native template image. Labels use the system font; values use larger monospaced digits. macOS supplies foreground contrast for light/dark backgrounds and selection. The drawing is 120pt wide (128pt including native button insets) and keeps the existing left-click popover and right-click menu.
+
+- **Usage basis:** Right-click “Count usage when it occurred” switches token/session charts and menu bar totals between timestamped usage and legacy session-start totals. Switching preserves both datasets. Do not add explanatory text above the popover chart; preserve the original layout. Popover session totals count distinct sessions over the entire range.
+- **Period:** Current local calendar week (Monday 00:00 inclusive to next Monday 00:00 exclusive), counting distinct sessions with usage in that window in usage-time mode; legacy mode counts sessions started within it. Tokens count input, output, and cache once: Codex input already includes cache; other stored sources add cache separately. This definition is shared with Timeline. These are recorded totals, not live inference throughput.
+- **Refresh:** A Rust background worker reads SQLite immediately and every 30 seconds, independently of webview visibility. Recompute local calendar-week boundaries on each read, including timezone/DST changes; update the native image only when displayed values change.
+- **States:** A valid empty day shows `0`. Missing/unreadable data shows an em dash for both values, never fabricated zeros. Tooltip and accessibility text identify OhMyC, the local date, exact totals, and the token definition. No count-up or ambient motion. Other platforms retain their existing tray icon.
+
 The desktop menubar popover is a compact monitor surface, not a miniature full page. It should feel like the same activity instrument as Timeline, compressed into a Tauri popover window.
 
-- **Container:** Fill the available popover window with a responsive `w-full max-w-sm` content box rather than hard-coding the pixel width from the reference HTML. Height is content-driven. The Tauri window supplies transparent desktop blur; UI chrome supplies the themed tint, border, clipping, and overlays.
+- **Container:** The native popover retains its original 367 × 340pt size. Fill the available popover window with a responsive `w-full max-w-sm` content box rather than hard-coding the pixel width from the reference HTML. Height is content-driven. The Tauri window supplies transparent desktop blur; UI chrome supplies the themed tint, border, clipping, and overlays.
 - **Token contract:** Components consume `--menubar-*` tokens for popover background/border/shadow/optional clip/stripe, title prefix/type/glow, view-switch states, chart stroke/fill/peak, KPI typography/color, label type, footer meta, and Open action. `:root` provides reusable defaults; themes override only their visible differences.
 - **Header:** `Activity` stays a compact uppercase signal label. Prefix is themeable (`//`, `>`, `▌`, `▸`) through CSS, not duplicated in JSX.
 - **View switch:** Icon-only line/heatmap buttons. Active/hover states are tokenized. No segmented pill or explanatory copy.
 - **Line chart:** A clean sparkline/area chart with hidden axes. Use theme stroke/fill/peak-marker tokens, but do not add visible grid lines, tick labels, or chart furniture in the popover.
 - **Heatmap:** 16 weeks × 7 days, same five-bucket activity model as Timeline. Keep the grid readable inside the popover width; do not force reference-image dimensions if they clip the grid.
+- **Numeric units:** Token totals, peak values, and chart/heatmap tooltips use decimal K → M → B → T (then P/E), at most one decimal, without trailing `.0`. Promote rounded values at unit boundaries (`999,999` → `1M`); use the same units as the native menu bar.
 - **KPI/footer:** Three compact KPI cells (`Tokens`, `Sessions`, `Peak`) plus peak-day meta and Open action. Numeric treatment is themeable: monochrome/CRT/arcade/HUD variants should come from tokens, not component branches. Cyberpunk may keep interior HUD typography/color, but the macOS menubar popover should not use a hard HUD outer frame.
 
 ### Monitor
@@ -407,6 +415,10 @@ There is no standard header chrome. Breadcrumbs, source switchers, search trigge
 
 | Date | Decision | Rationale |
 |------|----------|-----------|
+| 2026-09-27 | Keep Timeline project headers the same height when toggled | Header padding and bottom margin stay constant; only the chevron and session content change on expand/collapse. |
+| 2026-09-27 | Preserve existing layouts with usage-time statistics | User requested removal of the added scope text and restoration of the original popover height. UI additions require an explicit request; do not add scope labels to Timeline or rename existing Monitor/Timeline labels. Legacy statistics and scope explanations remain available from the native tray menu and tooltip. |
+| 2026-09-27 | Native menu bar aggregates the current local calendar week | Monday-to-Sunday totals match the user’s calendar-week expectation; both metrics share the window and the tooltip identifies it. |
+| 2026-09-26 | Show today's tokens and sessions directly in the macOS menu bar | Two compact label-over-value columns make activity visible without opening the app. Native template rendering adapts to menu bar appearance; a background read-only aggregate keeps updates independent of the React popover. Fixed width prevents neighboring items moving as totals change. |
 | 2026-04-25 | Spacing: Tailwind classes | User prefers Tailwind over CSS variables for spacing |
 | 2026-04-25 | Timeline icon: Mini graph | Superseded by 2026-06-17 navigation island grouping. Timeline still needs a recognizable activity icon, but the old sidebar-specific preview treatment is retired |
 | 2026-04-25 | Cards: Featured variant | Superseded by 2026-04-26 uniform-grid decision. Featured-card emphasis was an IA holdover and is no longer active |

@@ -28,54 +28,51 @@ export interface MigrateOptions {
  * @param options - Target version and custom migration map overrides.
  */
 export function migrate(db: SqliteDatabase, options?: MigrateOptions): void {
-  const targetVersion = options?.currentSchemaVersion ?? CURRENT_SCHEMA_VERSION
-  const migrations = options?.migrations ?? MIGRATIONS
+  const apply = db.transaction(() => {
+    const targetVersion = options?.currentSchemaVersion ?? CURRENT_SCHEMA_VERSION
+    const migrations = options?.migrations ?? MIGRATIONS
 
-  const metaTable = db.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name='meta'").get()
+    const metaTable = db.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name='meta'").get()
 
-  if (!metaTable) {
-    db.exec(SCHEMA_SQL)
-    db.prepare("INSERT OR REPLACE INTO meta (key, value) VALUES ('schema_version', ?)")
-      .run(String(targetVersion))
-    return
-  }
+    if (!metaTable) {
+      db.exec(SCHEMA_SQL)
+      db.prepare("INSERT OR REPLACE INTO meta (key, value) VALUES ('schema_version', ?)")
+        .run(String(targetVersion))
+      return
+    }
 
-  const versionRow = db.prepare("SELECT value FROM meta WHERE key = 'schema_version'").get() as
-    | { value: string }
-    | undefined
+    const versionRow = db.prepare("SELECT value FROM meta WHERE key = 'schema_version'").get() as
+      | { value: string }
+      | undefined
 
-  let currentVersion = versionRow ? Number.parseInt(versionRow.value, 10) : 0
-  if (Number.isNaN(currentVersion)) {
-    currentVersion = 0
-  }
+    let currentVersion = versionRow ? Number.parseInt(versionRow.value, 10) : 0
+    if (Number.isNaN(currentVersion)) {
+      currentVersion = 0
+    }
 
-  if (currentVersion === 0) {
-    db.prepare("INSERT OR REPLACE INTO meta (key, value) VALUES ('schema_version', ?)")
-      .run(String(targetVersion))
-    return
-  }
-
-  const applyMigrations = db.transaction(() => {
-    while (currentVersion < targetVersion) {
-      const nextVersion = currentVersion + 1
-      const migrationSql = migrations[nextVersion]
-      if (migrationSql === undefined) {
-        throw new Error(`Missing migration for version ${nextVersion}`)
-      }
-      if (migrationSql) {
-        try {
-          db.exec(migrationSql)
-        } catch (error: any) {
-          if (!/duplicate column name/i.test(error?.message ?? '')) {
-            throw error
+    const applyMigrations = () => {
+      while (currentVersion < targetVersion) {
+        const nextVersion = currentVersion + 1
+        const migrationSql = migrations[nextVersion]
+        if (migrationSql === undefined) {
+          throw new Error(`Missing migration for version ${nextVersion}`)
+        }
+        if (migrationSql) {
+          try {
+            db.exec(migrationSql)
+          } catch (error: any) {
+            if (!/duplicate column name/i.test(error?.message ?? '')) {
+              throw error
+            }
           }
         }
+        db.prepare("INSERT OR REPLACE INTO meta (key, value) VALUES ('schema_version', ?)")
+          .run(String(nextVersion))
+        currentVersion = nextVersion
       }
-      db.prepare("INSERT OR REPLACE INTO meta (key, value) VALUES ('schema_version', ?)")
-        .run(String(nextVersion))
-      currentVersion = nextVersion
     }
-  })
 
-  applyMigrations()
+    applyMigrations()
+  })
+  apply()
 }

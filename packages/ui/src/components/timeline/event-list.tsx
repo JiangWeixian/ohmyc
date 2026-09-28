@@ -6,6 +6,8 @@ import { ChevronRight } from 'lucide-react'
 import { useMemo, useState } from 'react'
 
 import { AgentGlyph } from '@/components/agent-glyph'
+import { formatTokens as formatTokenValue } from '@/lib/format-tokens'
+import { totalSessionTokens } from '@/lib/token-usage'
 
 import type {
   DayEvents,
@@ -70,15 +72,8 @@ function formatDayHeading(day: string): string {
   return day === TODAY_ISO ? `${text} · Today` : text
 }
 
-// Compact k/M formatting matches the heatmap legend for page-wide consistency.
 function formatTokens(n: number): string {
-  if (n >= 1_000_000) {
-    return `${(n / 1_000_000).toFixed(1)}M tokens`
-  }
-  if (n >= 1000) {
-    return `${Math.round(n / 1000)}k tokens`
-  }
-  return `${n} tokens`
+  return `${formatTokenValue(n)} tokens`
 }
 
 function pickDotClass(bucket: number): 'l0' | 'l1' | 'l2' | 'l3' {
@@ -293,11 +288,9 @@ function ProjectRollup({
         onClick={onToggle}
         onKeyDown={e => (e.key === 'Enter' || e.key === ' ') && onToggle()}
         className="grid cursor-pointer grid-cols-[auto_minmax(0,1fr)_auto_auto_auto] items-center gap-3 rounded-md hover:bg-[rgba(255,255,255,0.02)]"
-          // Expanded state gets taller padding so the chevron/content
-          // transition does not feel cramped against the session list below.
         style={{
-          padding: open ? '10px 14px' : '7px 14px',
-          marginBottom: open ? 2 : 1,
+          padding: '7px 14px',
+          marginBottom: 1,
         }}
       >
         <ChevronRight
@@ -356,7 +349,7 @@ function ProjectRollup({
 // ── SessionItem ───────────────────────────────────────────────────
 
 function SessionItem({ session, bucket }: { session: SessionRow; bucket: 0 | 1 | 2 | 3 }) {
-  const totalTokens = session.tokens_input + session.tokens_output + session.tokens_cached
+  const totalTokens = totalSessionTokens(session)
   // Summaries sourced from the user's first message are wrapped in quotes to
   // visually distinguish verbatim prompts from AI-generated summaries.
   const isQuoted = session.summary_source === 'first_message'

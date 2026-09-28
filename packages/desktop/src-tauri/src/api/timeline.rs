@@ -113,3 +113,9 @@ mod tests {
         assert_eq!(ms_to_date(1_767_225_600_000), "2026-01-01");
     }
 }
+
+#[tauri::command]
+pub fn timeline_summary(from: i64, to: i64) -> Result<timeline::TimelineSummary, ApiError> {
+    let conn = timeline::open_db(&db_path()?)?;
+    timeline::usage::range(&conn, &ms_to_date(from), &ms_to_date(to))
+}

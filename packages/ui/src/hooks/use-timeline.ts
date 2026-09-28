@@ -62,6 +62,8 @@ export interface EventsResult {
 
 /** Timeline database status — total sessions and last sync timestamp. */
 export interface TimelineStatus {
+  usageMode: 'events' | 'session'
+  usageIncomplete: number
   sessionCount: number
   lastSyncAt: number | null
 }
@@ -117,9 +119,12 @@ export function useTimelineProjects() {
 export function useTimelineStatus() {
   return useQuery({
     queryKey: ['timeline', 'status'],
+    refetchInterval: 30_000,
     queryFn: async () => {
       const raw = await request<Record<string, unknown>>('timeline.status', {})
       return {
+        usageMode: (raw.usageMode ?? raw.usage_mode) === 'events' ? 'events' : 'session',
+        usageIncomplete: Number(raw.usageIncomplete ?? raw.usage_incomplete ?? 0),
         sessionCount: (raw.sessionCount ?? raw.session_count) as number,
         lastSyncAt: (raw.lastSyncAt ?? raw.last_sync_at ?? null) as number | null,
       } satisfies TimelineStatus
@@ -166,6 +171,7 @@ export function useTimelineHeatmapRange(params: {
   const toMs = isoDateToUtcMs(to)
   return useQuery({
     queryKey: ['timeline', 'heatmap-range', from, to, metric, project ?? null],
+    refetchInterval: 30_000,
     queryFn: async () => {
       const r = await request<{ data: HeatmapPoint[] }>('timeline.heatmap', {
         from: fromMs,
@@ -194,5 +200,16 @@ export function useTimelineEvents(params: { project?: string; year?: number }) {
   return useQuery({
     queryKey: ['timeline', 'events', project ?? null, year ?? null],
     queryFn: async () => normalizeEvents(await request<unknown>('timeline.events', args)),
+  })
+}
+
+/** Distinct sessions across the whole window, rather than summed daily counts. */
+export function useTimelineRangeSummary(from: string, to: string) {
+  return useQuery({
+    queryKey: ['timeline', 'summary', from, to],
+    refetchInterval: 30_000,
+    queryFn: () => request<{ tokens: number; sessions: number }>('timeline.summary', {
+      from: isoDateToUtcMs(from), to: isoDateToUtcMs(to),
+    }),
   })
 }

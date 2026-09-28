@@ -90,3 +90,9 @@ export {
   SCHEMA_SQL,
   MIGRATIONS,
 } from './schema.js'
+
+export { usageMode, setUsageMode, usageCoverage } from './usage-query.js'
+export { parseUsageEvents } from './usage-events.js'
+export type { UsageEvent, UsageDetails } from './usage-events.js'
+
+export { backfillUsageDetails } from './usage-storage.js'

@@ -218,6 +218,9 @@ importers:
       '@ohmyc/shared':
         specifier: workspace:*
         version: link:../shared
+      '@ohmyc/timeline':
+        specifier: workspace:*
+        version: link:../timeline
       '@radix-ui/react-avatar':
         specifier: ^1.1.11
         version: 1.1.11(@types/react-dom@19.2.3(@types/react@19.2.14))(@types/react@19.2.14)(react-dom@19.2.5(react@19.2.5))(react@19.2.5)

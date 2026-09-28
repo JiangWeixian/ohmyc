@@ -31,6 +31,7 @@ import {
   useTimelineStatus,
   useTimelineYears,
 } from '@/hooks/use-timeline'
+import { formatTokens as formatTokensCompact } from '@/lib/format-tokens'
 
 /**
  * Top-level timeline page. Owns filter state (metric, project, year),
@@ -214,16 +215,6 @@ export function TimelineView() {
 }
 
 // ── Internal helpers ──────────────────────────────────────────────
-
-function formatTokensCompact(n: number): string {
-  if (n >= 1_000_000) {
-    return `${(n / 1_000_000).toFixed(1)}M`
-  }
-  if (n >= 1000) {
-    return `${(n / 1000).toFixed(1)}k`
-  }
-  return String(n)
-}
 
 function TimelineSelect({
   label,

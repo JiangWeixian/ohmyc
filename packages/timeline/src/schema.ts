@@ -1,3 +1,4 @@
+import type { UsageDetails } from './usage-events.js'
 // ============================================================
 // @ohmyc/timeline — Database Schema & TypeScript Types
 // Source of truth for all DB structures
@@ -23,7 +24,7 @@ export interface SessionRow {
   duration_ms: number
   /** Number of user turns (natural-language messages only). */
   turns: number
-  /** Total input tokens consumed across all assistant turns. */
+  /** Raw input total. Codex includes cached input; do not add its cache again. */
   tokens_input: number
   /** Total output tokens generated across all assistant turns. */
   tokens_output: number
@@ -71,6 +72,8 @@ export interface MetaRow {
 
 /** Parsed result of a session transcript. Shared between ingest and writer. */
 export interface ParsedSessionData {
+  usageDetails?: UsageDetails
+  tokenStatus?: 'complete' | 'legacy' | 'partial' | 'unavailable'
   /** Unique session identifier (UUID). */
   sessionId: string
   /** Display-friendly project path. */
@@ -85,7 +88,7 @@ export interface ParsedSessionData {
   durationMs: number
   /** Number of user turns (natural-language messages only). */
   turns: number
-  /** Total input tokens consumed. */
+  /** Raw input total. Codex includes cached input; readers handle source semantics. */
   tokensInput: number
   /** Total output tokens generated. */
   tokensOutput: number
@@ -212,7 +215,31 @@ export interface ProjectGroup {
 // ------------------------------------------------------------------
 
 /** Current schema version. Increment this when adding migrations. */
-export const CURRENT_SCHEMA_VERSION = 3
+export const CURRENT_SCHEMA_VERSION = 5
+
+export const USAGE_SCHEMA_SQL = `
+CREATE TABLE IF NOT EXISTS token_usage_events (
+  source TEXT NOT NULL,
+  session_id TEXT NOT NULL,
+  event_key TEXT NOT NULL,
+  occurred_at INTEGER NOT NULL,
+  tokens_input INTEGER NOT NULL CHECK(tokens_input >= 0),
+  tokens_output INTEGER NOT NULL CHECK(tokens_output >= 0),
+  tokens_cached INTEGER NOT NULL CHECK(tokens_cached >= 0),
+  model TEXT,
+  ingested_at INTEGER NOT NULL,
+  PRIMARY KEY(source, session_id, event_key)
+);
+CREATE INDEX IF NOT EXISTS idx_usage_time ON token_usage_events(occurred_at);
+CREATE TABLE IF NOT EXISTS usage_event_coverage (
+  source TEXT NOT NULL,
+  session_id TEXT NOT NULL,
+  status TEXT NOT NULL CHECK(status IN ('complete','partial','unavailable')),
+  reconciled_total INTEGER NOT NULL,
+  updated_at INTEGER NOT NULL,
+  PRIMARY KEY(source, session_id)
+);
+`
 
 /** Complete SQL to create all tables and indexes. */
 export const SCHEMA_SQL = `
@@ -232,7 +259,8 @@ CREATE TABLE sessions (
   transcript_path   TEXT NOT NULL,
   last_offset       INTEGER NOT NULL,
   ingested_at       INTEGER NOT NULL,
-  model             TEXT
+  model             TEXT,
+  token_status TEXT NOT NULL DEFAULT 'legacy'
 );
 
 CREATE INDEX idx_sessions_started_at ON sessions(started_at DESC);
@@ -255,6 +283,7 @@ CREATE TABLE meta (
   key    TEXT PRIMARY KEY,
   value  TEXT NOT NULL
 );
+${USAGE_SCHEMA_SQL}
 `
 
 /** Migrations map: version → SQL string. V1 is the baseline (empty). */
@@ -262,4 +291,6 @@ export const MIGRATIONS: Record<number, string> = {
   1: '',
   2: 'ALTER TABLE sessions ADD COLUMN model TEXT;',
   3: 'ALTER TABLE sessions ADD COLUMN agent_name TEXT;',
+  4: "ALTER TABLE sessions ADD COLUMN token_status TEXT NOT NULL DEFAULT 'legacy';",
+  5: USAGE_SCHEMA_SQL,
 }

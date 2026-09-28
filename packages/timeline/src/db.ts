@@ -29,6 +29,8 @@ export function getDefaultDbPath(): string {
 export interface OpenDatabaseOptions {
   /** Custom path to the SQLite database file. Defaults to {@link getDefaultDbPath}. */
   dbPath?: string
+  /** Bound lock waiting for hook pipelines that already retry. */
+  busyTimeoutMs?: number
 }
 
 /**
@@ -45,10 +47,21 @@ export function openDatabase(options?: OpenDatabaseOptions): NodeSqliteDatabase 
   mkdirSync(dbDir, { recursive: true })
 
   const db = openNodeSqliteDatabase(dbPath)
-  db.exec('PRAGMA journal_mode = WAL')
-  db.exec('PRAGMA foreign_keys = ON')
+  const busyTimeoutMs = options?.busyTimeoutMs ?? 2000
+  if (!Number.isSafeInteger(busyTimeoutMs) || busyTimeoutMs < 0) {
+    db.close()
+    throw new Error('Invalid SQLite busy timeout')
+  }
+  try {
+    db.exec(`PRAGMA busy_timeout = ${busyTimeoutMs}`)
+    db.exec('PRAGMA journal_mode = WAL')
+    db.exec('PRAGMA foreign_keys = ON')
 
-  migrate(db)
+    migrate(db)
+  } catch (error) {
+    db.close()
+    throw error
+  }
 
   return db
 }

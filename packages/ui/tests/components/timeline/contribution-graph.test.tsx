@@ -48,14 +48,14 @@ describe('ContributionGraph', () => {
     expect(populatedDays).toHaveLength(2)
 
     fireEvent.mouseEnter(populatedDays[0])
-    expect(screen.getByText('1.5k tokens')).toBeInTheDocument()
+    expect(screen.getByText('1.5K tokens')).toBeInTheDocument()
     expect(screen.getByText('Mar 15, 2026')).toBeInTheDocument()
 
     fireEvent.click(populatedDays[0])
     expect(onSelectDay).toHaveBeenCalledWith('2026-03-15')
 
     fireEvent.mouseLeave(populatedDays[0])
-    expect(screen.queryByText('1.5k tokens')).not.toBeInTheDocument()
+    expect(screen.queryByText('1.5K tokens')).not.toBeInTheDocument()
   })
 
   it('labels non-token metrics with the metric name', () => {

@@ -4,9 +4,12 @@
 
 import { useState } from 'react'
 
+import { formatTokens } from '@/lib/format-tokens'
+
 import type { HeatmapPoint } from '@/hooks/use-timeline'
 
 interface RecentHeatmapProps {
+  today?: Date
   tokens: HeatmapPoint[]
   sessions: HeatmapPoint[]
 }
@@ -40,23 +43,13 @@ function bucketFor(value: number, max: number): 0 | 1 | 2 | 3 | 4 {
   return 4
 }
 
-function formatTokens(n: number): string {
-  if (n >= 1_000_000) {
-    return `${Math.round(n / 100_000) / 10}M`
-  }
-  if (n >= 1000) {
-    return `${Math.round(n / 100) / 10}k`
-  }
-  return String(n)
-}
-
 function isoDate(d: Date): string {
-  return d.toISOString().slice(0, 10)
+  return [d.getFullYear(), String(d.getMonth() + 1).padStart(2, '0'), String(d.getDate()).padStart(2, '0')].join('-')
 }
 
 function subDays(d: Date, n: number): Date {
   const copy = new Date(d)
-  copy.setUTCDate(copy.getUTCDate() - n)
+  copy.setDate(copy.getDate() - n)
   return copy
 }
 
@@ -81,10 +74,11 @@ interface Cell {
   row: number
 }
 
-export function RecentHeatmap({ tokens, sessions }: RecentHeatmapProps) {
+export function RecentHeatmap({ tokens, sessions, today: currentDay }: RecentHeatmapProps) {
   const [hover, setHover] = useState<HoverState | null>(null)
 
-  const today = new Date()
+  const [mountedDay] = useState(() => new Date())
+  const today = currentDay ?? mountedDay
   const start = subDays(today, WEEKS * DAYS - 1)
 
   const tokenMap = new Map(tokens.map(p => [p.date, p.value]))
@@ -95,7 +89,7 @@ export function RecentHeatmap({ tokens, sessions }: RecentHeatmapProps) {
   for (let col = 0; col < WEEKS; col++) {
     for (let row = 0; row < DAYS; row++) {
       const d = new Date(start)
-      d.setUTCDate(start.getUTCDate() + col * DAYS + row)
+      d.setDate(start.getDate() + col * DAYS + row)
       const iso = isoDate(d)
       const value = tokenMap.get(iso) ?? 0
       cells.push({ iso, value, bucket: bucketFor(value, maxToken), col, row })
@@ -106,15 +100,15 @@ export function RecentHeatmap({ tokens, sessions }: RecentHeatmapProps) {
   const monthLabels: { col: number; name: string }[] = []
   for (let col = 0; col < WEEKS; col++) {
     const d = new Date(start)
-    d.setUTCDate(start.getUTCDate() + col * DAYS)
-    const m = d.getUTCMonth()
+    d.setDate(start.getDate() + col * DAYS)
+    const m = d.getMonth()
     if (!seenMonths.has(m)) {
       seenMonths.add(m)
       monthLabels.push({ col, name: MONTH_NAMES[m].toUpperCase() })
     }
   }
 
-  const rangeText = `${MONTH_NAMES[start.getUTCMonth()]} ${start.getUTCDate()} → ${MONTH_NAMES[today.getUTCMonth()]} ${today.getUTCDate()}, ${today.getUTCFullYear()}`
+  const rangeText = `${MONTH_NAMES[start.getMonth()]} ${start.getDate()} → ${MONTH_NAMES[today.getMonth()]} ${today.getDate()}, ${today.getFullYear()}`
 
   // DOW labels: blank rows for Sun/Tue/Thu/Sat per the wireframe
   const dowVisible: readonly string[] = ['', 'M', '', 'W', '', 'F', '']
