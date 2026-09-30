@@ -17,6 +17,12 @@ Darkness is the native medium. Content emerges from near-black backgrounds throu
 
 Personality is expressed through themable color, typography, and decoration layers — never through structural redesign. Switching a theme swaps CSS variable values; it does not re-layout the page. The product should be remembered as a **personal Coding Monitor** that the user has made their own, not a generic configuration manager.
 
+## App Logo
+
+- Use the approved paper-clay computer: warm ivory casing, charcoal screen, a single warm-white terminal cursor, and a graphite background.
+- The square source is `packages/desktop/src-tauri/icons/mac-computer-app-icon.png`. Preserve its bottom crop, matte texture, and opaque background when generating platform sizes.
+- Desktop bundles use the `mac-computer-*` PNG, ICNS, and ICO assets listed in `tauri.conf.json`. Both README files use the same 256px PNG.
+
 ## Typography
 - **Per-theme font stacks:** Each theme provides `--font-display`, `--font-body`, `--font-mono`:
   - **Monitor:** Inter Variable (display + body), Berkeley Mono (mono)
@@ -415,6 +421,7 @@ There is no standard header chrome. Breadcrumbs, source switchers, search trigge
 
 | Date | Decision | Rationale |
 |------|----------|-----------|
+| 2026-09-28 | Replace the desktop app logo with the approved paper-clay computer | User selected the Pebble computer design; regenerate the existing bundle icon paths so packaged apps and README artwork use the same identity. |
 | 2026-09-27 | Keep Timeline project headers the same height when toggled | Header padding and bottom margin stay constant; only the chevron and session content change on expand/collapse. |
 | 2026-09-27 | Preserve existing layouts with usage-time statistics | User requested removal of the added scope text and restoration of the original popover height. UI additions require an explicit request; do not add scope labels to Timeline or rename existing Monitor/Timeline labels. Legacy statistics and scope explanations remain available from the native tray menu and tooltip. |
 | 2026-09-27 | Native menu bar aggregates the current local calendar week | Monday-to-Sunday totals match the user’s calendar-week expectation; both metrics share the window and the tooltip identifies it. |
