@@ -1,0 +1,631 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>OhMyC — Quota UI Mockup</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;510;590&family=JetBrains+Mono:wght@400;510;590&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg-deep: #08090a;
+    --bg-panel: #0f1011;
+    --bg-surface: #191a1b;
+    --text-primary: #f7f8f8;
+    --text-secondary: #d0d6e0;
+    --text-tertiary: #8a8f98;
+    --text-quaternary: #62666d;
+    --border-subtle: rgba(255,255,255,0.05);
+    --border-standard: rgba(255,255,255,0.08);
+    --border-solid: #23252a;
+    --heat-0: rgba(255,255,255,0.04);
+    --heat-1: rgba(255,255,255,0.15);
+    --heat-2: rgba(255,255,255,0.30);
+    --heat-3: rgba(255,255,255,0.50);
+    --heat-4: rgba(255,255,255,0.78);
+    --font-display: "JetBrains Mono", ui-monospace, "SF Mono", Menlo, monospace;
+    --font-body: "Inter", -apple-system, "SF Pro Text", sans-serif;
+    --font-mono: "JetBrains Mono", ui-monospace, "SF Mono", Menlo, monospace;
+    --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  [hidden] { display: none !important; }
+  body {
+    background: var(--bg-deep);
+    color: var(--text-secondary);
+    font-family: var(--font-body);
+    font-size: 15px;
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* ── Demo chrome (not product UI) ─────────────────────── */
+  .demo-bar {
+    position: fixed; top: 16px; right: 20px; z-index: 100;
+    display: flex; gap: 4px;
+    background: var(--bg-surface);
+    border: 1px solid var(--border-standard);
+    border-radius: 8px; padding: 3px;
+  }
+  .demo-bar button {
+    font-family: var(--font-mono); font-size: 11px; font-weight: 510;
+    color: var(--text-tertiary); background: transparent; border: none;
+    padding: 6px 12px; border-radius: 5px; cursor: pointer;
+    transition: color 150ms var(--ease-out), background-color 150ms var(--ease-out);
+  }
+  .demo-bar button:hover { color: var(--text-primary); }
+  .demo-bar button.active { background: rgba(255,255,255,0.08); color: var(--text-primary); }
+  .demo-note {
+    position: fixed; bottom: 16px; right: 20px; z-index: 100;
+    font-family: var(--font-mono); font-size: 10px; color: var(--text-quaternary);
+  }
+
+  /* ── App frame ────────────────────────────────────────── */
+  .app { display: flex; min-height: 100vh; }
+
+  /* Navigation island — collapsed keycap state */
+  .island {
+    width: 56px; flex-shrink: 0;
+    display: flex; flex-direction: column; align-items: center;
+    padding-top: 64px; gap: 4px;
+  }
+  .keycap {
+    width: 40px; height: 40px;
+    display: grid; place-items: center;
+    font-family: var(--font-mono); font-size: 14px; font-weight: 510;
+    color: var(--text-quaternary);
+    border-radius: 8px;
+    position: relative;
+    transition: color 150ms var(--ease-out), background-color 150ms var(--ease-out);
+  }
+  .keycap:hover { color: var(--text-secondary); background: rgba(255,255,255,0.02); }
+  .keycap.active { color: var(--text-primary); }
+  .keycap.active::before {
+    content: ""; position: absolute; left: -8px; top: 50%; transform: translateY(-50%);
+    width: 3px; height: 16px; border-radius: 2px;
+    background: var(--text-primary);
+  }
+  .island-divider { width: 20px; height: 1px; background: var(--border-standard); margin: 8px 0; }
+  .island-group {
+    font-family: var(--font-mono); font-size: 9px; color: var(--text-quaternary);
+    letter-spacing: 0.08em; margin: 10px 0 2px;
+    writing-mode: initial;
+  }
+
+  /* ── Page body ────────────────────────────────────────── */
+  .page {
+    flex: 1;
+    padding: 56px 48px 96px 40px;
+    max-width: 1180px;
+  }
+  .page-header {
+    display: flex; align-items: flex-end; justify-content: space-between;
+    margin-bottom: 28px;
+  }
+  .page-eyebrow {
+    font-family: var(--font-mono); font-size: 11px; font-weight: 510;
+    color: var(--text-quaternary); text-transform: uppercase; letter-spacing: 0.08em;
+    margin-bottom: 10px;
+  }
+  .page-title {
+    font-family: var(--font-display);
+    font-size: 24px; font-weight: 510; letter-spacing: -0.2px;
+    color: var(--text-primary);
+  }
+  .page-sub { font-size: 14px; color: var(--text-tertiary); margin-top: 6px; }
+  .header-meta { display: flex; align-items: center; gap: 14px; }
+  .meta-text { font-family: var(--font-mono); font-size: 11px; color: var(--text-quaternary); }
+  .btn-ghost {
+    font-family: var(--font-body); font-size: 13px; font-weight: 510;
+    color: var(--text-secondary);
+    background: rgba(255,255,255,0.02);
+    border: 1px solid var(--border-standard);
+    border-radius: 6px; padding: 8px 14px; cursor: pointer;
+    display: inline-flex; align-items: center; gap: 7px;
+    transition: background-color 160ms var(--ease-out), color 160ms var(--ease-out);
+  }
+  .btn-ghost:hover { background: rgba(255,255,255,0.04); color: var(--text-primary); }
+  .btn-ghost svg { width: 13px; height: 13px; }
+
+  /* ── Provider grid ────────────────────────────────────── */
+  .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+
+  .card {
+    background: rgba(255,255,255,0.02);
+    border: 1px solid var(--border-standard);
+    border-radius: 8px;
+    padding: 20px 22px 16px;
+    transition: background-color 160ms var(--ease-out), border-color 160ms var(--ease-out);
+  }
+  .card:hover { background: rgba(255,255,255,0.04); border-color: rgba(255,255,255,0.12); }
+  .card.dim .windows, .card.dim .meters { opacity: 0.45; }
+
+  .card-head { display: flex; align-items: center; gap: 10px; margin-bottom: 16px; }
+  .card-name {
+    font-family: var(--font-display); font-size: 14px; font-weight: 590;
+    color: var(--text-primary); letter-spacing: -0.1px;
+  }
+  .pill {
+    font-family: var(--font-mono); font-size: 10px; font-weight: 510;
+    color: var(--text-tertiary);
+    border: 1px solid var(--border-solid);
+    border-radius: 9999px; padding: 2px 9px;
+  }
+  .pill.solid { background: var(--text-primary); color: var(--bg-deep); border-color: transparent; }
+  .card-status { margin-left: auto; display: flex; align-items: center; gap: 7px; }
+  .prov-dot { width: 6px; height: 6px; border-radius: 50%; }
+  .prov-dot.official { background: var(--heat-4); }
+  .prov-dot.experimental { background: transparent; border: 1px solid var(--text-quaternary); }
+  .prov-label { font-family: var(--font-mono); font-size: 10px; color: var(--text-quaternary); }
+
+  /* Window rows */
+  .windows { display: flex; flex-direction: column; gap: 11px; }
+  .win-row { display: grid; grid-template-columns: 64px 1fr 46px 64px; align-items: center; gap: 12px; }
+  .win-label {
+    font-family: var(--font-mono); font-size: 10px; font-weight: 510;
+    color: var(--text-tertiary); text-transform: uppercase; letter-spacing: 0.06em;
+  }
+  .win-label .win-model { color: var(--text-quaternary); text-transform: none; letter-spacing: 0; }
+  .bar {
+    position: relative; height: 6px; border-radius: 3px;
+    background: var(--heat-0);
+    overflow: visible;
+  }
+  .bar-fill { position: absolute; inset: 0 auto 0 0; border-radius: 3px; }
+  .pace-tick {
+    position: absolute; top: -2px; bottom: -2px; width: 1px;
+    background: var(--text-quaternary);
+  }
+  .pace-tick::after {
+    content: ""; position: absolute; top: -3px; left: -1.5px;
+    width: 4px; height: 4px; border-radius: 50%;
+    background: var(--text-tertiary);
+  }
+  .win-pct {
+    font-family: var(--font-mono); font-size: 12px; font-weight: 510;
+    color: var(--text-primary); text-align: right;
+  }
+  .win-pct.unknown { color: var(--text-quaternary); font-weight: 400; }
+  .win-reset {
+    font-family: var(--font-mono); font-size: 10px;
+    color: var(--text-quaternary); text-align: right;
+    white-space: nowrap;
+  }
+  .pace-note {
+    font-family: var(--font-mono); font-size: 9px; color: var(--text-quaternary);
+    margin-top: 3px; text-align: right;
+  }
+
+  /* Meters */
+  .meters {
+    margin-top: 14px; padding-top: 12px;
+    border-top: 1px solid var(--border-subtle);
+    display: flex; flex-wrap: wrap; gap: 6px 18px;
+  }
+  .meter { font-family: var(--font-mono); font-size: 11px; color: var(--text-tertiary); }
+  .meter b { color: var(--text-secondary); font-weight: 510; }
+
+  /* State cards */
+  .state-body {
+    display: flex; flex-direction: column; gap: 8px;
+    padding: 6px 0 4px;
+  }
+  .state-title { font-size: 13px; font-weight: 510; color: var(--text-secondary); }
+  .state-hint { font-family: var(--font-mono); font-size: 11px; color: var(--text-quaternary); line-height: 1.6; }
+  .state-hint code {
+    background: var(--heat-0); border: 1px solid var(--border-subtle);
+    border-radius: 4px; padding: 1px 5px; color: var(--text-secondary);
+  }
+  .state-badge {
+    display: inline-flex; align-items: center; gap: 6px;
+    font-family: var(--font-mono); font-size: 10px; font-weight: 510;
+    color: var(--text-tertiary);
+    border: 1px solid var(--border-solid); border-radius: 9999px;
+    padding: 2px 9px; width: fit-content;
+  }
+  .state-badge .blink { width: 5px; height: 5px; border-radius: 50%; background: var(--text-tertiary); }
+
+  /* Legend */
+  .legend {
+    margin-top: 22px;
+    display: flex; gap: 22px; align-items: center;
+    font-family: var(--font-mono); font-size: 10px; color: var(--text-quaternary);
+  }
+  .legend-item { display: flex; align-items: center; gap: 7px; }
+  .legend .swatch { width: 14px; height: 6px; border-radius: 3px; }
+  .legend .tick-demo { width: 1px; height: 10px; background: var(--text-quaternary); position: relative; }
+  .legend .tick-demo::after { content: ""; position: absolute; top: -3px; left: -1.5px; width: 4px; height: 4px; border-radius: 50%; background: var(--text-tertiary); }
+
+  /* ── Popover view ─────────────────────────────────────── */
+  .popover-stage {
+    min-height: 100vh;
+    display: grid; place-items: center;
+    background:
+      radial-gradient(1200px 500px at 70% -10%, rgba(255,255,255,0.03), transparent),
+      var(--bg-deep);
+    padding: 60px 20px;
+  }
+  .popover {
+    width: 360px;
+    background: rgba(25, 26, 27, 0.92);
+    border: 1px solid var(--border-standard);
+    border-radius: 12px;
+    padding: 18px 18px 14px;
+    box-shadow: 0 24px 64px rgba(0,0,0,0.5);
+  }
+  .pop-section-label {
+    font-family: var(--font-mono); font-size: 10px; font-weight: 510;
+    color: var(--text-quaternary); text-transform: uppercase; letter-spacing: 0.08em;
+    display: flex; align-items: baseline; justify-content: space-between;
+    margin-bottom: 10px;
+  }
+  .pop-section-label .right { font-size: 9px; text-transform: none; letter-spacing: 0; }
+  .pop-chart {
+    height: 64px; border-radius: 6px;
+    background: var(--heat-0);
+    border: 1px solid var(--border-subtle);
+    display: grid; place-items: center;
+    font-family: var(--font-mono); font-size: 9px; color: var(--text-quaternary);
+    margin-bottom: 12px;
+    position: relative; overflow: hidden;
+  }
+  .pop-chart svg { position: absolute; inset: 0; width: 100%; height: 100%; }
+  .pop-kpis { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; margin-bottom: 16px; }
+  .kpi {
+    background: rgba(255,255,255,0.02);
+    border: 1px solid var(--border-subtle);
+    border-radius: 6px; padding: 8px 10px;
+  }
+  .kpi .v { font-family: var(--font-mono); font-size: 14px; font-weight: 590; color: var(--text-primary); }
+  .kpi .k { font-family: var(--font-mono); font-size: 9px; color: var(--text-quaternary); text-transform: uppercase; letter-spacing: 0.06em; margin-top: 2px; }
+  .pop-divider { height: 1px; background: var(--border-subtle); margin: 4px 0 14px; }
+
+  .pop-quota-rows { display: flex; flex-direction: column; gap: 14px; }
+  .pq-row { display: flex; flex-direction: column; gap: 6px; }
+  .pq-head { display: flex; align-items: center; gap: 6px; }
+  .pq-head .pq-name { font-family: var(--font-mono); font-size: 11px; font-weight: 510; color: var(--text-primary); }
+  .pq-win {
+    display: grid; grid-template-columns: 22px 1fr auto; align-items: center; gap: 8px;
+    padding-left: 11px;
+  }
+  .pq-win-label {
+    font-family: var(--font-mono); font-size: 9px; font-weight: 510;
+    color: var(--text-quaternary); text-transform: uppercase; letter-spacing: 0.05em;
+  }
+  .pq-bar { position: relative; height: 5px; border-radius: 3px; background: var(--heat-0); width: 100%; }
+  .pq-win-meta { font-family: var(--font-mono); font-size: 10px; color: var(--text-tertiary); white-space: nowrap; text-align: right; }
+  .pq-win-meta b { color: var(--text-primary); font-weight: 510; }
+  .pq-fill { position: absolute; inset: 0 auto 0 0; border-radius: 3px; }
+  .pq-meta { font-family: var(--font-mono); font-size: 10px; color: var(--text-tertiary); white-space: nowrap; text-align: right; }
+  .pq-meta b { color: var(--text-primary); font-weight: 510; }
+  .pq-more {
+    margin-top: 10px;
+    font-family: var(--font-mono); font-size: 10px; color: var(--text-quaternary);
+    display: flex; justify-content: space-between; align-items: center;
+  }
+  .pq-more .open { color: var(--text-tertiary); display: inline-flex; align-items: center; gap: 4px; }
+  .pq-more .open:hover { color: var(--text-primary); }
+
+  @media (prefers-reduced-motion: reduce) {
+    * { transition: none !important; animation: none !important; }
+  }
+  @media (max-width: 900px) {
+    .grid { grid-template-columns: 1fr; }
+    .page { padding: 40px 20px 64px 20px; }
+  }
+</style>
+</head>
+<body>
+
+<!-- Demo chrome -->
+<div class="demo-bar">
+  <button id="btn-page" class="active" onclick="showView('page')">Quota 页面</button>
+  <button id="btn-popover" onclick="showView('popover')">Menubar Popover</button>
+</div>
+<div class="demo-note">OhMyC · Quota UI mockup · 2026-10-01</div>
+
+<!-- ═══════════════ View 1: Quota page ═══════════════ -->
+<div class="app" id="view-page">
+  <nav class="island">
+    <div class="island-group">SIG</div>
+    <div class="keycap">M</div>
+    <div class="keycap">T</div>
+    <div class="keycap active">Q</div>
+    <div class="island-divider"></div>
+    <div class="island-group">EXP</div>
+    <div class="keycap">A</div>
+    <div class="keycap">C</div>
+    <div class="keycap">S</div>
+    <div class="keycap">P</div>
+  </nav>
+
+  <main class="page">
+    <header class="page-header">
+      <div>
+        <div class="page-eyebrow">Signal</div>
+        <h1 class="page-title">Quota</h1>
+        <p class="page-sub">Subscription usage across your coding CLIs — 5h windows, weekly pools, monthly budgets.</p>
+      </div>
+      <div class="header-meta">
+        <span class="meta-text" id="updated-at">updated 2 min ago · every 5 min</span>
+        <button class="btn-ghost">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-2.64-6.36"/><path d="M21 3v6h-6"/></svg>
+          Refresh
+        </button>
+      </div>
+    </header>
+
+    <div class="grid">
+
+      <!-- Claude — healthy, multi-window, pace tick -->
+      <section class="card">
+        <div class="card-head">
+          <span class="card-name">Claude</span>
+          <span class="pill">Max 5x</span>
+          <span class="card-status"><span class="prov-dot experimental"></span><span class="prov-label">experimental</span></span>
+        </div>
+        <div class="windows">
+          <div class="win-row">
+            <span class="win-label">5h</span>
+            <div class="bar"><div class="bar-fill" style="width:34%; background: var(--heat-2)"></div><div class="pace-tick" style="left:58%"></div></div>
+            <span class="win-pct">34%</span>
+            <span class="win-reset" data-reset-min="132">2h 12m</span>
+          </div>
+          <div class="win-row">
+            <span class="win-label">week</span>
+            <div class="bar"><div class="bar-fill" style="width:61%; background: var(--heat-3)"></div><div class="pace-tick" style="left:55%"></div></div>
+            <span class="win-pct">61%</span>
+            <span class="win-reset" data-reset-min="5910">4d 2h</span>
+          </div>
+          <div class="win-row">
+            <span class="win-label">week <span class="win-model">sonnet</span></span>
+            <div class="bar"><div class="bar-fill" style="width:12%; background: var(--heat-1)"></div><div class="pace-tick" style="left:55%"></div></div>
+            <span class="win-pct">12%</span>
+            <span class="win-reset" data-reset-min="7630">5d 7h</span>
+          </div>
+        </div>
+        <div class="meters">
+          <span class="meter">extra usage <b>$3.20</b> / $50 mo</span>
+        </div>
+      </section>
+
+      <!-- Codex — hot window -->
+      <section class="card">
+        <div class="card-head">
+          <span class="card-name">Codex</span>
+          <span class="pill">Pro</span>
+          <span class="card-status"><span class="prov-dot experimental"></span><span class="prov-label">experimental</span></span>
+        </div>
+        <div class="windows">
+          <div class="win-row">
+            <span class="win-label">5h</span>
+            <div class="bar"><div class="bar-fill" style="width:92%; background: var(--heat-4)"></div><div class="pace-tick" style="left:71%"></div></div>
+            <span class="win-pct">92%</span>
+            <span class="win-reset" data-reset-min="41">41m</span>
+          </div>
+          <div class="pace-note">pace +21% ahead — runs out before reset</div>
+          <div class="win-row">
+            <span class="win-label">week</span>
+            <div class="bar"><div class="bar-fill" style="width:47%; background: var(--heat-2)"></div><div class="pace-tick" style="left:44%"></div></div>
+            <span class="win-pct">47%</span>
+            <span class="win-reset" data-reset-min="5210">3d 15h</span>
+          </div>
+        </div>
+        <div class="meters">
+          <span class="meter">credits <b>$766.76</b></span>
+          <span class="meter">resets banked <b>×2</b></span>
+        </div>
+      </section>
+
+      <!-- Cursor — monthly only -->
+      <section class="card">
+        <div class="card-head">
+          <span class="card-name">Cursor</span>
+          <span class="pill">Pro</span>
+          <span class="card-status"><span class="prov-dot experimental"></span><span class="prov-label">experimental</span></span>
+        </div>
+        <div class="windows">
+          <div class="win-row">
+            <span class="win-label">month</span>
+            <div class="bar"><div class="bar-fill" style="width:53%; background: var(--heat-3)"></div><div class="pace-tick" style="left:38%"></div></div>
+            <span class="win-pct">53%</span>
+            <span class="win-reset" data-reset-min="18480">12d 20h</span>
+          </div>
+        </div>
+        <div class="meters">
+          <span class="meter">included <b>$10.60</b> / $20 left</span>
+          <span class="meter">on-demand <b>off</b></span>
+        </div>
+      </section>
+
+      <!-- Kimi — ok, CN currency meter -->
+      <section class="card">
+        <div class="card-head">
+          <span class="card-name">Kimi</span>
+          <span class="pill">Plus</span>
+          <span class="card-status"><span class="prov-dot experimental"></span><span class="prov-label">experimental</span></span>
+        </div>
+        <div class="windows">
+          <div class="win-row">
+            <span class="win-label">5h</span>
+            <div class="bar"><div class="bar-fill" style="width:41%; background: var(--heat-2)"></div><div class="pace-tick" style="left:30%"></div></div>
+            <span class="win-pct">41%</span>
+            <span class="win-reset" data-reset-min="208">3h 28m</span>
+          </div>
+          <div class="win-row">
+            <span class="win-label">month</span>
+            <div class="bar"><div class="bar-fill" style="width:22%; background: var(--heat-1)"></div><div class="pace-tick" style="left:33%"></div></div>
+            <span class="win-pct">22%</span>
+            <span class="win-reset" data-reset-min="21900">15d 5h</span>
+          </div>
+        </div>
+        <div class="meters">
+          <span class="meter">extra usage <b>¥48.50</b></span>
+        </div>
+      </section>
+
+      <!-- OpenCode Go — official endpoint -->
+      <section class="card">
+        <div class="card-head">
+          <span class="card-name">OpenCode Go</span>
+          <span class="pill">Go</span>
+          <span class="card-status"><span class="prov-dot official"></span><span class="prov-label">official</span></span>
+        </div>
+        <div class="windows">
+          <div class="win-row">
+            <span class="win-label">5h</span>
+            <div class="bar"><div class="bar-fill" style="width:4%; background: var(--heat-1)"></div><div class="pace-tick" style="left:12%"></div></div>
+            <span class="win-pct">4%</span>
+            <span class="win-reset" data-reset-min="262">4h 22m</span>
+          </div>
+          <div class="win-row">
+            <span class="win-label">week</span>
+            <div class="bar"><div class="bar-fill" style="width:3%; background: var(--heat-1)"></div><div class="pace-tick" style="left:14%"></div></div>
+            <span class="win-pct">3%</span>
+            <span class="win-reset" data-reset-min="5900">4d 2h</span>
+          </div>
+          <div class="win-row">
+            <span class="win-label">month</span>
+            <div class="bar"><div class="bar-fill" style="width:1%; background: var(--heat-1)"></div><div class="pace-tick" style="left:9%"></div></div>
+            <span class="win-pct">1%</span>
+            <span class="win-reset" data-reset-min="27000">18d 18h</span>
+          </div>
+        </div>
+      </section>
+
+      <!-- Grok — TokenExpired state -->
+      <section class="card dim">
+        <div class="card-head">
+          <span class="card-name">Grok</span>
+          <span class="pill">SuperGrok</span>
+          <span class="card-status"><span class="state-badge"><span class="blink"></span>token expired</span></span>
+        </div>
+        <div class="state-body">
+          <p class="state-title">Credentials expired</p>
+          <p class="state-hint">Tokens are read-only here by design. Open the official CLI once to refresh:<br><code>grok</code> → sign in happens automatically</p>
+        </div>
+      </section>
+
+      <!-- Gemini — NotLoggedIn state -->
+      <section class="card dim">
+        <div class="card-head">
+          <span class="card-name">Gemini</span>
+          <span class="card-status"><span class="state-badge">not logged in</span></span>
+        </div>
+        <div class="state-body">
+          <p class="state-title">No credentials found</p>
+          <p class="state-hint">Install and sign in once:<br><code>npx @google/gemini-cli</code> → <code>/login</code></p>
+        </div>
+      </section>
+
+    </div>
+
+    <div class="legend">
+      <span class="legend-item"><span class="swatch" style="background: var(--heat-1)"></span>low</span>
+      <span class="legend-item"><span class="swatch" style="background: var(--heat-2)"></span>mid</span>
+      <span class="legend-item"><span class="swatch" style="background: var(--heat-3)"></span>high</span>
+      <span class="legend-item"><span class="swatch" style="background: var(--heat-4)"></span>critical</span>
+      <span class="legend-item"><span class="tick-demo"></span>pace = time elapsed</span>
+      <span class="legend-item"><span class="prov-dot official"></span>official endpoint</span>
+      <span class="legend-item"><span class="prov-dot experimental"></span>undocumented endpoint</span>
+    </div>
+  </main>
+</div>
+
+<!-- ═══════════════ View 2: Menubar popover ═══════════════ -->
+<div class="popover-stage" id="view-popover" hidden>
+  <div class="popover">
+    <div class="pop-section-label"><span>▌ Activity</span><span class="right">this week</span></div>
+    <div class="pop-chart">
+      <svg viewBox="0 0 324 64" preserveAspectRatio="none">
+        <path d="M0,52 L24,48 L48,50 L72,38 L96,42 L120,30 L144,34 L168,22 L192,28 L216,16 L240,24 L264,12 L288,20 L324,8"
+              fill="none" stroke="rgba(255,255,255,0.35)" stroke-width="1.5"/>
+        <path d="M0,52 L24,48 L48,50 L72,38 L96,42 L120,30 L144,34 L168,22 L192,28 L216,16 L240,24 L264,12 L288,20 L324,8 L324,64 L0,64 Z"
+              fill="rgba(255,255,255,0.04)"/>
+        <circle cx="264" cy="12" r="2.5" fill="rgba(255,255,255,0.6)"/>
+      </svg>
+    </div>
+    <div class="pop-kpis">
+      <div class="kpi"><div class="v">842k</div><div class="k">tokens</div></div>
+      <div class="kpi"><div class="v">12</div><div class="k">sessions</div></div>
+      <div class="kpi"><div class="v">Fri</div><div class="k">peak</div></div>
+    </div>
+
+    <div class="pop-divider"></div>
+
+    <div class="pop-section-label"><span>▌ Quota</span><span class="right" id="pop-updated">2m ago</span></div>
+    <div class="pop-quota-rows">
+      <div class="pq-row">
+        <div class="pq-head"><span class="pq-name">Codex</span></div>
+        <div class="pq-win">
+          <span class="pq-win-label">5h</span>
+          <div class="pq-bar"><div class="pq-fill" style="width:92%; background: var(--heat-4)"></div></div>
+          <span class="pq-win-meta"><b>92%</b> · 41m</span>
+        </div>
+        <div class="pq-win">
+          <span class="pq-win-label">wk</span>
+          <div class="pq-bar"><div class="pq-fill" style="width:47%; background: var(--heat-2)"></div></div>
+          <span class="pq-win-meta"><b>47%</b> · 3d</span>
+        </div>
+      </div>
+      <div class="pq-row">
+        <div class="pq-head"><span class="pq-name">Claude</span></div>
+        <div class="pq-win">
+          <span class="pq-win-label">5h</span>
+          <div class="pq-bar"><div class="pq-fill" style="width:34%; background: var(--heat-2)"></div></div>
+          <span class="pq-win-meta"><b>34%</b> · 2h</span>
+        </div>
+        <div class="pq-win">
+          <span class="pq-win-label">wk</span>
+          <div class="pq-bar"><div class="pq-fill" style="width:61%; background: var(--heat-3)"></div></div>
+          <span class="pq-win-meta"><b>61%</b> · 4d</span>
+        </div>
+      </div>
+      <div class="pq-row">
+        <div class="pq-head"><span class="pq-name">Cursor</span></div>
+        <div class="pq-win">
+          <span class="pq-win-label">mo</span>
+          <div class="pq-bar"><div class="pq-fill" style="width:53%; background: var(--heat-2)"></div></div>
+          <span class="pq-win-meta"><b>53%</b> · 12d</span>
+        </div>
+      </div>
+    </div>
+    <div class="pq-more">
+      <span>+ 4 more healthy</span>
+      <span class="open">Open OhMyC <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M7 17L17 7M9 7h8v8"/></svg></span>
+    </div>
+  </div>
+</div>
+
+<script>
+  function showView(name) {
+    document.getElementById('view-page').hidden = name !== 'page';
+    document.getElementById('view-popover').hidden = name !== 'popover';
+    document.getElementById('btn-page').classList.toggle('active', name === 'page');
+    document.getElementById('btn-popover').classList.toggle('active', name === 'popover');
+  }
+
+  // Live countdowns from data-reset-min
+  function fmt(min) {
+    if (min < 60) return Math.round(min) + 'm';
+    if (min < 1440) { const h = Math.floor(min / 60), m = Math.round(min % 60); return m ? h + 'h ' + m + 'm' : h + 'h'; }
+    const d = Math.floor(min / 1440), h = Math.floor((min % 1440) / 60);
+    return h ? d + 'd ' + h + 'h' : d + 'd';
+  }
+  const start = Date.now();
+  document.querySelectorAll('[data-reset-min]').forEach((el) => {
+    el.dataset.base = (Number(el.dataset.resetMin) * 60000) + start;
+  });
+  const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  function tick() {
+    const now = Date.now();
+    document.querySelectorAll('[data-reset-min]').forEach((el) => {
+      el.textContent = fmt(Math.max(0, (Number(el.dataset.base) - now) / 60000));
+    });
+  }
+  tick();
+  if (!reduce) setInterval(tick, 30000);
+</script>
+</body>
+</html>

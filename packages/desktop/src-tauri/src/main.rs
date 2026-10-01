@@ -60,6 +60,8 @@ fn main() {
             ohmyc_desktop_lib::api::plugins::plugins_get,
             ohmyc_desktop_lib::api::plugins::marketplaces_list,
             ohmyc_desktop_lib::api::plugins::marketplaces_get,
+            ohmyc_desktop_lib::api::quota::quota_list,
+            ohmyc_desktop_lib::api::quota::quota_refresh,
         ])
         .setup(|app| {
             #[cfg(target_os = "macos")]
@@ -218,6 +220,11 @@ fn main() {
 
             // Filesystem watcher → frontend "fs:changed" events.
             ohmyc_desktop_lib::events::spawn_watcher(&app.handle().clone());
+
+            // Quota poller: shared cache + `quota:changed` events every 5 min
+            // (OHMYC_QUOTA_POLL_SECS overrides).
+            app.manage(ohmyc_desktop_lib::quota_poller::QuotaCache::default());
+            ohmyc_desktop_lib::quota_poller::spawn_poller(&app.handle().clone());
 
             Ok(())
         })

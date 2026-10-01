@@ -5,6 +5,7 @@ import { useEffect, useState } from 'react'
 
 import { AreaTrendChart } from './area-trend-chart'
 import { MenubarOnboard } from './menubar-onboard'
+import { MenubarQuotaSection } from './quota-section'
 import { RecentHeatmap } from './recent-heatmap'
 import { menubarPopoverStyles } from './styles'
 import { type MenubarView, ViewSwitch } from './view-switch'
@@ -129,6 +130,8 @@ function MenubarActivity() {
               <span className="menubar-label">Peak</span>
             </div>
           </div>
+
+          <MenubarQuotaSection nowMs={today.getTime()} />
 
           <div className="mt-3.5 flex items-center justify-between border-t border-[var(--border-subtle)] pt-3">
             <span className="menubar-label menubar-footer-meta">

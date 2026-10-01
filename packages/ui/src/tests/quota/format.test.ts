@@ -1,0 +1,157 @@
+import {
+  describe,
+  expect,
+  it,
+} from 'vitest'
+
+import {
+  formatCountdown,
+  formatCountdownShort,
+  formatMeterValue,
+  formatUpdatedAgo,
+  formatUpdatedAgoShort,
+  heatBucket,
+  latestFetchedAt,
+  paceDelta,
+  paceElapsed,
+  windowTag,
+  windowTagShort,
+} from '@/components/quota/format'
+
+import type { UsageWindow } from '@/hooks/use-quota'
+
+function windowWith(overrides: Partial<UsageWindow>): UsageWindow {
+  return {
+    kind: 'other',
+    label: 'x',
+    usedPercent: null,
+    resetsAt: null,
+    windowSeconds: null,
+    model: null,
+    ...overrides,
+  }
+}
+
+const NOW = Date.UTC(2026, 9, 1, 12, 0, 0)
+
+describe('windowTag', () => {
+  it('derives tags from windowSeconds', () => {
+    expect(windowTag(windowWith({ windowSeconds: 18_000 }))).toBe('5H')
+    expect(windowTag(windowWith({ windowSeconds: 604_800 }))).toBe('WEEK')
+    expect(windowTag(windowWith({ windowSeconds: 86_400 }))).toBe('1D')
+    expect(windowTag(windowWith({ windowSeconds: 2_592_000 }))).toBe('MO')
+    expect(windowTag(windowWith({ windowSeconds: 3600 }))).toBe('OTHER')
+  })
+
+  it('falls back to kind when windowSeconds is null', () => {
+    expect(windowTag(windowWith({ kind: 'session' }))).toBe('5H')
+    expect(windowTag(windowWith({ kind: 'weekly' }))).toBe('WEEK')
+    expect(windowTag(windowWith({ kind: 'monthly' }))).toBe('MO')
+    expect(windowTag(windowWith({ kind: 'daily' }))).toBe('1D')
+    expect(windowTag(windowWith({ kind: 'other' }))).toBe('OTHER')
+  })
+
+  it('has a 2-char popover variant', () => {
+    expect(windowTagShort(windowWith({ windowSeconds: 18_000 }))).toBe('5H')
+    expect(windowTagShort(windowWith({ windowSeconds: 604_800 }))).toBe('WK')
+    expect(windowTagShort(windowWith({ kind: 'monthly' }))).toBe('MO')
+    expect(windowTagShort(windowWith({ windowSeconds: 3600 }))).toBe('OT')
+  })
+})
+
+describe('heatBucket', () => {
+  it('maps percentages onto the heat ladder', () => {
+    expect(heatBucket(0)).toBe(1)
+    expect(heatBucket(24)).toBe(1)
+    expect(heatBucket(25)).toBe(2)
+    expect(heatBucket(49)).toBe(2)
+    expect(heatBucket(50)).toBe(3)
+    expect(heatBucket(74)).toBe(3)
+    expect(heatBucket(75)).toBe(4)
+    expect(heatBucket(100)).toBe(4)
+  })
+})
+
+describe('formatCountdown', () => {
+  it('formats minutes, hours, and days', () => {
+    const at = (offsetMs: number) => new Date(NOW + offsetMs).toISOString()
+    expect(formatCountdown(at(41 * 60_000), NOW)).toBe('41m')
+    expect(formatCountdown(at(132 * 60_000), NOW)).toBe('2h 12m')
+    expect(formatCountdown(at(4 * 3_600_000), NOW)).toBe('4h')
+    expect(formatCountdown(at((5910) * 60_000), NOW)).toBe('4d 2h')
+    expect(formatCountdown(at(3 * 86_400_000), NOW)).toBe('3d')
+    expect(formatCountdown(at(-60_000), NOW)).toBe('0m')
+    expect(formatCountdown('not a date', NOW)).toBeNull()
+  })
+})
+
+describe('formatCountdownShort', () => {
+  it('keeps a single unit', () => {
+    const at = (offsetMs: number) => new Date(NOW + offsetMs).toISOString()
+    expect(formatCountdownShort(at(41 * 60_000), NOW)).toBe('41m')
+    expect(formatCountdownShort(at(132 * 60_000), NOW)).toBe('2h')
+    expect(formatCountdownShort(at(5910 * 60_000), NOW)).toBe('4d')
+  })
+})
+
+describe('pace', () => {
+  it('computes elapsed fraction from windowSeconds and resetsAt', () => {
+    const window = windowWith({
+      windowSeconds: 18_000,
+      resetsAt: new Date(NOW + 3_600_000).toISOString(), // 1h left of 5h
+    })
+    expect(paceElapsed(window, NOW)).toBeCloseTo(0.8, 5)
+  })
+
+  it('is null without windowSeconds or resetsAt', () => {
+    expect(paceElapsed(windowWith({ windowSeconds: 18_000 }), NOW)).toBeNull()
+    expect(paceElapsed(windowWith({ resetsAt: new Date(NOW).toISOString() }), NOW)).toBeNull()
+  })
+
+  it('clamps into 0..1 when the reset instant lies outside the window', () => {
+    const future = windowWith({
+      windowSeconds: 18_000,
+      resetsAt: new Date(NOW + 10 * 3_600_000).toISOString(),
+    })
+    expect(paceElapsed(future, NOW)).toBe(0)
+  })
+
+  it('paceDelta compares used% against elapsed time', () => {
+    const window = windowWith({
+      windowSeconds: 18_000,
+      resetsAt: new Date(NOW + 3_600_000).toISOString(),
+      usedPercent: 92,
+    })
+    expect(paceDelta(window, NOW)).toBeCloseTo(12, 5)
+    expect(paceDelta(windowWith({ ...window, usedPercent: null }), NOW)).toBeNull()
+  })
+})
+
+describe('formatMeterValue', () => {
+  it('formats dollars by currency, percent, and count', () => {
+    expect(formatMeterValue({ label: 'x', value: 766.76, kind: 'dollars', currency: 'USD' })).toBe('$766.76')
+    expect(formatMeterValue({ label: 'x', value: 48.5, kind: 'dollars', currency: 'CNY' })).toBe('¥48.50')
+    expect(formatMeterValue({ label: 'x', value: 3.2, kind: 'dollars', currency: null })).toBe('$3.20')
+    expect(formatMeterValue({ label: 'x', value: 20, kind: 'percent', currency: null })).toBe('20%')
+    expect(formatMeterValue({ label: 'x', value: 2, kind: 'count', currency: null })).toBe('2')
+  })
+})
+
+describe('updated-ago meta', () => {
+  it('formats the page and popover variants', () => {
+    expect(formatUpdatedAgo(NOW - 30_000, NOW)).toBe('just now')
+    expect(formatUpdatedAgo(NOW - 60_000, NOW)).toBe('1 min ago')
+    expect(formatUpdatedAgo(NOW - 5 * 60_000, NOW)).toBe('5 min ago')
+    expect(formatUpdatedAgoShort(NOW - 30_000, NOW)).toBe('now')
+    expect(formatUpdatedAgoShort(NOW - 7 * 60_000, NOW)).toBe('7m ago')
+  })
+
+  it('finds the newest fetchedAt', () => {
+    expect(latestFetchedAt([])).toBeNull()
+    expect(latestFetchedAt([
+      { fetchedAt: new Date(NOW - 120_000).toISOString() },
+      { fetchedAt: new Date(NOW - 30_000).toISOString() },
+      { fetchedAt: 'garbage' },
+    ])).toBe(NOW - 30_000)
+  })
+})

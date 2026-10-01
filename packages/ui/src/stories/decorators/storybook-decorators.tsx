@@ -64,6 +64,12 @@ export function installTimelineHandlers({
   setMockHandler('timeline.status', async () => status)
 }
 
+/** Quota handlers: `quota.list` serves the fixture; `quota.refresh` echoes it. */
+export function installQuotaHandlers(snapshots: unknown) {
+  setMockHandler('quota.list', async () => snapshots)
+  setMockHandler('quota.refresh', async () => snapshots)
+}
+
 export function MenubarFrame({ children }: { children: ReactNode }) {
   return (
     <div className="p-8">
