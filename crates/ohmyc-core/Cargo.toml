@@ -22,6 +22,9 @@ tempfile = { workspace = true }
 toml = "0.8"
 json5 = "0.4"
 sha2 = "0.10"
+# Synchronous HTTP for the quota module: rustls (no openssl), no default
+# extras (gzip/cookies) — quota responses are small JSON documents.
+ureq = { version = "3", default-features = false, features = ["rustls"] }
 
 [dev-dependencies]
 rstest = { workspace = true }
