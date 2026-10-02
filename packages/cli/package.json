@@ -32,7 +32,7 @@
   "dependencies": {
     "@ohmyc/shared": "workspace:*",
     "@ohmyc/timeline": "workspace:*",
-    "@ohmyc/timeline-plugin": "0.0.0-snapshot-20260615111700",
+    "@ohmyc/timeline-plugin": "1.0.6",
     "cac": "^6.7.14",
     "pino": "^10.3.1",
     "pino-roll": "^4.0.0"

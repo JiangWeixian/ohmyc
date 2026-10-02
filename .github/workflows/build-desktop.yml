@@ -24,6 +24,16 @@ jobs:
     runs-on: ${{ matrix.platform }}
     env:
       NODE_OPTIONS: --max-old-space-size=4096
+      # Signing secrets are lifted to job env so step-level `if:` can test them —
+      # the `secrets` context is not available in step conditions. Every one of
+      # these is empty until the repo owner adds the secret, and every signing
+      # step is gated on that emptiness, so unsigned builds keep working.
+      APPLE_SIGNING_IDENTITY: ${{ secrets.APPLE_SIGNING_IDENTITY }}
+      APPLE_CERTIFICATE: ${{ secrets.APPLE_CERTIFICATE }}
+      APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
+      APPLE_ID: ${{ secrets.APPLE_ID }}
+      APPLE_PASSWORD: ${{ secrets.APPLE_PASSWORD }}
+      APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
     permissions:
       contents: write
     steps:
@@ -180,9 +190,38 @@ jobs:
       - name: Build workspace dependencies
         run: pnpm --filter '@ohmyc/desktop...' build
 
+      # tauri.conf.json ships `signingIdentity: "-"` so local and unsigned CI
+      # builds still get an ad-hoc signature (required for Apple Silicon to run
+      # the app at all). When a real Developer ID secret exists we delete that
+      # key instead of overwriting it: Tauri does not document whether config or
+      # APPLE_SIGNING_IDENTITY wins when both are set, so we leave exactly one
+      # source in play rather than betting on the precedence.
+      - name: Hand macOS signing to the Developer ID certificate
+        if: ${{ matrix.platform == 'macos-14' && env.APPLE_SIGNING_IDENTITY != '' }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          node - <<'NODE'
+          const fs = require('node:fs')
+          const configPath = 'packages/desktop/src-tauri/tauri.conf.json'
+          const config = JSON.parse(fs.readFileSync(configPath, 'utf8'))
+          delete config.bundle?.macOS?.signingIdentity
+          fs.writeFileSync(configPath, `${JSON.stringify(config, null, 2)}\n`)
+          console.log('Removed ad-hoc signingIdentity; APPLE_SIGNING_IDENTITY now governs.')
+          NODE
+
       - uses: tauri-apps/tauri-action@v0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # Empty unless the secrets exist. tauri-action imports the .p12 into a
+          # temporary keychain when APPLE_CERTIFICATE is set; notarization runs
+          # only when the Apple ID trio is also present.
+          APPLE_SIGNING_IDENTITY: ${{ env.APPLE_SIGNING_IDENTITY }}
+          APPLE_CERTIFICATE: ${{ env.APPLE_CERTIFICATE }}
+          APPLE_CERTIFICATE_PASSWORD: ${{ env.APPLE_CERTIFICATE_PASSWORD }}
+          APPLE_ID: ${{ env.APPLE_ID }}
+          APPLE_PASSWORD: ${{ env.APPLE_PASSWORD }}
+          APPLE_TEAM_ID: ${{ env.APPLE_TEAM_ID }}
         with:
           tagName: ${{ steps.identity.outputs.release_tag }}
           releaseName: ${{ steps.identity.outputs.release_name }}

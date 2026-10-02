@@ -95,6 +95,36 @@ describe('TimelineView', () => {
     expect(container.textContent).toContain('older sessions hidden')
   })
 
+  it('tells a first-run user why the timeline is blank instead of blaming filters', async () => {
+    installTimelineHandlers()
+    // Nothing has ever been recorded — the state right after installing.
+    setMockHandler('timeline.status', async () => ({ sessionCount: 0, lastSyncAt: null }))
+    setMockHandler('timeline.events', async () => ({ days: [] }))
+
+    const { container } = renderWithProviders(<TimelineView />)
+
+    await waitFor(() => {
+      expect(container.textContent).toContain('No sessions recorded yet.')
+    })
+    expect(container.textContent).toContain(
+      'Run a session with Claude Code, Codex, or OpenCode and it shows up here.',
+    )
+    expect(container.textContent).not.toContain('No sessions match the current filters')
+  })
+
+  it('still blames filters when sessions exist but none match', async () => {
+    installTimelineHandlers()
+    setMockHandler('timeline.status', async () => ({ sessionCount: 9, lastSyncAt: null }))
+    setMockHandler('timeline.events', async () => ({ days: [] }))
+
+    const { container } = renderWithProviders(<TimelineView />)
+
+    await waitFor(() => {
+      expect(container.textContent).toContain('No sessions match the current filters')
+    })
+    expect(container.textContent).not.toContain('No sessions recorded yet.')
+  })
+
   it('switches heatmap metric, project, and year filters through accessible controls', async () => {
     const user = userEvent.setup()
     const { capturedHeatmapArgs, currentYear } = installTimelineHandlers()

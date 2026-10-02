@@ -7,8 +7,9 @@ import { defineConfig } from 'tsup'
 const TIMELINE_PLUGIN_PACKAGE = '@ohmyc/timeline-plugin'
 const require = createRequire(import.meta.url)
 
+// `.agents/plugins` is intentionally absent: the marketplace manifests live at
+// the ohmyc-plugins repo root, not inside the published plugin package.
 export const timelinePluginCopyPaths = [
-  '.agents/plugins',
   '.claude-plugin',
   '.codex-plugin',
   'dist',

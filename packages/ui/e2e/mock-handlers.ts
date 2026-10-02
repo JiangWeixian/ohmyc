@@ -8,6 +8,7 @@ import {
   e2eSkills,
 } from './fixtures/agents'
 
+import type { AgentStatus } from '../src/hooks/use-setup-install'
 import type { SetupStatus } from '../src/hooks/use-setup-status'
 import type { HeatmapPoint, TimelineMetric } from '../src/hooks/use-timeline'
 
@@ -57,19 +58,35 @@ function ready(): void {
   setMockHandler('marketplaces.list', async () => e2eMarketplaces)
 }
 
+/**
+ * Agent detection for the onboarding gate. Claude is installable, Codex is
+ * present but manual, OpenCode is absent — the mix the gate has to render.
+ */
+function detectableAgents(): void {
+  setMockHandler('setup.detect_agents', async () => [
+    { agent: 'claude', present: true, installed: false, automatic: true },
+    { agent: 'codex', present: true, installed: false, automatic: false },
+    { agent: 'opencode', present: false, installed: false, automatic: true },
+  ] satisfies AgentStatus[])
+  setMockHandler('setup.install', async () => [{ agent: 'claude', state: 'installed' }])
+}
+
 function missingStore(): void {
   resetMock()
   setMockHandler('setup.status', async () => ({ state: 'missing_store' }) satisfies SetupStatus)
+  detectableAgents()
 }
 
 function unreadableStore(): void {
   resetMock()
   setMockHandler('setup.status', async () => ({ state: 'unreadable_store' }) satisfies SetupStatus)
+  detectableAgents()
 }
 
 function internalError(): void {
   resetMock()
   setMockHandler('setup.status', async () => ({ state: 'internal_error' }) satisfies SetupStatus)
+  detectableAgents()
 }
 
 function empty(): void {
