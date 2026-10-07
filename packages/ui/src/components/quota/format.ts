@@ -21,6 +21,7 @@ export const PROVIDER_META: Record<QuotaProviderId, ProviderMeta> = {
   gemini: { name: 'Gemini', cli: 'gemini' },
   kimi: { name: 'Kimi', cli: 'kimi' },
   opencodeGo: { name: 'OpenCode Go', cli: 'opencode' },
+  glm: { name: 'GLM', cli: 'opencode auth login' },
 }
 
 /**

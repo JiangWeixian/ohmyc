@@ -16,11 +16,13 @@ pub enum QuotaProvider {
     /// Explicit rename keeps the camelCase frontend contract readable.
     #[serde(rename = "opencodeGo")]
     OpenCodeGo,
+    /// Zhipu GLM Coding Plan (Z.ai international / bigmodel.cn China).
+    Glm,
 }
 
 impl QuotaProvider {
     /// Fixed registry order: the order `fetch_all` returns snapshots in.
-    pub const ALL: [QuotaProvider; 7] = [
+    pub const ALL: [QuotaProvider; 8] = [
         QuotaProvider::Claude,
         QuotaProvider::Codex,
         QuotaProvider::Cursor,
@@ -28,6 +30,7 @@ impl QuotaProvider {
         QuotaProvider::Gemini,
         QuotaProvider::Kimi,
         QuotaProvider::OpenCodeGo,
+        QuotaProvider::Glm,
     ];
 }
 

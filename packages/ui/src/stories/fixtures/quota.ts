@@ -105,12 +105,38 @@ export function quotaSnapshots(): UsageSnapshot[] {
       ],
       meters: [],
     },
+    {
+      provider: 'glm',
+      status: 'ok',
+      identity: { email: null, plan: 'Pro' },
+      provenance: 'experimental',
+      fetchedAt: isoFromNow(-2 * MIN),
+      windows: [
+        { kind: 'session', label: '5h', usedPercent: 34, resetsAt: isoFromNow(120 * MIN), windowSeconds: 18_000, model: null },
+        { kind: 'weekly', label: 'Weekly', usedPercent: 98, resetsAt: isoFromNow(3400 * MIN), windowSeconds: 604_800, model: null },
+        { kind: 'monthly', label: 'mcp', usedPercent: 0, resetsAt: isoFromNow(18_000 * MIN), windowSeconds: null, model: null },
+      ],
+      meters: [
+        { label: 'search-prime', value: 0, kind: 'count', currency: null },
+        { label: 'web-reader', value: 0, kind: 'count', currency: null },
+        { label: 'zread', value: 0, kind: 'count', currency: null },
+      ],
+    },
   ]
 }
 
-/** All seven providers logged out — the page shows its empty-state note. */
+/** All eight providers logged out — the page shows its empty-state note. */
 export function quotaSnapshotsLoggedOut(): UsageSnapshot[] {
-  return (['claude', 'codex', 'cursor', 'grok', 'gemini', 'kimi', 'opencodeGo'] as const).map(provider => ({
+  return ([
+    'claude',
+    'codex',
+    'cursor',
+    'grok',
+    'gemini',
+    'kimi',
+    'opencodeGo',
+    'glm',
+  ] as const).map(provider => ({
     provider,
     status: 'notLoggedIn',
     identity: null,

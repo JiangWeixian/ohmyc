@@ -41,9 +41,9 @@ describe('QuotaView', () => {
     expect(screen.getByText('gemini')).toBeInTheDocument()
 
     // provenance markers render only on ok cards: one official (OpenCode Go),
-    // the other four healthy providers experimental; state cards show badges.
+    // the other five healthy providers experimental; state cards show badges.
     expect(screen.getByText('official')).toBeInTheDocument()
-    expect(screen.getAllByText('experimental')).toHaveLength(4)
+    expect(screen.getAllByText('experimental')).toHaveLength(5)
 
     // header meta + legend.
     expect(screen.getByText(/updated .*· every 5 min/)).toBeInTheDocument()
@@ -55,7 +55,7 @@ describe('QuotaView', () => {
     renderWithProviders(<QuotaView />)
 
     await waitFor(() => expect(screen.getByText(/sign in to a CLI to see its quota/)).toBeInTheDocument())
-    expect(screen.getAllByText('not logged in')).toHaveLength(7)
+    expect(screen.getAllByText('not logged in')).toHaveLength(8)
   })
 
   it('quota.refresh re-fetches and replaces the snapshots', async () => {
@@ -67,7 +67,7 @@ describe('QuotaView', () => {
     })
     renderWithProviders(<QuotaView />)
 
-    await waitFor(() => expect(screen.getAllByText('not logged in')).toHaveLength(7))
+    await waitFor(() => expect(screen.getAllByText('not logged in')).toHaveLength(8))
     screen.getByRole('button', { name: /refresh/i }).click()
     await waitFor(() => expect(screen.getByText('OpenCode Go')).toBeInTheDocument())
   })

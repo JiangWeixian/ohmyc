@@ -322,7 +322,7 @@ The desktop menubar popover is a compact monitor surface, not a miniature full p
 - **KPI/footer:** Three compact KPI cells (`Tokens`, `Sessions`, `Peak`) plus peak-day meta and Open action. Numeric treatment is themeable: monochrome/CRT/arcade/HUD variants should come from tokens, not component branches. Cyberpunk may keep interior HUD typography/color, but the macOS menubar popover should not use a hard HUD outer frame.
 
 ### Quota
-Quota lives in the navigation island under the `Signal` group (Monitor, Timeline, Quota) at `/explore/quota`; keycap `Q`, keyboard `g q`. It shows subscription quota for the user's coding CLIs (Claude, Codex, Cursor, Grok, Gemini, Kimi, OpenCode Go) from the read-only `ohmyc-core::quota` module. Reference mockup: `assets/quota-mockup-20261001/index.html`.
+Quota lives in the navigation island under the `Signal` group (Monitor, Timeline, Quota) at `/explore/quota`; keycap `Q`, keyboard `g q`. It shows subscription quota for the user's coding CLIs (Claude, Codex, Cursor, Grok, Gemini, Kimi, OpenCode Go, GLM) from the read-only `ohmyc-core::quota` module. Reference mockup: `assets/quota-mockup-20261001/index.html`.
 
 - **Page layout:** title row (`Quota` + subtitle) with right-aligned mono meta (`updated N min ago · every 5 min`) and a ghost Refresh action; below it a uniform 2-column grid of provider cards (no featured variant, per the card-grid rule). No first-paint skeleton — cards render directly in their current state.
 - **Provider card (Level-1 surface):** header row = provider name (display font, 14px/590) + plan pill + provenance marker (`official` solid dot / `experimental` hollow dot) at the right. Body = one row per quota window, then an optional meters row separated by a `border-subtle` top rule.

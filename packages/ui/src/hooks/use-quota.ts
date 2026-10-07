@@ -7,7 +7,7 @@ import { useEffect } from 'react'
 import { request } from '@/lib/transport'
 
 export type QuotaProviderId
-  = 'claude' | 'codex' | 'cursor' | 'gemini' | 'grok' | 'kimi' | 'opencodeGo'
+  = | 'claude' | 'codex' | 'cursor' | 'gemini' | 'glm' | 'grok' | 'kimi' | 'opencodeGo'
 
 export type WindowKind = 'daily' | 'monthly' | 'other' | 'session' | 'weekly'
 

@@ -1,4 +1,4 @@
-//! The six quota providers. Each is a concrete struct with `new()` +
+//! The eight quota providers. Each is a concrete struct with `new()` +
 //! `fetch() -> UsageSnapshot`; the registry aggregates them (no trait —
 //! provider quirks dominate and there is no shared abstraction worth
 //! enforcing). All endpoints are undocumented and can drift at any time;
@@ -8,6 +8,7 @@ pub mod claude;
 pub mod codex;
 pub mod cursor;
 pub mod gemini;
+pub mod glm;
 pub mod grok;
 pub mod kimi;
 pub mod opencode;

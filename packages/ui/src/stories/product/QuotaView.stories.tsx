@@ -45,6 +45,6 @@ export const LoggedOut: Story = {
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement)
     await canvas.findByText(/sign in to a CLI to see its quota/)
-    expect(canvas.getAllByText('not logged in')).toHaveLength(7)
+    expect(canvas.getAllByText('not logged in')).toHaveLength(8)
   },
 }

@@ -1,5 +1,5 @@
-//! Unified, read-only subscription-quota queries for seven AI coding CLIs:
-//! Claude, Codex, Cursor, Grok, Gemini, Kimi, OpenCode Go.
+//! Unified, read-only subscription-quota queries for eight AI coding CLIs:
+//! Claude, Codex, Cursor, Grok, Gemini, Kimi, OpenCode Go, GLM.
 //!
 //! # Design positions
 //!
@@ -22,9 +22,9 @@
 //!    (OpenCode Go is the exception: first-party but undocumented, marked
 //!    `OfficialEndpoint`); the enum leaves room for official APIs or local
 //!    estimates later.
-//!
-//! Security: tokens are read → used in-memory → discarded. They never hit
-//! disk, logs, or error messages.
+//! 5. **Providers can be gated.** Claude polling touches a ToS gray area, so
+//!    it is opt-in: `OHMYC_QUOTA_CLAUDE_ENABLED=1` enables it, otherwise the
+//!    provider reports `Unsupported` without any credential or network IO.
 
 pub mod providers;
 pub mod types;
@@ -39,7 +39,7 @@ pub use types::{
     Identity, MeterKind, Provenance, QuotaProvider, SnapshotStatus, UsageMeter, UsageSnapshot, UsageWindow, WindowKind,
 };
 
-/// Aggregates the seven providers. Stateless and cheap to construct; every
+/// Aggregates the eight providers. Stateless and cheap to construct; every
 /// `fetch*` call re-resolves credentials and hits the network fresh.
 #[derive(Debug, Default)]
 pub struct QuotaRegistry {
@@ -50,6 +50,7 @@ pub struct QuotaRegistry {
     gemini: providers::gemini::GeminiQuota,
     kimi: providers::kimi::KimiQuota,
     opencode_go: providers::opencode::OpenCodeGoQuota,
+    glm: providers::glm::GlmQuota,
 }
 
 impl QuotaRegistry {
@@ -74,6 +75,7 @@ impl QuotaRegistry {
             QuotaProvider::Gemini => self.gemini.fetch(),
             QuotaProvider::Kimi => self.kimi.fetch(),
             QuotaProvider::OpenCodeGo => self.opencode_go.fetch(),
+            QuotaProvider::Glm => self.glm.fetch(),
         }));
         result.unwrap_or_else(|_| {
             UsageSnapshot::with_status(
@@ -113,11 +115,16 @@ mod tests {
         home("OHMYC_QUOTA_GEMINI_HOME");
         home("OHMYC_QUOTA_KIMI_HOME");
         home("OHMYC_QUOTA_OPENCODE_HOME");
+        home("OHMYC_QUOTA_GLM_CONFIG_HOME");
+        home("OHMYC_QUOTA_PI_HOME");
         guards.push(EnvGuard::unset("CLAUDE_CODE_OAUTH_TOKEN"));
         guards.push(EnvGuard::unset("OPENCODE_API_KEY"));
         // Claude polling is opt-in; make the empty-home expectation immune to
         // a stray developer env enabling it.
         guards.push(EnvGuard::unset("OHMYC_QUOTA_CLAUDE_ENABLED"));
+        guards.push(EnvGuard::unset("ZAI_API_KEY"));
+        guards.push(EnvGuard::unset("GLM_API_KEY"));
+        guards.push(EnvGuard::unset("ZHIPU_API_KEY"));
         guards.push(EnvGuard::set("OHMYC_QUOTA_CURSOR_AGENT", "/nonexistent/agent"));
         let cursor_dir = tempfile::tempdir().unwrap();
         guards.push(EnvGuard::set(
@@ -132,11 +139,11 @@ mod tests {
     }
 
     #[test]
-    fn fetch_all_returns_seven_snapshots_in_fixed_order() {
+    fn fetch_all_returns_eight_snapshots_in_fixed_order() {
         let _lock = ENV_LOCK.lock().unwrap();
         let _homes = empty_homes();
         let snapshots = QuotaRegistry::new().fetch_all();
-        assert_eq!(snapshots.len(), 7);
+        assert_eq!(snapshots.len(), 8);
         let order: Vec<QuotaProvider> = snapshots.iter().map(|s| s.provider).collect();
         assert_eq!(
             order,
@@ -148,6 +155,7 @@ mod tests {
                 QuotaProvider::Gemini,
                 QuotaProvider::Kimi,
                 QuotaProvider::OpenCodeGo,
+                QuotaProvider::Glm,
             ]
         );
         for snapshot in &snapshots {

@@ -519,6 +519,93 @@ fn opencode_data_home() -> Option<PathBuf> {
     }
 }
 
+// GLM Coding Plan (Zhipu Z.ai)
+//
+// Z.ai has no first-party CLI, so like OpenCode Go this is "config files +
+// env". Regions are separate accounts with separate keys and hosts: the
+// international console (api.z.ai) and the China console (open.bigmodel.cn).
+// The credential source tells us the region: opencode's `zhipuai-coding-plan`
+// provider id is the China plan, `zai-coding-plan` / `zai` are international.
+//
+// Chain: env `ZAI_API_KEY` → `GLM_API_KEY` → `ZHIPU_API_KEY` (international) →
+// opencode `auth.json` keys `zai-coding-plan` / `zhipuai-coding-plan` / `zai` →
+// `~/.config/zai/key.json` (`OHMYC_QUOTA_GLM_CONFIG_HOME` overrides the config
+// dir; fields `apiKey` / `api_key`) → `~/.pi/agent/models.json`
+// (`OHMYC_QUOTA_PI_HOME`; `providers.zai.apiKey`). No expiry fields anywhere
+// → no precheck; a dead key surfaces as 401 → TokenExpired at fetch time.
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum GlmRegion {
+    International,
+    China,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct GlmCredential {
+    pub key: String,
+    pub region: GlmRegion,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum GlmOutcome {
+    Credential(GlmCredential),
+    NotLoggedIn,
+}
+
+pub fn glm() -> GlmOutcome {
+    for env in ["ZAI_API_KEY", "GLM_API_KEY", "ZHIPU_API_KEY"] {
+        if let Ok(key) = std::env::var(env) {
+            if let Some(key) = non_empty_str(Some(&Value::String(key))) {
+                return GlmOutcome::Credential(GlmCredential {
+                    key,
+                    region: GlmRegion::International,
+                });
+            }
+        }
+    }
+    if let Some(path) = opencode_data_home().map(|h| h.join("auth.json")) {
+        if let Some(json) = read_json(&path) {
+            // Order matters: the China plan id must be checked before the
+            // plain `zai` pay-as-you-go id so a machine with both resolves to
+            // the subscription key.
+            for (name, region) in [
+                ("zai-coding-plan", GlmRegion::International),
+                ("zhipuai-coding-plan", GlmRegion::China),
+                ("zai", GlmRegion::International),
+            ] {
+                if let Some(key) = non_empty_str(json.get(name).and_then(|entry| entry.get("key"))) {
+                    return GlmOutcome::Credential(GlmCredential { key, region });
+                }
+            }
+        }
+    }
+    if let Some(dir) = env_path("OHMYC_QUOTA_GLM_CONFIG_HOME").or_else(|| home_join(".config/zai")) {
+        if let Some(json) = read_json(&dir.join("key.json")) {
+            if let Some(key) = non_empty_str(json.get("apiKey")).or_else(|| non_empty_str(json.get("api_key"))) {
+                return GlmOutcome::Credential(GlmCredential {
+                    key,
+                    region: GlmRegion::International,
+                });
+            }
+        }
+    }
+    if let Some(dir) = env_path("OHMYC_QUOTA_PI_HOME").or_else(|| home_join(".pi/agent")) {
+        if let Some(json) = read_json(&dir.join("models.json")) {
+            if let Some(key) = non_empty_str(
+                json.get("providers")
+                    .and_then(|p| p.get("zai"))
+                    .and_then(|z| z.get("apiKey")),
+            ) {
+                return GlmOutcome::Credential(GlmCredential {
+                    key,
+                    region: GlmRegion::International,
+                });
+            }
+        }
+    }
+    GlmOutcome::NotLoggedIn
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -830,5 +917,143 @@ mod tests {
         let _home = EnvGuard::set("OHMYC_QUOTA_OPENCODE_HOME", home.path().to_str().unwrap());
         let _env = EnvGuard::unset("OPENCODE_API_KEY");
         assert_eq!(opencode_go(), CredentialOutcome::NotLoggedIn);
+    }
+
+    // GLM ----------------------------------------------------------------
+
+    /// Isolate every location the GLM resolver reads, plus its env keys.
+    fn glm_env(home: &tempfile::TempDir) -> Vec<EnvGuard> {
+        vec![
+            EnvGuard::set(
+                "OHMYC_QUOTA_OPENCODE_HOME",
+                home.path().join("opencode").to_str().unwrap(),
+            ),
+            EnvGuard::set(
+                "OHMYC_QUOTA_GLM_CONFIG_HOME",
+                home.path().join("config").to_str().unwrap(),
+            ),
+            EnvGuard::set("OHMYC_QUOTA_PI_HOME", home.path().join("pi").to_str().unwrap()),
+            EnvGuard::unset("ZAI_API_KEY"),
+            EnvGuard::unset("GLM_API_KEY"),
+            EnvGuard::unset("ZHIPU_API_KEY"),
+        ]
+    }
+
+    #[test]
+    fn glm_env_keys_win_and_default_to_international() {
+        let _lock = ENV_LOCK.lock().unwrap();
+        let home = tempfile::tempdir().unwrap();
+        let _env = glm_env(&home);
+        let _key = EnvGuard::set("ZAI_API_KEY", "zai-from-env");
+        match glm() {
+            GlmOutcome::Credential(credential) => {
+                assert_eq!(credential.key, "zai-from-env");
+                assert_eq!(credential.region, GlmRegion::International);
+            }
+            other => panic!("expected credential, got {other:?}"),
+        }
+    }
+
+    #[test]
+    fn glm_falls_back_to_legacy_env_names_in_order() {
+        let _lock = ENV_LOCK.lock().unwrap();
+        let home = tempfile::tempdir().unwrap();
+        let _env = glm_env(&home);
+        let _keys = [
+            EnvGuard::unset("ZAI_API_KEY"),
+            EnvGuard::set("GLM_API_KEY", "glm-legacy"),
+        ];
+        match glm() {
+            GlmOutcome::Credential(credential) => assert_eq!(credential.key, "glm-legacy"),
+            other => panic!("expected credential, got {other:?}"),
+        }
+    }
+
+    #[test]
+    fn glm_opencode_coding_plan_keys_carry_their_region() {
+        let _lock = ENV_LOCK.lock().unwrap();
+        let home = tempfile::tempdir().unwrap();
+        let _env = glm_env(&home);
+        write_file(
+            home.path().join("opencode").as_path(),
+            "auth.json",
+            r#"{"zai":{"type":"api","key":"payg"},"zhipuai-coding-plan":{"type":"api","key":"cn-plan"}}"#,
+        );
+        // The China plan id wins over the plain pay-as-you-go id — and it
+        // flips the region to the bigmodel.cn host.
+        match glm() {
+            GlmOutcome::Credential(credential) => {
+                assert_eq!(credential.key, "cn-plan");
+                assert_eq!(credential.region, GlmRegion::China);
+            }
+            other => panic!("expected credential, got {other:?}"),
+        }
+    }
+
+    #[test]
+    fn glm_international_coding_plan_key_is_international() {
+        let _lock = ENV_LOCK.lock().unwrap();
+        let home = tempfile::tempdir().unwrap();
+        let _env = glm_env(&home);
+        write_file(
+            home.path().join("opencode").as_path(),
+            "auth.json",
+            r#"{"zai-coding-plan":{"type":"api","key":"intl-plan"}}"#,
+        );
+        match glm() {
+            GlmOutcome::Credential(credential) => {
+                assert_eq!(credential.key, "intl-plan");
+                assert_eq!(credential.region, GlmRegion::International);
+            }
+            other => panic!("expected credential, got {other:?}"),
+        }
+    }
+
+    #[test]
+    fn glm_config_and_pi_files_are_the_last_resorts() {
+        let _lock = ENV_LOCK.lock().unwrap();
+        // Each scenario needs its own home: files written by an earlier
+        // scenario would otherwise leak into the later one's lookup order.
+        let config_home = tempfile::tempdir().unwrap();
+        {
+            let _env = glm_env(&config_home);
+            // glm_env points OHMYC_QUOTA_GLM_CONFIG_HOME at <home>/config.
+            write_file(
+                config_home.path().join("config").as_path(),
+                "key.json",
+                r#"{"apiKey":"config-key"}"#,
+            );
+            assert_eq!(
+                glm(),
+                GlmOutcome::Credential(GlmCredential {
+                    key: "config-key".to_string(),
+                    region: GlmRegion::International
+                })
+            );
+        }
+        let pi_home = tempfile::tempdir().unwrap();
+        {
+            let _env = glm_env(&pi_home);
+            write_file(
+                pi_home.path().join("pi").as_path(),
+                "models.json",
+                r#"{"providers":{"zai":{"apiKey":"pi-key"}}}"#,
+            );
+            assert_eq!(
+                glm(),
+                GlmOutcome::Credential(GlmCredential {
+                    key: "pi-key".to_string(),
+                    region: GlmRegion::International
+                })
+            );
+        }
+    }
+
+    #[test]
+    fn glm_missing_everything_is_not_logged_in() {
+        let _lock = ENV_LOCK.lock().unwrap();
+        let home = tempfile::tempdir().unwrap();
+        let _env = glm_env(&home);
+        assert_eq!(glm(), GlmOutcome::NotLoggedIn);
     }
 }
