@@ -86,7 +86,12 @@ pub enum SnapshotStatus {
     RateLimited {
         retry_after_seconds: Option<u64>,
     },
-    Unsupported,
+    /// The provider cannot or should not report quota on this machine.
+    /// Carries a human-readable reason, e.g. Claude polling is opt-in and
+    /// currently disabled.
+    Unsupported {
+        message: Option<String>,
+    },
     /// Network / parse / other failure. Never contains credential material.
     Error {
         message: String,

@@ -1,5 +1,12 @@
 //! Claude (Claude Code subscription) usage.
 //!
+//! **Opt-in by default.** `GET /api/oauth/usage` is an undocumented endpoint
+//! reached with the user's subscription OAuth token — a ToS gray area. To
+//! keep `api.anthropic.com` traffic at zero unless explicitly requested,
+//! `fetch` returns `Unsupported` until `OHMYC_QUOTA_CLAUDE_ENABLED=1`
+//! (also accepts true/yes/on). No credential resolution and no HTTP happen
+//! while disabled.
+//!
 //! - Endpoint: `GET {base}/api/oauth/usage`, default base
 //!   `https://api.anthropic.com` (override `OHMYC_QUOTA_CLAUDE_BASE_URL`).
 //! - Headers: `authorization: Bearer`, `anthropic-beta: oauth-2025-04-20`,
@@ -24,6 +31,15 @@ use crate::quota::types::{
 const DEFAULT_BASE_URL: &str = "https://api.anthropic.com";
 const SESSION_WINDOW_SECONDS: u64 = 18000;
 const WEEKLY_WINDOW_SECONDS: u64 = 604800;
+const DISABLED_MESSAGE: &str = "Claude quota polling is off — it uses an undocumented \
+     endpoint with your subscription token. Set OHMYC_QUOTA_CLAUDE_ENABLED=1 to enable it.";
+
+fn polling_enabled() -> bool {
+    match std::env::var("OHMYC_QUOTA_CLAUDE_ENABLED") {
+        Ok(value) => matches!(value.as_str(), "1" | "true" | "yes" | "on"),
+        Err(_) => false,
+    }
+}
 
 #[derive(Debug, Default)]
 pub struct ClaudeQuota;
@@ -34,6 +50,14 @@ impl ClaudeQuota {
     }
 
     pub fn fetch(&self) -> UsageSnapshot {
+        if !polling_enabled() {
+            return UsageSnapshot::with_status(
+                QuotaProvider::Claude,
+                SnapshotStatus::Unsupported {
+                    message: Some(DISABLED_MESSAGE.to_string()),
+                },
+            );
+        }
         let token = match credentials::claude() {
             CredentialOutcome::Token(token) => token,
             CredentialOutcome::NotLoggedIn => {
@@ -178,11 +202,13 @@ mod tests {
     const FIXTURE: &str = include_str!("../fixtures/claude_usage.json");
 
     /// Point every *other* provider's credential lookup at an empty home so a
-    /// stray developer env cannot influence provider tests.
-    fn claude_env(home: &tempfile::TempDir) -> (EnvGuard, EnvGuard) {
+    /// stray developer env cannot influence provider tests. Also opts Claude
+    /// polling in — the network tests below exercise the enabled path.
+    fn claude_env(home: &tempfile::TempDir) -> (EnvGuard, EnvGuard, EnvGuard) {
         (
             EnvGuard::set("OHMYC_QUOTA_CLAUDE_HOME", home.path().to_str().unwrap()),
             EnvGuard::unset("CLAUDE_CODE_OAUTH_TOKEN"),
+            EnvGuard::set("OHMYC_QUOTA_CLAUDE_ENABLED", "1"),
         )
     }
 
@@ -234,6 +260,25 @@ mod tests {
         .unwrap();
         assert_eq!(snapshot.windows[0].used_percent, None);
         assert_eq!(snapshot.windows[1].used_percent, Some(100.0));
+    }
+
+    #[test]
+    fn disabled_by_default_reports_unsupported_without_any_io() {
+        let _lock = ENV_LOCK.lock().unwrap();
+        // A bogus base URL would fail the fetch if the gate were bypassed, and
+        // an empty home would fail credential resolution — neither may happen.
+        let _base = EnvGuard::set("OHMYC_QUOTA_CLAUDE_BASE_URL", "http://127.0.0.1:1");
+        let home = tempfile::tempdir().unwrap();
+        let _env = claude_env(&home);
+        let _off = EnvGuard::unset("OHMYC_QUOTA_CLAUDE_ENABLED");
+
+        let snapshot = ClaudeQuota::new().fetch();
+        match snapshot.status {
+            SnapshotStatus::Unsupported { message } => {
+                assert!(message.unwrap_or_default().contains("OHMYC_QUOTA_CLAUDE_ENABLED"));
+            }
+            other => panic!("expected Unsupported, got {other:?}"),
+        }
     }
 
     #[test]

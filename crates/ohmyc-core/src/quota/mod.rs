@@ -115,6 +115,9 @@ mod tests {
         home("OHMYC_QUOTA_OPENCODE_HOME");
         guards.push(EnvGuard::unset("CLAUDE_CODE_OAUTH_TOKEN"));
         guards.push(EnvGuard::unset("OPENCODE_API_KEY"));
+        // Claude polling is opt-in; make the empty-home expectation immune to
+        // a stray developer env enabling it.
+        guards.push(EnvGuard::unset("OHMYC_QUOTA_CLAUDE_ENABLED"));
         guards.push(EnvGuard::set("OHMYC_QUOTA_CURSOR_AGENT", "/nonexistent/agent"));
         let cursor_dir = tempfile::tempdir().unwrap();
         guards.push(EnvGuard::set(
@@ -129,7 +132,7 @@ mod tests {
     }
 
     #[test]
-    fn fetch_all_returns_seven_not_logged_in_snapshots_in_fixed_order() {
+    fn fetch_all_returns_seven_snapshots_in_fixed_order() {
         let _lock = ENV_LOCK.lock().unwrap();
         let _homes = empty_homes();
         let snapshots = QuotaRegistry::new().fetch_all();
@@ -148,12 +151,21 @@ mod tests {
             ]
         );
         for snapshot in &snapshots {
-            assert!(
-                matches!(snapshot.status, SnapshotStatus::NotLoggedIn),
-                "expected NotLoggedIn for {:?}, got {:?}",
-                snapshot.provider,
-                snapshot.status
-            );
+            if snapshot.provider == QuotaProvider::Claude {
+                // Opt-in by default: disabled Claude reports Unsupported and
+                // never touches the network or the Keychain.
+                let SnapshotStatus::Unsupported { message } = &snapshot.status else {
+                    panic!("expected Unsupported for Claude, got {:?}", snapshot.status);
+                };
+                assert!(message.as_deref().unwrap_or("").contains("OHMYC_QUOTA_CLAUDE_ENABLED"));
+            } else {
+                assert!(
+                    matches!(snapshot.status, SnapshotStatus::NotLoggedIn),
+                    "expected NotLoggedIn for {:?}, got {:?}",
+                    snapshot.provider,
+                    snapshot.status
+                );
+            }
             assert!(snapshot.windows.is_empty());
             assert!(snapshot.meters.is_empty());
         }

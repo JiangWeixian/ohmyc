@@ -34,7 +34,7 @@ export interface UsageMeter {
 }
 
 export type SnapshotStatus
-  = { status: 'error'; message?: string } | { status: 'notLoggedIn' } | { status: 'ok' } | { status: 'rateLimited'; retryAfterSeconds?: number | null } | { status: 'tokenExpired' } | { status: 'unsupported' }
+  = { status: 'error'; message?: string } | { status: 'notLoggedIn' } | { status: 'ok' } | { status: 'rateLimited'; retryAfterSeconds?: number | null } | { status: 'tokenExpired' } | { status: 'unsupported'; message?: string | null }
 
 export type Provenance = 'experimental' | 'localEstimate' | 'officialEndpoint'
 

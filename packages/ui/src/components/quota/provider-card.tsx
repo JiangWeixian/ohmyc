@@ -120,12 +120,12 @@ function StateBody({ snapshot }: { snapshot: UsageSnapshot }) {
         </div>
       )
     }
-    default: {
+    case 'unsupported': {
       return (
         <div className="flex flex-col gap-2 pb-1 pt-1.5">
-          <p className="text-[13px] font-[510] text-[var(--text-secondary)]">Not supported</p>
+          <p className="text-[13px] font-[510] text-[var(--text-secondary)]">Polling disabled</p>
           <p className="font-mono-theme text-[11px] leading-[1.6] text-[var(--text-quaternary)]">
-            This provider can’t report quota yet.
+            {snapshot.message ?? 'This provider can’t report quota yet.'}
           </p>
         </div>
       )
@@ -143,7 +143,7 @@ function stateBadgeLabel(snapshot: UsageSnapshot): string | null {
     }
     case 'error': { return 'error'
     }
-    case 'unsupported': { return 'unsupported'
+    case 'unsupported': { return 'polling off'
     }
     default: { return null
     }
