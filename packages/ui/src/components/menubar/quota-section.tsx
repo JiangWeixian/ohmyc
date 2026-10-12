@@ -50,7 +50,9 @@ function PopoverWindowRow({ window, nowMs }: { window: UsageWindow; nowMs: numbe
           />
         )}
       </div>
-      <span className="whitespace-nowrap text-right font-mono-theme text-[10px] text-[var(--text-tertiary)]">
+      {/* Fixed 11ch (mono) value column: the longest content "100% · 30d" is
+          10 chars, so every row's bar track gets the same 1fr width. */}
+      <span className="w-[11ch] shrink-0 whitespace-nowrap text-right font-mono-theme text-[10px] text-[var(--text-tertiary)]">
         <b className="font-[510] text-[var(--text-primary)]">
           {used == null ? '—' : `${Math.round(used)}%`}
         </b>
