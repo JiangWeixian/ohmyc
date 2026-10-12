@@ -12,7 +12,9 @@
 //! - Response (reversed from the CLI binary): ratio pools under `usages`
 //!   (`limit_5h` / `limit_7d` / `limit_month_total` / `limit_month_code`,
 //!   snake_case, each `{used_ratio 0–1, reset_time}`; newer plans omit
-//!   `limit_7d`) plus a camelCase `boosterWallet`.
+//!   `limit_7d`) plus a camelCase `boosterWallet`. `limit_month_code` is the
+//!   code-only sub-pool of the monthly quota — surfaced with `model: "code"`
+//!   so it renders distinct from the total and stays out of the popover.
 //! - `boosterWallet.balance.amountLeft` is a **fixed-point** value:
 //!   divide by 10^6 to get cents, by 10^8 to get currency units. Currency
 //!   comes from `monthlyChargeLimit.currency` (default CNY).
@@ -111,6 +113,7 @@ fn map_pool(
     kind: WindowKind,
     label: &str,
     window_seconds: Option<u64>,
+    model: Option<&str>,
 ) -> Option<UsageWindow> {
     source.as_ref().map(|pool| UsageWindow {
         kind,
@@ -118,7 +121,7 @@ fn map_pool(
         used_percent: pool.used_ratio.map(|r| (r * 100.0).clamp(0.0, 100.0)),
         resets_at: super::parse_rfc3339(pool.reset_time.as_ref()),
         window_seconds,
-        model: None,
+        model: model.map(ToOwned::to_owned),
     })
 }
 
@@ -133,24 +136,31 @@ pub(crate) fn parse_response(body: &str) -> Result<UsageSnapshot, String> {
             WindowKind::Session,
             "5h",
             Some(SESSION_WINDOW_SECONDS),
+            None,
         ));
         windows.extend(map_pool(
             &usages.limit_7d,
             WindowKind::Weekly,
             "Weekly",
             Some(WEEKLY_WINDOW_SECONDS),
+            None,
         ));
         windows.extend(map_pool(
             &usages.limit_month_total,
             WindowKind::Monthly,
             "Monthly",
             None,
+            None,
         ));
+        // The code-only monthly pool mirrors the total on plans where code is
+        // the only usage; tagging it as model-specific keeps the UI distinct
+        // ("MO code") and out of the menubar popover (account windows only).
         windows.extend(map_pool(
             &usages.limit_month_code,
             WindowKind::Monthly,
-            "Monthly (code)",
+            "Monthly",
             None,
+            Some("code"),
         ));
     }
 
@@ -219,7 +229,8 @@ mod tests {
         assert_eq!(monthly.window_seconds, None);
         assert!((monthly.used_percent.unwrap() - 12.0).abs() < 1e-9);
         let monthly_code = &snapshot.windows[2];
-        assert_eq!(monthly_code.label, "Monthly (code)");
+        assert_eq!(monthly_code.label, "Monthly");
+        assert_eq!(monthly_code.model.as_deref(), Some("code"));
 
         // amountLeft 2_500_000_000 / 10^8 = 25.00 CNY.
         assert_eq!(snapshot.meters.len(), 1);

@@ -68,8 +68,9 @@ struct GrokConfig {
     current_period: Option<CurrentPeriod>,
     /// proto3: omitted when zero — `None` here means 0%, not unknown.
     credit_usage_percent: Option<f64>,
-    #[serde(default)]
-    product_usage: Vec<ProductUsage>,
+    /// `Option` absorbs both a missing key and an explicit `null` (serde's
+    /// `default` on Vec only covers missing).
+    product_usage: Option<Vec<ProductUsage>>,
     prepaid_balance: Option<PrepaidBalance>,
 }
 
@@ -134,7 +135,7 @@ pub(crate) fn parse_response(body: &str) -> Result<UsageSnapshot, String> {
             });
         }
 
-        for product in &config.product_usage {
+        for product in config.product_usage.as_deref().unwrap_or_default() {
             if let (Some(name), Some(percent)) = (&product.product, product.usage_percent) {
                 meters.push(UsageMeter {
                     label: name.clone(),

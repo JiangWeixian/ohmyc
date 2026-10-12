@@ -62,8 +62,9 @@ struct CodexUsageResponse {
     rate_limit: Option<RateLimit>,
     credits: Option<Credits>,
     code_review_rate_limit: Option<RateLimit>,
-    #[serde(default)]
-    additional_rate_limits: Vec<RateLimit>,
+    /// Plans without extra policies send an explicit `null` here — `Option`
+    /// absorbs both missing and null (serde's `default` only covers missing).
+    additional_rate_limits: Option<Vec<RateLimit>>,
 }
 
 #[derive(Debug, Deserialize)]
@@ -124,7 +125,7 @@ pub(crate) fn parse_response(body: &str) -> Result<UsageSnapshot, String> {
     if let Some(limit) = &response.code_review_rate_limit {
         push_rate_limit(&mut windows, limit, Some("Code review"));
     }
-    for extra in &response.additional_rate_limits {
+    for extra in response.additional_rate_limits.as_deref().unwrap_or_default() {
         push_rate_limit(&mut windows, extra, Some("Additional"));
     }
 
@@ -198,6 +199,17 @@ mod tests {
         .unwrap();
         assert_eq!(snapshot.windows[0].kind, WindowKind::Weekly);
         assert_eq!(snapshot.windows[0].label, "Weekly");
+    }
+
+    #[test]
+    fn explicit_null_additional_rate_limits_is_tolerated() {
+        // Plans without extra policies return "additional_rate_limits": null.
+        let snapshot = parse_response(
+            r#"{"plan_type":"plus","rate_limit":{"primary_window":{"used_percent":10.0,"limit_window_seconds":18000,"reset_at":1780300000},"secondary_window":null},"additional_rate_limits":null}"#,
+        )
+        .unwrap();
+        assert!(matches!(snapshot.status, SnapshotStatus::Ok));
+        assert_eq!(snapshot.windows.len(), 1);
     }
 
     #[test]

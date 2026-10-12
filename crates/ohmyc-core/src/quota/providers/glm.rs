@@ -80,17 +80,16 @@ struct GlmEnvelope {
     success: Option<bool>,
     data: Option<GlmData>,
     /// Legacy payloads carried the window array at the root level instead of
-    /// under `data`.
-    #[serde(default)]
-    limits: Vec<GlmLimit>,
+    /// under `data`. `Option` absorbs an explicit `null`, not just a missing
+    /// key.
+    limits: Option<Vec<GlmLimit>>,
 }
 
 #[derive(Debug, Deserialize)]
 struct GlmData {
     #[serde(default)]
     level: Option<String>,
-    #[serde(default)]
-    limits: Vec<GlmLimit>,
+    limits: Option<Vec<GlmLimit>>,
 }
 
 #[derive(Debug, Deserialize)]
@@ -158,11 +157,11 @@ pub(crate) fn parse_response(body: &str) -> Result<UsageSnapshot, String> {
         return Err(format!("glm quota request rejected: {message}"));
     }
 
-    let limits = match envelope.data.as_ref().map(|data| data.limits.as_slice()) {
+    let limits = match envelope.data.as_ref().and_then(|data| data.limits.as_deref()) {
         Some(limits) if !limits.is_empty() => limits,
         // Legacy payloads carried the array at the root; an empty array is a
         // legitimate "no data yet" and stays an honest empty Ok snapshot.
-        _ => envelope.limits.as_slice(),
+        _ => envelope.limits.as_deref().unwrap_or_default(),
     };
 
     let mut windows = Vec::new();
