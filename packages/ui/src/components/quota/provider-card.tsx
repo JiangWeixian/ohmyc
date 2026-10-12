@@ -9,6 +9,7 @@ import { Fragment } from 'react'
 import {
   formatCountdown,
   formatMeterValue,
+  formatUpdatedAgo,
   PROVIDER_META,
   windowTag,
 } from './format'
@@ -65,6 +66,31 @@ function WindowRow({ window, nowMs }: { window: UsageWindow; nowMs: number }) {
       </div>
       <PaceNote window={window} nowMs={nowMs} />
     </Fragment>
+  )
+}
+
+function StaleNote({ snapshot, nowMs }: { snapshot: UsageSnapshot; nowMs: number }) {
+  const meta = PROVIDER_META[snapshot.provider]
+  const reason = (() => {
+    switch (snapshot.status) {
+      case 'tokenExpired': {
+        return meta.expiredHint ?? 'Token expired — renew once via the official CLI.'
+      }
+      case 'rateLimited': {
+        return 'Rate limited by the provider.'
+      }
+      default: {
+        return 'Fetch failed.'
+      }
+    }
+  })()
+  const fetchedMs = Date.parse(snapshot.fetchedAt)
+  return (
+    <p className="mt-3 border-t border-[var(--border-subtle)] pt-2.5 font-mono-theme text-[10px] leading-[1.6] text-[var(--text-quaternary)]">
+      {reason}
+      {' '}
+      {Number.isNaN(fetchedMs) ? '' : `Showing last good data from ${formatUpdatedAgo(fetchedMs, nowMs)}.`}
+    </p>
   )
 }
 
@@ -184,10 +210,14 @@ export function ProviderCard({ snapshot, nowMs }: { snapshot: UsageSnapshot; now
         </span>
       </div>
 
-      {ok
+      {snapshot.windows.length > 0
         ? (
             <>
-              <div className="flex flex-col gap-[11px]">
+              {/* Stale merge (quota_poller::merge_stale): transient failures
+                  keep last-known bars, dimmed, with the failure reason below.
+                  The pace note keeps animating against the stale reset time,
+                  which is honest — the window kept burning while we were blind. */}
+              <div className={cn('flex flex-col gap-[11px]', !ok && 'opacity-50')}>
                 {snapshot.windows.map(window => (
                   <WindowRow
                     key={`${windowTag(window)}|${window.model ?? ''}|${window.windowSeconds ?? ''}|${window.resetsAt ?? ''}`}
@@ -197,7 +227,7 @@ export function ProviderCard({ snapshot, nowMs }: { snapshot: UsageSnapshot; now
                 ))}
               </div>
               {snapshot.meters.length > 0 && (
-                <div className="mt-3.5 flex flex-wrap gap-x-[18px] gap-y-1.5 border-t border-[var(--border-subtle)] pt-3">
+                <div className={cn('mt-3.5 flex flex-wrap gap-x-[18px] gap-y-1.5 border-t border-[var(--border-subtle)] pt-3', !ok && 'opacity-50')}>
                   {snapshot.meters.map(meter => (
                     <span key={meter.label} className="font-mono-theme text-[11px] text-[var(--text-tertiary)]">
                       {meter.label}
@@ -207,6 +237,7 @@ export function ProviderCard({ snapshot, nowMs }: { snapshot: UsageSnapshot; now
                   ))}
                 </div>
               )}
+              {!ok && <StaleNote snapshot={snapshot} nowMs={nowMs} />}
             </>
           )
         : <StateBody snapshot={snapshot} />}

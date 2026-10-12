@@ -49,10 +49,46 @@ pub fn poll_interval() -> Duration {
         .unwrap_or(Duration::from_secs(DEFAULT_POLL_SECS))
 }
 
+/// Statuses where a previously-good snapshot stays meaningful when the
+/// current fetch fails transiently: the card shows the last-known bars
+/// (dimmed, marked stale) instead of an empty state, while the failed status
+/// and its badge stay honest. NotLoggedIn/Unsupported never merge — missing
+/// credentials make old data misleading.
+fn keeps_stale_data(status: &SnapshotStatus) -> bool {
+    matches!(
+        status,
+        SnapshotStatus::TokenExpired | SnapshotStatus::RateLimited { .. } | SnapshotStatus::Error { .. }
+    )
+}
+
+/// For transient failures with no fresh data, carry over the previous Ok
+/// snapshot's windows/meters/identity and `fetched_at` (so "updated N min
+/// ago" reflects data age, not the failed attempt).
+pub fn merge_stale(previous: &[UsageSnapshot], next: Vec<UsageSnapshot>) -> Vec<UsageSnapshot> {
+    next.into_iter()
+        .map(|mut snap| {
+            if !keeps_stale_data(&snap.status) || !snap.windows.is_empty() {
+                return snap;
+            }
+            let Some(prev) = previous.iter().find(|p| p.provider == snap.provider) else {
+                return snap;
+            };
+            if !matches!(prev.status, SnapshotStatus::Ok) || prev.windows.is_empty() {
+                return snap;
+            }
+            snap.windows = prev.windows.clone();
+            snap.meters = prev.meters.clone();
+            snap.identity = prev.identity.clone();
+            snap.fetched_at = prev.fetched_at;
+            snap
+        })
+        .collect()
+}
+
 /// Blocking refresh shared by the poller loop and the `quota_refresh`
 /// command: fetch all providers, swap the cache, broadcast the event.
 pub fn refresh_now(app: &AppHandle, cache: &QuotaCache) -> Vec<UsageSnapshot> {
-    let snapshots = QuotaRegistry::new().fetch_all();
+    let snapshots = merge_stale(&cache.get(), QuotaRegistry::new().fetch_all());
     cache.set(snapshots.clone());
     let _ = app.emit(QUOTA_CHANGED_EVENT, &snapshots);
     snapshots
@@ -120,16 +156,12 @@ pub fn spawn_poller(app: &AppHandle) {
             let started = Instant::now();
             let snapshots = {
                 let cache = app.state::<QuotaCache>();
-                let snapshots = QuotaRegistry::new().fetch_all();
-                cache.set(snapshots.clone());
-                snapshots
+                refresh_now(&app, &cache)
             };
-            let emitted = app.emit(QUOTA_CHANGED_EVENT, &snapshots).is_ok();
             log_cycle(&format!(
-                "{} cycle {}ms emit={} [{}]",
+                "{} cycle {}ms [{}]",
                 chrono::Local::now().to_rfc3339(),
                 started.elapsed().as_millis(),
-                emitted,
                 snapshots
                     .iter()
                     .map(|s| format!("{:?}:{}", s.provider, status_label(s)))
@@ -194,5 +226,84 @@ mod tests {
         let got = cache.get();
         assert_eq!(got.len(), 1);
         assert!(matches!(got[0].status, ohmyc_core::quota::SnapshotStatus::NotLoggedIn));
+    }
+
+    mod merge_stale_cases {
+        use ohmyc_core::quota::{
+            Identity, MeterKind, QuotaProvider, SnapshotStatus, UsageMeter, UsageSnapshot, UsageWindow, WindowKind,
+        };
+
+        use super::super::merge_stale;
+
+        fn good_snapshot() -> UsageSnapshot {
+            UsageSnapshot::ok(
+                QuotaProvider::Kimi,
+                vec![UsageWindow {
+                    kind: WindowKind::Session,
+                    label: "5h".to_string(),
+                    used_percent: Some(42.0),
+                    resets_at: None,
+                    window_seconds: Some(18000),
+                    model: None,
+                }],
+                vec![UsageMeter {
+                    label: "Booster wallet".to_string(),
+                    value: 25.0,
+                    kind: MeterKind::Dollars,
+                    currency: Some("CNY".to_string()),
+                }],
+                Some(Identity {
+                    email: None,
+                    plan: Some("Plus".to_string()),
+                }),
+            )
+        }
+
+        #[test]
+        fn token_expired_keeps_previous_good_data_and_status() {
+            let prev = good_snapshot();
+            let prev_fetched = prev.fetched_at;
+            let next = UsageSnapshot::with_status(QuotaProvider::Kimi, SnapshotStatus::TokenExpired);
+            let merged = merge_stale(&[prev], vec![next]);
+            assert!(matches!(merged[0].status, SnapshotStatus::TokenExpired));
+            assert_eq!(merged[0].windows.len(), 1);
+            assert_eq!(merged[0].windows[0].used_percent, Some(42.0));
+            assert_eq!(merged[0].meters.len(), 1);
+            assert_eq!(
+                merged[0].identity.as_ref().and_then(|i| i.plan.as_deref()),
+                Some("Plus")
+            );
+            assert_eq!(merged[0].fetched_at, prev_fetched);
+        }
+
+        #[test]
+        fn ok_snapshot_is_never_touched() {
+            let mut next = good_snapshot();
+            next.windows[0].used_percent = Some(7.0);
+            let merged = merge_stale(&[good_snapshot()], vec![next]);
+            assert_eq!(merged[0].windows[0].used_percent, Some(7.0));
+        }
+
+        #[test]
+        fn no_previous_good_data_leaves_empty_state() {
+            let next = UsageSnapshot::with_status(QuotaProvider::Kimi, SnapshotStatus::TokenExpired);
+            let merged = merge_stale(&[], vec![next]);
+            assert!(merged[0].windows.is_empty());
+        }
+
+        #[test]
+        fn previous_non_ok_does_not_merge() {
+            let prev = UsageSnapshot::with_status(QuotaProvider::Kimi, SnapshotStatus::TokenExpired);
+            let next = UsageSnapshot::with_status(QuotaProvider::Kimi, SnapshotStatus::TokenExpired);
+            let merged = merge_stale(&[prev], vec![next]);
+            assert!(merged[0].windows.is_empty());
+        }
+
+        #[test]
+        fn not_logged_in_never_merges() {
+            let next = UsageSnapshot::with_status(QuotaProvider::Kimi, SnapshotStatus::NotLoggedIn);
+            let merged = merge_stale(&[good_snapshot()], vec![next]);
+            assert!(merged[0].windows.is_empty());
+        }
     }
 }

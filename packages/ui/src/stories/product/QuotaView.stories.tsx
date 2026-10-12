@@ -6,7 +6,11 @@ import {
   withMockTransport,
   withQueryClient,
 } from '@/stories/decorators/storybook-decorators'
-import { quotaSnapshots, quotaSnapshotsLoggedOut } from '@/stories/fixtures/quota'
+import {
+  quotaSnapshots,
+  quotaSnapshotsLoggedOut,
+  quotaSnapshotsStale,
+} from '@/stories/fixtures/quota'
 
 import type { Meta, StoryObj } from '@storybook/react-vite'
 
@@ -46,5 +50,19 @@ export const LoggedOut: Story = {
     const canvas = within(canvasElement)
     await canvas.findByText(/sign in to a CLI to see its quota/)
     expect(canvas.getAllByText('not logged in')).toHaveLength(8)
+  },
+}
+
+/** Stale merge: Kimi's token lapsed after the last good fetch — bars stay
+    (dimmed), the badge and stale note carry the failure and data age. */
+export const StaleData: Story = {
+  decorators: [withMockTransport(() => installQuotaHandlers(quotaSnapshotsStale()))],
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement)
+    await canvas.findByText('token expired')
+    // Stale bars still render with their last-known percentages…
+    await canvas.findByText('41%')
+    // …and the stale note explains the self-heal and the data's age.
+    await canvas.findByText(/Showing last good data from \d+ min ago/)
   },
 }

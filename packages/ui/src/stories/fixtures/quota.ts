@@ -146,3 +146,39 @@ export function quotaSnapshotsLoggedOut(): UsageSnapshot[] {
     meters: [],
   }))
 }
+
+/**
+ * The stale-merge shape (quota_poller::merge_stale): Kimi's token lapsed 37
+ * minutes after the last good fetch — the failure badge stays, the bars and
+ * meters stay (dimmed), and a stale note carries the data's age.
+ */
+export function quotaSnapshotsStale(): UsageSnapshot[] {
+  return [
+    {
+      provider: 'kimi',
+      status: 'tokenExpired',
+      identity: { email: null, plan: 'Plus' },
+      provenance: 'experimental',
+      fetchedAt: isoFromNow(-37 * MIN),
+      windows: [
+        { kind: 'session', label: '5h', usedPercent: 41, resetsAt: isoFromNow(208 * MIN), windowSeconds: 18_000, model: null },
+        { kind: 'monthly', label: 'Monthly', usedPercent: 22, resetsAt: isoFromNow(21_900 * MIN), windowSeconds: null, model: null },
+      ],
+      meters: [
+        { label: 'Booster wallet', value: 48.5, kind: 'dollars', currency: 'CNY' },
+      ],
+    },
+    {
+      provider: 'glm',
+      status: 'ok',
+      identity: { email: null, plan: 'Pro' },
+      provenance: 'experimental',
+      fetchedAt: isoFromNow(-2 * MIN),
+      windows: [
+        { kind: 'session', label: '5h', usedPercent: 34, resetsAt: isoFromNow(120 * MIN), windowSeconds: 18_000, model: null },
+        { kind: 'weekly', label: 'Weekly', usedPercent: 98, resetsAt: isoFromNow(3400 * MIN), windowSeconds: 604_800, model: null },
+      ],
+      meters: [],
+    },
+  ]
+}
