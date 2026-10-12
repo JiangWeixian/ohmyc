@@ -1,7 +1,8 @@
-// Quota page (DESIGN.md §Quota): title row with right-aligned mono meta and a
-// ghost Refresh action, then a uniform 2-column grid of provider cards, then
-// the legend. No first-paint skeleton — cards render directly in whatever
-// state the cache reports. A 30s local tick keeps countdowns and pace ticks
+// Quota page (DESIGN.md §Quota): title row with an icon-only Refresh action
+// (tooltip), then a uniform 2-column grid of provider cards, then the legend
+// row which also carries the freshness meta (`updated N min ago · every
+// 5 min`). No first-paint skeleton — cards render directly in whatever state
+// the cache reports. A 30s local tick keeps countdowns and pace ticks
 // walking between polls (disabled under prefers-reduced-motion).
 
 import { RefreshCw } from 'lucide-react'
@@ -13,6 +14,11 @@ import {
   latestFetchedAt,
 } from './format'
 import { ProviderCard } from './provider-card'
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from '@/components/ui/tooltip'
 import { usePrefersReducedMotion } from '@/hooks/use-prefers-reduced-motion'
 import { useQuota, useQuotaRefresh } from '@/hooks/use-quota'
 import { cn } from '@/lib/utils'
@@ -31,7 +37,7 @@ function useNowTick(intervalMs = 30_000): number {
   return now
 }
 
-function Legend() {
+function Legend({ fetchedAtMs, nowMs }: { fetchedAtMs: number | null; nowMs: number }) {
   return (
     <div className="mt-[22px] flex flex-wrap items-center gap-[22px] font-mono-theme text-[10px] text-[var(--text-quaternary)]">
       {(['low', 'mid', 'high', 'critical'] as const).map((label, index) => (
@@ -54,12 +60,20 @@ function Legend() {
         <span className="size-1.5 rounded-full border border-[var(--text-quaternary)] bg-transparent" />
         undocumented endpoint
       </span>
+      {/* Freshness meta lives in the legend row — same mono micro type, out of
+          the title row's way. */}
+      <span className="ml-auto whitespace-nowrap text-[11px]">
+        {fetchedAtMs == null ? 'not fetched yet' : `updated ${formatUpdatedAgo(fetchedAtMs, nowMs)}`}
+        {' '}
+        · every 5 min
+      </span>
     </div>
   )
 }
 
 export function QuotaView() {
   const nowMs = useNowTick()
+  const reduceMotion = usePrefersReducedMotion()
   const { data, isLoading, isError, error } = useQuota()
   const refresh = useQuotaRefresh()
   const [refreshing, setRefreshing] = useState(false)
@@ -80,7 +94,7 @@ export function QuotaView() {
   return (
     <div className="w-full max-w-[1180px]">
       <header className="mb-7 flex items-end justify-between gap-4">
-        <div>
+        <div className="min-w-0">
           <div className="mb-2.5 font-mono-theme text-[11px] font-[510] uppercase tracking-[0.08em] text-[var(--text-quaternary)]">
             Signal
           </div>
@@ -91,23 +105,25 @@ export function QuotaView() {
             Subscription usage across your coding CLIs — 5h windows, weekly pools, monthly budgets.
           </p>
         </div>
-        <div className="flex items-center gap-3.5">
-          <span className="font-mono-theme text-[11px] text-[var(--text-quaternary)]">
-            {fetchedAtMs == null ? 'not fetched yet' : `updated ${formatUpdatedAgo(fetchedAtMs, nowMs)}`}
-            {' '}
-            · every 5 min
-          </span>
-          <button
-            type="button"
-            onClick={() => {
-              void handleRefresh()
-            }}
-            disabled={refreshing}
-            className="inline-flex items-center gap-[7px] rounded-md border border-[var(--border-standard)] bg-[rgba(255,255,255,0.02)] px-3.5 py-2 text-[13px] font-[510] text-[var(--text-secondary)] transition-colors hover:bg-[rgba(255,255,255,0.04)] hover:text-[var(--text-primary)] disabled:opacity-50"
-          >
-            <RefreshCw size={13} aria-hidden="true" />
-            Refresh
-          </button>
+        <div className="flex shrink-0 items-center gap-3">
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <button
+                type="button"
+                aria-label="Refresh quota now"
+                onClick={() => {
+                  void handleRefresh()
+                }}
+                disabled={refreshing}
+                className="inline-flex size-7 items-center justify-center rounded-md text-[var(--text-tertiary)] transition-colors hover:bg-[rgba(255,255,255,0.04)] hover:text-[var(--text-primary)] disabled:opacity-50"
+              >
+                <RefreshCw size={13} aria-hidden="true" className={cn(refreshing && !reduceMotion && 'animate-spin')} />
+              </button>
+            </TooltipTrigger>
+            <TooltipContent side="bottom" align="end">
+              Refresh quota now
+            </TooltipContent>
+          </Tooltip>
         </div>
       </header>
 
@@ -130,7 +146,7 @@ export function QuotaView() {
               <ProviderCard key={snapshot.provider} snapshot={snapshot} nowMs={nowMs} />
             ))}
           </div>
-          <Legend />
+          <Legend fetchedAtMs={fetchedAtMs} nowMs={nowMs} />
         </>
       )}
     </div>
