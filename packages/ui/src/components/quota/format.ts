@@ -16,7 +16,7 @@ interface ProviderMeta {
 export const PROVIDER_META: Record<QuotaProviderId, ProviderMeta> = {
   claude: { name: 'Claude', cli: 'claude' },
   codex: { name: 'Codex', cli: 'codex' },
-  cursor: { name: 'Cursor', cli: 'agent' },
+  cursor: { name: 'Cursor', cli: 'cursor-agent' },
   grok: { name: 'Grok', cli: 'grok' },
   gemini: { name: 'Gemini', cli: 'gemini' },
   kimi: { name: 'Kimi', cli: 'kimi' },

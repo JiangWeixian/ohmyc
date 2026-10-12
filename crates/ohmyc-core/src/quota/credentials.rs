@@ -267,25 +267,81 @@ pub fn codex() -> CodexOutcome {
 // ---------------------------------------------------------------------------
 // Cursor
 //
-// No auth.json equivalent. Chain:
-// 1. The Cursor CLI (`agent`, formerly `cursor-agent`) on PATH — overridable
-//    via `OHMYC_QUOTA_CURSOR_AGENT` — running `status --format json`; the
-//    access token sits at `auth.accessToken` in stdout.
-// 2. The IDE's `state.vscdb` SQLite db, opened read-only + immutable so we
+// Chain:
+// 1. macOS Keychain generic-password `cursor-access-token` (account
+//    `cursor-user`) — the cursor-agent CLI persists its session there (raw
+//    JWT, sibling `cursor-refresh-token` entry untouched). Read via
+//    /usr/bin/security, same no-prompt pattern as Claude.
+// 2. The Cursor CLI (`cursor-agent`, newer builds also `agent`) — running
+//    `status --format json`; only builds that both authenticate
+//    (`isAuthenticated: true`) and expose `auth.accessToken` in stdout are
+//    trusted (current builds report booleans only). Binary lookup: env
+//    `OHMYC_QUOTA_CURSOR_AGENT` → PATH → well-known install dirs, because a
+//    Finder-launched app inherits launchd's sparse PATH and misses
+//    ~/.local/bin where the installer puts cursor-agent.
+// 3. The IDE's `state.vscdb` SQLite db, opened read-only + immutable so we
 //    never create WAL files in Cursor's directory:
 //    `SELECT value FROM ItemTable WHERE key = 'cursorAuth/accessToken'`.
 //    Path overridable via `OHMYC_QUOTA_CURSOR_STATE_DB`.
 // ---------------------------------------------------------------------------
 
 pub fn cursor() -> CredentialOutcome {
+    if let Some(token) = cursor_keychain_token() {
+        return CredentialOutcome::Token(token);
+    }
     if let Some(token) = cursor_from_agent_cli() {
         return CredentialOutcome::Token(token);
     }
     cursor_from_state_db()
 }
 
+/// `cursor-access-token` / `cursor-user` in the login keychain. The value is
+/// the raw access token (a JWT), not a JSON envelope. Hard-capped at 3s like
+/// the Claude read: if macOS ever decides to prompt, we give up instead of
+/// hanging the fetch. Disabled under cfg(test) — hermetic tests never touch
+/// the real keychain.
+fn cursor_keychain_token() -> Option<String> {
+    #[cfg(all(target_os = "macos", not(test)))]
+    {
+        let mut command = Command::new("/usr/bin/security");
+        command
+            .arg("find-generic-password")
+            .arg("-s")
+            .arg("cursor-access-token")
+            .arg("-a")
+            .arg("cursor-user")
+            .arg("-w");
+        let output = run_with_timeout(command, KEYCHAIN_TIMEOUT)?;
+        if !output.status.success() {
+            return None;
+        }
+        let token = String::from_utf8(output.stdout).ok()?.trim().to_string();
+        if token.is_empty() {
+            None
+        } else {
+            Some(token)
+        }
+    }
+    #[cfg(not(all(target_os = "macos", not(test))))]
+    {
+        None
+    }
+}
+
 fn cursor_agent_binary() -> Option<PathBuf> {
-    env_path("OHMYC_QUOTA_CURSOR_AGENT").or_else(|| find_on_path(&["agent", "cursor-agent"]))
+    env_path("OHMYC_QUOTA_CURSOR_AGENT")
+        .or_else(|| find_on_path(&["cursor-agent", "agent"]))
+        .or_else(|| {
+            // GUI apps get launchd's PATH (/usr/bin:/bin:...), which misses
+            // user-local bins. Probe the installer's default locations.
+            let mut candidates = vec![];
+            if let Some(home) = dirs::home_dir() {
+                candidates.push(home.join(".local/bin/cursor-agent"));
+            }
+            candidates.push(PathBuf::from("/opt/homebrew/bin/cursor-agent"));
+            candidates.push(PathBuf::from("/usr/local/bin/cursor-agent"));
+            candidates.into_iter().find(|p| p.is_file())
+        })
 }
 
 fn cursor_from_agent_cli() -> Option<String> {
@@ -297,6 +353,9 @@ fn cursor_from_agent_cli() -> Option<String> {
         return None;
     }
     let json: Value = serde_json::from_slice(&output.stdout).ok()?;
+    // `agent` is a contested binary name (Grok's CLI installs one too) — only
+    // trust stdout that looks like a Cursor status payload.
+    json.get("isAuthenticated").and_then(Value::as_bool).filter(|ok| *ok)?;
     non_empty_str(json.get("auth").and_then(|a| a.get("accessToken")))
 }
 
