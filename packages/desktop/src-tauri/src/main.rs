@@ -16,6 +16,7 @@ fn main() {
         .manage(PopoverGuard(Mutex::new(PopoverState::Hidden)))
         .invoke_handler(tauri::generate_handler![
             hide_popover,
+            set_popover_height,
             ohmyc_desktop_lib::windows::open_main_window,
             ohmyc_desktop_lib::api::timeline::timeline_heatmap,
             ohmyc_desktop_lib::api::timeline::timeline_events,
@@ -239,6 +240,30 @@ fn hide_popover(app: tauri::AppHandle) {
         let _ = win.hide();
         *app.state::<PopoverGuard>().0.lock().unwrap() = PopoverState::Hidden;
     }
+}
+
+/// Resize the popover window to fit its web content. The window is declared
+/// compact (367×340) and grows/shrinks as sections (e.g. Quota) appear or
+/// disappear; the web layer reports its rendered height on every change.
+#[tauri::command]
+fn set_popover_height(app: tauri::AppHandle, height: f64) {
+    let Some(win) = app.get_webview_window("popover") else {
+        return;
+    };
+    // 48px margin below the menu bar keeps the popover off the screen edge.
+    let max = win
+        .current_monitor()
+        .ok()
+        .flatten()
+        .map(|m| m.size().height as f64 - 48.0)
+        .unwrap_or(800.0);
+    let clamped = ohmyc_desktop_lib::popover::clamp_popover_height(height, max);
+    let scale = win.scale_factor().unwrap_or(1.0);
+    let current = win
+        .inner_size()
+        .unwrap_or(PhysicalSize::new(367, 340))
+        .to_logical::<f64>(scale);
+    let _ = win.set_size(tauri::Size::Logical(tauri::LogicalSize::new(current.width, clamped)));
 }
 
 fn toggle_popover(app: &tauri::AppHandle, tray: TrayRect) {

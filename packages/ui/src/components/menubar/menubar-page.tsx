@@ -10,6 +10,7 @@ import { RecentHeatmap } from './recent-heatmap'
 import { menubarPopoverStyles } from './styles'
 import { type MenubarView, ViewSwitch } from './view-switch'
 import { useFsChanged } from '@/hooks/use-fs-changed'
+import { usePopoverAutosize } from '@/hooks/use-popover-autosize'
 import { useSetupStatus } from '@/hooks/use-setup-status'
 import {
   useTimelineHeatmapRange,
@@ -53,6 +54,7 @@ function shortDayLabel(iso: string): string {
 function MenubarActivity() {
   useFsChanged()
   const [view, setView] = useState<MenubarView>('area')
+  const popoverRef = usePopoverAutosize<HTMLDivElement>()
 
   const [today, setToday] = useState(() => new Date())
   useEffect(() => {
@@ -87,6 +89,7 @@ function MenubarActivity() {
     <>
       <style>{menubarPopoverStyles}</style>
       <div
+        ref={popoverRef}
         className="relative mx-auto w-full max-w-sm overflow-hidden px-5 py-[18px] text-[var(--text-primary)] menubar-popover"
         data-menubar-page
       >
