@@ -91,10 +91,28 @@ fn log_cycle(line: &str) {
     }
 }
 
+/// Hold an NSActivity assertion for the process lifetime so macOS App Nap
+/// can never suspend the poller mid-sleep. Without it a hidden menubar
+/// accessory is a prime App Nap target and the 5-minute interval silently
+/// becomes "whenever the process next gets scheduled". Still allows system
+/// sleep — we only opt out of per-app napping.
+#[cfg(target_os = "macos")]
+pub fn prevent_app_nap() {
+    use objc2_foundation::{NSActivityOptions, NSProcessInfo, NSString};
+    let activity = NSProcessInfo::processInfo().beginActivityWithOptions_reason(
+        NSActivityOptions::UserInitiatedAllowingIdleSystemSleep,
+        &NSString::from_str("quota polling"),
+    );
+    // The assertion lives as long as the retained token; keep it forever.
+    std::mem::forget(activity);
+}
+
 /// Spawn the polling thread. The first fetch runs immediately so the cache is
 /// warm before the UI asks; failures inside a provider never surface here —
 /// `fetch_all` already collapses them into per-provider snapshot statuses.
 pub fn spawn_poller(app: &AppHandle) {
+    #[cfg(target_os = "macos")]
+    prevent_app_nap();
     let app = app.clone();
     let interval = poll_interval();
     thread::spawn(move || loop {
