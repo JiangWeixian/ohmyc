@@ -27,5 +27,9 @@
     },
     "secondary_window": null
   },
-  "additional_rate_limits": []
+  "additional_rate_limits": [],
+  "rate_limit_reset_credits": {
+    "available_count": 2,
+    "applicable_available_count": 0
+  }
 }

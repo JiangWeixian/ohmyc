@@ -65,6 +65,15 @@ struct CodexUsageResponse {
     /// Plans without extra policies send an explicit `null` here — `Option`
     /// absorbs both missing and null (serde's `default` only covers missing).
     additional_rate_limits: Option<Vec<RateLimit>>,
+    /// Banked full-reset credits ("使用限额重置" in the Codex app). Omitted on
+    /// plans without the feature.
+    rate_limit_reset_credits: Option<RateLimitResetCredits>,
+}
+
+#[derive(Debug, Deserialize)]
+struct RateLimitResetCredits {
+    /// Banked resets, used or not. Matches the app's 可用 count.
+    available_count: Option<u64>,
 }
 
 #[derive(Debug, Deserialize)]
@@ -143,6 +152,16 @@ pub(crate) fn parse_response(body: &str) -> Result<UsageSnapshot, String> {
             }
         }
     }
+    if let Some(resets) = &response.rate_limit_reset_credits {
+        if let Some(count) = resets.available_count.filter(|c| *c > 0) {
+            meters.push(UsageMeter {
+                label: "Resets banked".to_string(),
+                value: count as f64,
+                kind: MeterKind::Count,
+                currency: None,
+            });
+        }
+    }
 
     let identity = response.plan_type.map(|plan| Identity {
         email: None,
@@ -185,9 +204,12 @@ mod tests {
         assert_eq!(review.kind, WindowKind::Weekly);
         assert_eq!(review.label, "Code review");
 
-        assert_eq!(snapshot.meters.len(), 1);
+        assert_eq!(snapshot.meters.len(), 2);
         assert_eq!(snapshot.meters[0].value, 12.34);
         assert_eq!(snapshot.meters[0].kind, MeterKind::Dollars);
+        assert_eq!(snapshot.meters[1].label, "Resets banked");
+        assert_eq!(snapshot.meters[1].value, 2.0);
+        assert_eq!(snapshot.meters[1].kind, MeterKind::Count);
     }
 
     #[test]
