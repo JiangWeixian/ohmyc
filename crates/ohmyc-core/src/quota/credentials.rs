@@ -279,7 +279,12 @@ pub fn codex() -> CodexOutcome {
 //    `OHMYC_QUOTA_CURSOR_AGENT` → PATH → well-known install dirs, because a
 //    Finder-launched app inherits launchd's sparse PATH and misses
 //    ~/.local/bin where the installer puts cursor-agent.
-// 3. The IDE's `state.vscdb` SQLite db, opened read-only + immutable so we
+// 3. `auth.json` written by `cursor-agent login` under the platform config
+//    home (`$XDG_CONFIG_HOME/cursor` / `~/.config/cursor`, `%APPDATA%\cursor`
+//    on Windows; older builds used `~/.cursor`). Current macOS builds moved
+//    to the keychain instead, so this mainly covers Linux/Windows and legacy
+//    installs. Path overridable via `OHMYC_QUOTA_CURSOR_AUTH_JSON`.
+// 4. The IDE's `state.vscdb` SQLite db, opened read-only + immutable so we
 //    never create WAL files in Cursor's directory:
 //    `SELECT value FROM ItemTable WHERE key = 'cursorAuth/accessToken'`.
 //    Path overridable via `OHMYC_QUOTA_CURSOR_STATE_DB`.
@@ -292,7 +297,38 @@ pub fn cursor() -> CredentialOutcome {
     if let Some(token) = cursor_from_agent_cli() {
         return CredentialOutcome::Token(token);
     }
+    if let Some(token) = cursor_from_auth_json() {
+        return CredentialOutcome::Token(token);
+    }
     cursor_from_state_db()
+}
+
+fn cursor_auth_json_path() -> Option<PathBuf> {
+    if let Some(path) = env_path("OHMYC_QUOTA_CURSOR_AUTH_JSON") {
+        return Some(path);
+    }
+    let home = dirs::home_dir()?;
+    // `mut` is only exercised by the Windows/Linux cfg blocks below.
+    #[allow(unused_mut)]
+    let mut candidates = vec![home.join(".config/cursor/auth.json"), home.join(".cursor/auth.json")];
+    #[cfg(target_os = "windows")]
+    if let Some(appdata) = std::env::var_os("APPDATA") {
+        candidates.insert(0, PathBuf::from(appdata).join("cursor").join("auth.json"));
+    }
+    #[cfg(all(unix, not(target_os = "macos")))]
+    if let Some(xdg) = std::env::var_os("XDG_CONFIG_HOME")
+        .map(PathBuf::from)
+        .filter(|p| p.is_absolute())
+    {
+        candidates.insert(0, xdg.join("cursor").join("auth.json"));
+    }
+    candidates.into_iter().find(|p| p.is_file())
+}
+
+fn cursor_from_auth_json() -> Option<String> {
+    let path = cursor_auth_json_path()?;
+    let json = read_json(&path)?;
+    non_empty_str(json.get("accessToken"))
 }
 
 /// `cursor-access-token` / `cursor-user` in the login keychain. The value is
@@ -888,10 +924,23 @@ mod tests {
         drop(conn);
         let _db = EnvGuard::set("OHMYC_QUOTA_CURSOR_STATE_DB", db_path.to_str().unwrap());
         let _agent = EnvGuard::set("OHMYC_QUOTA_CURSOR_AGENT", "/nonexistent/agent");
+        let _auth_json = EnvGuard::set("OHMYC_QUOTA_CURSOR_AUTH_JSON", "/nonexistent/auth.json");
         assert_eq!(cursor(), CredentialOutcome::Token("cursor-at".to_string()));
         // The immutable read must not leave WAL sidecars behind.
         assert!(!db_path.with_extension("vscdb-wal").exists());
         assert!(!db_path.with_extension("vscdb-shm").exists());
+    }
+
+    #[test]
+    fn cursor_reads_token_from_auth_json() {
+        let _lock = ENV_LOCK.lock().unwrap();
+        let dir = tempfile::tempdir().unwrap();
+        let auth_path = dir.path().join("auth.json");
+        std::fs::write(&auth_path, r#"{"accessToken":"cursor-json-at"}"#).unwrap();
+        let _agent = EnvGuard::set("OHMYC_QUOTA_CURSOR_AGENT", "/nonexistent/agent");
+        let _auth_json = EnvGuard::set("OHMYC_QUOTA_CURSOR_AUTH_JSON", auth_path.to_str().unwrap());
+        let _db = EnvGuard::set("OHMYC_QUOTA_CURSOR_STATE_DB", "/nonexistent/state.vscdb");
+        assert_eq!(cursor(), CredentialOutcome::Token("cursor-json-at".to_string()));
     }
 
     #[test]
@@ -903,6 +952,7 @@ mod tests {
             dir.path().join("state.vscdb").to_str().unwrap(),
         );
         let _agent = EnvGuard::set("OHMYC_QUOTA_CURSOR_AGENT", "/nonexistent/agent");
+        let _auth_json = EnvGuard::set("OHMYC_QUOTA_CURSOR_AUTH_JSON", "/nonexistent/auth.json");
         assert_eq!(cursor(), CredentialOutcome::NotLoggedIn);
     }
 
