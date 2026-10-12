@@ -2,12 +2,18 @@
 //! loops `QuotaRegistry::fetch_all()` → shared cache → `quota:changed` event.
 //! The cache lives in Tauri state so the `quota.list` command never blocks on
 //! the network once the first poll has landed.
+//!
+//! Every cycle is appended to `~/Library/Logs/OhMyC/quota-poller.log` — in
+//! release builds that log is the only way to tell whether the poller kept
+//! running through sleep/App Nap or stalled. The cycle body is wrapped in
+//! `catch_unwind` on top of fetch_all's per-provider isolation, so nothing
+//! (cache poisoning, emit failure) can kill the thread silently.
 
 use std::sync::RwLock;
 use std::thread;
-use std::time::Duration;
+use std::time::{Duration, Instant};
 
-use ohmyc_core::quota::{QuotaRegistry, UsageSnapshot};
+use ohmyc_core::quota::{QuotaRegistry, SnapshotStatus, UsageSnapshot};
 use tauri::{AppHandle, Emitter, Manager};
 
 pub const QUOTA_CHANGED_EVENT: &str = "quota:changed";
@@ -52,6 +58,39 @@ pub fn refresh_now(app: &AppHandle, cache: &QuotaCache) -> Vec<UsageSnapshot> {
     snapshots
 }
 
+fn status_label(snapshot: &UsageSnapshot) -> &'static str {
+    match &snapshot.status {
+        SnapshotStatus::Ok => "ok",
+        SnapshotStatus::NotLoggedIn => "not-logged-in",
+        SnapshotStatus::TokenExpired => "token-expired",
+        SnapshotStatus::RateLimited { .. } => "rate-limited",
+        SnapshotStatus::Unsupported { .. } => "unsupported",
+        SnapshotStatus::Error { .. } => "error",
+    }
+}
+
+/// Append one line per poll cycle to ~/Library/Logs/OhMyC/quota-poller.log,
+/// rotating at 512 KiB. Diagnostic only — never fails, never panics.
+fn log_cycle(line: &str) {
+    use std::io::Write as _;
+    let Some(home) = std::env::var_os("HOME") else {
+        return;
+    };
+    let dir = std::path::PathBuf::from(home).join("Library/Logs/OhMyC");
+    if std::fs::create_dir_all(&dir).is_err() {
+        return;
+    }
+    let path = dir.join("quota-poller.log");
+    if let Ok(meta) = std::fs::metadata(&path) {
+        if meta.len() > 512 * 1024 {
+            let _ = std::fs::rename(&path, dir.join("quota-poller.old.log"));
+        }
+    }
+    if let Ok(mut file) = std::fs::OpenOptions::new().create(true).append(true).open(&path) {
+        let _ = writeln!(file, "{line}");
+    }
+}
+
 /// Spawn the polling thread. The first fetch runs immediately so the cache is
 /// warm before the UI asks; failures inside a provider never surface here —
 /// `fetch_all` already collapses them into per-provider snapshot statuses.
@@ -59,13 +98,33 @@ pub fn spawn_poller(app: &AppHandle) {
     let app = app.clone();
     let interval = poll_interval();
     thread::spawn(move || loop {
-        let snapshots = {
-            let cache = app.state::<QuotaCache>();
-            let snapshots = QuotaRegistry::new().fetch_all();
-            cache.set(snapshots.clone());
-            snapshots
-        };
-        let _ = app.emit(QUOTA_CHANGED_EVENT, &snapshots);
+        let cycle = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+            let started = Instant::now();
+            let snapshots = {
+                let cache = app.state::<QuotaCache>();
+                let snapshots = QuotaRegistry::new().fetch_all();
+                cache.set(snapshots.clone());
+                snapshots
+            };
+            let emitted = app.emit(QUOTA_CHANGED_EVENT, &snapshots).is_ok();
+            log_cycle(&format!(
+                "{} cycle {}ms emit={} [{}]",
+                chrono::Local::now().to_rfc3339(),
+                started.elapsed().as_millis(),
+                emitted,
+                snapshots
+                    .iter()
+                    .map(|s| format!("{:?}:{}", s.provider, status_label(s)))
+                    .collect::<Vec<_>>()
+                    .join(" ")
+            ));
+        }));
+        if cycle.is_err() {
+            log_cycle(&format!(
+                "{} cycle PANIC — poller survived via catch_unwind",
+                chrono::Local::now().to_rfc3339()
+            ));
+        }
         thread::sleep(interval);
     });
 }

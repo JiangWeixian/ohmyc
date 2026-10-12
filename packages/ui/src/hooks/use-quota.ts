@@ -105,6 +105,11 @@ export function useQuota() {
   return useQuery({
     queryKey: QUOTA_QUERY_KEY,
     staleTime: 60_000,
+    // The popover window never takes OS focus and its webview can be suspended
+    // while hidden, so `quota:changed` events and focus refetches are both
+    // unreliable there. A 60s interval makes any visible surface self-heal:
+    // the command just re-reads the poller's shared cache, no network cost.
+    refetchInterval: 60_000,
     queryFn: () => request<UsageSnapshot[]>('quota.list', {}),
   })
 }
