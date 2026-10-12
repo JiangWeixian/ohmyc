@@ -11,6 +11,12 @@ interface ProviderMeta {
   name: string
   /** Official CLI command used in recovery hints on state cards. */
   cli: string
+  /**
+   * Overrides the token-expired hint for providers whose CLI renews tokens
+   * on its own (lazy refresh) — there the state is transient and the user
+   * doesn't need to act, so the "open the CLI" nudge would be misleading.
+   */
+  expiredHint?: string
 }
 
 export const PROVIDER_META: Record<QuotaProviderId, ProviderMeta> = {
@@ -18,8 +24,8 @@ export const PROVIDER_META: Record<QuotaProviderId, ProviderMeta> = {
   codex: { name: 'Codex', cli: 'codex' },
   cursor: { name: 'Cursor', cli: 'cursor-agent' },
   grok: { name: 'Grok', cli: 'grok' },
-  gemini: { name: 'Gemini', cli: 'gemini' },
-  kimi: { name: 'Kimi', cli: 'kimi' },
+  gemini: { name: 'Gemini', cli: 'gemini', expiredHint: 'Access tokens renew whenever the gemini CLI is used — quota returns automatically on the next poll.' },
+  kimi: { name: 'Kimi', cli: 'kimi', expiredHint: 'Access tokens live ~15 min and the kimi CLI renews them on use — quota returns automatically on the next poll.' },
   opencodeGo: { name: 'OpenCode Go', cli: 'opencode' },
   glm: { name: 'GLM', cli: 'opencode auth login' },
 }

@@ -76,9 +76,13 @@ function StateBody({ snapshot }: { snapshot: UsageSnapshot }) {
         <div className="flex flex-col gap-2 pb-1 pt-1.5">
           <p className="text-[13px] font-[510] text-[var(--text-secondary)]">Credentials expired</p>
           <p className="font-mono-theme text-[11px] leading-[1.6] text-[var(--text-quaternary)]">
-            Tokens are read-only here by design. Open the official CLI once to refresh:
-            {' '}
-            <code className="rounded border border-[var(--border-subtle)] bg-[var(--heat-0)] px-[5px] py-px text-[var(--text-secondary)]">{meta.cli}</code>
+            {meta.expiredHint ?? (
+              <>
+                Tokens are read-only here by design. Open the official CLI once to refresh:
+                {' '}
+                <code className="rounded border border-[var(--border-subtle)] bg-[var(--heat-0)] px-[5px] py-px text-[var(--text-secondary)]">{meta.cli}</code>
+              </>
+            )}
           </p>
         </div>
       )
