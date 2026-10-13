@@ -7,7 +7,7 @@ use tauri::menu::{Menu, MenuItem};
 use tauri::tray::{MouseButton, MouseButtonState, TrayIconBuilder, TrayIconEvent};
 #[cfg(not(debug_assertions))]
 use tauri::WindowEvent;
-use tauri::{Manager, PhysicalSize};
+use tauri::{Emitter, Manager, PhysicalSize};
 
 struct PopoverGuard(Mutex<PopoverState>);
 
@@ -278,6 +278,14 @@ fn toggle_popover(app: &tauri::AppHandle, tray: TrayRect) {
             let _ = window.set_position(pos);
             let _ = window.show();
             let _ = window.set_focus();
+            // The hidden webview's JS is suspended, so quota:changed events
+            // broadcast while it was hidden never ran there — and the popover
+            // never takes OS focus, so no focus-refetch either. Re-emit the
+            // current cache on every show so the section is never stale.
+            let snapshots = app.state::<ohmyc_desktop_lib::quota_poller::QuotaCache>().get();
+            if !snapshots.is_empty() {
+                let _ = window.emit(ohmyc_desktop_lib::quota_poller::QUOTA_CHANGED_EVENT, snapshots);
+            }
             *guard.0.lock().unwrap() = PopoverState::Visible;
         }
         PopoverState::Visible => {
