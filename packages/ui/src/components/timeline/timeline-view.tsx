@@ -3,7 +3,6 @@
 
 import {
   useEffect,
-  useMemo,
   useRef,
   useState,
 } from 'react'
@@ -28,7 +27,6 @@ import {
   useTimelineEvents,
   useTimelineHeatmap,
   useTimelineProjects,
-  useTimelineStatus,
   useTimelineYears,
 } from '@/hooks/use-timeline'
 import { formatTokens as formatTokensCompact } from '@/lib/format-tokens'
@@ -50,18 +48,16 @@ export function TimelineView() {
   // ── Data queries ─────────────────────────────────────────────────
   const { data: years } = useTimelineYears()
   const { data: projects } = useTimelineProjects()
-  const { data: status } = useTimelineStatus()
 
   // 'Activity' is composite — turns dominate naturally, so we use turns as the
   // intensity signal for the activity heatmap (sessions+turns are surfaced in
   // the tooltip/day heading).
   const heatmapMetric: TimelineMetric = metric === 'tokens' ? 'tokens' : 'turns'
 
-  const { data: heatmap, isLoading: heatmapLoading } = useTimelineHeatmap({
-    year,
-    metric: heatmapMetric,
-    project,
-  })
+  const sessionsHeatmap = useTimelineHeatmap({ year, metric: 'sessions', project })
+  const turnsHeatmap = useTimelineHeatmap({ year, metric: 'turns', project })
+  const tokensHeatmap = useTimelineHeatmap({ year, metric: 'tokens', project })
+  const { data: heatmap, isLoading: heatmapLoading, isError: heatmapError } = metric === 'tokens' ? tokensHeatmap : turnsHeatmap
   const { data: events, isLoading: eventsLoading } = useTimelineEvents({
     project,
     year,
@@ -76,18 +72,9 @@ export function TimelineView() {
     }
   }, [years, year])
 
-  const totals = useMemo(() => {
-    const days = events?.days ?? []
-    let sessions = 0
-    let turns = 0
-    let tokens = 0
-    for (const d of days) {
-      sessions += d.session_count
-      turns += d.turn_count
-      tokens += d.token_count
-    }
-    return { sessions, turns, tokens }
-  }, [events])
+  const totalSessions = sessionsHeatmap.isError ? undefined : sessionsHeatmap.data?.reduce((sum, point) => sum + point.value, 0)
+  const totalTurns = turnsHeatmap.isError ? undefined : turnsHeatmap.data?.reduce((sum, point) => sum + point.value, 0)
+  const totalTokens = tokensHeatmap.isError ? undefined : tokensHeatmap.data?.reduce((sum, point) => sum + point.value, 0)
 
   const handleSelectDay = (date: string) => {
     setHighlightedDay(date)
@@ -151,25 +138,25 @@ export function TimelineView() {
           />
           <span className="flex-1" />
           <span className="text-xs timeline-stats">
-            <b>{(status?.sessionCount ?? 0).toLocaleString()}</b>
+            <b>{totalSessions?.toLocaleString() ?? '—'}</b>
             {' sessions '}
             <span className="sep mx-1">·</span>
             {' '}
-            <b>{totals.turns.toLocaleString()}</b>
+            <b>{totalTurns?.toLocaleString() ?? '—'}</b>
             {' turns '}
             <span className="sep mx-1">·</span>
             {' '}
-            <b>{formatTokensCompact(totals.tokens)}</b>
+            <b>{totalTokens === undefined ? '—' : formatTokensCompact(totalTokens)}</b>
             {' tokens'}
           </span>
         </div>
 
         {/* Heatmap */}
         <div className="mb-9">
-          {heatmapLoading || !heatmap
+          {heatmapError || heatmapLoading || !heatmap
             ? (
                 <div className="rounded-lg border border-[var(--border-default)] bg-[rgba(255,255,255,0.02)] px-5 py-4 text-xs text-[var(--text-tertiary)]">
-                  Loading heatmap…
+                  {heatmapError ? (metric === 'tokens' ? 'Tokens unavailable.' : 'Activity unavailable.') : 'Loading heatmap…'}
                 </div>
               )
             : (

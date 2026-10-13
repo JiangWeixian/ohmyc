@@ -10,11 +10,7 @@ import { menubarPopoverStyles } from './styles'
 import { type MenubarView, ViewSwitch } from './view-switch'
 import { useFsChanged } from '@/hooks/use-fs-changed'
 import { useSetupStatus } from '@/hooks/use-setup-status'
-import {
-  useTimelineHeatmapRange,
-  useTimelineRangeSummary,
-  useTimelineStatus,
-} from '@/hooks/use-timeline'
+import { useTimelineHeatmapRange } from '@/hooks/use-timeline'
 import { formatTokens } from '@/lib/format-tokens'
 
 import type { SetupStatus } from '@/hooks/use-setup-status'
@@ -58,7 +54,6 @@ function MenubarActivity() {
     const timer = setInterval(() => setToday(new Date()), 30_000)
     return () => clearInterval(timer)
   }, [])
-  const { data: status } = useTimelineStatus()
   const todayIso = isoDate(today)
   const fourMonthAgoIso = isoDate(subDays(today, 16 * 7 - 1))
 
@@ -66,21 +61,20 @@ function MenubarActivity() {
   // are two visualizations of the same data, not different time scopes.
   const tokensRecent = useTimelineHeatmapRange({ from: fourMonthAgoIso, to: todayIso, metric: 'tokens' })
   const sessionsRecent = useTimelineHeatmapRange({ from: fourMonthAgoIso, to: todayIso, metric: 'sessions' })
-
-  const rangeSummary = useTimelineRangeSummary(fourMonthAgoIso, todayIso)
+  const eventSessionsRecent = useTimelineHeatmapRange({ from: fourMonthAgoIso, to: todayIso, metric: 'event_sessions' })
 
   // KPI row: 16-week totals across the same window.
-  const totalTokens = (tokensRecent.data ?? []).reduce((s, p) => s + p.value, 0)
-  const totalSessions = status?.usageMode === 'events' ? rangeSummary.data?.sessions : (sessionsRecent.data ?? []).reduce((s, p) => s + p.value, 0)
+  const totalTokens = tokensRecent.isError ? undefined : tokensRecent.data?.reduce((s, p) => s + p.value, 0)
+  const totalSessions = sessionsRecent.isError ? undefined : sessionsRecent.data?.reduce((s, p) => s + p.value, 0)
 
   // Footer: peak day only — peak token value and session count are now
   // surfaced in the KPI row above.
   // NOTE: peak is computed over the fetched range, which must stay equal to
   // RecentHeatmap's self-derived 16-week window (it re-derives from today).
-  const peak = findPeak(tokensRecent.data ?? [])
+  const peak = tokensRecent.isError ? null : findPeak(tokensRecent.data ?? [])
   const peakMeta = peak
     ? `peak ${shortDayLabel(peak.date)}`
-    : 'no activity yet'
+    : (tokensRecent.isError ? 'tokens unavailable' : 'no activity yet')
 
   return (
     <>
@@ -101,17 +95,17 @@ function MenubarActivity() {
           <div className={view === 'area' ? 'relative -mx-1 min-h-[168px] rounded menubar-chart-area' : 'relative -mx-1 min-h-[168px]'}>
             {view === 'area'
               ? (
-                  <AreaTrendChart tokens={tokensRecent.data ?? []} sessions={sessionsRecent.data ?? []} />
+                  <AreaTrendChart sessionsUnavailable={eventSessionsRecent.isError} tokens={tokensRecent.isError ? [] : tokensRecent.data ?? []} sessions={eventSessionsRecent.data ?? []} />
                 )
               : (
-                  <RecentHeatmap today={today} tokens={tokensRecent.data ?? []} sessions={sessionsRecent.data ?? []} />
+                  <RecentHeatmap sessionsUnavailable={eventSessionsRecent.isError} tokensUnavailable={tokensRecent.isError} today={today} tokens={tokensRecent.isError ? [] : tokensRecent.data ?? []} sessions={eventSessionsRecent.data ?? []} />
                 )}
           </div>
 
           <div className="mt-3.5 flex">
             <div className="flex flex-1 flex-col gap-1 pr-3.5">
               <span className="menubar-kpi-value" data-kpi="tokens">
-                {formatTokens(totalTokens)}
+                {totalTokens === undefined ? '—' : formatTokens(totalTokens)}
               </span>
               <span className="menubar-label">Tokens</span>
             </div>

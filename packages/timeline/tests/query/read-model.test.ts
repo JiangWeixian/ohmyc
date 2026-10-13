@@ -63,6 +63,8 @@ describe('query', () => {
 
     // Day 3: project-b, 1 session
     insertSession.run('s4', 'project-b', d3, d3 + 90_000, 90_000, 2, 20, 30, 10, 'Summary 4', 'auto', '/tmp/t4.jsonl', 0, d3)
+    db.exec(`INSERT INTO token_usage_events(source,session_id,event_key,occurred_at,tokens_input,tokens_output,tokens_cached,ingested_at)
+      SELECT 'unknown',session_id,'fixture',started_at+43200000,tokens_input,tokens_output,tokens_cached,started_at FROM sessions`)
   })
 
   afterEach(() => {
@@ -72,6 +74,7 @@ describe('query', () => {
 
   it('counts Codex cached input once while retaining other sources cache usage', () => {
     db.prepare("UPDATE sessions SET agent_name = 'codex' WHERE session_id = 's2'").run()
+    db.exec("UPDATE token_usage_events SET source='codex',tokens_input=30 WHERE session_id='s2'")
     const points = getHeatmap(db, { from: '2026-04-29', to: '2026-04-29', metric: 'tokens' })
     expect(points).toEqual([{ date: '2026-04-29', value: 930 }])
     const result = getEvents(db, { from: '2026-04-29', to: '2026-04-29' })

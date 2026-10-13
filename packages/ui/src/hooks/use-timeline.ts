@@ -5,7 +5,7 @@ import { useQuery } from '@tanstack/react-query'
 import { request } from '@/lib/transport'
 
 /** Allowed aggregation metrics for the timeline heatmap. */
-export type TimelineMetric = 'sessions' | 'tokens' | 'turns'
+export type TimelineMetric = 'event_sessions' | 'sessions' | 'tokens' | 'turns'
 
 /** A single data point in the heatmap response. */
 export interface HeatmapPoint {
@@ -145,6 +145,7 @@ export function useTimelineHeatmap(params: {
   const toMs = isoDateToUtcMs(`${year}-12-31`)
   return useQuery({
     queryKey: ['timeline', 'heatmap', year, metric, project ?? null],
+    refetchInterval: 30_000,
     queryFn: async () => {
       const r = await request<{ data: HeatmapPoint[] }>('timeline.heatmap', {
         from: fromMs,
@@ -203,7 +204,7 @@ export function useTimelineEvents(params: { project?: string; year?: number }) {
   })
 }
 
-/** Distinct sessions across the whole window, rather than summed daily counts. */
+/** Independent session counts and tokens with legacy fallback over the calendar range. */
 export function useTimelineRangeSummary(from: string, to: string) {
   return useQuery({
     queryKey: ['timeline', 'summary', from, to],

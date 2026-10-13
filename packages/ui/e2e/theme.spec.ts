@@ -37,7 +37,15 @@ test.describe('Theme switching', () => {
     }
   })
 
-  test('theme persists in localStorage', async ({ page }) => {
+  test('theme persists in localStorage after async font loading', async ({ page }) => {
+    let releaseFonts!: () => void
+    const fontsReady = new Promise<void>((resolve) => {
+      releaseFonts = resolve
+    })
+    await page.route('**/@fontsource/vt323/index.css*', async (route) => {
+      await fontsReady
+      await route.continue()
+    })
     await page.goto('/explore/timeline?scenario=ready')
 
     await openPalette(page)
@@ -45,8 +53,9 @@ test.describe('Theme switching', () => {
     await input.fill('Amber CRT')
     await page.locator('[cmdk-item]', { hasText: 'Theme: Amber CRT' }).first().click()
 
-    const stored = await page.evaluate(() => localStorage.getItem('ohmyc-theme'))
-    expect(stored).toContain('"theme":"amber"')
+    releaseFonts()
+    await expect.poll(() => page.evaluate(() => localStorage.getItem('ohmyc-theme')))
+      .toContain('"theme":"amber"')
   })
 
   test('theme survives page reload', async ({ page }) => {
