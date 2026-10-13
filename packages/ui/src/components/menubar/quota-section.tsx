@@ -38,7 +38,7 @@ function PopoverWindowRow({ window, nowMs }: { window: UsageWindow; nowMs: numbe
   const used = window.usedPercent
   const countdown = window.resetsAt ? formatCountdownShort(window.resetsAt, nowMs) : null
   return (
-    <div className="grid grid-cols-[22px_1fr_auto] items-center gap-2 pl-[11px]">
+    <div className="grid grid-cols-[22px_1fr_auto] items-center gap-2">
       <span className="font-mono-theme text-[9px] font-[510] uppercase tracking-wider text-[var(--text-quaternary)]">
         {windowTagShort(window)}
       </span>
