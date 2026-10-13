@@ -140,8 +140,8 @@ export interface HeatmapParams {
   from: string
   /** End of the date range (inclusive), `YYYY-MM-DD`. */
   to: string
-  /** Aggregation metric: count of sessions, turns, or total tokens. */
-  metric: 'sessions' | 'tokens' | 'turns'
+  /** Sessions by creation date, distinct sessions by event date, turns, or tokens. */
+  metric: 'event_sessions' | 'sessions' | 'tokens' | 'turns'
   /** Optional project filter. */
   project?: string
 }

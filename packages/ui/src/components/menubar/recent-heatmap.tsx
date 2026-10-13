@@ -9,6 +9,8 @@ import { formatTokens } from '@/lib/format-tokens'
 import type { HeatmapPoint } from '@/hooks/use-timeline'
 
 interface RecentHeatmapProps {
+  sessionsUnavailable?: boolean
+  tokensUnavailable?: boolean
   today?: Date
   tokens: HeatmapPoint[]
   sessions: HeatmapPoint[]
@@ -74,7 +76,7 @@ interface Cell {
   row: number
 }
 
-export function RecentHeatmap({ tokens, sessions, today: currentDay }: RecentHeatmapProps) {
+export function RecentHeatmap({ tokens, sessions, today: currentDay, tokensUnavailable = false, sessionsUnavailable = false }: RecentHeatmapProps) {
   const [hover, setHover] = useState<HoverState | null>(null)
 
   const [mountedDay] = useState(() => new Date())
@@ -278,7 +280,7 @@ export function RecentHeatmap({ tokens, sessions, today: currentDay }: RecentHea
             boxShadow: 'var(--shadow-md)',
           }}
         >
-          <div className="text-[var(--text-primary)]">{hover.sessions} sessions · {formatTokens(hover.tokens)} tokens</div>
+          <div className="text-[var(--text-primary)]">{sessionsUnavailable ? '—' : hover.sessions} sessions · {tokensUnavailable ? '—' : formatTokens(hover.tokens)} tokens</div>
           <div className="text-[10px] text-[var(--text-tertiary)]">{longDate(hover.date)}</div>
         </div>
       )}

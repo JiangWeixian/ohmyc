@@ -1,4 +1,5 @@
 import {
+  act,
   fireEvent,
   screen,
   waitFor,
@@ -10,6 +11,7 @@ import {
   describe,
   expect,
   it,
+  vi,
 } from 'vitest'
 
 import { renderWithProviders } from '../../test/render-with-providers'
@@ -26,7 +28,8 @@ function installTimelineHandlers(options?: { projects?: string[] }) {
   setMockHandler('timeline.status', async () => ({ sessionCount: 9, lastSyncAt: Date.UTC(currentYear, 0, 1) }))
   setMockHandler('timeline.heatmap', async (args) => {
     capturedHeatmapArgs.push(args)
-    return { data: [{ date: `${currentYear}-06-16`, value: 8 }] }
+    const metric = (args as { metric: string }).metric
+    return { data: [{ date: `${currentYear}-06-16`, value: ({ sessions: 9, turns: 12, tokens: 4_238_700_000 } as Record<string, number>)[metric] }] }
   })
   setMockHandler('timeline.events', async () => ({
     days: [
@@ -80,6 +83,94 @@ afterEach(() => {
 })
 
 describe('TimelineView', () => {
+  it('refreshes all full-year totals after new data arrives without remounting', async () => {
+    vi.useFakeTimers()
+    const { currentYear } = installTimelineHandlers()
+    let totals = { sessions: 9, turns: 12, tokens: 4_200_000_000 }
+    setMockHandler('timeline.heatmap', async (args) => {
+      const { metric } = args as { metric: keyof typeof totals }
+      return { data: [{ date: `${currentYear}-06-16`, value: totals[metric] }] }
+    })
+    const { container, unmount, queryClient } = renderWithProviders(<TimelineView />)
+    const stats = () => container.querySelector('.timeline-stats')!
+    try {
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(100)
+      })
+      expect(stats()).toHaveTextContent('9 sessions · 12 turns · 4.2B tokens')
+
+      totals = { sessions: 10, turns: 24, tokens: 4_500_000_000 }
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(30_000)
+      })
+      expect(stats()).toHaveTextContent('10 sessions · 24 turns · 4.5B tokens')
+
+      totals = { sessions: 11, turns: 26, tokens: 4_600_000_000 }
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(30_000)
+      })
+      expect(stats()).toHaveTextContent('11 sessions · 26 turns · 4.6B tokens')
+    } finally {
+      unmount()
+      queryClient.clear()
+      vi.useRealTimers()
+    }
+  })
+
+  it('scopes all totals to the full year and project independently of list pagination and metric tab', async () => {
+    const user = userEvent.setup()
+    const { currentYear } = installTimelineHandlers()
+    setMockHandler('timeline.status', async () => ({ sessionCount: 9999 }))
+    setMockHandler('timeline.heatmap', async (args) => {
+      const { metric, project, from, to } = args as { metric: string; project?: string; from: number; to: number }
+      const year = new Date(from).getUTCFullYear()
+      expect(from).toBe(Date.UTC(year, 0, 1))
+      expect(to).toBe(Date.UTC(year, 11, 31))
+      const values = project === 'beta'
+        ? (year === currentYear ? { sessions: 1, turns: 30, tokens: 500_000_000 } : { sessions: 0, turns: 0, tokens: 20_000_000 })
+        : { sessions: 5, turns: 112, tokens: 6_238_700_000 }
+      const value = values[metric as keyof typeof values]
+      const earlierValue = Math.floor(value / 2)
+      return { data: [{ date: `${year}-01-01`, value: earlierValue }, { date: `${year}-06-16`, value: value - earlierValue }] }
+    })
+    const { container } = renderWithProviders(<TimelineView />)
+    const stats = () => container.querySelector('.timeline-stats')!
+    await waitFor(() => expect(stats()).toHaveTextContent('5 sessions · 112 turns · 6.2B tokens'))
+    expect(await screen.findByText(/older sessions hidden/)).toBeInTheDocument()
+    expect(screen.getByText('Timeline work')).toBeInTheDocument()
+
+    await user.click(screen.getByLabelText('Project'))
+    await user.click(await screen.findByText('beta'))
+    await waitFor(() => expect(stats()).toHaveTextContent('1 sessions · 30 turns · 500M tokens'))
+
+    await user.click(screen.getByLabelText('Year'))
+    await user.click(await screen.findByText(String(currentYear - 1)))
+    await waitFor(() => expect(stats()).toHaveTextContent('0 sessions · 0 turns · 20M tokens'))
+    const tokensTab = screen.getByText('Tokens').closest('[role="tab"]')!
+    fireEvent.mouseDown(tokensTab, { button: 0, ctrlKey: false })
+    await waitFor(() => expect(tokensTab).toHaveAttribute('aria-selected', 'true'))
+    expect(stats()).toHaveTextContent('0 sessions · 0 turns · 20M tokens')
+  })
+
+  it('shows zero totals for an empty filtered range even when other sessions exist', async () => {
+    installTimelineHandlers()
+    setMockHandler('timeline.heatmap', async () => ({ data: [] }))
+    const { container } = renderWithProviders(<TimelineView />)
+    await screen.findByText('Timeline work')
+    await waitFor(() => expect(container.querySelector('.timeline-stats')).toHaveTextContent('0 sessions · 0 turns · 0 tokens'))
+  })
+
+  it('keeps unresolved totals unavailable instead of reading global or paginated values', async () => {
+    installTimelineHandlers()
+    setMockHandler('timeline.heatmap', async () => {
+      await new Promise(() => {})
+      return { data: [] }
+    })
+    const { container } = renderWithProviders(<TimelineView />)
+    await screen.findByText('Timeline work')
+    expect(container.querySelector('.timeline-stats')).toHaveTextContent('— sessions · — turns · — tokens')
+  })
+
   it('renders timeline totals, heatmap, and events from transport data', async () => {
     installTimelineHandlers()
 
@@ -169,4 +260,20 @@ describe('TimelineView', () => {
     })
     expect(screen.getByLabelText('Project')).toBeInTheDocument()
   })
+})
+
+it('shows token query errors while keeping session activity visible', async () => {
+  installTimelineHandlers()
+  setMockHandler('timeline.heatmap', async (args) => {
+    if ((args as { metric: string }).metric === 'tokens') {
+      throw new Error('database disk image is malformed')
+    }
+    return { data: [] }
+  })
+  const { container } = renderWithProviders(<TimelineView />)
+  await screen.findByText('Timeline work')
+  fireEvent.mouseDown(screen.getByText('Tokens').closest('[role="tab"]')!, { button: 0, ctrlKey: false })
+  expect(await screen.findByText('Tokens unavailable.')).toBeInTheDocument()
+  expect(container.querySelector('.timeline-stats')).toHaveTextContent('0 sessions · 0 turns · — tokens')
+  expect(screen.getByText('Timeline work')).toBeInTheDocument()
 })

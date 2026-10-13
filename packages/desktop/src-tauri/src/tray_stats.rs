@@ -51,7 +51,7 @@ impl Display {
                 tokens: compact(total.tokens),
                 sessions: compact(total.sessions),
                 description: format!(
-                    "OhMyC — This week (Mon–Sun, local time; today {date}): {} tokens, {} sessions. Tokens include input and output, with cache counted once, within the selected statistics basis. Recorded data; refreshes every 30 seconds.",
+                    "OhMyC — This week (Mon–Sun, local time; today {date}): {} tokens, {} sessions. Tokens use source event time; sessions without token events retain lifetime totals at session creation time. Input, output and cache are counted once. Sessions count session creation time independently of token history. Recorded token history may be incomplete; refreshes every 30 seconds.",
                     total.tokens, total.sessions
                 ),
             },
@@ -70,9 +70,25 @@ mod tests {
     use chrono::FixedOffset;
 
     #[test]
+    fn tooltip_describes_event_time_and_legacy_compatibility() {
+        let display = Display::new(
+            "2026-10-12",
+            Some(TimelineSummary {
+                sessions: 7182,
+                tokens: 1500,
+            }),
+        );
+        assert_eq!(display.tokens, "1.5K");
+        assert_eq!(display.sessions, "7.2K");
+        assert!(display.description.contains("1500 tokens, 7182 sessions"));
+        assert!(display.description.contains("source event time"));
+        assert!(display.description.contains("session creation time"));
+    }
+
+    #[test]
     fn unavailable_is_distinct_from_a_valid_empty_day() {
         let absent = Display::new("2026-09-26", None);
-        let empty = Display::new("2026-09-26", Some(TimelineSummary::default()));
+        let empty = Display::new("2026-09-26", Some(TimelineSummary { sessions: 0, tokens: 0 }));
         assert_eq!((absent.tokens.as_str(), absent.sessions.as_str()), ("—", "—"));
         assert_eq!((empty.tokens.as_str(), empty.sessions.as_str()), ("0", "0"));
         let total = Display::new(

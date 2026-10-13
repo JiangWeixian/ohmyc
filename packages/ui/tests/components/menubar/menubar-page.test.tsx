@@ -1,5 +1,6 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import {
+  act,
   fireEvent,
   render,
   screen,
@@ -165,8 +166,9 @@ describe('MenubarPage', () => {
 
     expect(await screen.findByText(/^no activity yet$/i)).toBeInTheDocument()
     // Peak cell falls back to an em dash; Tokens and Sessions sum to 0.
-    expect(screen.getByText('—')).toBeInTheDocument()
-    expect(screen.getAllByText(/^0$/).length).toBeGreaterThanOrEqual(2)
+    await waitFor(() => expect(document.querySelector('[data-kpi="tokens"]')).toHaveTextContent('0'))
+    await waitFor(() => expect(document.querySelector('[data-kpi="sessions"]')).toHaveTextContent('0'))
+    expect(document.querySelector('[data-kpi="peak"]')).toHaveTextContent('—')
   })
 
   it('renders the three KPI cells with mono labels and values', async () => {
@@ -227,11 +229,69 @@ describe('MenubarPage (setup gate)', () => {
   })
 })
 
-it('counts a session active on two days once', async () => {
-  __setTransportForTests('mock')
-  setupTimelineMock()
-  setMockHandler('setup.status', async () => ({ state: 'ready' }))
+it('uses event sessions in both chart tooltips and creation counts in the 16-week total', async () => {
+  const today = new Date()
+  const date = [today.getFullYear(), String(today.getMonth() + 1).padStart(2, '0'), String(today.getDate()).padStart(2, '0')].join('-')
   setMockHandler('timeline.status', async () => ({ sessionCount: 5, usageMode: 'events', usageIncomplete: 1 }))
+  setMockHandler('timeline.heatmap', async args => ({
+    data: [{ date, value: ({ tokens: 15_000, sessions: 5, event_sessions: 2 } as Record<string, number>)[(args as { metric: string }).metric] }],
+  }))
+  const { container } = render(<MenubarPage />, { wrapper })
+  await waitFor(() => expect(document.querySelector('[data-kpi="sessions"]')).toHaveTextContent('5'))
+  const chart = container.querySelector('.recharts-surface')!
+  fireEvent.focus(chart)
+  expect(await screen.findByText('2 sessions · 15K tokens')).toBeInTheDocument()
+  await userEvent.click(screen.getByRole('tab', { name: /heatmap view/i }))
+  fireEvent.mouseEnter(container.querySelectorAll('[data-heat-cell]')[111])
+  expect(await screen.findByText('2 sessions · 15K tokens')).toBeInTheDocument()
+  expect(document.querySelector('[data-kpi="sessions"]')).toHaveTextContent('5')
+})
+
+it('keeps Sessions visible when token queries fail', async () => {
+  setMockHandler('timeline.heatmap', async (args) => {
+    if ((args as { metric: string }).metric === 'tokens') {
+      throw new Error('database disk image is malformed')
+    }
+    return { data: [{ date: '2026-05-22', value: 7182 }] }
+  })
   render(<MenubarPage />, { wrapper })
-  await waitFor(() => expect(document.querySelector('[data-kpi="sessions"]')).toHaveTextContent('4'))
+  await waitFor(() => expect(document.querySelector('[data-kpi="sessions"]')).toHaveTextContent('7,182'))
+  await waitFor(() => expect(document.querySelector('[data-kpi="tokens"]')).toHaveTextContent('—'))
+  await userEvent.click(screen.getByRole('tab', { name: /heatmap view/i }))
+  fireEvent.mouseEnter(document.querySelector('[data-heat-cell]')!)
+  expect(await screen.findByText(/sessions · — tokens/)).toBeInTheDocument()
+})
+
+describe.each(['area', 'heatmap'] as const)('MenubarPage %s tooltip availability', (view) => {
+  it.each(['initial', 'refetch'] as const)('shows unavailable sessions on %s query failure without hiding tokens or the creation total', async (failure) => {
+    const today = new Date()
+    const date = [today.getFullYear(), String(today.getMonth() + 1).padStart(2, '0'), String(today.getDate()).padStart(2, '0')].join('-')
+    let failEvents = failure === 'initial'
+    setMockHandler('timeline.heatmap', async (args) => {
+      const { metric } = args as { metric: string }
+      if (metric === 'event_sessions' && failEvents) {
+        throw new Error('event query failed')
+      }
+      return { data: [{ date, value: ({ tokens: 15_000, sessions: 5, event_sessions: 2 } as Record<string, number>)[metric] }] }
+    })
+    const client = new QueryClient({ defaultOptions: { queries: { retry: false } } })
+    const { container } = render(<QueryClientProvider client={client}><MenubarPage /></QueryClientProvider>)
+    await waitFor(() => expect(container.querySelector('[data-kpi="sessions"]')).toHaveTextContent('5'))
+    if (view === 'area') {
+      fireEvent.focus(container.querySelector('.recharts-surface')!)
+    } else {
+      await userEvent.click(screen.getByRole('tab', { name: /heatmap view/i }))
+      fireEvent.mouseEnter(container.querySelectorAll('[data-heat-cell]')[111])
+    }
+    if (failure === 'refetch') {
+      expect(await screen.findByText('2 sessions · 15K tokens')).toBeInTheDocument()
+      failEvents = true
+      await act(async () => {
+        await client.invalidateQueries({ queryKey: ['timeline', 'heatmap-range'] })
+      })
+    }
+    expect(await screen.findByText('— sessions · 15K tokens')).toBeInTheDocument()
+    expect(container.querySelector('[data-kpi="sessions"]')).toHaveTextContent('5')
+    expect(container.querySelector('[data-kpi="tokens"]')).toHaveTextContent('15K')
+  })
 })

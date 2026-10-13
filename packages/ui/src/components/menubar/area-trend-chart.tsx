@@ -26,6 +26,7 @@ import { formatTokens } from '@/lib/format-tokens'
 import type { HeatmapPoint } from '@/hooks/use-timeline'
 
 interface AreaTrendChartProps {
+  sessionsUnavailable?: boolean
   tokens: HeatmapPoint[]
   sessions: HeatmapPoint[]
 }
@@ -76,7 +77,7 @@ interface ChartRow {
 
 // Context carries the sessionMap so the tooltip component can live at module scope
 // (ESLint rule react-hooks-extra/no-nested-component-definitions).
-const SessionMapContext = createContext<Map<string, number>>(new Map())
+const SessionMapContext = createContext<Map<string, number> | null>(new Map())
 
 interface RechartsTooltipProps {
   active?: boolean
@@ -93,7 +94,7 @@ function ChartTooltipContent({ active, payload }: RechartsTooltipProps) {
     return null
   }
   const tokensVal = Number(payload[0].value ?? 0)
-  const sessionsVal = sessionMap.get(row.iso) ?? 0
+  const sessionsVal = sessionMap === null ? '—' : sessionMap.get(row.iso) ?? 0
   return (
     <div
       className="rounded border border-[var(--border-default)] bg-[var(--surface-overlay)] px-2 py-1.5 text-[11px] shadow-md"
@@ -113,7 +114,7 @@ const chartConfig = {
   tokens: { label: 'Tokens', color: 'hsl(var(--chart-1))' },
 } satisfies ChartConfig
 
-export function AreaTrendChart({ tokens, sessions }: AreaTrendChartProps) {
+export function AreaTrendChart({ tokens, sessions, sessionsUnavailable = false }: AreaTrendChartProps) {
   const gradientId = useId().replaceAll(':', '')
   const strokeId = `${gradientId}-menubar-area-stroke`
   const fillId = `${gradientId}-menubar-area-fill`
@@ -130,8 +131,8 @@ export function AreaTrendChart({ tokens, sessions }: AreaTrendChartProps) {
     return rows
   }, [tokens])
   const sessionMap = useMemo(
-    () => new Map(sessions.map(p => [p.date, p.value])),
-    [sessions],
+    () => sessionsUnavailable ? null : new Map(sessions.map(p => [p.date, p.value])),
+    [sessions, sessionsUnavailable],
   )
   const peak = useMemo(() => findPeak(chartData), [chartData])
 
