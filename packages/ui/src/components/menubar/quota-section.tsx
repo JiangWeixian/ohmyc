@@ -71,7 +71,10 @@ export function MenubarQuotaSection({ nowMs }: { nowMs: number }) {
     .filter(snapshot => accountWindows(snapshot).length > 0)
     .toSorted((a, b) => constraintScore(b) - constraintScore(a))
   const shown = ranked.slice(0, 3)
-  const moreHealthy = healthy.length - shown.length
+  // "+N more" counts only providers that could actually render a row (healthy
+  // AND with account-level windows) — a healthy provider with only
+  // model-specific windows would otherwise inflate the count.
+  const moreHealthy = ranked.length - shown.length
 
   if (shown.length === 0) {
     return null

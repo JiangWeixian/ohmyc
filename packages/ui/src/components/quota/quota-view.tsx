@@ -77,6 +77,7 @@ export function QuotaView() {
   const { data, isLoading, isError, error } = useQuota()
   const refresh = useQuotaRefresh()
   const [refreshing, setRefreshing] = useState(false)
+  const [refreshError, setRefreshError] = useState<string | null>(null)
 
   const snapshots = data ?? []
   const allLoggedOut = snapshots.length > 0 && snapshots.every(s => s.status === 'notLoggedIn')
@@ -84,8 +85,11 @@ export function QuotaView() {
 
   async function handleRefresh() {
     setRefreshing(true)
+    setRefreshError(null)
     try {
       await refresh()
+    } catch (error_) {
+      setRefreshError(error_ instanceof Error ? error_.message : 'transport error')
     } finally {
       setRefreshing(false)
     }
@@ -127,9 +131,9 @@ export function QuotaView() {
         </div>
       </header>
 
-      {isError && (
+      {(isError || refreshError) && (
         <div className="mb-4 rounded-lg border border-[var(--border-standard)] bg-[rgba(255,255,255,0.02)] px-5 py-4 font-mono-theme text-[11px] text-[var(--text-tertiary)]">
-          Couldn’t load quota snapshots — {error instanceof Error ? error.message : 'transport error'}. Try Refresh.
+          Couldn’t load quota snapshots — {refreshError ?? (error instanceof Error ? error.message : 'transport error')}. Try Refresh.
         </div>
       )}
 

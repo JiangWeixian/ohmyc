@@ -119,16 +119,19 @@ export function formatCountdown(resetsAt: string, nowMs: number): string | null 
   if (min == null) {
     return null
   }
-  if (min < 60) {
-    return `${Math.round(min)}m`
+  // Round to whole minutes before splitting units — otherwise a remainder
+  // like 59.6m renders as the absurd "1h 60m".
+  const total = Math.max(0, Math.round(min))
+  if (total < 60) {
+    return `${total}m`
   }
-  if (min < 1440) {
-    const h = Math.floor(min / 60)
-    const m = Math.round(min % 60)
+  if (total < 1440) {
+    const h = Math.floor(total / 60)
+    const m = total % 60
     return m ? `${h}h ${m}m` : `${h}h`
   }
-  const d = Math.floor(min / 1440)
-  const h = Math.floor((min % 1440) / 60)
+  const d = Math.floor(total / 1440)
+  const h = Math.floor((total % 1440) / 60)
   return h ? `${d}d ${h}h` : `${d}d`
 }
 
@@ -200,17 +203,31 @@ export function formatUpdatedAgo(fetchedAtMs: number, nowMs: number): string {
   if (min < 1) {
     return 'just now'
   }
-  const rounded = Math.floor(min)
-  return rounded === 1 ? '1 min ago' : `${rounded} min ago`
+  if (min < 60) {
+    const rounded = Math.floor(min)
+    return rounded === 1 ? '1 min ago' : `${rounded} min ago`
+  }
+  if (min < 1440) {
+    const hours = Math.floor(min / 60)
+    return hours === 1 ? '1 hr ago' : `${hours} hr ago`
+  }
+  const days = Math.floor(min / 1440)
+  return days === 1 ? '1 day ago' : `${days} days ago`
 }
 
-/** Popover header variant: `2m ago`. */
+/** Popover header variant: `2m ago` / `3h ago` / `1d ago`. */
 export function formatUpdatedAgoShort(fetchedAtMs: number, nowMs: number): string {
   const min = Math.max(0, (nowMs - fetchedAtMs) / 60_000)
   if (min < 1) {
     return 'now'
   }
-  return `${Math.floor(min)}m ago`
+  if (min < 60) {
+    return `${Math.floor(min)}m ago`
+  }
+  if (min < 1440) {
+    return `${Math.floor(min / 60)}h ago`
+  }
+  return `${Math.floor(min / 1440)}d ago`
 }
 
 /** Newest fetchedAt across snapshots, as epoch ms. Null when no data. */
