@@ -251,14 +251,16 @@ fn set_popover_height(app: tauri::AppHandle, height: f64) {
         return;
     };
     // 48px margin below the menu bar keeps the popover off the screen edge.
+    // The reported height is CSS px, so compare against the monitor's logical
+    // height (physical pixels would double the cap on Retina displays).
+    let scale = win.scale_factor().unwrap_or(1.0);
     let max = win
         .current_monitor()
         .ok()
         .flatten()
-        .map(|m| m.size().height as f64 - 48.0)
+        .map(|m| m.size().to_logical::<f64>(scale).height - 48.0)
         .unwrap_or(800.0);
     let clamped = ohmyc_desktop_lib::popover::clamp_popover_height(height, max);
-    let scale = win.scale_factor().unwrap_or(1.0);
     let current = win
         .inner_size()
         .unwrap_or(PhysicalSize::new(367, 340))

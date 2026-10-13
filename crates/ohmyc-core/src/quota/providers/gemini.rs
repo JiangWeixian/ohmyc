@@ -15,7 +15,7 @@
 //!   not a precise per-model budget (empirically verified by agy-quota).
 //! - Note: since June 2026 Google serves this endpoint only for Standard /
 //!   Enterprise tiers; consumer accounts get 403 SUBSCRIPTION_REQUIRED, which
-//!   surfaces here as TokenExpired ("open the official CLI").
+//!   surfaces here as Unsupported (a plan limitation, not a dead token).
 
 use std::collections::BTreeMap;
 
@@ -51,11 +51,27 @@ impl GeminiQuota {
         );
         let auth = format!("Bearer {token}");
         let headers = [("authorization", auth.as_str())];
-        super::finish(
-            QuotaProvider::Gemini,
-            http::post_json(&url, &headers, "{}", http::DEFAULT_TIMEOUT),
-            parse_response,
-        )
+        let outcome = http::post_json(&url, &headers, "{}", http::DEFAULT_TIMEOUT);
+        // Consumer accounts get 403 SUBSCRIPTION_REQUIRED from this internal
+        // endpoint — that's a plan limitation, not a dead token, so don't
+        // tell the user to re-login.
+        if let http::HttpOutcome::Ok {
+            status: 403, ref body, ..
+        } = outcome
+        {
+            if body.contains("SUBSCRIPTION_REQUIRED") {
+                return UsageSnapshot::with_status(
+                    QuotaProvider::Gemini,
+                    SnapshotStatus::Unsupported {
+                        message: Some(
+                            "This Google account has no Gemini Code Assist subscription — quota is only available on paid tiers."
+                                .to_string(),
+                        ),
+                    },
+                );
+            }
+        }
+        super::finish(QuotaProvider::Gemini, outcome, parse_response)
     }
 }
 

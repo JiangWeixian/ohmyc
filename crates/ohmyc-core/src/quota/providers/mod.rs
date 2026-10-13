@@ -72,10 +72,15 @@ pub(crate) fn finish(
 }
 
 /// Read an env override for a provider base URL.
+/// Base URL override for tests and local debugging. In release builds only
+/// `https://` overrides are honored — a plain-http override would send
+/// bearer tokens unencrypted.
 pub(crate) fn base_url(env: &str, default: &str) -> String {
     std::env::var(env)
         .ok()
-        .filter(|v| !v.trim().is_empty())
+        .map(|v| v.trim().to_string())
+        .filter(|v| !v.is_empty())
+        .filter(|v| cfg!(any(test, debug_assertions)) || v.starts_with("https://"))
         .unwrap_or_else(|| default.to_string())
 }
 

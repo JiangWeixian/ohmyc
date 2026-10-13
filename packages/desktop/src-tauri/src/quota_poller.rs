@@ -9,7 +9,7 @@
 //! `catch_unwind` on top of fetch_all's per-provider isolation, so nothing
 //! (cache poisoning, emit failure) can kill the thread silently.
 
-use std::sync::RwLock;
+use std::sync::{Mutex, RwLock};
 use std::thread;
 use std::time::{Duration, Instant};
 
@@ -23,6 +23,9 @@ pub const DEFAULT_POLL_SECS: u64 = 300;
 #[derive(Default)]
 pub struct QuotaCache {
     snapshots: RwLock<Vec<UsageSnapshot>>,
+    /// Serializes refresh_now: the poller and a manual refresh must not
+    /// overlap, or the slower fetch could overwrite fresher results.
+    refresh_lock: Mutex<()>,
 }
 
 impl QuotaCache {
@@ -61,9 +64,13 @@ fn keeps_stale_data(status: &SnapshotStatus) -> bool {
     )
 }
 
-/// For transient failures with no fresh data, carry over the previous Ok
+/// For transient failures with no fresh data, carry over the previous
 /// snapshot's windows/meters/identity and `fetched_at` (so "updated N min
-/// ago" reflects data age, not the failed attempt).
+/// ago" reflects data age, not the failed attempt). The merge key is
+/// *carried data*, not the previous status: a stale snapshot from the last
+/// failure still holds the good numbers, so consecutive failures keep them
+/// (only NotLoggedIn/Unsupported — which never merge in — or a never-ok
+/// history lose them).
 pub fn merge_stale(previous: &[UsageSnapshot], next: Vec<UsageSnapshot>) -> Vec<UsageSnapshot> {
     next.into_iter()
         .map(|mut snap| {
@@ -73,7 +80,7 @@ pub fn merge_stale(previous: &[UsageSnapshot], next: Vec<UsageSnapshot>) -> Vec<
             let Some(prev) = previous.iter().find(|p| p.provider == snap.provider) else {
                 return snap;
             };
-            if !matches!(prev.status, SnapshotStatus::Ok) || prev.windows.is_empty() {
+            if prev.windows.is_empty() {
                 return snap;
             }
             snap.windows = prev.windows.clone();
@@ -85,9 +92,13 @@ pub fn merge_stale(previous: &[UsageSnapshot], next: Vec<UsageSnapshot>) -> Vec<
         .collect()
 }
 
-/// Blocking refresh shared by the poller loop and the `quota_refresh`
-/// command: fetch all providers, swap the cache, broadcast the event.
-pub fn refresh_now(app: &AppHandle, cache: &QuotaCache) -> Vec<UsageSnapshot> {
+/// Blocking refresh shared by the poller loop and the quota commands: fetch
+/// all providers, swap the cache, broadcast the event. Serialised so the
+/// poller and a manual refresh can't overlap; poison-tolerant so one
+/// panicked refresh can't brick the next.
+pub fn refresh_now(app: &AppHandle) -> Vec<UsageSnapshot> {
+    let cache = app.state::<QuotaCache>();
+    let _guard = cache.refresh_lock.lock().unwrap_or_else(|e| e.into_inner());
     let snapshots = merge_stale(&cache.get(), QuotaRegistry::new().fetch_all());
     cache.set(snapshots.clone());
     let _ = app.emit(QUOTA_CHANGED_EVENT, &snapshots);
@@ -154,10 +165,7 @@ pub fn spawn_poller(app: &AppHandle) {
     thread::spawn(move || loop {
         let cycle = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
             let started = Instant::now();
-            let snapshots = {
-                let cache = app.state::<QuotaCache>();
-                refresh_now(&app, &cache)
-            };
+            let snapshots = refresh_now(&app);
             log_cycle(&format!(
                 "{} cycle {}ms [{}]",
                 chrono::Local::now().to_rfc3339(),
@@ -297,6 +305,33 @@ mod tests {
             let next = UsageSnapshot::with_status(QuotaProvider::Kimi, SnapshotStatus::TokenExpired);
             let merged = merge_stale(&[prev], vec![next]);
             assert!(merged[0].windows.is_empty());
+        }
+
+        #[test]
+        fn consecutive_failures_keep_the_original_good_data() {
+            // success → failure → failure: the second failure must still show
+            // the last good numbers, with the original fetch time.
+            let first = merge_stale(
+                &[good_snapshot()],
+                vec![UsageSnapshot::with_status(
+                    QuotaProvider::Kimi,
+                    SnapshotStatus::TokenExpired,
+                )],
+            );
+            let second = merge_stale(
+                &first,
+                vec![UsageSnapshot::with_status(
+                    QuotaProvider::Kimi,
+                    SnapshotStatus::RateLimited {
+                        retry_after_seconds: Some(300),
+                    },
+                )],
+            );
+            assert!(matches!(second[0].status, SnapshotStatus::RateLimited { .. }));
+            assert_eq!(second[0].windows.len(), 1);
+            assert_eq!(second[0].windows[0].used_percent, Some(42.0));
+            assert_eq!(second[0].meters.len(), 1);
+            assert_eq!(second[0].fetched_at, first[0].fetched_at);
         }
 
         #[test]

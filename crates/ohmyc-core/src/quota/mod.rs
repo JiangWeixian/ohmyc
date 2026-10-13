@@ -58,10 +58,31 @@ impl QuotaRegistry {
         Self::default()
     }
 
-    /// Fetch every provider, in the fixed `QuotaProvider::ALL` order.
-    /// Individual failures (including panics) never affect other providers.
+    /// Fetch every provider concurrently, returned in the fixed
+    /// `QuotaProvider::ALL` order. Individual failures (including panics)
+    /// never affect other providers. Concurrency keeps a slow provider (10s
+    /// timeout each, plus Kimi's 401 retry) from delaying the whole cycle.
     pub fn fetch_all(&self) -> Vec<UsageSnapshot> {
-        QuotaProvider::ALL.iter().map(|p| self.fetch(*p)).collect()
+        std::thread::scope(|scope| {
+            let handles: Vec<_> = QuotaProvider::ALL
+                .iter()
+                .map(|provider| scope.spawn(move || self.fetch(*provider)))
+                .collect();
+            handles
+                .into_iter()
+                .zip(QuotaProvider::ALL)
+                .map(|(handle, provider)| {
+                    handle.join().unwrap_or_else(|_| {
+                        UsageSnapshot::with_status(
+                            provider,
+                            SnapshotStatus::Error {
+                                message: "internal panic while fetching quota".to_string(),
+                            },
+                        )
+                    })
+                })
+                .collect()
+        })
     }
 
     /// Fetch one provider. A panicking provider is converted into an

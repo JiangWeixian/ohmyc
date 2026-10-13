@@ -103,38 +103,40 @@ fn normalize_epoch_seconds(v: f64) -> f64 {
     }
 }
 
-/// Run a command with a hard timeout: the wait happens on a spawned thread;
-/// on timeout the child is killed by pid and reaped.
+/// Run a command with a hard timeout. Polls `try_wait` so a timeout kill
+/// targets the actual child handle — a pid-based kill could hit a recycled
+/// pid — and leaves no waiter thread behind. Captured stdout is capped at
+/// 64 KiB; our helpers (security, cursor-agent status) emit a few hundred
+/// bytes, so a chattier child blocking on a full pipe is killed at the
+/// deadline instead of wedging the poller.
 fn run_with_timeout(mut command: Command, timeout: Duration) -> Option<Output> {
-    use std::sync::mpsc;
+    use std::io::Read as _;
     command.stdout(Stdio::piped()).stderr(Stdio::null());
-    let child = command.spawn().ok()?;
-    let pid = child.id();
-    let (tx, rx) = mpsc::channel();
-    std::thread::spawn(move || {
-        let _ = tx.send(child.wait_with_output());
-    });
-    match rx.recv_timeout(timeout) {
-        Ok(Ok(output)) => Some(output),
-        Ok(Err(_)) | Err(mpsc::RecvTimeoutError::Disconnected) => None,
-        Err(mpsc::RecvTimeoutError::Timeout) => {
-            kill_process(pid);
-            // Reap the killed child so it does not linger as a zombie.
-            let _ = rx.recv_timeout(Duration::from_secs(2));
-            None
+    let mut child = command.spawn().ok()?;
+    let deadline = std::time::Instant::now() + timeout;
+    let status = loop {
+        match child.try_wait() {
+            Ok(Some(status)) => break status,
+            Ok(None) if std::time::Instant::now() < deadline => {
+                std::thread::sleep(Duration::from_millis(10));
+            }
+            Ok(None) => {
+                let _ = child.kill();
+                let _ = child.wait();
+                return None;
+            }
+            Err(_) => return None,
         }
+    };
+    let mut stdout = Vec::new();
+    if let Some(pipe) = child.stdout.take() {
+        let _ = pipe.take(64 * 1024).read_to_end(&mut stdout);
     }
-}
-
-fn kill_process(pid: u32) {
-    #[cfg(unix)]
-    {
-        let _ = Command::new("/bin/kill").arg("-9").arg(pid.to_string()).status();
-    }
-    #[cfg(windows)]
-    {
-        let _ = Command::new("taskkill").args(["/PID", &pid.to_string(), "/F"]).status();
-    }
+    Some(Output {
+        status,
+        stdout,
+        stderr: Vec::new(),
+    })
 }
 
 fn find_on_path(names: &[&str]) -> Option<PathBuf> {
@@ -272,13 +274,15 @@ pub fn codex() -> CodexOutcome {
 //    `cursor-user`) — the cursor-agent CLI persists its session there (raw
 //    JWT, sibling `cursor-refresh-token` entry untouched). Read via
 //    /usr/bin/security, same no-prompt pattern as Claude.
-// 2. The Cursor CLI (`cursor-agent`, newer builds also `agent`) — running
-//    `status --format json`; only builds that both authenticate
-//    (`isAuthenticated: true`) and expose `auth.accessToken` in stdout are
-//    trusted (current builds report booleans only). Binary lookup: env
-//    `OHMYC_QUOTA_CURSOR_AGENT` → PATH → well-known install dirs, because a
-//    Finder-launched app inherits launchd's sparse PATH and misses
-//    ~/.local/bin where the installer puts cursor-agent.
+// 2. The Cursor CLI (`cursor-agent`) — running `status --format json`; only
+//    builds that both authenticate (`isAuthenticated: true`) and expose
+//    `auth.accessToken` in stdout are trusted (current builds report booleans
+//    only). The bare `agent` name is deliberately not searched: Grok's CLI
+//    installs an `agent` binary too, and we must not execute a foreign tool
+//    every poll. Binary lookup: env `OHMYC_QUOTA_CURSOR_AGENT` → PATH
+//    (`cursor-agent`) → well-known install dirs, because a Finder-launched
+//    app inherits launchd's sparse PATH and misses ~/.local/bin where the
+//    installer puts cursor-agent.
 // 3. `auth.json` written by `cursor-agent login` under the platform config
 //    home (`$XDG_CONFIG_HOME/cursor` / `~/.config/cursor`, `%APPDATA%\cursor`
 //    on Windows; older builds used `~/.cursor`). Current macOS builds moved
@@ -303,14 +307,12 @@ pub fn cursor() -> CredentialOutcome {
     cursor_from_state_db()
 }
 
-fn cursor_auth_json_path() -> Option<PathBuf> {
-    if let Some(path) = env_path("OHMYC_QUOTA_CURSOR_AUTH_JSON") {
-        return Some(path);
+fn cursor_auth_json_candidates() -> Vec<PathBuf> {
+    let mut candidates = vec![];
+    if let Some(home) = dirs::home_dir() {
+        candidates.push(home.join(".config/cursor/auth.json"));
+        candidates.push(home.join(".cursor/auth.json"));
     }
-    let home = dirs::home_dir()?;
-    // `mut` is only exercised by the Windows/Linux cfg blocks below.
-    #[allow(unused_mut)]
-    let mut candidates = vec![home.join(".config/cursor/auth.json"), home.join(".cursor/auth.json")];
     #[cfg(target_os = "windows")]
     if let Some(appdata) = std::env::var_os("APPDATA") {
         candidates.insert(0, PathBuf::from(appdata).join("cursor").join("auth.json"));
@@ -322,13 +324,23 @@ fn cursor_auth_json_path() -> Option<PathBuf> {
     {
         candidates.insert(0, xdg.join("cursor").join("auth.json"));
     }
-    candidates.into_iter().find(|p| p.is_file())
+    candidates
 }
 
 fn cursor_from_auth_json() -> Option<String> {
-    let path = cursor_auth_json_path()?;
-    let json = read_json(&path)?;
-    non_empty_str(json.get("accessToken"))
+    if let Some(path) = env_path("OHMYC_QUOTA_CURSOR_AUTH_JSON") {
+        let json = read_json(&path)?;
+        return non_empty_str(json.get("accessToken"));
+    }
+    // A file that exists but lacks a usable token must not hide the next
+    // candidate (stale configs are common across reinstalls).
+    cursor_auth_json_candidates().into_iter().find_map(|path| {
+        if path.is_file() {
+            read_json(&path).and_then(|json| non_empty_str(json.get("accessToken")))
+        } else {
+            None
+        }
+    })
 }
 
 /// `cursor-access-token` / `cursor-user` in the login keychain. The value is
@@ -366,7 +378,7 @@ fn cursor_keychain_token() -> Option<String> {
 
 fn cursor_agent_binary() -> Option<PathBuf> {
     env_path("OHMYC_QUOTA_CURSOR_AGENT")
-        .or_else(|| find_on_path(&["cursor-agent", "agent"]))
+        .or_else(|| find_on_path(&["cursor-agent"]))
         .or_else(|| {
             // GUI apps get launchd's PATH (/usr/bin:/bin:...), which misses
             // user-local bins. Probe the installer's default locations.
@@ -622,7 +634,8 @@ fn opencode_data_home() -> Option<PathBuf> {
 // The credential source tells us the region: opencode's `zhipuai-coding-plan`
 // provider id is the China plan, `zai-coding-plan` / `zai` are international.
 //
-// Chain: env `ZAI_API_KEY` → `GLM_API_KEY` → `ZHIPU_API_KEY` (international) →
+// Chain: env `ZAI_API_KEY` → `GLM_API_KEY` (international) → `ZHIPU_API_KEY`
+// (China) →
 // opencode `auth.json` keys `zai-coding-plan` / `zhipuai-coding-plan` / `zai` →
 // `~/.config/zai/key.json` (`OHMYC_QUOTA_GLM_CONFIG_HOME` overrides the config
 // dir; fields `apiKey` / `api_key`) → `~/.pi/agent/models.json`
@@ -653,7 +666,13 @@ pub fn glm() -> GlmOutcome {
             if let Some(key) = non_empty_str(Some(&Value::String(key))) {
                 return GlmOutcome::Credential(GlmCredential {
                     key,
-                    region: GlmRegion::International,
+                    // ZHIPU is the China platform's name (open.bigmodel.cn);
+                    // routing its key to api.z.ai would fail auth.
+                    region: if env == "ZHIPU_API_KEY" {
+                        GlmRegion::China
+                    } else {
+                        GlmRegion::International
+                    },
                 });
             }
         }
