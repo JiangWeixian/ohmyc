@@ -95,10 +95,10 @@ function MenubarActivity() {
           <div className={view === 'area' ? 'relative -mx-1 min-h-[168px] rounded menubar-chart-area' : 'relative -mx-1 min-h-[168px]'}>
             {view === 'area'
               ? (
-                  <AreaTrendChart tokens={tokensRecent.isError ? [] : tokensRecent.data ?? []} sessions={eventSessionsRecent.data ?? []} />
+                  <AreaTrendChart sessionsUnavailable={eventSessionsRecent.isError} tokens={tokensRecent.isError ? [] : tokensRecent.data ?? []} sessions={eventSessionsRecent.data ?? []} />
                 )
               : (
-                  <RecentHeatmap tokensUnavailable={tokensRecent.isError} today={today} tokens={tokensRecent.isError ? [] : tokensRecent.data ?? []} sessions={eventSessionsRecent.data ?? []} />
+                  <RecentHeatmap sessionsUnavailable={eventSessionsRecent.isError} tokensUnavailable={tokensRecent.isError} today={today} tokens={tokensRecent.isError ? [] : tokensRecent.data ?? []} sessions={eventSessionsRecent.data ?? []} />
                 )}
           </div>
 

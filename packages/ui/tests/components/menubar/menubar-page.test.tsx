@@ -1,5 +1,6 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import {
+  act,
   fireEvent,
   render,
   screen,
@@ -259,4 +260,38 @@ it('keeps Sessions visible when token queries fail', async () => {
   await userEvent.click(screen.getByRole('tab', { name: /heatmap view/i }))
   fireEvent.mouseEnter(document.querySelector('[data-heat-cell]')!)
   expect(await screen.findByText(/sessions · — tokens/)).toBeInTheDocument()
+})
+
+describe.each(['area', 'heatmap'] as const)('MenubarPage %s tooltip availability', (view) => {
+  it.each(['initial', 'refetch'] as const)('shows unavailable sessions on %s query failure without hiding tokens or the creation total', async (failure) => {
+    const today = new Date()
+    const date = [today.getFullYear(), String(today.getMonth() + 1).padStart(2, '0'), String(today.getDate()).padStart(2, '0')].join('-')
+    let failEvents = failure === 'initial'
+    setMockHandler('timeline.heatmap', async (args) => {
+      const { metric } = args as { metric: string }
+      if (metric === 'event_sessions' && failEvents) {
+        throw new Error('event query failed')
+      }
+      return { data: [{ date, value: ({ tokens: 15_000, sessions: 5, event_sessions: 2 } as Record<string, number>)[metric] }] }
+    })
+    const client = new QueryClient({ defaultOptions: { queries: { retry: false } } })
+    const { container } = render(<QueryClientProvider client={client}><MenubarPage /></QueryClientProvider>)
+    await waitFor(() => expect(container.querySelector('[data-kpi="sessions"]')).toHaveTextContent('5'))
+    if (view === 'area') {
+      fireEvent.focus(container.querySelector('.recharts-surface')!)
+    } else {
+      await userEvent.click(screen.getByRole('tab', { name: /heatmap view/i }))
+      fireEvent.mouseEnter(container.querySelectorAll('[data-heat-cell]')[111])
+    }
+    if (failure === 'refetch') {
+      expect(await screen.findByText('2 sessions · 15K tokens')).toBeInTheDocument()
+      failEvents = true
+      await act(async () => {
+        await client.invalidateQueries({ queryKey: ['timeline', 'heatmap-range'] })
+      })
+    }
+    expect(await screen.findByText('— sessions · 15K tokens')).toBeInTheDocument()
+    expect(container.querySelector('[data-kpi="sessions"]')).toHaveTextContent('5')
+    expect(container.querySelector('[data-kpi="tokens"]')).toHaveTextContent('15K')
+  })
 })
