@@ -54,6 +54,7 @@ pub struct HeatmapPoint {
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Metric {
     Sessions,
+    EventSessions,
     Turns,
     Tokens,
 }
@@ -62,10 +63,11 @@ impl Metric {
     pub fn parse(s: &str) -> Result<Self, ApiError> {
         match s {
             "sessions" => Ok(Self::Sessions),
+            "event_sessions" => Ok(Self::EventSessions),
             "turns" => Ok(Self::Turns),
             "tokens" => Ok(Self::Tokens),
             other => Err(ApiError::InvalidInput(format!(
-                "metric must be one of sessions|turns|tokens, got '{other}'"
+                "metric must be one of sessions|event_sessions|turns|tokens, got '{other}'"
             ))),
         }
     }
@@ -195,8 +197,7 @@ fn generate_date_range(from: &str, to: &str) -> Result<Vec<String>, ApiError> {
     Ok(out)
 }
 
-/// Recorded session totals in a half-open timestamp range.
-/// Codex input includes cached input; other sources store it separately.
+/// Independent session counts and token totals with legacy fallback in a half-open range.
 #[derive(Debug, Default, Clone, Copy, PartialEq, Eq, Serialize)]
 pub struct TimelineSummary {
     pub sessions: i64,
@@ -207,20 +208,19 @@ pub fn summary(conn: &Connection, from_ms: i64, to_ms: i64) -> Result<TimelineSu
     if from_ms >= to_ms {
         return Err(ApiError::InvalidInput("summary requires from < to".into()));
     }
-    if usage::event_mode(conn) {
-        return usage::summary(conn, from_ms, to_ms);
-    }
+    Ok(TimelineSummary {
+        sessions: session_count(conn, from_ms, to_ms)?,
+        tokens: usage::tokens(conn, from_ms, to_ms)?,
+    })
+}
+
+fn session_count(conn: &Connection, from: i64, to: i64) -> Result<i64, ApiError> {
     conn.query_row(
-        &format!("SELECT COUNT(*), COALESCE(SUM({TOKEN_TOTAL_SQL}), 0) FROM sessions WHERE started_at >= ?1 AND started_at < ?2"),
-        rusqlite::params![from_ms, to_ms],
-        |row| {
-            Ok(TimelineSummary {
-                sessions: row.get(0)?,
-                tokens: row.get(1)?,
-            })
-        },
+        "SELECT COUNT(*) FROM sessions WHERE started_at>=?1 AND started_at<?2",
+        rusqlite::params![from, to],
+        |r| r.get(0),
     )
-    .map_err(|e| ApiError::Internal(format!("query summary: {e}")))
+    .map_err(|e| ApiError::Internal(format!("query session count: {e}")))
 }
 
 /// Read an existing store without creating files, changing pragmas, or migrating schema.
@@ -233,7 +233,10 @@ pub fn read_summary(path: &std::path::Path, from_ms: i64, to_ms: i64) -> Result<
 }
 
 pub fn heatmap(conn: &Connection, q: HeatmapQuery) -> Result<Vec<HeatmapPoint>, ApiError> {
-    if usage::event_mode(conn) && !matches!(q.metric, Metric::Turns) {
+    if matches!(q.metric, Metric::EventSessions) {
+        return usage::event_sessions(conn, &q);
+    }
+    if matches!(q.metric, Metric::Tokens) {
         return usage::heatmap(conn, &q);
     }
     let dates = generate_date_range(&q.from, &q.to)?;
@@ -247,7 +250,7 @@ pub fn heatmap(conn: &Connection, q: HeatmapQuery) -> Result<Vec<HeatmapPoint>, 
     let select_metric = match q.metric {
         Metric::Sessions => "COUNT(*)".to_string(),
         Metric::Turns => "SUM(turns)".to_string(),
-        Metric::Tokens => format!("SUM({TOKEN_TOTAL_SQL})"),
+        Metric::Tokens | Metric::EventSessions => unreachable!("event metrics are queried from the usage ledger"),
     };
 
     let mut sql = format!(
@@ -581,7 +584,7 @@ pub fn projects(conn: &Connection) -> Result<Vec<String>, ApiError> {
 }
 
 pub fn years(conn: &Connection) -> Result<Vec<i64>, ApiError> {
-    if usage::event_mode(conn) {
+    if usage::has_table(conn, "token_usage_events")? {
         let mut stmt = conn.prepare("SELECT CAST(strftime('%Y',started_at/1000,'unixepoch') AS INTEGER) AS year FROM sessions UNION SELECT CAST(strftime('%Y',e.occurred_at/1000,'unixepoch','localtime') AS INTEGER) FROM token_usage_events e JOIN sessions s ON s.session_id=e.session_id AND COALESCE(s.agent_name,'unknown')=e.source ORDER BY year").map_err(|e| ApiError::Internal(e.to_string()))?;
         return stmt
             .query_map([], |r| r.get(0))
@@ -618,7 +621,7 @@ pub fn status(conn: &Connection) -> Result<TimelineStatus, ApiError> {
         .flatten();
 
     Ok(TimelineStatus {
-        usage_mode: if usage::event_mode(conn) { "events" } else { "session" }.into(),
+        usage_mode: "events".into(),
         usage_incomplete: usage::incomplete(conn)?,
         session_count,
         last_sync_at,
@@ -629,7 +632,7 @@ use rusqlite::OptionalExtension;
 
 /// Open the timeline database at the given path. Returns an `Io` error if the
 /// file does not exist (we never create it — the dashboard plugin owns
-/// schema + session writes; only the usage-mode preference is writable here).
+/// schema + session writes).
 pub fn open_db(path: &std::path::Path) -> Result<Connection, ApiError> {
     if !path.exists() {
         return Err(ApiError::Io(format!("timeline db not found at {}", path.display())));
@@ -693,7 +696,7 @@ mod tests {
     use rusqlite::Connection;
 
     #[test]
-    fn summary_uses_half_open_timestamp_range_and_all_token_kinds() {
+    fn legacy_summary_preserves_half_open_session_counts_and_token_totals() {
         let conn = empty_db();
         insert_session(&conn, "before", "a", 999, 1, 900, 0, 0);
         insert_session(&conn, "start", "a", 1000, 1, 100, 20, 5);
@@ -836,6 +839,8 @@ mod tests {
     #[test]
     fn heatmap_tokens_metric_sums_input_output_cached() {
         let conn = seeded_three_days();
+        conn.execute_batch("CREATE TABLE token_usage_events(source TEXT,session_id TEXT,occurred_at INTEGER,tokens_input INTEGER,tokens_output INTEGER,tokens_cached INTEGER);
+        INSERT INTO token_usage_events SELECT 'unknown',session_id,started_at+43200000,tokens_input,tokens_output,tokens_cached FROM sessions;").unwrap();
         let result = heatmap(
             &conn,
             HeatmapQuery {

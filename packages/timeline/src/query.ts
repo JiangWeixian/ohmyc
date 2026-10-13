@@ -5,9 +5,11 @@
 // ============================================================
 import { TOKEN_TOTAL_SQL, totalSessionTokens } from './tokens.js'
 import {
+  hasTable,
+  LEGACY_ONLY_SQL,
   localDateMs,
+  tokenTotal,
   usageCoverage,
-  usageMode,
 } from './usage-query.js'
 
 import type {
@@ -59,8 +61,8 @@ function generateDateRange(from: string, to: string): string[] {
 
 /**
  * Returns daily aggregate values for a date range, suitable for a heatmap chart.
- * Gaps in the range are filled with `0` values. Supports sessions, turns, or
- * tokens as the aggregation metric, with optional project filtering.
+ * Gaps in the range are filled with `0` values. Supports created sessions,
+ * event sessions, turns, or tokens, with optional project filtering.
  *
  * @param db - Database handle conforming to {@link SqliteDatabase}.
  * @param params - Date range, metric, and optional project filter.
@@ -76,14 +78,38 @@ export function getHeatmap(
     return []
   }
 
-  if (usageMode(db) === 'events' && metric !== 'turns') {
+  if (metric === 'event_sessions') {
+    if (!hasTable(db, 'token_usage_events')) {
+      return dates.map(date => ({ date, value: 0 }))
+    }
     const last = new Date(localDateMs(to))
     last.setDate(last.getDate() + 1)
-    const value = metric === 'tokens' ? 'SUM(e.tokens_input + e.tokens_output + e.tokens_cached)' : 'COUNT(DISTINCT e.session_id)'
-    const rows = db.prepare(`SELECT date(e.occurred_at/1000, 'unixepoch', 'localtime') AS day, ${value} AS value
+    const sql = `SELECT date(e.occurred_at/1000, 'unixepoch', 'localtime') AS day, COUNT(DISTINCT e.session_id) AS value
       FROM token_usage_events e JOIN sessions s ON s.session_id=e.session_id AND COALESCE(s.agent_name,'unknown')=e.source
-      WHERE e.occurred_at >= ? AND e.occurred_at < ? ${project ? 'AND s.project = ?' : ''} GROUP BY day`)
-      .all(localDateMs(from), last.getTime(), ...(project ? [project] : [])) as { day: string; value: number }[]
+      WHERE e.occurred_at>=? AND e.occurred_at<? ${project ? 'AND s.project=?' : ''} GROUP BY day`
+    const rows = db.prepare(sql).all(localDateMs(from), last.getTime(), ...(project ? [project] : [])) as { day: string; value: number }[]
+    const values = new Map(rows.map(r => [r.day, r.value]))
+    return dates.map(date => ({ date, value: values.get(date) ?? 0 }))
+  }
+
+  if (metric === 'tokens') {
+    const last = new Date(localDateMs(to))
+    last.setDate(last.getDate() + 1)
+    const hasEvents = hasTable(db, 'token_usage_events')
+    const projectFilter = project ? 'AND s.project = ?' : ''
+    const legacyOnly = hasEvents ? LEGACY_ONLY_SQL : '1'
+    const legacySql = `SELECT date(s.started_at/1000, 'unixepoch') AS day, SUM(${TOKEN_TOTAL_SQL}) AS value
+      FROM sessions s WHERE s.started_at>=? AND s.started_at<? ${projectFilter} AND ${legacyOnly} GROUP BY day`
+    const legacyArgs = [dateToMs(from), dateToMs(to) + 86_400_000, ...(project ? [project] : [])]
+    const sql = hasEvents
+      ? `SELECT day, SUM(value) AS value FROM (
+          SELECT date(e.occurred_at/1000, 'unixepoch', 'localtime') AS day, SUM(e.tokens_input+e.tokens_output+e.tokens_cached) AS value
+          FROM token_usage_events e JOIN sessions s ON s.session_id=e.session_id AND COALESCE(s.agent_name,'unknown')=e.source
+          WHERE e.occurred_at>=? AND e.occurred_at<? ${projectFilter} GROUP BY day
+          UNION ALL ${legacySql}) GROUP BY day`
+      : legacySql
+    const args = hasEvents ? [localDateMs(from), last.getTime(), ...(project ? [project] : []), ...legacyArgs] : legacyArgs
+    const rows = db.prepare(sql).all(...args) as { day: string; value: number }[]
     const values = new Map(rows.map(r => [r.day, r.value]))
     return dates.map(date => ({ date, value: values.get(date) ?? 0 }))
   }
@@ -100,11 +126,6 @@ export function getHeatmap(
     }
     case 'turns': {
       selectMetric = 'SUM(turns)'
-      break
-    }
-    case 'tokens': {
-      // Codex input already includes cached input; preserve the raw stored fields.
-      selectMetric = `SUM(${TOKEN_TOTAL_SQL})`
       break
     }
     default: {
@@ -360,7 +381,7 @@ export function getProjects(db: SqliteDatabase): string[] {
  * @returns Sorted array of years (e.g. `[2024, 2025]`).
  */
 export function getYears(db: SqliteDatabase): number[] {
-  if (usageMode(db) === 'events') {
+  if (hasTable(db, 'token_usage_events')) {
     return (db.prepare(`SELECT CAST(strftime('%Y',started_at/1000,'unixepoch') AS INTEGER) AS year FROM sessions
       UNION SELECT CAST(strftime('%Y',e.occurred_at/1000,'unixepoch','localtime') AS INTEGER)
       FROM token_usage_events e JOIN sessions s ON s.session_id=e.session_id AND COALESCE(s.agent_name,'unknown')=e.source
@@ -397,4 +418,24 @@ export function getStatus(db: SqliteDatabase): { sessionCount: number; lastSyncA
     sessionCount: countRow.cnt,
     lastSyncAt: syncRow ? Number.parseInt(syncRow.value, 10) : undefined,
   }
+}
+
+export function getSummary(db: SqliteDatabase, from: number, to: number): { sessions: number; tokens: number } {
+  if (from >= to) {
+    throw new Error('summary requires from < to')
+  }
+  const row = db.prepare('SELECT COUNT(*) AS sessions FROM sessions WHERE started_at>=? AND started_at<?').get(from, to) as { sessions: number }
+  return { sessions: row.sessions, tokens: tokenTotal(db, from, to) }
+}
+
+export function getRangeSummary(db: SqliteDatabase, from: string, to: string): { sessions: number; tokens: number } {
+  const first = dateToMs(from)
+  const last = dateToMs(to) + 86_400_000
+  if (first >= last) {
+    throw new Error('summary requires from <= to')
+  }
+  const row = db.prepare('SELECT COUNT(*) AS sessions FROM sessions WHERE started_at>=? AND started_at<?').get(first, last) as { sessions: number }
+  const localEnd = new Date(localDateMs(to))
+  localEnd.setDate(localEnd.getDate() + 1)
+  return { sessions: row.sessions, tokens: tokenTotal(db, localDateMs(from), localEnd.getTime(), first, last) }
 }

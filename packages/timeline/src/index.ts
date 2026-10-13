@@ -59,6 +59,8 @@ export type {
 
 export {
   getHeatmap,
+  getSummary,
+  getRangeSummary,
   getEvents,
   getSession,
   getProjects,
