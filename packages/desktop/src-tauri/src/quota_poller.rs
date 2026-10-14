@@ -92,6 +92,38 @@ pub fn merge_stale(previous: &[UsageSnapshot], next: Vec<UsageSnapshot>) -> Vec<
         .collect()
 }
 
+/// Last-known-good snapshots on disk (`~/.config/ohmyc/quota-cache.json`),
+/// so a restart followed by a failed first fetch can still show last-known
+/// bars instead of empty state cards. The in-memory cache is preferred; disk
+/// is only consulted when memory is empty (fresh process).
+fn cache_file() -> Option<std::path::PathBuf> {
+    ohmyc_core::store::base_dir()
+        .ok()
+        .map(|dir| dir.join("quota-cache.json"))
+}
+
+fn persist_cache(snapshots: &[UsageSnapshot]) {
+    let Some(path) = cache_file() else { return };
+    let Some(dir) = path.parent() else { return };
+    if std::fs::create_dir_all(dir).is_err() {
+        return;
+    }
+    let Ok(json) = serde_json::to_string(snapshots) else {
+        return;
+    };
+    let _ = std::fs::write(&path, json);
+}
+
+fn load_cache() -> Vec<UsageSnapshot> {
+    let Some(path) = cache_file() else {
+        return Vec::new();
+    };
+    let Ok(text) = std::fs::read_to_string(&path) else {
+        return Vec::new();
+    };
+    serde_json::from_str(&text).unwrap_or_default()
+}
+
 /// Blocking refresh shared by the poller loop and the quota commands: fetch
 /// all providers, swap the cache, broadcast the event. Serialised so the
 /// poller and a manual refresh can't overlap; poison-tolerant so one
@@ -99,8 +131,17 @@ pub fn merge_stale(previous: &[UsageSnapshot], next: Vec<UsageSnapshot>) -> Vec<
 pub fn refresh_now(app: &AppHandle) -> Vec<UsageSnapshot> {
     let cache = app.state::<QuotaCache>();
     let _guard = cache.refresh_lock.lock().unwrap_or_else(|e| e.into_inner());
-    let snapshots = merge_stale(&cache.get(), QuotaRegistry::new().fetch_all());
+    let previous = {
+        let cached = cache.get();
+        if cached.is_empty() {
+            load_cache()
+        } else {
+            cached
+        }
+    };
+    let snapshots = merge_stale(&previous, QuotaRegistry::new().fetch_all());
     cache.set(snapshots.clone());
+    persist_cache(&snapshots);
     let _ = app.emit(QUOTA_CHANGED_EVENT, &snapshots);
     snapshots
 }
@@ -339,6 +380,35 @@ mod tests {
             let next = UsageSnapshot::with_status(QuotaProvider::Kimi, SnapshotStatus::NotLoggedIn);
             let merged = merge_stale(&[good_snapshot()], vec![next]);
             assert!(merged[0].windows.is_empty());
+        }
+
+        #[test]
+        fn disk_cache_round_trips_through_merge() {
+            // Persist a good snapshot, then a fresh process (empty memory)
+            // hitting TokenExpired merges from disk instead of going blank.
+            let _lock = super::ENV_LOCK.lock().unwrap();
+            let home = tempfile::tempdir().unwrap();
+            let prev_home = std::env::var("OHMYC_HOME").ok();
+            std::env::set_var("OHMYC_HOME", home.path());
+
+            super::super::persist_cache(&[good_snapshot()]);
+            let loaded = super::super::load_cache();
+            assert_eq!(loaded.len(), 1);
+            assert_eq!(loaded[0].windows.len(), 1);
+            let merged = merge_stale(
+                &loaded,
+                vec![UsageSnapshot::with_status(
+                    QuotaProvider::Kimi,
+                    SnapshotStatus::TokenExpired,
+                )],
+            );
+            assert!(matches!(merged[0].status, SnapshotStatus::TokenExpired));
+            assert_eq!(merged[0].windows[0].used_percent, Some(42.0));
+
+            match prev_home {
+                Some(v) => std::env::set_var("OHMYC_HOME", v),
+                None => std::env::remove_var("OHMYC_HOME"),
+            }
         }
     }
 }
