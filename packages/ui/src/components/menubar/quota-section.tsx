@@ -1,8 +1,9 @@
 // Menubar popover Quota section (DESIGN.md §Quota): below the Activity KPI
-// cells, the 3 most-constrained healthy providers — highest used% across
-// account-level windows, status `ok` only. Model-specific windows (Claude's
-// sonnet weekly…) stay on the main page and never enter the popover. No pace
-// ticks here. Hidden entirely when no provider is healthy or the fetch fails.
+// cells, the 3 most-constrained providers with displayable data — highest
+// used% across account-level windows. Status `ok` plus transient failures
+// still carrying stale bars (rendered dimmed); the section hides only when
+// nothing has data at all. Model-specific windows (Claude's sonnet weekly…)
+// stay on the main page and never enter the popover. No pace ticks here.
 
 import {
   formatCountdownShort,
@@ -10,7 +11,6 @@ import {
   HEAT_FILL_CLASS,
   heatBucket,
   latestFetchedAt,
-  PROVIDER_META,
   windowTagShort,
 } from '@/components/quota/format'
 import { useQuota } from '@/hooks/use-quota'
@@ -66,21 +66,26 @@ export function MenubarQuotaSection({ nowMs }: { nowMs: number }) {
   const { data } = useQuota()
   const snapshots = data ?? []
 
-  const healthy = snapshots.filter(snapshot => snapshot.status === 'ok')
-  const ranked = healthy
-    .filter(snapshot => accountWindows(snapshot).length > 0)
-    .toSorted((a, b) => constraintScore(b) - constraintScore(a))
+  // Providers with displayable account data: healthy ones, plus transient
+  // failures still carrying last-known windows (the stale merge). An
+  // early-warning surface must not vanish during a network blip.
+  const displayable = snapshots.filter(
+    snapshot => snapshot.status === 'ok' || accountWindows(snapshot).length > 0,
+  )
+  const ranked = displayable.toSorted((a, b) => constraintScore(b) - constraintScore(a))
   const shown = ranked.slice(0, 3)
-  // "+N more" counts only providers that could actually render a row (healthy
-  // AND with account-level windows) — a healthy provider with only
-  // model-specific windows would otherwise inflate the count.
-  const moreHealthy = ranked.length - shown.length
+  // "+N more" counts only providers that could actually render a row —
+  // one with only model-specific windows would otherwise inflate the count.
+  const moreCount = ranked.length - shown.length
 
   if (shown.length === 0) {
     return null
   }
 
-  const fetchedAtMs = latestFetchedAt(snapshots)
+  // Header age tracks the shown providers, not the freshest snapshot overall —
+  // Claude's always-fresh "unsupported" snapshots would otherwise mask
+  // everything being stale.
+  const fetchedAtMs = latestFetchedAt(shown)
 
   return (
     <>
@@ -94,12 +99,10 @@ export function MenubarQuotaSection({ nowMs }: { nowMs: number }) {
       </div>
       <div className="flex flex-col gap-3.5">
         {shown.map(snapshot => (
-          <div key={snapshot.provider} className="flex flex-col gap-1.5">
-            <div className="flex items-center gap-1.5">
-              <span className="font-mono-theme text-[11px] font-[510] text-[var(--text-primary)]">
-                {PROVIDER_META[snapshot.provider].name}
-              </span>
-            </div>
+          <div
+            key={snapshot.provider}
+            className={cn('flex flex-col gap-1.5', snapshot.status !== 'ok' && 'opacity-50')}
+          >
             {accountWindows(snapshot).map(window => (
               <PopoverWindowRow
                 key={`${windowTagShort(window)}|${window.windowSeconds ?? ''}|${window.resetsAt ?? ''}`}
@@ -110,11 +113,11 @@ export function MenubarQuotaSection({ nowMs }: { nowMs: number }) {
           </div>
         ))}
       </div>
-      {moreHealthy > 0 && (
+      {moreCount > 0 && (
         // The popover's own footer already carries the Open OhMyC action, so
-        // this row only reports the collapsed healthy count.
+        // this row only reports the collapsed count (stale entries included).
         <div className="mt-2.5 font-mono-theme text-[10px] text-[var(--text-quaternary)]">
-          {`+ ${moreHealthy} more healthy`}
+          {`+ ${moreCount} more`}
         </div>
       )}
     </>
