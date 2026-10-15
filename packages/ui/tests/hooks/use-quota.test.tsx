@@ -9,7 +9,7 @@ import {
   it,
 } from 'vitest'
 
-import { createTestQueryClient } from '../../../tests/test/render-with-providers'
+import { createTestQueryClient } from '../test/render-with-providers'
 import { useQuota } from '@/hooks/use-quota'
 import { __setTransportForTests } from '@/lib/transport'
 import { resetMock, setMockHandler } from '@/lib/transport/mock'
