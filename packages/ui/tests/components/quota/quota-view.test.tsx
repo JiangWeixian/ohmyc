@@ -71,4 +71,20 @@ describe('QuotaView', () => {
     screen.getByRole('button', { name: /refresh/i }).click()
     await waitFor(() => expect(screen.getByText('OpenCode Go')).toBeInTheDocument())
   })
+
+  it('surfaces a failed refresh in the banner instead of swallowing it', async () => {
+    setMockHandler('quota.list', async () => quotaSnapshots())
+    setMockHandler('quota.refresh', async () => {
+      throw new Error('boom')
+    })
+    renderWithProviders(<QuotaView />)
+
+    await waitFor(() => expect(screen.getByText('OpenCode Go')).toBeInTheDocument())
+    screen.getByRole('button', { name: /refresh/i }).click()
+    await waitFor(() => expect(screen.getByText(/Couldn’t load quota snapshots/)).toBeInTheDocument())
+    // A later successful refresh clears the banner again.
+    setMockHandler('quota.refresh', async () => quotaSnapshots())
+    screen.getByRole('button', { name: /refresh/i }).click()
+    await waitFor(() => expect(screen.queryByText(/Couldn’t load quota snapshots/)).not.toBeInTheDocument())
+  })
 })

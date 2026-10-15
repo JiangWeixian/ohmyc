@@ -83,6 +83,14 @@ describe('formatCountdown', () => {
     expect(formatCountdown(at(-60_000), NOW)).toBe('0m')
     expect(formatCountdown('not a date', NOW)).toBeNull()
   })
+
+  it('rounds total minutes before splitting units — never "1h 60m"', () => {
+    const at = (offsetMs: number) => new Date(NOW + offsetMs).toISOString()
+    // 119.6 minutes used to render as "1h 60m".
+    expect(formatCountdown(at(119.6 * 60_000), NOW)).toBe('2h')
+    expect(formatCountdown(at(59.6 * 60_000), NOW)).toBe('1h')
+    expect(formatCountdown(at(90.4 * 60_000), NOW)).toBe('1h 30m')
+  })
 })
 
 describe('formatCountdownShort', () => {
@@ -144,6 +152,15 @@ describe('updated-ago meta', () => {
     expect(formatUpdatedAgo(NOW - 5 * 60_000, NOW)).toBe('5 min ago')
     expect(formatUpdatedAgoShort(NOW - 30_000, NOW)).toBe('now')
     expect(formatUpdatedAgoShort(NOW - 7 * 60_000, NOW)).toBe('7m ago')
+  })
+
+  it('scales to hours and days for stale data', () => {
+    expect(formatUpdatedAgo(NOW - 75 * 60_000, NOW)).toBe('1 hr ago')
+    expect(formatUpdatedAgo(NOW - 130 * 60_000, NOW)).toBe('2 hr ago')
+    expect(formatUpdatedAgo(NOW - 26 * 3_600_000, NOW)).toBe('1 day ago')
+    expect(formatUpdatedAgo(NOW - 3 * 86_400_000, NOW)).toBe('3 days ago')
+    expect(formatUpdatedAgoShort(NOW - 130 * 60_000, NOW)).toBe('2h ago')
+    expect(formatUpdatedAgoShort(NOW - 3 * 86_400_000, NOW)).toBe('3d ago')
   })
 
   it('finds the newest fetchedAt', () => {
