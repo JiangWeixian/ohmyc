@@ -102,6 +102,64 @@ export function useQuota() {
     }
   }, [qc])
 
+  // Hidden webviews have their JS suspended, so broadcasts fired while a
+  // window was hidden are lost and neither focus- nor interval-refetches run
+  // until JS resumes. Recover deterministically: refetch when the webview
+  // itself reports a resume, and whenever a surface becomes visible with
+  // data older than a poll cycle.
+  useEffect(() => {
+    let cancelled = false
+    let unlistenResumed: (() => void) | null = null
+
+    const refetchIfStale = () => {
+      if (document.visibilityState !== 'visible') {
+        return
+      }
+      const fetched = qc.getQueryData<UsageSnapshot[]>(QUOTA_QUERY_KEY)
+      const ages = (fetched ?? [])
+        .map(s => Date.now() - Date.parse(s.fetchedAt))
+        .filter(age => Number.isFinite(age))
+      const freshest = ages.length > 0 ? Math.min(...ages) : Number.POSITIVE_INFINITY
+      if (!fetched || freshest > 60_000) {
+        void qc.invalidateQueries({ queryKey: QUOTA_QUERY_KEY })
+      }
+    }
+
+    const onVisible = () => {
+      if (document.visibilityState === 'visible') {
+        refetchIfStale()
+      }
+    }
+
+    document.addEventListener('visibilitychange', onVisible)
+    window.addEventListener('focus', onVisible)
+
+    void (async () => {
+      try {
+        const { subscribe } = await import('../lib/tauri-event-bridge')
+        const off = await subscribe('tauri://resumed', () => {
+          void qc.invalidateQueries({ queryKey: QUOTA_QUERY_KEY })
+        })
+        if (cancelled) {
+          off()
+        } else {
+          unlistenResumed = off
+        }
+      } catch {
+        // Not running inside Tauri — nothing to subscribe to.
+      }
+    })()
+
+    return () => {
+      cancelled = true
+      document.removeEventListener('visibilitychange', onVisible)
+      window.removeEventListener('focus', onVisible)
+      if (unlistenResumed) {
+        unlistenResumed()
+      }
+    }
+  }, [qc])
+
   return useQuery({
     queryKey: QUOTA_QUERY_KEY,
     staleTime: 60_000,

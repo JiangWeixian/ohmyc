@@ -241,7 +241,7 @@ fn set_popover_height(app: tauri::AppHandle, height: f64) {
     let _ = win.set_size(tauri::Size::Logical(tauri::LogicalSize::new(current.width, clamped)));
 }
 
-/// Push the quota cache to a window — now, and once more after a short delay.
+/// Push the quota cache to a window — now, and twice more on a short delay.
 /// A webview that was suspended while hidden may still be resuming when
 /// `show()` returns, and a single immediate emit can land before its event
 /// loop is ready (observed: popover showing the app-start snapshot until the
@@ -257,8 +257,10 @@ fn push_quota_cache(app: &tauri::AppHandle, window: &tauri::WebviewWindow) {
     let app = app.clone();
     let window = window.clone();
     std::thread::spawn(move || {
-        std::thread::sleep(std::time::Duration::from_millis(400));
-        push(&app, &window);
+        for delay in [400, 1500] {
+            std::thread::sleep(std::time::Duration::from_millis(delay));
+            push(&app, &window);
+        }
     });
 }
 
