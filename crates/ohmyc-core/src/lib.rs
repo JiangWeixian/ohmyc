@@ -6,6 +6,7 @@ pub mod claude_home;
 pub mod components;
 pub mod configs;
 pub mod error;
+pub mod install;
 pub mod plugins;
 pub mod providers;
 pub mod settings;
