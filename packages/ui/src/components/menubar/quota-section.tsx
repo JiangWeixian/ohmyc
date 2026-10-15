@@ -11,6 +11,7 @@ import {
   HEAT_FILL_CLASS,
   heatBucket,
   latestFetchedAt,
+  PROVIDER_META,
   windowTagShort,
 } from '@/components/quota/format'
 import { useQuota } from '@/hooks/use-quota'
@@ -103,6 +104,11 @@ export function MenubarQuotaSection({ nowMs }: { nowMs: number }) {
             key={snapshot.provider}
             className={cn('flex flex-col gap-1.5', snapshot.status !== 'ok' && 'opacity-50')}
           >
+            <div className="flex items-center gap-1.5">
+              <span className="font-mono-theme text-[11px] font-[510] text-[var(--text-primary)]">
+                {PROVIDER_META[snapshot.provider].name}
+              </span>
+            </div>
             {accountWindows(snapshot).map(window => (
               <PopoverWindowRow
                 key={`${windowTagShort(window)}|${window.windowSeconds ?? ''}|${window.resetsAt ?? ''}`}

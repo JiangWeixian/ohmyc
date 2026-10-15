@@ -69,6 +69,14 @@ type Story = StoryObj<typeof meta>
 
 export const AreaView: Story = {
   decorators: [withMockTransport(populatedHandlers)],
+  play: async ({ canvasElement }) => {
+    // Quota section: provider names must label each block — a past edit
+    // dropped the name row and left bare 5H/WK bars.
+    const canvas = within(canvasElement)
+    await canvas.findByText('GLM')
+    await canvas.findByText('Codex')
+    await canvas.findByText('Claude')
+  },
 }
 
 export const HeatmapView: Story = {
