@@ -105,14 +105,32 @@ fn normalize_epoch_seconds(v: f64) -> f64 {
 
 /// Run a command with a hard timeout. Polls `try_wait` so a timeout kill
 /// targets the actual child handle — a pid-based kill could hit a recycled
-/// pid — and leaves no waiter thread behind. Captured stdout is capped at
-/// 64 KiB; our helpers (security, cursor-agent status) emit a few hundred
-/// bytes, so a chattier child blocking on a full pipe is killed at the
-/// deadline instead of wedging the poller.
+/// pid. Stdout drains on a reader thread (joined before return, never
+/// leaked) so a chatty child can't deadlock against a full pipe; stored
+/// output truncates at 64 KiB — our helpers (security, cursor-agent status)
+/// emit a few hundred bytes.
 fn run_with_timeout(mut command: Command, timeout: Duration) -> Option<Output> {
-    use std::io::Read as _;
+    const MAX_STDOUT: usize = 64 * 1024;
     command.stdout(Stdio::piped()).stderr(Stdio::null());
     let mut child = command.spawn().ok()?;
+    let mut pipe = child.stdout.take()?;
+    let reader = std::thread::spawn(move || {
+        use std::io::Read as _;
+        let mut kept = Vec::new();
+        let mut buf = [0u8; 8192];
+        loop {
+            match pipe.read(&mut buf) {
+                Ok(0) | Err(_) => break,
+                Ok(n) => {
+                    let room = MAX_STDOUT.saturating_sub(kept.len());
+                    if room > 0 {
+                        kept.extend_from_slice(&buf[..n.min(room)]);
+                    }
+                }
+            }
+        }
+        kept
+    });
     let deadline = std::time::Instant::now() + timeout;
     let status = loop {
         match child.try_wait() {
@@ -120,18 +138,15 @@ fn run_with_timeout(mut command: Command, timeout: Duration) -> Option<Output> {
             Ok(None) if std::time::Instant::now() < deadline => {
                 std::thread::sleep(Duration::from_millis(10));
             }
-            Ok(None) => {
+            _ => {
                 let _ = child.kill();
                 let _ = child.wait();
+                let _ = reader.join();
                 return None;
             }
-            Err(_) => return None,
         }
     };
-    let mut stdout = Vec::new();
-    if let Some(pipe) = child.stdout.take() {
-        let _ = pipe.take(64 * 1024).read_to_end(&mut stdout);
-    }
+    let stdout = reader.join().unwrap_or_default();
     Some(Output {
         status,
         stdout,
@@ -960,6 +975,36 @@ mod tests {
         let _auth_json = EnvGuard::set("OHMYC_QUOTA_CURSOR_AUTH_JSON", auth_path.to_str().unwrap());
         let _db = EnvGuard::set("OHMYC_QUOTA_CURSOR_STATE_DB", "/nonexistent/state.vscdb");
         assert_eq!(cursor(), CredentialOutcome::Token("cursor-json-at".to_string()));
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn run_with_timeout_captures_stdout() {
+        let mut command = Command::new("/bin/echo");
+        command.arg("hello");
+        let output = run_with_timeout(command, Duration::from_secs(5)).unwrap();
+        assert!(output.status.success());
+        assert_eq!(String::from_utf8(output.stdout).unwrap().trim(), "hello");
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn run_with_timeout_kills_overrun_children() {
+        let mut command = Command::new("/bin/sleep");
+        command.arg("30");
+        let started = std::time::Instant::now();
+        assert!(run_with_timeout(command, Duration::from_millis(100)).is_none());
+        // The kill is prompt — nowhere near the child's own 30s runtime.
+        assert!(started.elapsed() < Duration::from_secs(5));
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn run_with_timeout_caps_stdout_at_64kib() {
+        let mut command = Command::new("/usr/bin/head");
+        command.args(["-c", "100000", "/dev/zero"]);
+        let output = run_with_timeout(command, Duration::from_secs(5)).unwrap();
+        assert_eq!(output.stdout.len(), 64 * 1024);
     }
 
     #[test]
