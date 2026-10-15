@@ -241,6 +241,27 @@ fn set_popover_height(app: tauri::AppHandle, height: f64) {
     let _ = win.set_size(tauri::Size::Logical(tauri::LogicalSize::new(current.width, clamped)));
 }
 
+/// Push the quota cache to a window — now, and once more after a short delay.
+/// A webview that was suspended while hidden may still be resuming when
+/// `show()` returns, and a single immediate emit can land before its event
+/// loop is ready (observed: popover showing the app-start snapshot until the
+/// user clicked several more times).
+fn push_quota_cache(app: &tauri::AppHandle, window: &tauri::WebviewWindow) {
+    let push = |app: &tauri::AppHandle, window: &tauri::WebviewWindow| {
+        let snapshots = app.state::<ohmyc_desktop_lib::quota_poller::QuotaCache>().get();
+        if !snapshots.is_empty() {
+            let _ = window.emit(ohmyc_desktop_lib::quota_poller::QUOTA_CHANGED_EVENT, snapshots);
+        }
+    };
+    push(app, window);
+    let app = app.clone();
+    let window = window.clone();
+    std::thread::spawn(move || {
+        std::thread::sleep(std::time::Duration::from_millis(400));
+        push(&app, &window);
+    });
+}
+
 fn toggle_popover(app: &tauri::AppHandle, tray: TrayRect) {
     let guard = app.state::<PopoverGuard>();
     let Some(window) = app.get_webview_window("popover") else {
@@ -280,12 +301,9 @@ fn toggle_popover(app: &tauri::AppHandle, tray: TrayRect) {
             let _ = window.set_focus();
             // The hidden webview's JS is suspended, so quota:changed events
             // broadcast while it was hidden never ran there — and the popover
-            // never takes OS focus, so no focus-refetch either. Re-emit the
+            // never takes OS focus, so no focus-refetch either. Push the
             // current cache on every show so the section is never stale.
-            let snapshots = app.state::<ohmyc_desktop_lib::quota_poller::QuotaCache>().get();
-            if !snapshots.is_empty() {
-                let _ = window.emit(ohmyc_desktop_lib::quota_poller::QUOTA_CHANGED_EVENT, snapshots);
-            }
+            push_quota_cache(app, &window);
             *guard.0.lock().unwrap() = PopoverState::Visible;
         }
         PopoverState::Visible => {
