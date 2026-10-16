@@ -37,10 +37,12 @@ describe('MenubarQuotaSection', () => {
     expect(screen.queryByText('sonnet')).not.toBeInTheDocument()
     // The remaining displayable providers collapse into a count row.
     expect(screen.getByText(/\+ \d+ more/)).toBeInTheDocument()
-    // Pressure strips above the list: avg line + peak line naming its owner.
-    expect(screen.getByText(/^AVG \d+%$/)).toBeInTheDocument()
-    expect(screen.getByText(/^PEAK 98%$/)).toBeInTheDocument()
-    expect(screen.getByText(/GLM WK/)).toBeInTheDocument()
+    // Pressure strips above the list: label left, percentage + meta at the
+    // bar's right end.
+    expect(screen.getByText('avg')).toBeInTheDocument()
+    expect(screen.getByText('peak')).toBeInTheDocument()
+    expect(screen.getByText(/6 CLIs/)).toBeInTheDocument()
+    expect(screen.getByText(/GLM WK · /)).toBeInTheDocument()
   })
 
   it('renders nothing when no provider has displayable data', async () => {

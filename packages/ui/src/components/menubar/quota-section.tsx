@@ -75,7 +75,7 @@ function PressureStrip({
 }) {
   return (
     <div className="grid grid-cols-[auto_1fr_auto] items-center gap-2">
-      <span className="whitespace-nowrap font-mono-theme text-[10px] font-[510] text-[var(--text-primary)]">
+      <span className="font-mono-theme text-[9px] font-[510] uppercase tracking-wider text-[var(--text-quaternary)]">
         {label}
       </span>
       <div className="relative h-[4px] w-full rounded-[2px] bg-[var(--heat-0)]">
@@ -84,11 +84,10 @@ function PressureStrip({
           style={{ width: `${Math.min(100, Math.max(0, used))}%` }}
         />
       </div>
-      {meta && (
-        <span className="whitespace-nowrap font-mono-theme text-[9px] text-[var(--text-quaternary)]">
-          {meta}
-        </span>
-      )}
+      <span className="whitespace-nowrap text-right font-mono-theme text-[10px] text-[var(--text-tertiary)]">
+        <b className="font-[510] text-[var(--text-primary)]">{Math.round(used)}%</b>
+        {meta && ` · ${meta}`}
+      </span>
     </div>
   )
 }
@@ -139,8 +138,8 @@ export function MenubarQuotaSection({ nowMs }: { nowMs: number }) {
       </div>
       {pressure.avg != null && pressure.peak != null && (
         <div className="mb-3 flex flex-col gap-2">
-          <PressureStrip label={`AVG ${Math.round(pressure.avg)}%`} used={pressure.avg} meta={`${pressure.participating} CLIs`} />
-          <PressureStrip label={`PEAK ${Math.round(pressure.peak)}%`} used={pressure.peak} meta={peakMeta} />
+          <PressureStrip label="avg" used={pressure.avg} meta={`${pressure.participating} CLIs`} />
+          <PressureStrip label="peak" used={pressure.peak} meta={peakMeta} />
         </div>
       )}
       <div className="flex flex-col gap-3.5">
