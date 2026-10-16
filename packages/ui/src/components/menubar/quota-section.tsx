@@ -139,8 +139,8 @@ export function MenubarQuotaSection({ nowMs }: { nowMs: number }) {
       </div>
       {pressure.avg != null && pressure.peak != null && (
         <div className="mb-3 flex flex-col gap-2">
-          <PressureStrip label={`avg ${Math.round(pressure.avg)}%`} used={pressure.avg} meta={`${pressure.participating} CLIs`} />
-          <PressureStrip label={`peak ${Math.round(pressure.peak)}%`} used={pressure.peak} meta={peakMeta} />
+          <PressureStrip label={`AVG ${Math.round(pressure.avg)}%`} used={pressure.avg} meta={`${pressure.participating} CLIs`} />
+          <PressureStrip label={`PEAK ${Math.round(pressure.peak)}%`} used={pressure.peak} meta={peakMeta} />
         </div>
       )}
       <div className="flex flex-col gap-3.5">

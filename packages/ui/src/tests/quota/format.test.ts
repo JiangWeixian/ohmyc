@@ -187,9 +187,10 @@ function snap(provider: UsageSnapshot['provider'], windows: Partial<UsageWindow>
 }
 
 describe('computePressure', () => {
-  it('averages per-provider account maxima and peaks at the max', () => {
-    // Kimi carries 5H 100% + MO 43% (account) + a model window; GLM 63%,
-    // Codex 18%. avg = (100 + 63 + 18) / 3 ≈ 60.3; peak = 100 @ kimi 5H.
+  it('avg takes each provider\'s longest budget window; peak takes any account window', () => {
+    // Kimi: 5H 100% + MO 43% + sonnet(model) 99% → budget pick is MO 43;
+    // GLM WEEK 63; Codex WEEK 18. avg = (43 + 63 + 18) / 3 ≈ 41.3;
+    // peak = 100 @ kimi 5H (5h counts toward peak, not avg).
     const stats = computePressure([
       snap('kimi', [
         { kind: 'session', usedPercent: 100, windowSeconds: 18_000 },
@@ -200,21 +201,32 @@ describe('computePressure', () => {
       snap('codex', [{ kind: 'weekly', usedPercent: 18, windowSeconds: 604_800 }]),
     ])
     expect(stats.participating).toBe(3)
-    expect(stats.avg).toBeCloseTo(60.33, 1)
+    expect(stats.avg).toBeCloseTo(41.33, 1)
     expect(stats.peak).toBe(100)
     expect(stats.peakProvider).toBe('kimi')
     expect(stats.peakWindow?.kind).toBe('session')
     expect(stats.aboveHalf).toBe(2)
   })
 
-  it('skips providers with no usable account window instead of dragging the mean', () => {
+  it('monthly beats weekly for avg when a provider has both', () => {
+    const stats = computePressure([
+      snap('opencodeGo', [
+        { kind: 'weekly', usedPercent: 80, windowSeconds: 604_800 },
+        { kind: 'monthly', usedPercent: 20 },
+      ]),
+    ])
+    expect(stats.avg).toBe(20)
+  })
+
+  it('providers without a budget window (5h-only) do not participate in avg', () => {
     const stats = computePressure([
       snap('kimi', [{ kind: 'session', usedPercent: 80, windowSeconds: 18_000 }]),
       snap('gemini', []),
-      snap('claude', [{ kind: 'weekly', usedPercent: null }]),
     ])
-    expect(stats.participating).toBe(1)
-    expect(stats.avg).toBe(80)
+    expect(stats.participating).toBe(0)
+    expect(stats.avg).toBeNull()
+    // …but they still count toward peak and the breadth count.
+    expect(stats.peak).toBe(80)
     expect(stats.aboveHalf).toBe(1)
   })
 

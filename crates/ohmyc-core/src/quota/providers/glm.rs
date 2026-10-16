@@ -14,7 +14,9 @@
 //! - Windows: `data.limits[]` classified by `unit × number` (3=hour, 4=day,
 //!   5=month(30d), 6=week) — never by array index. `CREDIT_LIMIT` is the
 //!   current type name (legacy payloads use `TOKENS_LIMIT`, accepted too).
-//!   `TIME_LIMIT` is the monthly MCP-call counter (label "mcp"). An active
+//!   `TIME_LIMIT` is the monthly MCP-call counter (label "mcp", tagged
+//!   `model: "mcp"` so it stays out of aggregates/popover — it is not the
+//!   model budget). An active
 //!   5h window may omit `nextResetTime` → `resets_at: None`. A known window
 //!   missing `percentage` is treated as schema drift (parse error) instead
 //!   of a fabricated 0%.
@@ -205,7 +207,10 @@ pub(crate) fn parse_response(body: &str) -> Result<UsageSnapshot, String> {
                     used_percent: Some(used_percent.clamp(0.0, 100.0)),
                     resets_at: reset_at(limit.next_reset_time),
                     window_seconds: seconds,
-                    model: None,
+                    // The MCP call counter is a different usage class, not the
+                    // model budget — tag it like Claude's sonnet window so it
+                    // stays out of aggregates and the popover.
+                    model: Some("mcp".to_string()),
                 });
                 for detail in limit.usage_details.iter().flatten() {
                     let Some(label) = detail.model_code.clone() else {
@@ -269,10 +274,12 @@ mod tests {
         assert_eq!(weekly.window_seconds, Some(604_800));
         assert_eq!(weekly.used_percent, Some(98.0));
 
-        // TIME_LIMIT → monthly "mcp" window plus per-model count meters.
+        // TIME_LIMIT → monthly "mcp" window tagged as model-specific (kept out
+        // of aggregates/popover) plus per-model count meters.
         let mcp = &snapshot.windows[2];
         assert_eq!(mcp.kind, WindowKind::Monthly);
         assert_eq!(mcp.label, "mcp");
+        assert_eq!(mcp.model.as_deref(), Some("mcp"));
         assert_eq!(mcp.window_seconds, Some(MONTH_SECONDS));
         assert_eq!(snapshot.meters.len(), 3);
         assert_eq!(snapshot.meters[0].label, "search-prime");

@@ -38,8 +38,8 @@ describe('MenubarQuotaSection', () => {
     // The remaining displayable providers collapse into a count row.
     expect(screen.getByText(/\+ \d+ more/)).toBeInTheDocument()
     // Pressure strips above the list: avg line + peak line naming its owner.
-    expect(screen.getByText(/^avg \d+%$/)).toBeInTheDocument()
-    expect(screen.getByText(/^peak 98%$/)).toBeInTheDocument()
+    expect(screen.getByText(/^AVG \d+%$/)).toBeInTheDocument()
+    expect(screen.getByText(/^PEAK 98%$/)).toBeInTheDocument()
     expect(screen.getByText(/GLM WK/)).toBeInTheDocument()
   })
 

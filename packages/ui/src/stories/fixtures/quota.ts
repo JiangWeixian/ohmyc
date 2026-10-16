@@ -114,7 +114,9 @@ export function quotaSnapshots(): UsageSnapshot[] {
       windows: [
         { kind: 'session', label: '5h', usedPercent: 34, resetsAt: isoFromNow(120 * MIN), windowSeconds: 18_000, model: null },
         { kind: 'weekly', label: 'Weekly', usedPercent: 98, resetsAt: isoFromNow(3400 * MIN), windowSeconds: 604_800, model: null },
-        { kind: 'monthly', label: 'mcp', usedPercent: 0, resetsAt: isoFromNow(18_000 * MIN), windowSeconds: null, model: null },
+        // The monthly MCP-call counter is a different usage class — tagged
+        // model-specific so it never aggregates (mirrors glm.rs TIME_LIMIT).
+        { kind: 'monthly', label: 'mcp', usedPercent: 0, resetsAt: isoFromNow(18_000 * MIN), windowSeconds: null, model: 'mcp' },
       ],
       meters: [
         { label: 'search-prime', value: 0, kind: 'count', currency: null },

@@ -43,8 +43,8 @@ export function PressureBand({ snapshots, nowMs }: { snapshots: UsageSnapshot[];
             style={{ width: `${Math.min(100, Math.max(0, stats.peak))}%` }}
           />
         </div>
-        <div className="mt-2 text-right font-mono-theme text-[9px] text-[var(--text-quaternary)]">
-          peak {Math.round(stats.peak)}%
+        <div className="mt-2 text-right font-mono-theme text-[9px] uppercase tracking-[0.06em] text-[var(--text-quaternary)]">
+          PEAK {Math.round(stats.peak)}%
           {peakName && ` · ${peakName} ${peakTag}`}
           {peakReset && ` · ${peakReset}`}
         </div>

@@ -49,12 +49,13 @@ describe('QuotaView', () => {
     expect(screen.getByText(/updated .*· every 5 min/)).toBeInTheDocument()
     expect(screen.getByText('pace = time elapsed')).toBeInTheDocument()
 
-    // pressure band: big number = avg, bar caption = peak with its owner.
-    // Fixture maxima: GLM 98, Kimi 41, Cursor 53, Codex 92, Claude 61,
-    // OpenCode 4 → avg ≈ 57.8, peak 98 @ GLM.
-    expect(screen.getByText('58%')).toBeInTheDocument()
-    expect(screen.getByText(/avg across \d+ CLIs/)).toBeInTheDocument()
-    expect(screen.getByText(/peak 98% · GLM WEEK/)).toBeInTheDocument()
+    // pressure band: big number = avg of billing windows (Claude WK 61,
+    // Codex WK 47, Cursor MO 53, Kimi MO 22, OpenCode MO 1, GLM WK 98 → 47),
+    // bar caption = peak with its owner (GLM WK 98; the mcp counter is
+    // model-tagged and never aggregates).
+    expect(screen.getByText('47%', { selector: '.font-display' })).toBeInTheDocument()
+    expect(screen.getByText(/avg across \d+ CLIs/i)).toBeInTheDocument()
+    expect(screen.getByText(/PEAK 98% · GLM WEEK/)).toBeInTheDocument()
   })
 
   it('shows the empty-state note when every provider is logged out', async () => {

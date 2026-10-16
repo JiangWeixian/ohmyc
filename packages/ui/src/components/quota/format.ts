@@ -244,25 +244,33 @@ export function latestFetchedAt(snapshots: { fetchedAt: string }[]): number | nu
 }
 
 /**
- * Cross-provider aggregates (DESIGN.md §Quota pressure band). Per provider,
- * take the max used% across its account-level windows (model-specific windows
- * never aggregate); `avg` is the mean of those maxima, `peak` their max.
- * Providers without any usable window don't participate — an unknown value
- * must not drag the average toward zero. Both are null when nothing has data.
+ * Cross-provider aggregates (DESIGN.md §Quota pressure band). Model-specific
+ * windows (Claude sonnet, GLM mcp) never aggregate.
+ *
+ * - `avg` (total budget consumption): per provider, take its **longest
+ *   account-level budget window** — monthly if present, else weekly (5h/daily
+ *   are rate valves, not budget, and never participate). Mean across
+ *   providers. Providers without a budget window don't participate — an
+ *   unknown value must not drag the average toward zero.
+ * - `peak` (throttle proximity): the max used% across ALL account-level
+ *   windows, 5h included.
+ * - `aboveHalf`: providers whose per-provider account-window max is ≥ 50%.
  */
 export interface PressureStats {
-  /** Mean of per-provider account-window maxima. */
+  /** Mean of per-provider billing-window (MO preferred, else WEEK) used%. */
   avg: number | null
-  /** Max of per-provider account-window maxima. */
+  /** Max used% across all account-level windows. */
   peak: number | null
   /** Provider + window carrying the peak, for captions. */
   peakProvider: QuotaProviderId | null
   peakWindow: UsageWindow | null
   /** Providers whose per-provider max is ≥ 50%. */
   aboveHalf: number
-  /** Providers that contributed to the aggregates. */
+  /** Providers that contributed to avg. */
   participating: number
 }
+
+const BUDGET_KIND_RANK: Record<string, number> = { monthly: 2, weekly: 1 }
 
 export function computePressure(snapshots: UsageSnapshot[]): PressureStats {
   let sum = 0
@@ -275,6 +283,7 @@ export function computePressure(snapshots: UsageSnapshot[]): PressureStats {
   for (const snapshot of snapshots) {
     let max: number | null = null
     let maxWindow: UsageWindow | null = null
+    let budget: { rank: number; value: number } | null = null
     for (const window of snapshot.windows) {
       if (window.model != null || window.usedPercent == null) {
         continue
@@ -283,19 +292,25 @@ export function computePressure(snapshots: UsageSnapshot[]): PressureStats {
         max = window.usedPercent
         maxWindow = window
       }
+      const rank = BUDGET_KIND_RANK[window.kind] ?? 0
+      if (
+        rank > 0
+        && (budget == null || rank > budget.rank || (rank === budget.rank && window.usedPercent > budget.value))
+      ) {
+        budget = { rank, value: window.usedPercent }
+      }
     }
-    if (max == null) {
-      continue
-    }
-    participating += 1
-    sum += max
-    if (max >= 50) {
+    if (max != null && max >= 50) {
       aboveHalf += 1
     }
-    if (peak == null || max > peak) {
+    if (max != null && (peak == null || max > peak)) {
       peak = max
       peakProvider = snapshot.provider
       peakWindow = maxWindow
+    }
+    if (budget != null) {
+      participating += 1
+      sum += budget.value
     }
   }
 
