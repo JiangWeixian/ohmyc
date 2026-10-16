@@ -13,6 +13,7 @@ import {
   HEAT_FILL_CLASS,
   latestFetchedAt,
 } from './format'
+import { PressureBand } from './pressure-band'
 import { ProviderCard } from './provider-card'
 import {
   Tooltip,
@@ -145,6 +146,7 @@ export function QuotaView() {
 
       {!isLoading && !isError && (
         <>
+          <PressureBand snapshots={snapshots} nowMs={nowMs} />
           <div className="grid grid-cols-2 gap-4 max-md:grid-cols-1">
             {snapshots.map(snapshot => (
               <ProviderCard key={snapshot.provider} snapshot={snapshot} nowMs={nowMs} />

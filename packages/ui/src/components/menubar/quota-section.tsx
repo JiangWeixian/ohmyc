@@ -6,6 +6,7 @@
 // stay on the main page and never enter the popover. No pace ticks here.
 
 import {
+  computePressure,
   formatCountdownShort,
   formatUpdatedAgoShort,
   HEAT_FILL_CLASS,
@@ -63,6 +64,35 @@ function PopoverWindowRow({ window, nowMs }: { window: UsageWindow; nowMs: numbe
   )
 }
 
+function PressureStrip({
+  label,
+  used,
+  meta,
+}: {
+  label: string
+  used: number
+  meta?: string | null
+}) {
+  return (
+    <div className="grid grid-cols-[auto_1fr_auto] items-center gap-2">
+      <span className="whitespace-nowrap font-mono-theme text-[10px] font-[510] text-[var(--text-primary)]">
+        {label}
+      </span>
+      <div className="relative h-[4px] w-full rounded-[2px] bg-[var(--heat-0)]">
+        <div
+          className={cn('absolute inset-y-0 left-0 rounded-[2px]', HEAT_FILL_CLASS[heatBucket(used)])}
+          style={{ width: `${Math.min(100, Math.max(0, used))}%` }}
+        />
+      </div>
+      {meta && (
+        <span className="whitespace-nowrap font-mono-theme text-[9px] text-[var(--text-quaternary)]">
+          {meta}
+        </span>
+      )}
+    </div>
+  )
+}
+
 export function MenubarQuotaSection({ nowMs }: { nowMs: number }) {
   const { data } = useQuota()
   const snapshots = data ?? []
@@ -88,6 +118,15 @@ export function MenubarQuotaSection({ nowMs }: { nowMs: number }) {
   // everything being stale.
   const fetchedAtMs = latestFetchedAt(shown)
 
+  const pressure = computePressure(snapshots)
+  const peakMeta = pressure.peakProvider && pressure.peakWindow
+    ? `${PROVIDER_META[pressure.peakProvider].name} ${windowTagShort(pressure.peakWindow)}${
+        pressure.peakWindow.resetsAt
+          ? ` · ${formatCountdownShort(pressure.peakWindow.resetsAt, nowMs) ?? ''}`
+          : ''
+      }`
+    : null
+
   return (
     <>
       <div className="mb-3.5 mt-1 border-t border-[var(--border-subtle)]" />
@@ -98,6 +137,12 @@ export function MenubarQuotaSection({ nowMs }: { nowMs: number }) {
           {fetchedAtMs == null ? '' : formatUpdatedAgoShort(fetchedAtMs, nowMs)}
         </span>
       </div>
+      {pressure.avg != null && pressure.peak != null && (
+        <div className="mb-3 flex flex-col gap-2">
+          <PressureStrip label={`avg ${Math.round(pressure.avg)}%`} used={pressure.avg} meta={`${pressure.participating} CLIs`} />
+          <PressureStrip label={`peak ${Math.round(pressure.peak)}%`} used={pressure.peak} meta={peakMeta} />
+        </div>
+      )}
       <div className="flex flex-col gap-3.5">
         {shown.map(snapshot => (
           <div

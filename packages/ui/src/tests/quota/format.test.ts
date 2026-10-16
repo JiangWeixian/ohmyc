@@ -5,6 +5,7 @@ import {
 } from 'vitest'
 
 import {
+  computePressure,
   formatCountdown,
   formatCountdownShort,
   formatMeterValue,
@@ -18,7 +19,7 @@ import {
   windowTagShort,
 } from '@/components/quota/format'
 
-import type { UsageWindow } from '@/hooks/use-quota'
+import type { UsageSnapshot, UsageWindow } from '@/hooks/use-quota'
 
 function windowWith(overrides: Partial<UsageWindow>): UsageWindow {
   return {
@@ -170,5 +171,58 @@ describe('updated-ago meta', () => {
       { fetchedAt: new Date(NOW - 30_000).toISOString() },
       { fetchedAt: 'garbage' },
     ])).toBe(NOW - 30_000)
+  })
+})
+
+function snap(provider: UsageSnapshot['provider'], windows: Partial<UsageWindow>[]): UsageSnapshot {
+  return {
+    provider,
+    status: 'ok',
+    provenance: 'experimental',
+    fetchedAt: new Date(NOW).toISOString(),
+    identity: null,
+    meters: [],
+    windows: windows.map(w => windowWith(w)),
+  }
+}
+
+describe('computePressure', () => {
+  it('averages per-provider account maxima and peaks at the max', () => {
+    // Kimi carries 5H 100% + MO 43% (account) + a model window; GLM 63%,
+    // Codex 18%. avg = (100 + 63 + 18) / 3 ≈ 60.3; peak = 100 @ kimi 5H.
+    const stats = computePressure([
+      snap('kimi', [
+        { kind: 'session', usedPercent: 100, windowSeconds: 18_000 },
+        { kind: 'monthly', usedPercent: 43 },
+        { kind: 'weekly', usedPercent: 99, model: 'sonnet' },
+      ]),
+      snap('glm', [{ kind: 'weekly', usedPercent: 63, windowSeconds: 604_800 }]),
+      snap('codex', [{ kind: 'weekly', usedPercent: 18, windowSeconds: 604_800 }]),
+    ])
+    expect(stats.participating).toBe(3)
+    expect(stats.avg).toBeCloseTo(60.33, 1)
+    expect(stats.peak).toBe(100)
+    expect(stats.peakProvider).toBe('kimi')
+    expect(stats.peakWindow?.kind).toBe('session')
+    expect(stats.aboveHalf).toBe(2)
+  })
+
+  it('skips providers with no usable account window instead of dragging the mean', () => {
+    const stats = computePressure([
+      snap('kimi', [{ kind: 'session', usedPercent: 80, windowSeconds: 18_000 }]),
+      snap('gemini', []),
+      snap('claude', [{ kind: 'weekly', usedPercent: null }]),
+    ])
+    expect(stats.participating).toBe(1)
+    expect(stats.avg).toBe(80)
+    expect(stats.aboveHalf).toBe(1)
+  })
+
+  it('is null-safe when nothing has data', () => {
+    const stats = computePressure([])
+    expect(stats.avg).toBeNull()
+    expect(stats.peak).toBeNull()
+    expect(stats.peakProvider).toBeNull()
+    expect(stats.aboveHalf).toBe(0)
   })
 })

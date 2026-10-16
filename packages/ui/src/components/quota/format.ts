@@ -4,6 +4,7 @@
 import type {
   QuotaProviderId,
   UsageMeter,
+  UsageSnapshot,
   UsageWindow,
 } from '@/hooks/use-quota'
 
@@ -240,4 +241,70 @@ export function latestFetchedAt(snapshots: { fetchedAt: string }[]): number | nu
     }
   }
   return latest
+}
+
+/**
+ * Cross-provider aggregates (DESIGN.md §Quota pressure band). Per provider,
+ * take the max used% across its account-level windows (model-specific windows
+ * never aggregate); `avg` is the mean of those maxima, `peak` their max.
+ * Providers without any usable window don't participate — an unknown value
+ * must not drag the average toward zero. Both are null when nothing has data.
+ */
+export interface PressureStats {
+  /** Mean of per-provider account-window maxima. */
+  avg: number | null
+  /** Max of per-provider account-window maxima. */
+  peak: number | null
+  /** Provider + window carrying the peak, for captions. */
+  peakProvider: QuotaProviderId | null
+  peakWindow: UsageWindow | null
+  /** Providers whose per-provider max is ≥ 50%. */
+  aboveHalf: number
+  /** Providers that contributed to the aggregates. */
+  participating: number
+}
+
+export function computePressure(snapshots: UsageSnapshot[]): PressureStats {
+  let sum = 0
+  let participating = 0
+  let peak: number | null = null
+  let peakProvider: QuotaProviderId | null = null
+  let peakWindow: UsageWindow | null = null
+  let aboveHalf = 0
+
+  for (const snapshot of snapshots) {
+    let max: number | null = null
+    let maxWindow: UsageWindow | null = null
+    for (const window of snapshot.windows) {
+      if (window.model != null || window.usedPercent == null) {
+        continue
+      }
+      if (max == null || window.usedPercent > max) {
+        max = window.usedPercent
+        maxWindow = window
+      }
+    }
+    if (max == null) {
+      continue
+    }
+    participating += 1
+    sum += max
+    if (max >= 50) {
+      aboveHalf += 1
+    }
+    if (peak == null || max > peak) {
+      peak = max
+      peakProvider = snapshot.provider
+      peakWindow = maxWindow
+    }
+  }
+
+  return {
+    avg: participating > 0 ? sum / participating : null,
+    peak,
+    peakProvider,
+    peakWindow,
+    aboveHalf,
+    participating,
+  }
 }
