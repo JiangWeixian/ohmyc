@@ -157,9 +157,10 @@ fn status_label(snapshot: &UsageSnapshot) -> &'static str {
     }
 }
 
-/// Append one line per poll cycle to ~/Library/Logs/OhMyC/quota-poller.log,
-/// rotating at 512 KiB. Diagnostic only — never fails, never panics.
-fn log_cycle(line: &str) {
+/// Append one line to a file under ~/Library/Logs/OhMyC/, rotating at
+/// 512 KiB. Diagnostic only — never fails, never panics. `pub` so the binary
+/// crate can log tray/UI events to sibling files.
+pub fn log_line(file_name: &str, line: &str) {
     use std::io::Write as _;
     let Some(home) = std::env::var_os("HOME") else {
         return;
@@ -168,15 +169,20 @@ fn log_cycle(line: &str) {
     if std::fs::create_dir_all(&dir).is_err() {
         return;
     }
-    let path = dir.join("quota-poller.log");
+    let path = dir.join(file_name);
     if let Ok(meta) = std::fs::metadata(&path) {
         if meta.len() > 512 * 1024 {
-            let _ = std::fs::rename(&path, dir.join("quota-poller.old.log"));
+            let _ = std::fs::rename(&path, dir.join(file_name.replace(".log", ".old.log")));
         }
     }
     if let Ok(mut file) = std::fs::OpenOptions::new().create(true).append(true).open(&path) {
         let _ = writeln!(file, "{line}");
     }
+}
+
+/// Append one line per poll cycle to ~/Library/Logs/OhMyC/quota-poller.log.
+fn log_cycle(line: &str) {
+    log_line("quota-poller.log", line);
 }
 
 /// Hold an NSActivity assertion for the process lifetime so macOS App Nap

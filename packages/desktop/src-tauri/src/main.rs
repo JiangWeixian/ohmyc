@@ -117,6 +117,17 @@ fn main() {
                             TrayClick::Left => {
                                 let pos = rect.position.to_physical::<i32>(1.0);
                                 let sz = rect.size.to_physical::<u32>(1.0);
+                                ohmyc_desktop_lib::quota_poller::log_line(
+                                    "ui-events.log",
+                                    &format!(
+                                        "{} tray click Left rect={},{} {}x{}",
+                                        chrono::Local::now().to_rfc3339(),
+                                        pos.x,
+                                        pos.y,
+                                        sz.width,
+                                        sz.height
+                                    ),
+                                );
                                 toggle_popover(
                                     app,
                                     TrayRect {
@@ -267,6 +278,13 @@ fn push_quota_cache(app: &tauri::AppHandle, window: &tauri::WebviewWindow) {
 fn toggle_popover(app: &tauri::AppHandle, tray: TrayRect) {
     let guard = app.state::<PopoverGuard>();
     let Some(window) = app.get_webview_window("popover") else {
+        ohmyc_desktop_lib::quota_poller::log_line(
+            "ui-events.log",
+            &format!(
+                "{} toggle_popover: popover window GONE",
+                chrono::Local::now().to_rfc3339()
+            ),
+        );
         return;
     };
 
@@ -298,6 +316,21 @@ fn toggle_popover(app: &tauri::AppHandle, tray: TrayRect) {
                 });
 
             let pos = position_under_tray(tray, size, monitor);
+            ohmyc_desktop_lib::quota_poller::log_line(
+                "ui-events.log",
+                &format!(
+                    "{} toggle_popover: show at {},{} win {}x{} monitor {}x{}@{},{}",
+                    chrono::Local::now().to_rfc3339(),
+                    pos.x,
+                    pos.y,
+                    size.width,
+                    size.height,
+                    monitor.width,
+                    monitor.height,
+                    monitor.x,
+                    monitor.y
+                ),
+            );
             let _ = window.set_position(pos);
             let _ = window.show();
             let _ = window.set_focus();
