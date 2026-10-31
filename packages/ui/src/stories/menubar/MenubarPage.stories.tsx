@@ -7,11 +7,13 @@ import {
 import { MenubarPage } from '@/components/menubar/menubar-page'
 import { setMockHandler } from '@/lib/transport/mock'
 import {
+  installQuotaHandlers,
   installTimelineHandlers,
   MenubarFrame,
   withMockTransport,
   withQueryClient,
 } from '@/stories/decorators/storybook-decorators'
+import { quotaSnapshots } from '@/stories/fixtures/quota'
 import { menubarSessions, menubarTokens } from '@/stories/fixtures/timeline'
 
 import type { Meta, StoryObj } from '@storybook/react-vite'
@@ -28,6 +30,7 @@ const populatedHandlers = () => {
     events: { days: [] },
     status: { sessionCount: 9, lastSyncAt: Date.UTC(2026, 5, 19, 12, 0, 0) },
   })
+  installQuotaHandlers(quotaSnapshots())
   setMockHandler('setup.status', async () => ({ state: 'ready' }))
 }
 
@@ -66,6 +69,14 @@ type Story = StoryObj<typeof meta>
 
 export const AreaView: Story = {
   decorators: [withMockTransport(populatedHandlers)],
+  play: async ({ canvasElement }) => {
+    // Quota section: provider names must label each block — a past edit
+    // dropped the name row and left bare 5H/WK bars.
+    const canvas = within(canvasElement)
+    await canvas.findByText('GLM')
+    await canvas.findByText('Codex')
+    await canvas.findByText('Claude')
+  },
 }
 
 export const HeatmapView: Story = {

@@ -1,0 +1,753 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AI 编程工具额度查询调研报告 — 2026-09-26</title>
+<style>
+  :root {
+    --bg-deep: #08090a;
+    --bg-panel: #0f1011;
+    --bg-surface: #191a1b;
+    --bg-hover: rgba(255,255,255,0.04);
+    --text-primary: #f7f8f8;
+    --text-secondary: #d0d6e0;
+    --text-tertiary: #8a8f98;
+    --text-quaternary: #62666d;
+    --border-subtle: rgba(255,255,255,0.05);
+    --border-standard: rgba(255,255,255,0.08);
+    --border-solid: #23252a;
+    --font-body: "Inter", -apple-system, BlinkMacSystemFont, "SF Pro Text", "PingFang SC", "Helvetica Neue", sans-serif;
+    --font-mono: "Berkeley Mono", ui-monospace, "SF Mono", "JetBrains Mono", Menlo, Consolas, monospace;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body {
+    background: var(--bg-deep);
+    color: var(--text-secondary);
+    font-family: var(--font-body);
+    font-size: 16px;
+    line-height: 1.6;
+    letter-spacing: -0.1px;
+    -webkit-font-smoothing: antialiased;
+    font-feature-settings: "cv01", "ss03";
+  }
+  .page { max-width: 960px; margin: 0 auto; padding: 64px 24px 96px; }
+
+  /* ── Header ─────────────────────────── */
+  .report-header { margin-bottom: 48px; }
+  .eyebrow {
+    font-family: var(--font-mono);
+    font-size: 12px;
+    font-weight: 510;
+    color: var(--text-quaternary);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    margin-bottom: 16px;
+  }
+  h1 {
+    color: var(--text-primary);
+    font-size: 32px;
+    font-weight: 510;
+    letter-spacing: -0.5px;
+    line-height: 1.2;
+    margin-bottom: 16px;
+  }
+  .lede { font-size: 18px; color: var(--text-tertiary); line-height: 1.6; max-width: 720px; }
+  .meta-row {
+    display: flex; flex-wrap: wrap; gap: 8px; margin-top: 20px;
+    font-family: var(--font-mono); font-size: 12px; color: var(--text-tertiary);
+  }
+  .meta-chip {
+    border: 1px solid var(--border-standard);
+    border-radius: 9999px;
+    padding: 4px 12px;
+    background: rgba(255,255,255,0.02);
+  }
+
+  /* ── TOC ─────────────────────────── */
+  .toc {
+    background: rgba(255,255,255,0.02);
+    border: 1px solid var(--border-standard);
+    border-radius: 8px;
+    padding: 20px 24px;
+    margin-bottom: 56px;
+  }
+  .toc-title {
+    font-family: var(--font-mono); font-size: 11px; font-weight: 510;
+    color: var(--text-quaternary); text-transform: uppercase; letter-spacing: 0.08em;
+    margin-bottom: 12px;
+  }
+  .toc ol { list-style: none; display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 4px 24px; }
+  .toc a {
+    color: var(--text-secondary); text-decoration: none; font-size: 14px;
+    display: block; padding: 4px 0;
+    transition: color 150ms ease-out;
+  }
+  .toc a:hover { color: var(--text-primary); }
+  .toc a .idx { font-family: var(--font-mono); color: var(--text-quaternary); margin-right: 8px; font-size: 12px; }
+
+  /* ── Sections ─────────────────────────── */
+  section { margin-bottom: 64px; }
+  h2 {
+    color: var(--text-primary);
+    font-size: 24px; font-weight: 510; letter-spacing: -0.2px; line-height: 1.33;
+    margin-bottom: 20px;
+    padding-top: 24px;
+  }
+  h3 {
+    color: var(--text-primary);
+    font-size: 17px; font-weight: 590; letter-spacing: -0.15px;
+    margin: 28px 0 10px;
+  }
+  p { margin-bottom: 12px; }
+  strong { color: var(--text-primary); font-weight: 590; }
+  ul, ol { padding-left: 22px; margin-bottom: 12px; }
+  li { margin-bottom: 6px; }
+  a { color: var(--text-primary); text-decoration: underline; text-decoration-color: rgba(255,255,255,0.25); text-underline-offset: 3px; }
+  a:hover { text-decoration-color: rgba(255,255,255,0.7); }
+
+  /* ── Pills / badges ─────────────────────────── */
+  .pill {
+    display: inline-block;
+    font-family: var(--font-mono);
+    font-size: 12px; font-weight: 510;
+    border: 1px solid var(--border-solid);
+    border-radius: 9999px;
+    padding: 3px 12px;
+    color: var(--text-secondary);
+    white-space: nowrap;
+  }
+  .pill.yes { background: var(--text-primary); color: var(--bg-deep); border-color: transparent; }
+  .pill.no  { color: var(--text-quaternary); }
+  .pill.warn { border-color: #34343a; color: var(--text-primary); }
+  .dim-row { display: flex; flex-wrap: wrap; gap: 8px; margin: 12px 0 20px; }
+
+  /* ── Tables ─────────────────────────── */
+  .table-wrap { overflow-x: auto; margin: 16px 0 24px; border: 1px solid var(--border-standard); border-radius: 8px; }
+  table { border-collapse: collapse; width: 100%; font-size: 14px; }
+  th {
+    text-align: left;
+    font-size: 12px; font-weight: 510;
+    color: var(--text-tertiary);
+    background: var(--bg-panel);
+    padding: 10px 14px;
+    border-bottom: 1px solid var(--border-standard);
+    white-space: nowrap;
+  }
+  td { padding: 10px 14px; border-bottom: 1px solid var(--border-subtle); vertical-align: top; }
+  tr:last-child td { border-bottom: none; }
+  td:first-child { color: var(--text-primary); font-weight: 510; white-space: nowrap; }
+  td code, p code, li code {
+    font-family: var(--font-mono);
+    font-size: 0.86em;
+    background: var(--bg-hover);
+    border: 1px solid var(--border-subtle);
+    border-radius: 4px;
+    padding: 1px 6px;
+    color: var(--text-primary);
+    white-space: nowrap;
+  }
+
+  /* ── Code blocks ─────────────────────────── */
+  pre {
+    background: var(--bg-panel);
+    border: 1px solid var(--border-standard);
+    border-radius: 8px;
+    padding: 16px 18px;
+    overflow-x: auto;
+    margin: 12px 0 20px;
+    font-family: var(--font-mono);
+    font-size: 13px;
+    line-height: 1.55;
+    color: var(--text-secondary);
+  }
+  pre code { font-family: inherit; background: none; border: none; padding: 0; white-space: pre; }
+  pre .c { color: var(--text-quaternary); }
+  pre .k { color: var(--text-primary); font-weight: 510; }
+
+  /* ── Callouts ─────────────────────────── */
+  .callout {
+    border: 1px solid var(--border-standard);
+    border-left: 3px solid #3e3e44;
+    background: rgba(255,255,255,0.02);
+    border-radius: 6px;
+    padding: 14px 18px;
+    margin: 16px 0;
+    font-size: 14px;
+  }
+  .callout .tag {
+    font-family: var(--font-mono); font-size: 11px; font-weight: 510;
+    color: var(--text-tertiary); text-transform: uppercase; letter-spacing: 0.06em;
+    display: block; margin-bottom: 6px;
+  }
+
+  /* ── Tool cards ─────────────────────────── */
+  .tool-head {
+    display: flex; align-items: baseline; flex-wrap: wrap; gap: 12px;
+    border-top: 1px solid var(--border-standard);
+    padding-top: 32px; margin-top: 8px;
+  }
+  .tool-head h2 { padding-top: 0; margin-bottom: 0; }
+  .tool-sub { font-family: var(--font-mono); font-size: 12px; color: var(--text-quaternary); }
+
+  footer {
+    margin-top: 64px; padding-top: 24px;
+    border-top: 1px solid var(--border-standard);
+    font-size: 13px; color: var(--text-quaternary);
+  }
+  footer .sig { font-family: var(--font-mono); font-size: 11px; margin-top: 8px; }
+
+  @media (max-width: 640px) {
+    .page { padding: 40px 16px 64px; }
+    h1 { font-size: 26px; }
+    h2 { font-size: 20px; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    html { scroll-behavior: auto; }
+    * { transition: none !important; }
+  }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <!-- ══════════ Header ══════════ -->
+  <header class="report-header">
+    <div class="eyebrow">OhMyC · Research Report</div>
+    <h1>AI 编程工具额度查询方式调研</h1>
+    <p class="lede">Kimi Code、Gemini、Cursor、Grok、Claude Code、Codex 六款工具的订阅额度结构对比：周额度与 5 小时窗口是否存在、如何以编程方式查询剩余量、以及重置时间的语义。</p>
+    <div class="meta-row">
+      <span class="meta-chip">2026-09-26</span>
+      <span class="meta-chip">6 款产品</span>
+      <span class="meta-chip">官方文档 + 社区逆向双源佐证</span>
+      <span class="meta-chip">「GM」按 Google Gemini 理解</span>
+    </div>
+  </header>
+
+  <!-- ══════════ TOC ══════════ -->
+  <nav class="toc">
+    <div class="toc-title">目录</div>
+    <ol>
+      <li><a href="#overview"><span class="idx">01</span>总览对比表</a></li>
+      <li><a href="#kimi"><span class="idx">02</span>Kimi Code（Moonshot）</a></li>
+      <li><a href="#gemini"><span class="idx">03</span>Gemini / Antigravity（Google）</a></li>
+      <li><a href="#cursor"><span class="idx">04</span>Cursor（Anysphere）</a></li>
+      <li><a href="#grok"><span class="idx">05</span>Grok Build（xAI）</a></li>
+      <li><a href="#claude"><span class="idx">06</span>Claude Code（Anthropic）</a></li>
+      <li><a href="#codex"><span class="idx">07</span>Codex CLI（OpenAI）</a></li>
+      <li><a href="#ohmyc"><span class="idx">08</span>OhMyC 落地建议</a></li>
+      <li><a href="#statusline"><span class="idx">09</span>Statusline 机制对比</a></li>
+      <li><a href="#sources"><span class="idx">10</span>主要来源</a></li>
+    </ol>
+  </nav>
+
+  <!-- ══════════ 01 Overview ══════════ -->
+  <section id="overview">
+    <h2>01 · 总览对比表</h2>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr><th>工具</th><th>周额度</th><th>5h 窗口</th><th>重置语义</th><th>官方查询</th><th>可编程查询</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Kimi Code</td>
+            <td><span class="pill warn">旧套餐有</span></td>
+            <td><span class="pill yes">有</span></td>
+            <td>5h 滚动恢复；旧套餐按订阅日每 7 天刷新；新套餐周额度已取消</td>
+            <td>Console 网页、<code>/usage</code></td>
+            <td><code>GET /coding/v1/usages</code>（逆向 CLI 同款接口）</td>
+          </tr>
+          <tr>
+            <td>Gemini</td>
+            <td><span class="pill warn">仅 Antigravity</span></td>
+            <td><span class="pill warn">仅 Antigravity</span></td>
+            <td>5h 滚动；周为滚动 7 天；Gemini CLI 日额度 PT 午夜</td>
+            <td>agy <code>/usage</code>、<code>/credits</code></td>
+            <td>statusline JSON（官方）；<code>retrieveUserQuota</code>（逆向）</td>
+          </tr>
+          <tr>
+            <td>Cursor</td>
+            <td><span class="pill no">没有</span></td>
+            <td><span class="pill no">没有</span></td>
+            <td>仅月度计费周期，按订阅周年日精确到时刻重置</td>
+            <td>cursor.com/dashboard</td>
+            <td><code>GetCurrentPeriodUsage</code> RPC（逆向）</td>
+          </tr>
+          <tr>
+            <td>Grok</td>
+            <td><span class="pill yes">有</span></td>
+            <td><span class="pill no">没有</span></td>
+            <td>账户锚定的 7 天滚动周期，跨产品共享池</td>
+            <td><code>/usage</code>、网页 Usage 页</td>
+            <td><code>/v1/billing?format=credits</code>（逆向）</td>
+          </tr>
+          <tr>
+            <td>Claude Code</td>
+            <td><span class="pill yes">有</span></td>
+            <td><span class="pill yes">有</span></td>
+            <td>5h 从首条消息起滚动；周为系统分配的<strong>固定时刻</strong></td>
+            <td><code>/usage</code>、claude.ai Usage 页</td>
+            <td>statusline <code>rate_limits</code>（官方）；<code>/api/oauth/usage</code>（逆向）</td>
+          </tr>
+          <tr>
+            <td>Codex</td>
+            <td><span class="pill yes">有</span></td>
+            <td><span class="pill yes">有</span></td>
+            <td>均为账户锚定滚动窗口，锚在周期后首次请求</td>
+            <td><code>/status</code>、<code>/usage</code>、statusline</td>
+            <td>app-server JSON-RPC（半官方）；<code>wham/usage</code> + <code>x-codex-*</code> 头（逆向）</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <p>六家的额度维度恰好是三种范式：<strong>双窗口</strong>（Claude / Codex / Antigravity）、<strong>单周池</strong>（Grok）、<strong>单月池</strong>（Cursor），Kimi 新套餐退化为仅 5h 窗口。监控产品的数据模型按这三类抽象即可全覆盖。</p>
+  </section>
+
+  <!-- ══════════ 02 Kimi ══════════ -->
+  <section id="kimi">
+    <div class="tool-head">
+      <h2>02 · Kimi Code</h2>
+      <span class="tool-sub">Moonshot AI</span>
+    </div>
+    <div class="dim-row">
+      <span class="pill yes">5h 窗口：有（滚动）</span>
+      <span class="pill warn">周额度：仅旧套餐</span>
+      <span class="pill yes">月度总额度：有（会员共享）</span>
+    </div>
+
+    <h3>额度结构</h3>
+    <ul>
+      <li><strong>新套餐（2026 现行）</strong>：周额度已移除，只保留<strong>滚动 5 小时限速窗口</strong>——短时间请求过多触发限流，窗口滚过后自动恢复；另有 Kimi 会员共享的月度总额度，用尽则冻结至月度重置或升级。</li>
+      <li><strong>旧套餐（存量不受影响）</strong>：周额度从订阅日期起<strong>每 7 天自动刷新</strong>，未用完不结转，同样叠加 5h 窗口。</li>
+      <li>所有登录设备与 API Key 共享同一额度；超额后可启用 Extra Usage（人民币余额按量计费）。</li>
+    </ul>
+
+    <h3>查询方式</h3>
+    <ul>
+      <li><strong>Kimi Code Console 网页</strong>：可随时查看剩余额度与限流状态；5h 或周额度用到 80% 以上时进度卡出现 Buy Extra Usage 入口。</li>
+      <li><strong>CLI <code>/usage</code> 命令</strong>：显示 token 用量、上下文消耗与额度信息。</li>
+      <li><strong><code>/usage</code> 背后的云端接口（逆向自本机 CLI 二进制 <code>~/.kimi-code/bin/kimi</code>，已实测无凭证返回 401 确认存在）</strong>——你的推断正确，CLI 确实是请求了接口：</li>
+    </ul>
+<pre><code><span class="k">GET</span> https://api.kimi.com/coding/v1/usages   <span class="c"># 国际区：api.kimi.ai</span>
+Authorization: Bearer &lt;access_token&gt;   <span class="c"># 订阅 OAuth token 或 Kimi For Coding API key 均可</span>
+
+<span class="c"># 响应字段（取自 CLI 内置的解析器 packages/oauth/src/managed-usage.ts）：</span>
+<span class="c">#   usages.limit_5h / limit_7d / limit_month_total / limit_month_code</span>
+<span class="c">#     各含 { used_ratio (0–1), reset_time } —— 重置时间由 API 直接返回，无需推算</span>
+<span class="c">#   boosterWallet —— Extra Usage 余额（amount/amountLeft 为定点数，÷10⁶ = 美分）</span>
+<span class="c"># 注：新套餐已取消周额度，limit_7d 应缺省；CLI 本地 server 模式另有 GET /oauth/usage 同源代理</span></code></pre>
+    <div class="callout">
+      <span class="tag">来源</span>
+      <a href="https://www.kimi.com/code/docs/en/kimi-code/membership.html">Kimi Code 官方文档 — Membership</a> · <a href="https://www.kimi.com/code/docs/en/kimi-code-cli/reference/slash-commands.html">Slash Commands 参考</a> · 本机 CLI 二进制逆向（<code>packages/oauth/src/managed-usage.ts</code> 编译产物）+ <code>/usages</code> 端点实测 401
+    </div>
+  </section>
+
+  <!-- ══════════ 03 Gemini ══════════ -->
+  <section id="gemini">
+    <div class="tool-head">
+      <h2>03 · Gemini / Antigravity</h2>
+      <span class="tool-sub">Google</span>
+    </div>
+    <div class="dim-row">
+      <span class="pill yes">5h 窗口：仅 Antigravity</span>
+      <span class="pill yes">周额度：仅 Antigravity</span>
+      <span class="pill warn">Gemini CLI：纯日额度</span>
+      <span class="pill no">月度配额：没有</span>
+    </div>
+
+    <div class="callout">
+      <span class="tag">重大背景</span>
+      2026-06-18 起，个人订阅（免费档 / AI Pro / AI Ultra）已从 Gemini CLI 迁移到新的 <strong>Antigravity CLI（<code>agy</code>）</strong>；Gemini CLI 只剩企业许可与 API key 用户。两条线是<strong>两套完全不同的计量体系</strong>。
+    </div>
+
+    <h3>Antigravity 线（个人订阅的实际载体）— 5h + 周双窗口</h3>
+    <ul>
+      <li>配额桶：<code>gemini-5h</code>、<code>gemini-weekly</code>、<code>3p-5h</code>（第三方模型 5h）、<code>3p-weekly</code>；Pro/Ultra 每 5 小时滚动刷新直至周上限，免费档仅周配额（每周刷新一次）。消耗按 agent 工作量加权，不按固定请求数。</li>
+      <li><strong>官方 statusline 契约（唯一文档化的机器可读通道）</strong>：在 <code>~/.gemini/antigravity-cli/settings.json</code> 配置 <code>statusLine.command</code> 后，agy 每次状态变化向脚本 stdin 推送 JSON，其中 <code>quota</code> 对象按桶给出 <code>remaining_fraction</code>、<code>reset_time</code>（ISO-8601）、<code>reset_in_seconds</code>，另有 <code>plan_tier</code> 等字段。</li>
+      <li><strong>逆向端点</strong>：<code>POST https://cloudcode-pa.googleapis.com/v1internal:retrieveUserQuotaSummary</code>（agy <code>/usage</code> 面板背后端点）；凭证在 macOS Keychain（<code>gemini</code>/<code>antigravity</code> 条目）或 <code>~/.gemini/oauth_creds.json</code>。</li>
+    </ul>
+
+    <h3>Gemini CLI / Code Assist 线（企业许可）— 纯日额度</h3>
+    <ul>
+      <li>日额度：个人 1,000 请求/天、Pro 1,500、Ultra 2,000；<strong>无周额度、无 5h 窗口</strong>。重置为太平洋时间午夜（PT midnight），以返回的 <code>resetTime</code> 为准。</li>
+      <li>官方：REPL 内 <code>/stats model</code> 显示各模型 <code>Usage left %</code> 与重置时间（无 headless 对应物）。</li>
+    </ul>
+<pre><code><span class="c"># 逆向查询端点（Gemini CLI / Code Assist 账号）</span>
+<span class="k">POST</span> https://cloudcode-pa.googleapis.com/v1internal:retrieveUserQuota
+Authorization: Bearer &lt;access_token&gt;   <span class="c"># 来自 ~/.gemini/oauth_creds.json</span>
+
+<span class="c"># 响应按模型分桶：{ modelId, remainingFraction (0–1), resetTime (ISO-8601) }</span>
+<span class="c"># 429 错误体另含 quotaResetDelay / quotaResetTimeStamp</span></code></pre>
+
+    <div class="callout">
+      <span class="tag">注意</span>
+      第三方模型桶（Claude / GPT-OSS）是<strong>池级共享水位</strong>，不是单模型精确额度，展示时不要按单模型呈现。<code>v1internal:*</code> 为内部端点，无版本契约保证。
+    </div>
+    <div class="callout">
+      <span class="tag">来源</span>
+      <a href="https://geminicli.com/docs/resources/quota-and-pricing/">Gemini CLI Quotas &amp; Pricing</a> · <a href="https://antigravity.google/docs/cli/statusline.md">Antigravity Statusline 文档</a> · <a href="https://antigravity.google/docs/plans.md">Antigravity Plans</a> · <a href="https://github.com/tingyi365/agy-quota">agy-quota</a> · <a href="https://www.mintlify.com/steipete/codexbar/providers/gemini">CodexBar Gemini provider</a>
+    </div>
+  </section>
+
+  <!-- ══════════ 04 Cursor ══════════ -->
+  <section id="cursor">
+    <div class="tool-head">
+      <h2>04 · Cursor</h2>
+      <span class="tool-sub">Anysphere</span>
+    </div>
+    <div class="dim-row">
+      <span class="pill no">5h 窗口：没有</span>
+      <span class="pill no">周额度：没有</span>
+      <span class="pill yes">月度计费周期：唯一维度</span>
+    </div>
+
+    <h3>额度结构</h3>
+    <ul>
+      <li>2025 年 6 月定价改革后，订阅额度是<strong>美元等值金额池</strong>而非请求数：Pro $20/月、Pro+ $60、Ultra $200（另有 2026-07 用量翻倍调整）。分 <strong>Cursor Models</strong> 与 <strong>Other Models</strong> 两个池，外加可开关的 On-Demand 超额池。</li>
+      <li>重置：按各账号计费周期周年日重置，<strong>精确到具体时刻</strong>（<code>billingCycleEnd</code> 为带时分秒的 Unix 毫秒），未用完不结转。</li>
+      <li>5h 窗口从未采用；与额度无关的并发限速存在（高峰排队变慢，不报错）。</li>
+    </ul>
+
+    <h3>查询方式</h3>
+    <ul>
+      <li><strong>官方</strong>：cursor.com/dashboard 的 Spending 页；Admin API（<code>api.cursor.com/teams/*</code>）仅企业管理员可用，<strong>个人订阅者无官方用量 API</strong>。</li>
+      <li><strong>逆向（个人查询主路径）</strong>：与 IDE 本体同一套内部接口：</li>
+    </ul>
+<pre><code><span class="k">POST</span> https://api2.cursor.sh/aiserver.v1.DashboardService/GetCurrentPeriodUsage
+Authorization: Bearer &lt;accessToken&gt;
+Connect-Protocol-Version: 1
+
+<span class="c"># 关键响应字段：</span>
+<span class="c">#   billingCycleStart / billingCycleEnd  —— Unix 毫秒，end 即重置时刻</span>
+<span class="c">#   planUsage.{totalSpend, remaining, limit, totalPercentUsed}  —— 单位：美分</span>
+<span class="c">#   spendLimitUsage —— On-Demand 支出上限用量</span></code></pre>
+    <ul>
+      <li><strong>Token 获取</strong>：<code>POST /auth/exchange_user_api_key</code> 用 <code>crsr_...</code> API key 兑换（有效期约 1 小时，需重兑换）；或读本地 <code>~/.cursor/auth.json</code>（由 <code>agent login</code> 写入）/ IDE 的 <code>state.vscdb</code> 中 <code>cursorAuth/accessToken</code>。</li>
+      <li><strong>参考实现</strong>：<a href="https://github.com/wakamex/cursor-cli-usage">cursor-cli-usage</a>（Python，自带缓存与 statusline 模式）、<a href="https://github.com/dmwyatt/cursor-usage">dmwyatt/cursor-usage</a>（Go）。</li>
+    </ul>
+
+    <div class="callout">
+      <span class="tag">对监控产品的含义</span>
+      Cursor 只需监控<strong>一个窗口</strong>：当前计费周期。展示「已用/上限（美分）+ totalPercentUsed + billingCycleEnd 倒计时」即可完整覆盖。Cursor 不通过 HTTP 响应头暴露额度，429 + Retry-After 仅是网关限流，与订阅额度无关。
+    </div>
+    <div class="callout">
+      <span class="tag">来源</span>
+      <a href="https://cursor.com/help/models-and-usage/usage-limits">Cursor 官方 Usage &amp; Limits</a> · <a href="https://cursor.com/docs/api">Cursor APIs</a> · <a href="https://github.com/cnwinds/cursor-pulse/blob/master/docs/cursor-usage-api.md">cursor-pulse 逆向文档</a> · <a href="https://gist.github.com/dmwyatt/1e9359b1862e7cbfe1e754fe4c8db764">dmwyatt 的 Gist</a>
+    </div>
+  </section>
+
+  <!-- ══════════ 05 Grok ══════════ -->
+  <section id="grok">
+    <div class="tool-head">
+      <h2>05 · Grok Build</h2>
+      <span class="tool-sub">xAI</span>
+    </div>
+    <div class="dim-row">
+      <span class="pill no">5h 窗口：没有</span>
+      <span class="pill yes">周额度：有（唯一主维度）</span>
+      <span class="pill no">月度/日度配额：没有</span>
+    </div>
+
+    <h3>额度结构</h3>
+    <ul>
+      <li>2026 年 6 月起付费套餐（SuperGrok / X Premium+）改为<strong>一个跨产品共享的周用量池</strong>——Chat / Imagine / Voice / Build 全部共用，以<strong>百分比</strong>计量；xAI 不公布池子绝对大小。</li>
+      <li>官方明确："Unlike Claude Code and Codex, where you're dealing with 5-hour usage windows, <strong>Grok Build runs on a flexible weekly usage pool</strong>."</li>
+      <li>重置：<strong>账户级 7 天滚动周期</strong>，锚定在账户自身周期（实测 <code>2026-08-17T17:33Z → 2026-08-24T17:33Z</code>，恰好 7 天）；无全球统一重置点。</li>
+      <li>Extra Usage Credits：按美元计的超额付费余额，1 年过期，可 Auto Top Up。</li>
+    </ul>
+
+    <h3>查询方式</h3>
+    <ul>
+      <li><strong>官方</strong>：CLI <code>/usage</code>（别名 <code>/cost</code>）；grok.com → Settings → Usage（总进度条 + 分产品细分 + 重置时间）。ACP 扩展方法 <code>x.ai/billing</code> 已预留但 stdio 模式未启用。</li>
+      <li><strong>逆向（多工具在用，目前最可靠）</strong>：</li>
+    </ul>
+<pre><code><span class="k">GET</span> https://cli-chat-proxy.grok.com/v1/billing?format=credits
+Authorization: Bearer &lt;access_token&gt;   <span class="c"># 来自 ~/.grok/auth.json</span>
+
+<span class="c"># 关键响应字段（config 下）：</span>
+<span class="c">#   currentPeriod.{type, start, end}  —— end 即重置时间；type 可能为</span>
+<span class="c">#     USAGE_PERIOD_TYPE_WEEKLY / _MONTHLY / _DAILY，务必读它防御漂移</span>
+<span class="c">#   creditUsagePercent                —— 已用百分比（为 0 时字段省略）</span>
+<span class="c">#   productUsage[]                    —— 分产品细分（如 GrokBuild）</span>
+<span class="c">#   prepaidBalance                    —— Extra Usage Credits 余额</span></code></pre>
+
+    <div class="callout">
+      <span class="tag">凭证坑</span>
+      Grok 的 refresh token <strong>单次使用且每次刷新轮换</strong>：第三方工具刷新后必须原子写回 <code>~/.grok/auth.json</code>，否则官方 CLI 下次刷新会 <code>refresh_token_reused</code> 失败。只读方案（过期则提示用户运行一次 <code>grok login</code>）更安全。轮询建议 ≥60s。
+    </div>
+    <div class="callout">
+      <span class="tag">来源</span>
+      <a href="https://docs.x.ai/grok/faq">xAI 官方 FAQ</a> · <a href="https://grok.com/release-notes">grok.com Release Notes</a> · <a href="https://github.com/steipete/CodexBar/blob/main/docs/grok.md">CodexBar Grok 文档</a> · <a href="https://github.com/McKean/aiquokka">aiquokka</a> · <a href="https://tracecheck.dev/grok-build/usage-limits/">TraceCheck 核验页</a>
+    </div>
+  </section>
+
+  <!-- ══════════ 06 Claude ══════════ -->
+  <section id="claude">
+    <div class="tool-head">
+      <h2>06 · Claude Code</h2>
+      <span class="tool-sub">Anthropic</span>
+    </div>
+    <div class="dim-row">
+      <span class="pill yes">5h 窗口：有（滚动）</span>
+      <span class="pill yes">周额度：有（固定时刻）</span>
+      <span class="pill yes">模型专属周额度：Opus / Sonnet</span>
+      <span class="pill no">月度/日度用量配额：没有</span>
+    </div>
+
+    <h3>额度结构与重置语义</h3>
+    <ul>
+      <li><strong>5h 窗口</strong>：滚动——从窗口内第一条消息起算，5 小时后整窗重置。</li>
+      <li><strong>周额度</strong>：<strong>固定时间点重置</strong>，该时刻由系统分配给账户，与订阅开始日、使用时间无关（不是滚动 7 天）；另有 <code>seven_day_opus</code> / <code>seven_day_sonnet</code> 模型专属周窗口（未使用时为 null）。</li>
+      <li>claude.ai 网页/桌面端、IDE 插件、Claude Code <strong>共享同一池子</strong>；用 API key 时不走订阅额度。</li>
+      <li><strong>所有查询渠道都直接返回精确 <code>resets_at</code> 时间戳</strong>，无需自己推算，天然规避时区问题。</li>
+    </ul>
+
+    <h3>查询方式（官方 → 逆向）</h3>
+    <ul>
+      <li><strong>statusline <code>rate_limits</code> 字段（官方文档化，会话内最佳）</strong>：<code>~/.claude/settings.json</code> 配置 <code>statusLine.command</code> 后，每次渲染向脚本 stdin 管道 JSON：</li>
+    </ul>
+<pre><code>"rate_limits": {
+  "five_hour": { "used_percentage": 23.5, "resets_at": 1738425600 },
+  "seven_day": { "used_percentage": 41.2, "resets_at": 1738857600 }
+}
+<span class="c">// 仅 Pro/Max 订阅（OAuth）且首个 API 响应后出现；窗口重置后该字段被移除</span></code></pre>
+    <ul>
+      <li><strong><code>/usage</code> 交互命令</strong>：5h 与 weekly 进度条 + 重置倒计时；无官方非交互输出（<code>claude -p "/usage"</code> 打印的是会话摘要）。</li>
+      <li><strong>逆向 <code>GET https://api.anthropic.com/api/oauth/usage</code>（外部监控最实用）</strong>：无需会话运行、服务器端权威数据、跨设备：</li>
+    </ul>
+<pre><code><span class="k">GET</span> https://api.anthropic.com/api/oauth/usage
+Authorization: Bearer &lt;claudeAiOauth.accessToken&gt;
+anthropic-beta: oauth-2025-04-20
+User-Agent: claude-code/&lt;version&gt;   <span class="c"># 关键！缺了会落入激进限流桶，持续 429</span>
+
+<span class="c"># 响应：five_hour / seven_day / seven_day_opus / seven_day_sonnet</span>
+<span class="c">#   { utilization (0–100), resets_at (ISO-8601 UTC) }；extra_usage 块标识付费超额</span></code></pre>
+    <ul>
+      <li>凭证：macOS Keychain <code>security find-generic-password -s "Claude Code-credentials" -w</code>；Linux <code>~/.claude/.credentials.json</code>；或环境变量 <code>CLAUDE_CODE_OAUTH_TOKEN</code>。access token 约 60 分钟过期，由官方 CLI 自动刷新。</li>
+      <li><strong>被动方式</strong>：每个 API 响应携带 <code>anthropic-ratelimit-unified-{5h,7d}-{utilization,reset}</code> 头（2026-03 npm 包源码泄露证实 <code>/usage</code> 读的就是这套头），可经本地代理抓取。</li>
+      <li>轮询经验值：带正确 UA 时 <strong>≥180s</strong> 安全；否则持续 429 且 30 分钟难恢复。Rust 参考实现：<a href="https://lib.rs/crates/claude-usage">claude-usage crate</a>。</li>
+    </ul>
+
+    <div class="callout">
+      <span class="tag">合规风险</span>
+      2026-02 Anthropic 明确将 Free/Pro/Max 的 OAuth token 用于第三方工具列为违反 ToS，并于 2026-04 技术封禁过第三方客户端。只读 usage 属灰色地带，接入前需评估。
+    </div>
+    <div class="callout">
+      <span class="tag">来源</span>
+      <a href="https://code.claude.com/docs/en/statusline">Claude Code Statusline 文档</a> · <a href="https://code.claude.com/docs/en/costs">Manage Costs</a> · <a href="https://support.anthropic.com/en/articles/11049741-what-is-the-max-plan">Max plan（官方帮助中心）</a> · <a href="https://github.com/Maciek-roboblog/Claude-Code-Usage-Monitor/issues/202">Usage-Monitor issue #202（最完整技术规格）</a> · <a href="https://www.claudecodecamp.com/p/i-tried-to-reverse-engineer-claude-code-s-usage-limits">限额逆向分析</a>
+    </div>
+  </section>
+
+  <!-- ══════════ 07 Codex ══════════ -->
+  <section id="codex">
+    <div class="tool-head">
+      <h2>07 · Codex CLI</h2>
+      <span class="tool-sub">OpenAI</span>
+    </div>
+    <div class="dim-row">
+      <span class="pill yes">5h 窗口：有（政策反复）</span>
+      <span class="pill yes">周额度：有（7 天）</span>
+      <span class="pill warn">月度：仅 Business/Enterprise</span>
+      <span class="pill no">日度：没有</span>
+    </div>
+
+    <h3>额度结构与重置语义</h3>
+    <ul>
+      <li><strong>5h 滚动窗口 + 7 天周窗口</strong>双维度。⚠️ 政策反复：2026-07-12 曾临时取消 5h 限制，约 2026-08-25 起对 Plus 恢复——<strong>必须以 API 实际返回为准，不能硬编码窗口存在</strong>。</li>
+      <li>重置：均为<strong>账户锚定滚动窗口</strong>——官方原文 "A new window starts when you send your first message in Work or Codex after the previous window ends"；周窗口亦锚定到周期结束后的首次请求，无固定整点、无统一时区。</li>
+      <li>观测警告：闲置账户的 <code>reset_at</code> 会随轮询向后滑动（始终保持约 7 天后），<code>used_percent</code> 曾数小时内从 55% 掉到 0%——应视为「服务端声明」并保留本地历史。</li>
+      <li>附加维度：Credits 余额、Code review 独立周窗口、模型专属额度（<code>additional_rate_limits[]</code>）、可囤的重置券（<code>rate_limit_reset_credits</code>）。</li>
+    </ul>
+
+    <h3>查询方式（官方 → 逆向）</h3>
+    <ul>
+      <li><strong><code>codex app-server</code> JSON-RPC（半官方，最适合程序化）</strong>：<code>codex -s read-only -a never app-server</code> → <code>account/rateLimits/read</code>，返回 primary/secondary 窗口 + reset 时间戳 + credits + plan。CodexBar 即走此路。</li>
+      <li><strong>TUI 命令</strong>：<code>/status</code>（5h/周限剩余百分比与重置时间）、<code>/usage</code>、<code>/statusline</code> 可配置状态栏；无 headless <code>--json</code> 输出。</li>
+      <li><strong>逆向 <code>wham/usage</code>（CLI 自己每 ~60s 就在轮询）</strong>：</li>
+    </ul>
+<pre><code><span class="k">GET</span> https://chatgpt.com/backend-api/wham/usage
+Authorization: Bearer &lt;access_token&gt;      <span class="c"># 来自 ~/.codex/auth.json</span>
+ChatGPT-Account-Id: &lt;account_id&gt;
+
+<span class="c"># 响应：plan_type、rate_limit.{primary_window, secondary_window}、credits 等</span>
+<span class="c"># 关键陷阱：按 limit_window_seconds 判断窗口类型</span>
+<span class="c">#   18000 = 5h，604800 = 7d —— 不要按 primary/secondary 槽位判断！</span>
+<span class="c">#   Team 等套餐 primary 就是周窗口，secondary 为 null</span></code></pre>
+    <ul>
+      <li><strong>被动方式</strong>：模型响应头 <code>x-codex-{primary,secondary}-{used-percent,window-minutes,reset-at}</code>、<code>x-codex-plan-type</code> 等（官方在 codex#16323 确认存在；WebSocket 传输下无响应头）。</li>
+      <li>凭证刷新：<code>POST https://auth.openai.com/oauth/token</code>，<code>client_id=app_EMoamEEZ73f0CkXaXp7hrann</code>。</li>
+    </ul>
+
+    <div class="callout">
+      <span class="tag">来源</span>
+      <a href="https://developers.openai.com/codex/cli/slash-commands">Codex CLI 官方 Slash Commands</a> · <a href="https://help.openai.com/en/articles/20001516-managing-usage-with-gpt-6-astra-in-work-and-codex">OpenAI Help — Managing Usage</a> · <a href="https://gist.github.com/monperrus/21dc7d85ea518dc2a66606006d356b5b">monperrus 非官方 API 参考</a> · <a href="https://github.com/steipete/CodexBar/blob/main/docs/codex.md">CodexBar Codex 文档</a>
+    </div>
+  </section>
+
+  <!-- ══════════ 08 OhMyC ══════════ -->
+  <section id="ohmyc">
+    <h2>08 · OhMyC 落地建议</h2>
+
+    <h3>集成优先级</h3>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>优先级</th><th>模式</th><th>适用方</th><th>备注</th></tr></thead>
+        <tbody>
+          <tr>
+            <td>首选</td>
+            <td>官方 statusline JSON 注入</td>
+            <td>Claude（<code>rate_limits</code>）、Antigravity（<code>quota</code> 桶）</td>
+            <td>有官方契约，但仅在 CLI 运行时有事件推送</td>
+          </tr>
+          <tr>
+            <td>首选</td>
+            <td>官方/半官方进程接口</td>
+            <td>Codex <code>app-server</code> JSON-RPC</td>
+            <td>CLI 自带，schema 相对稳定</td>
+          </tr>
+          <tr>
+            <td>次选</td>
+            <td>读本地凭证 + 调内部用量端点轮询</td>
+            <td>Claude <code>/api/oauth/usage</code>、Codex <code>wham/usage</code>、Grok <code>/v1/billing</code>、Cursor <code>GetCurrentPeriodUsage</code>、Gemini <code>retrieveUserQuota</code></td>
+            <td>缓存 ≥3–5 分钟，429 指数退避；容忍 schema 漂移</td>
+          </tr>
+          <tr>
+            <td>兜底</td>
+            <td>被动解析响应头 / 429 错误体</td>
+            <td>Codex <code>x-codex-*</code>、Claude <code>anthropic-ratelimit-unified-*</code>、Gemini <code>quotaResetTimeStamp</code></td>
+            <td>不产生额外请求，但只在有流量时可用</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3>三个跨产品的通用注意点</h3>
+    <ol>
+      <li><strong>重置时间一律以 API 返回的时间戳为准</strong>，不要自己推算——各家语义不同：Claude 周额度是固定时刻，Codex / Grok 是账户锚定滚动，Gemini 日额度是 PT 午夜，Kimi 旧套餐按订阅日 7 天。</li>
+      <li><strong>凭证刷新要克制</strong>：Claude access token 约 60 分钟过期（官方 CLI 自动刷新）、Grok refresh token 单次轮换、Cursor 兑换 token 约 1 小时——「只读 + 过期提示重新登录」比主动刷新更稳；Grok 若自行刷新必须原子写回。</li>
+      <li><strong>UI 建模差异</strong>：Cursor 只有月度池（单位是美分），Grok 只有周窗口（只有百分比），Kimi 新套餐只有 5h 窗口——不要给所有工具预留统一的「5h + 周」双槽位。按三种范式抽象：<strong>双窗口 / 单周池 / 单月池</strong>。</li>
+    </ol>
+
+    <h3>凭证位置速查</h3>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>工具</th><th>凭证位置</th><th>Token 特性</th></tr></thead>
+        <tbody>
+          <tr><td>Claude Code</td><td><code>~/.claude/.credentials.json</code> / macOS Keychain</td><td>~60 分钟过期，官方 CLI 自动刷新</td></tr>
+          <tr><td>Codex</td><td><code>~/.codex/auth.json</code></td><td>可用固定 client_id 刷新</td></tr>
+          <tr><td>Grok</td><td><code>~/.grok/auth.json</code></td><td>refresh token 单次轮换，勿自行刷新</td></tr>
+          <tr><td>Cursor</td><td><code>~/.cursor/auth.json</code> / IDE state.vscdb</td><td>API key 兑换 token 约 1 小时过期</td></tr>
+          <tr><td>Gemini / agy</td><td><code>~/.gemini/oauth_creds.json</code> / macOS Keychain</td><td>标准 OAuth refresh 流程</td></tr>
+          <tr><td>Kimi Code</td><td><code>~/.kimi-code/oauth/</code>（storage key：<code>kimi-code</code>）</td><td><code>/coding/v1/usages</code> 同时接受 OAuth token 与 API key</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- ══════════ 09 Statusline ══════════ -->
+  <section id="statusline">
+    <h2>09 · Statusline 类官方机制对比</h2>
+    <p>Claude Code 的 <code>statusLine</code> 是「CLI 把会话与额度 JSON 经 stdin 推给用户脚本、脚本 stdout 作为状态栏」的官方契约——零逆向、无需轮询。调研其余五家是否有等价物，结论分三层：<strong>stdin 直接含额度</strong>（Claude、Antigravity）→ <strong>有 command 型 statusline 但不含额度</strong>（Kimi、Grok、Cursor）→ <strong>无 command 型但有更强的官方推送</strong>（Codex app-server）。</p>
+
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>工具</th><th>command 型 statusline</th><th>stdin JSON 含额度</th><th>额度的官方/半官方替代通道</th></tr></thead>
+        <tbody>
+          <tr>
+            <td>Claude Code</td>
+            <td><span class="pill yes">有</span></td>
+            <td><span class="pill yes">rate_limits（5h/7d 百分比+重置）</span></td>
+            <td>statusline 本身就是额度通道</td>
+          </tr>
+          <tr>
+            <td>Antigravity (agy)</td>
+            <td><span class="pill yes">有</span></td>
+            <td><span class="pill yes">quota 桶（remaining_fraction + reset_time）</span></td>
+            <td>statusline 本身就是额度通道</td>
+          </tr>
+          <tr>
+            <td>Kimi Code</td>
+            <td><span class="pill yes">有</span>（二进制实证）</td>
+            <td><span class="pill no">没有</span>（model/cwd/git/context 等）</td>
+            <td>脚本自查 <code>GET /coding/v1/usages</code>（注意 300ms 超时，需本地缓存）</td>
+          </tr>
+          <tr>
+            <td>Grok Build</td>
+            <td><span class="pill yes">有</span></td>
+            <td><span class="pill no">没有</span>（文档明确刻意不提供）</td>
+            <td>ACP <code>x.ai/billing</code>（需 grok.com OAuth）</td>
+          </tr>
+          <tr>
+            <td>Cursor Agent</td>
+            <td><span class="pill yes">有</span>（官方自述与 Claude 对齐）</td>
+            <td><span class="pill no">没有</span>（仅 context_window）</td>
+            <td><strong>无官方出口</strong>，只能逆向 <code>GetCurrentPeriodUsage</code></td>
+          </tr>
+          <tr>
+            <td>Codex</td>
+            <td><span class="pill no">没有</span>（issue 挂 5 个月未实现）</td>
+            <td>—</td>
+            <td>app-server <code>account/rateLimits/read</code> + <code>/updated</code> 事件推送（数据最丰富）</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3>Kimi Code — 有 statusline，但 payload 不含额度（本机二进制实证）</h3>
+    <ul>
+      <li>配置写在 <code>~/.kimi-code/tui.toml</code> 的 <code>[status_line]</code>：<code>command</code>（自定义脚本）与 <code>items</code>（内置槽位：<code>mode, goal, model, tasks, cwd, git, tips</code>）。官方文档暂无条目，证据来自 <code>~/.kimi-code/bin/kimi</code> 内嵌 bundle。</li>
+      <li>契约与 Claude 同构：spawn <code>sh -c &lt;command&gt;</code>，stdin 写入 JSON payload，stdout 第一行作为状态栏文本；环境变量 <code>KIMI_CODE_STATUS_LINE=1</code>；300ms 超时、64KB 上限、最小 1s 重跑间隔。</li>
+      <li>payload 字段：<code>{model, cwd, gitBranch, permissionMode, planMode, contextUsage, contextTokens, maxContextTokens, sessionId, version}</code>——<strong>无额度字段</strong>。但 statusline 脚本可自建缓存调用 <code>/coding/v1/usages</code>，组成「官方注入点 + 接口」的混合方案。</li>
+    </ul>
+
+    <h3>Grok Build — 有 statusline，额度走 ACP</h3>
+    <ul>
+      <li><code>~/.grok/config.toml</code> 的 <code>[ui.status_line]</code>：<code>type = "command"</code> + <code>command</code> + <code>refresh_interval</code>（秒）。stdin JSON（snake_case）含会话成本 <code>cost.total_cost_usd</code>、上下文 <code>context_window.*</code>、git 上下文等，<strong>官方文档明确 rate-limit 摘要刻意不提供</strong>；300ms 防抖，10s 超时。</li>
+      <li>额度官方通道是 ACP 扩展方法 <code>x.ai/billing</code>（<code>grok agent stdio</code>）：返回 <code>creditUsagePercent</code> + <code>currentPeriod.{type,start,end}</code>（重置时间）；<strong>仅接受 grok.com OAuth 登录</strong>，API key 会返回 <code>auth_required</code>。TUI 自己每 30s 轮询此方法，可作轮询节奏参考。</li>
+    </ul>
+
+    <h3>Cursor Agent — 有 statusline（与 Claude spec 对齐），账户额度无官方出口</h3>
+    <ul>
+      <li>配置 <code>~/.cursor/cli-config.json</code>：</li>
+    </ul>
+<pre><code>{
+  "statusLine": {
+    "type": "command",
+    "command": "~/.cursor/statusline.sh",
+    "updateIntervalMs": 300,   <span class="c">// 下限 300ms</span>
+    "timeoutMs": 2000
+  }
+}</code></pre>
+    <ul>
+      <li>stdin JSON 含 <code>model</code>、<code>workspace</code>、<code>context_window.{used_percentage, remaining_percentage, total_input_tokens}</code> 等——<strong>无账户额度/速率字段</strong>；注意自定义 statusline 会<strong>整体替换</strong>原生 footer（官方确认为有意行为）。</li>
+      <li><code>agent status --format json</code> 只含认证状态，<strong>不含额度</strong>；TUI 的 <code>/usage</code> 无 headless 对应物。账户额度唯一路径仍是逆向 <code>api2.cursor.sh</code>。</li>
+    </ul>
+
+    <h3>Codex — 无 command 型 statusline，但有六家中唯一的官方事件推送</h3>
+    <ul>
+      <li><code>tui.status_line</code> 只是<strong>内置项字符串数组</strong>（29 个枚举值），自定义 command 的 feature request（<a href="https://github.com/openai/codex/issues/17827">#17827</a>、<a href="https://github.com/openai/codex/issues/20244">#20244</a>）至今 open。额度内置项 <code>five-hour-limit</code> / <code>weekly-limit</code> 只渲染 <code>5h 84% left</code> 式百分比，<strong>无重置时间</strong>（<a href="https://github.com/openai/codex/issues/24080">#24080</a> open）。</li>
+      <li>内置额度项的轮询器是自适应节流：&lt;75% 每 60s → ≥99% 每 5s。</li>
+      <li>真正的官方通道是 <code>codex app-server</code>：<code>account/rateLimits/read</code> 拉取 + <strong><code>account/rateLimits/updated</code> 事件推送</strong>（额度变化主动通知，含 <code>usedPercent</code>、<code>resetsAt</code>、credits、planType）——数据丰富度超过 Claude statusline，是六家中唯一的官方推送流。</li>
+    </ul>
+
+    <div class="callout">
+      <span class="tag">对 OhMyC 的结论</span>
+      能「零逆向拿额度」的官方通道共 3 条：Claude statusline、agy statusline、Codex app-server 推送。Kimi / Grok / Cursor 的 statusline 机制存在但不含额度——可作为触发器或展示层，额度数据仍需走第 02/04/05 章的接口（Grok 可优先用官方 ACP <code>x.ai/billing</code>）。Cursor 是唯一既无额度 statusline 字段、也无任何官方额度出口的。
+    </div>
+    <div class="callout">
+      <span class="tag">来源</span>
+      <a href="https://developers.openai.com/codex/config-reference">Codex Config Reference</a> · <a href="https://developers.openai.com/codex/app-server">Codex app-server</a> · <a href="https://docs.x.ai/build/features/status-line">Grok Status Line 文档</a> · <a href="https://raw.githubusercontent.com/xai-org/grok-build/HEAD/crates/codegen/xai-grok-shell/src/extensions/billing.rs">grok-build billing.rs</a> · <a href="https://cursor.com/docs/cli/changelog">Cursor CLI Changelog</a> · <a href="https://forum.cursor.com/t/cursor-cli-custom-statusline-replaces-native-footer-and-cannot-preserve-auto-review-state/166364">Cursor 官方论坛确认</a> · Kimi 条目为本机二进制实证
+    </div>
+  </section>
+
+  <!-- ══════════ Footer ══════════ -->
+  <footer id="sources">
+    <p>调研方法：Kimi Code 取自官方文档；其余五家由并行调研代理完成，优先官方文档与 changelog，辅以社区逆向工具（CodexBar、aiquokka、agy-quota、cursor-pulse、claude-usage、Claude-Code-Usage-Monitor 等）交叉佐证。所有未公开端点均无版本契约，接入时需容忍 schema 漂移并控制轮询频率。</p>
+    <p class="sig">OhMyC Research · Generated 2026-09-26 · Monitor theme per DESIGN.md</p>
+  </footer>
+
+</div>
+</body>
+</html>
