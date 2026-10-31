@@ -62,11 +62,20 @@ impl QuotaRegistry {
     /// `QuotaProvider::ALL` order. Individual failures (including panics)
     /// never affect other providers. Concurrency keeps a slow provider (10s
     /// timeout each, plus Kimi's 401 retry) from delaying the whole cycle.
-    pub fn fetch_all(&self) -> Vec<UsageSnapshot> {
+    /// Providers for which `enabled` returns false get a `Disabled` snapshot
+    /// without any network or credential I/O.
+    pub fn fetch_all(&self, enabled: &(dyn Fn(QuotaProvider) -> bool + Sync)) -> Vec<UsageSnapshot> {
         std::thread::scope(|scope| {
             let handles: Vec<_> = QuotaProvider::ALL
                 .iter()
-                .map(|provider| scope.spawn(move || self.fetch(*provider)))
+                .map(|provider| {
+                    scope.spawn(move || {
+                        if !enabled(*provider) {
+                            return UsageSnapshot::with_status(*provider, SnapshotStatus::Disabled);
+                        }
+                        self.fetch(*provider)
+                    })
+                })
                 .collect();
             handles
                 .into_iter()
@@ -163,7 +172,7 @@ mod tests {
     fn fetch_all_returns_eight_snapshots_in_fixed_order() {
         let _lock = ENV_LOCK.lock().unwrap();
         let _homes = empty_homes();
-        let snapshots = QuotaRegistry::new().fetch_all();
+        let snapshots = QuotaRegistry::new().fetch_all(&|_| true);
         assert_eq!(snapshots.len(), 8);
         let order: Vec<QuotaProvider> = snapshots.iter().map(|s| s.provider).collect();
         assert_eq!(
@@ -180,13 +189,43 @@ mod tests {
             ]
         );
         for snapshot in &snapshots {
+            assert!(
+                matches!(snapshot.status, SnapshotStatus::NotLoggedIn),
+                "expected NotLoggedIn for {:?}, got {:?}",
+                snapshot.provider,
+                snapshot.status
+            );
+            assert!(snapshot.windows.is_empty());
+            assert!(snapshot.meters.is_empty());
+        }
+    }
+
+    #[test]
+    fn disabled_providers_return_disabled_without_fetch() {
+        let _lock = ENV_LOCK.lock().unwrap();
+        let _homes = empty_homes();
+        let snapshots = QuotaRegistry::new().fetch_all(&|_| false);
+        assert_eq!(snapshots.len(), 8);
+        for snapshot in &snapshots {
+            assert!(
+                matches!(snapshot.status, SnapshotStatus::Disabled),
+                "expected Disabled for {:?}, got {:?}",
+                snapshot.provider,
+                snapshot.status
+            );
+        }
+        let order: Vec<QuotaProvider> = snapshots.iter().map(|s| s.provider).collect();
+        assert_eq!(order, QuotaProvider::ALL.to_vec());
+    }
+
+    #[test]
+    fn per_provider_disable_only_affects_that_provider() {
+        let _lock = ENV_LOCK.lock().unwrap();
+        let _homes = empty_homes();
+        let snapshots = QuotaRegistry::new().fetch_all(&|p| p != QuotaProvider::Claude);
+        for snapshot in &snapshots {
             if snapshot.provider == QuotaProvider::Claude {
-                // Opt-in by default: disabled Claude reports Unsupported and
-                // never touches the network or the Keychain.
-                let SnapshotStatus::Unsupported { message } = &snapshot.status else {
-                    panic!("expected Unsupported for Claude, got {:?}", snapshot.status);
-                };
-                assert!(message.as_deref().unwrap_or("").contains("OHMYC_QUOTA_CLAUDE_ENABLED"));
+                assert!(matches!(snapshot.status, SnapshotStatus::Disabled));
             } else {
                 assert!(
                     matches!(snapshot.status, SnapshotStatus::NotLoggedIn),
@@ -195,8 +234,6 @@ mod tests {
                     snapshot.status
                 );
             }
-            assert!(snapshot.windows.is_empty());
-            assert!(snapshot.meters.is_empty());
         }
     }
 

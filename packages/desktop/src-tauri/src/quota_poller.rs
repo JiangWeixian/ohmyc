@@ -139,7 +139,11 @@ pub fn refresh_now(app: &AppHandle) -> Vec<UsageSnapshot> {
             cached
         }
     };
-    let snapshots = merge_stale(&previous, QuotaRegistry::new().fetch_all());
+    let settings = ohmyc_core::settings::resolve();
+    let snapshots = merge_stale(
+        &previous,
+        QuotaRegistry::new().fetch_all(&|p| settings.quota_enabled.value && settings.provider_enabled(p)),
+    );
     cache.set(snapshots.clone());
     persist_cache(&snapshots);
     let _ = app.emit(QUOTA_CHANGED_EVENT, &snapshots);
@@ -150,6 +154,7 @@ fn status_label(snapshot: &UsageSnapshot) -> &'static str {
     match &snapshot.status {
         SnapshotStatus::Ok => "ok",
         SnapshotStatus::NotLoggedIn => "not-logged-in",
+        SnapshotStatus::Disabled => "disabled",
         SnapshotStatus::TokenExpired => "token-expired",
         SnapshotStatus::RateLimited { .. } => "rate-limited",
         SnapshotStatus::Unsupported { .. } => "unsupported",
@@ -237,9 +242,27 @@ pub fn spawn_poller(app: &AppHandle) {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use ohmyc_core::quota::{QuotaProvider, UsageWindow, WindowKind};
     use std::sync::Mutex;
 
     static ENV_LOCK: Mutex<()> = Mutex::new(());
+
+    #[test]
+    fn disabled_never_merges_stale() {
+        let mut previous = vec![UsageSnapshot::with_status(QuotaProvider::Claude, SnapshotStatus::Ok)];
+        previous[0].windows.push(UsageWindow {
+            kind: WindowKind::Session,
+            label: "5h".to_string(),
+            used_percent: Some(42.0),
+            resets_at: None,
+            window_seconds: Some(18000),
+            model: None,
+        });
+        let next = vec![UsageSnapshot::with_status(QuotaProvider::Claude, SnapshotStatus::Disabled)];
+        let merged = merge_stale(&previous, next);
+        assert!(merged[0].windows.is_empty());
+        assert!(matches!(merged[0].status, SnapshotStatus::Disabled));
+    }
 
     #[test]
     fn poll_interval_defaults_to_five_minutes() {
