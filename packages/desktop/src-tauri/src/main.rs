@@ -7,7 +7,7 @@ use tauri::menu::{Menu, MenuItem};
 use tauri::tray::{MouseButton, MouseButtonState, TrayIconBuilder, TrayIconEvent};
 #[cfg(not(debug_assertions))]
 use tauri::WindowEvent;
-use tauri::{Manager, PhysicalSize};
+use tauri::{Emitter, Manager, PhysicalSize};
 
 struct PopoverGuard(Mutex<PopoverState>);
 
@@ -16,6 +16,7 @@ fn main() {
         .manage(PopoverGuard(Mutex::new(PopoverState::Hidden)))
         .invoke_handler(tauri::generate_handler![
             hide_popover,
+            set_popover_height,
             ohmyc_desktop_lib::windows::open_main_window,
             ohmyc_desktop_lib::api::timeline::timeline_heatmap,
             ohmyc_desktop_lib::api::timeline::timeline_events,
@@ -60,6 +61,8 @@ fn main() {
             ohmyc_desktop_lib::api::plugins::plugins_get,
             ohmyc_desktop_lib::api::plugins::marketplaces_list,
             ohmyc_desktop_lib::api::plugins::marketplaces_get,
+            ohmyc_desktop_lib::api::quota::quota_list,
+            ohmyc_desktop_lib::api::quota::quota_refresh,
         ])
         .setup(|app| {
             #[cfg(target_os = "macos")]
@@ -114,6 +117,17 @@ fn main() {
                             TrayClick::Left => {
                                 let pos = rect.position.to_physical::<i32>(1.0);
                                 let sz = rect.size.to_physical::<u32>(1.0);
+                                ohmyc_desktop_lib::quota_poller::log_line(
+                                    "ui-events.log",
+                                    &format!(
+                                        "{} tray click Left rect={},{} {}x{}",
+                                        chrono::Local::now().to_rfc3339(),
+                                        pos.x,
+                                        pos.y,
+                                        sz.width,
+                                        sz.height
+                                    ),
+                                );
                                 toggle_popover(
                                     app,
                                     TrayRect {
@@ -192,6 +206,11 @@ fn main() {
             // Filesystem watcher → frontend "fs:changed" events.
             ohmyc_desktop_lib::events::spawn_watcher(&app.handle().clone());
 
+            // Quota poller: shared cache + `quota:changed` events every 5 min
+            // (OHMYC_QUOTA_POLL_SECS overrides).
+            app.manage(ohmyc_desktop_lib::quota_poller::QuotaCache::default());
+            ohmyc_desktop_lib::quota_poller::spawn_poller(&app.handle().clone());
+
             Ok(())
         })
         .run(tauri::generate_context!())
@@ -207,9 +226,65 @@ fn hide_popover(app: tauri::AppHandle) {
     }
 }
 
+/// Resize the popover window to fit its web content. The window is declared
+/// compact (367×340) and grows/shrinks as sections (e.g. Quota) appear or
+/// disappear; the web layer reports its rendered height on every change.
+#[tauri::command]
+fn set_popover_height(app: tauri::AppHandle, height: f64) {
+    let Some(win) = app.get_webview_window("popover") else {
+        return;
+    };
+    // 48px margin below the menu bar keeps the popover off the screen edge.
+    // The reported height is CSS px, so compare against the monitor's logical
+    // height (physical pixels would double the cap on Retina displays).
+    let scale = win.scale_factor().unwrap_or(1.0);
+    let max = win
+        .current_monitor()
+        .ok()
+        .flatten()
+        .map(|m| m.size().to_logical::<f64>(scale).height - 48.0)
+        .unwrap_or(800.0);
+    let clamped = ohmyc_desktop_lib::popover::clamp_popover_height(height, max);
+    let current = win
+        .inner_size()
+        .unwrap_or(PhysicalSize::new(367, 340))
+        .to_logical::<f64>(scale);
+    let _ = win.set_size(tauri::Size::Logical(tauri::LogicalSize::new(current.width, clamped)));
+}
+
+/// Push the quota cache to a window — now, and twice more on a short delay.
+/// A webview that was suspended while hidden may still be resuming when
+/// `show()` returns, and a single immediate emit can land before its event
+/// loop is ready (observed: popover showing the app-start snapshot until the
+/// user clicked several more times).
+fn push_quota_cache(app: &tauri::AppHandle, window: &tauri::WebviewWindow) {
+    let push = |app: &tauri::AppHandle, window: &tauri::WebviewWindow| {
+        let snapshots = app.state::<ohmyc_desktop_lib::quota_poller::QuotaCache>().get();
+        if !snapshots.is_empty() {
+            let _ = window.emit(ohmyc_desktop_lib::quota_poller::QUOTA_CHANGED_EVENT, snapshots);
+        }
+    };
+    push(app, window);
+    let app = app.clone();
+    let window = window.clone();
+    std::thread::spawn(move || {
+        for delay in [400, 1500] {
+            std::thread::sleep(std::time::Duration::from_millis(delay));
+            push(&app, &window);
+        }
+    });
+}
+
 fn toggle_popover(app: &tauri::AppHandle, tray: TrayRect) {
     let guard = app.state::<PopoverGuard>();
     let Some(window) = app.get_webview_window("popover") else {
+        ohmyc_desktop_lib::quota_poller::log_line(
+            "ui-events.log",
+            &format!(
+                "{} toggle_popover: popover window GONE",
+                chrono::Local::now().to_rfc3339()
+            ),
+        );
         return;
     };
 
@@ -241,9 +316,29 @@ fn toggle_popover(app: &tauri::AppHandle, tray: TrayRect) {
                 });
 
             let pos = position_under_tray(tray, size, monitor);
+            ohmyc_desktop_lib::quota_poller::log_line(
+                "ui-events.log",
+                &format!(
+                    "{} toggle_popover: show at {},{} win {}x{} monitor {}x{}@{},{}",
+                    chrono::Local::now().to_rfc3339(),
+                    pos.x,
+                    pos.y,
+                    size.width,
+                    size.height,
+                    monitor.width,
+                    monitor.height,
+                    monitor.x,
+                    monitor.y
+                ),
+            );
             let _ = window.set_position(pos);
             let _ = window.show();
             let _ = window.set_focus();
+            // The hidden webview's JS is suspended, so quota:changed events
+            // broadcast while it was hidden never ran there — and the popover
+            // never takes OS focus, so no focus-refetch either. Push the
+            // current cache on every show so the section is never stale.
+            push_quota_cache(app, &window);
             *guard.0.lock().unwrap() = PopoverState::Visible;
         }
         PopoverState::Visible => {

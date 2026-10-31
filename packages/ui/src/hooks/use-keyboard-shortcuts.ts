@@ -11,6 +11,7 @@ import { useNavigate } from 'react-router-dom'
  * - `g` then `c` -> Commands
  * - `g` then `p` -> Plugins
  * - `g` then `t` -> Timeline
+ * - `g` then `q` -> Quota
  *
  * Silently ignored when an input, textarea, or contenteditable is focused.
  */
@@ -61,6 +62,7 @@ export function useGlobalKeyboardShortcuts() {
           c: '/explore/commands',
           p: '/explore/plugins',
           t: '/explore/timeline',
+          q: '/explore/quota',
         }
 
         const route = routes[e.key]

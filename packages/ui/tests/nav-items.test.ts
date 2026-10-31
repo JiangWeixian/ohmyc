@@ -7,9 +7,9 @@ import {
 import { NAV_ITEMS, type NavItem } from '@/components/nav-items'
 
 describe('NAV_ITEMS', () => {
-  it('exports exactly the six first-class explorer destinations', () => {
+  it('exports exactly the seven first-class explorer destinations', () => {
     const ids = NAV_ITEMS.map(item => item.id)
-    expect(ids).toEqual(['monitor', 'timeline', 'agents', 'commands', 'skills', 'plugins'])
+    expect(ids).toEqual(['monitor', 'timeline', 'quota', 'agents', 'commands', 'skills', 'plugins'])
   })
 
   it('maps each id to a /explore/<id> path', () => {
