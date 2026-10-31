@@ -1,20 +1,17 @@
-//! Tauri command wrappers for ohmyc-core::settings.
-//!
-//! `project` parameter is accepted for web-side compatibility but
-//! IGNORED on desktop (slice 4 scope: global-only). Desktop has no
-//! project context — adding it would require a working-dir abstraction
-//! that's out of scope.
+//! Tauri command wrappers for OhMyC app settings (`settings.get` / `settings.set`).
+//! Event broadcast and side effects (poller wake, tray visibility) are wired
+//! in the settings-sync task.
 
 use ohmyc_core::error::ApiError;
-use ohmyc_core::settings::{self, SettingsRead, SettingsWrite};
-use serde_json::Value;
+use ohmyc_core::settings::{self, ResolvedSettings, SettingsPatch};
 
 #[tauri::command]
-pub fn settings_get(_project: Option<String>) -> Result<SettingsRead, ApiError> {
-    settings::read()
+pub fn settings_get() -> Result<ResolvedSettings, ApiError> {
+    Ok(settings::resolve())
 }
 
 #[tauri::command]
-pub fn settings_set(content: Value, _project: Option<String>) -> Result<SettingsWrite, ApiError> {
-    settings::write(&content)
+pub fn settings_set(patch: SettingsPatch) -> Result<ResolvedSettings, ApiError> {
+    settings::write_patch(&patch)?;
+    Ok(settings::resolve())
 }
