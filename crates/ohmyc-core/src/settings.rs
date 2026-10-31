@@ -114,11 +114,10 @@ fn write_patch_at(path: &Path, patch: &SettingsPatch) -> Result<(), ApiError> {
     let mut file = read_file_at(path);
     merge(&mut file, patch);
     file.version = schema_version();
-    let raw = serde_json::to_string_pretty(&file)
-        .map_err(|e| ApiError::Internal(format!("serialize settings.json: {e}")))?;
+    let raw =
+        serde_json::to_string_pretty(&file).map_err(|e| ApiError::Internal(format!("serialize settings.json: {e}")))?;
     if let Some(parent) = path.parent() {
-        std::fs::create_dir_all(parent)
-            .map_err(|e| ApiError::Io(format!("create {}: {e}", parent.display())))?;
+        std::fs::create_dir_all(parent).map_err(|e| ApiError::Io(format!("create {}: {e}", parent.display())))?;
     }
     let tmp = path.with_extension("json.tmp");
     std::fs::write(&tmp, raw).map_err(|e| ApiError::Io(format!("write {}: {e}", tmp.display())))?;
@@ -162,7 +161,9 @@ fn merge(file: &mut AppSettingsFile, patch: &SettingsPatch) {
 }
 
 pub fn resolve() -> ResolvedSettings {
-    resolve_with(&read_file_at(&settings_path().unwrap_or_default()), &|name| std::env::var(name).ok())
+    resolve_with(&read_file_at(&settings_path().unwrap_or_default()), &|name| {
+        std::env::var(name).ok()
+    })
 }
 
 fn pick_bool(
@@ -172,11 +173,23 @@ fn pick_bool(
     default: bool,
 ) -> ResolvedSetting<bool> {
     if let Some(value) = env(env_name).and_then(|v| parse_env_bool(&v)) {
-        return ResolvedSetting { value, source: SettingSource::Env, env_var: Some(env_name) };
+        return ResolvedSetting {
+            value,
+            source: SettingSource::Env,
+            env_var: Some(env_name),
+        };
     }
     match file_value {
-        Some(value) => ResolvedSetting { value, source: SettingSource::Settings, env_var: None },
-        None => ResolvedSetting { value: default, source: SettingSource::Default, env_var: None },
+        Some(value) => ResolvedSetting {
+            value,
+            source: SettingSource::Settings,
+            env_var: None,
+        },
+        None => ResolvedSetting {
+            value: default,
+            source: SettingSource::Default,
+            env_var: None,
+        },
     }
 }
 
@@ -187,11 +200,23 @@ fn pick_string(
     default: &str,
 ) -> ResolvedSetting<String> {
     if let Some(value) = env(env_name).map(|v| v.trim().to_string()).filter(|v| !v.is_empty()) {
-        return ResolvedSetting { value, source: SettingSource::Env, env_var: Some(env_name) };
+        return ResolvedSetting {
+            value,
+            source: SettingSource::Env,
+            env_var: Some(env_name),
+        };
     }
     match file_value {
-        Some(value) => ResolvedSetting { value, source: SettingSource::Settings, env_var: None },
-        None => ResolvedSetting { value: default.to_string(), source: SettingSource::Default, env_var: None },
+        Some(value) => ResolvedSetting {
+            value,
+            source: SettingSource::Settings,
+            env_var: None,
+        },
+        None => ResolvedSetting {
+            value: default.to_string(),
+            source: SettingSource::Default,
+            env_var: None,
+        },
     }
 }
 
@@ -223,10 +248,22 @@ pub fn resolve_with(file: &AppSettingsFile, env: &dyn Fn(&str) -> Option<String>
         .and_then(|v| v.trim().parse::<u64>().ok())
         .filter(|secs| *secs > 0)
     {
-        Some(value) => ResolvedSetting { value, source: SettingSource::Env, env_var: Some("OHMYC_QUOTA_POLL_SECS") },
+        Some(value) => ResolvedSetting {
+            value,
+            source: SettingSource::Env,
+            env_var: Some("OHMYC_QUOTA_POLL_SECS"),
+        },
         None => match quota.poll_secs.filter(|secs| *secs > 0) {
-            Some(value) => ResolvedSetting { value, source: SettingSource::Settings, env_var: None },
-            None => ResolvedSetting { value: DEFAULT_POLL_SECS, source: SettingSource::Default, env_var: None },
+            Some(value) => ResolvedSetting {
+                value,
+                source: SettingSource::Settings,
+                env_var: None,
+            },
+            None => ResolvedSetting {
+                value: DEFAULT_POLL_SECS,
+                source: SettingSource::Default,
+                env_var: None,
+            },
         },
     };
     let provider_files = quota.providers.unwrap_or_default();
@@ -291,7 +328,10 @@ mod tests {
         assert_eq!(r.theme_id.value, "phosphor");
         assert_eq!(r.theme_intensity.value, "expressive");
         assert!(matches!(r.quota_enabled.source, SettingSource::Default));
-        assert!(matches!(r.providers[&QuotaProvider::Claude].source, SettingSource::Default));
+        assert!(matches!(
+            r.providers[&QuotaProvider::Claude].source,
+            SettingSource::Default
+        ));
         assert!(matches!(r.theme_id.source, SettingSource::Default));
     }
 
@@ -299,7 +339,10 @@ mod tests {
     fn file_overrides_default() {
         let r = resolve_with(&file_with_claude(true), &no_env);
         assert!(r.providers[&QuotaProvider::Claude].value);
-        assert!(matches!(r.providers[&QuotaProvider::Claude].source, SettingSource::Settings));
+        assert!(matches!(
+            r.providers[&QuotaProvider::Claude].source,
+            SettingSource::Settings
+        ));
     }
 
     #[test]
@@ -308,7 +351,10 @@ mod tests {
         let r = resolve_with(&file_with_claude(true), &env);
         assert!(!r.providers[&QuotaProvider::Claude].value);
         assert!(matches!(r.providers[&QuotaProvider::Claude].source, SettingSource::Env));
-        assert_eq!(r.providers[&QuotaProvider::Claude].env_var, Some("OHMYC_QUOTA_CLAUDE_ENABLED"));
+        assert_eq!(
+            r.providers[&QuotaProvider::Claude].env_var,
+            Some("OHMYC_QUOTA_CLAUDE_ENABLED")
+        );
     }
 
     #[test]
@@ -322,9 +368,17 @@ mod tests {
         assert_eq!(r.quota_poll_secs.value, 300);
         assert!(matches!(r.quota_poll_secs.source, SettingSource::Default));
         assert!(r.providers[&QuotaProvider::Codex].value);
-        assert!(matches!(r.providers[&QuotaProvider::Codex].source, SettingSource::Default));
+        assert!(matches!(
+            r.providers[&QuotaProvider::Codex].source,
+            SettingSource::Default
+        ));
         let env_abc = |name: &str| (name == "OHMYC_QUOTA_POLL_SECS").then(|| "abc".to_string());
-        assert_eq!(resolve_with(&AppSettingsFile::default(), &env_abc).quota_poll_secs.value, 300);
+        assert_eq!(
+            resolve_with(&AppSettingsFile::default(), &env_abc)
+                .quota_poll_secs
+                .value,
+            300
+        );
     }
 
     #[test]

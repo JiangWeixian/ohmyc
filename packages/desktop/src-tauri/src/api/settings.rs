@@ -47,7 +47,9 @@ fn validate_patch(patch: &SettingsPatch) -> Result<(), ApiError> {
     }
     if let Some(intensity) = patch.theme.as_ref().and_then(|t| t.intensity.as_deref()) {
         if !matches!(intensity, "calm" | "expressive") {
-            return Err(ApiError::Validation("theme.intensity must be calm or expressive".to_string()));
+            return Err(ApiError::Validation(
+                "theme.intensity must be calm or expressive".to_string(),
+            ));
         }
     }
     Ok(())

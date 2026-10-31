@@ -256,7 +256,10 @@ mod tests {
             window_seconds: Some(18000),
             model: None,
         });
-        let next = vec![UsageSnapshot::with_status(QuotaProvider::Claude, SnapshotStatus::Disabled)];
+        let next = vec![UsageSnapshot::with_status(
+            QuotaProvider::Claude,
+            SnapshotStatus::Disabled,
+        )];
         let merged = merge_stale(&previous, next);
         assert!(merged[0].windows.is_empty());
         assert!(matches!(merged[0].status, SnapshotStatus::Disabled));
