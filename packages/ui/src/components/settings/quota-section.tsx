@@ -1,7 +1,11 @@
 // Quota settings: master switch (text pill) + the eight provider cards.
 // A card toggles with a click anywhere; the top-right check marks "polled".
 // Env-overridden controls are disabled and name the variable instead.
-import { Check } from 'lucide-react'
+import {
+  Check,
+  Zap,
+  ZapOff,
+} from 'lucide-react'
 
 import { ProviderGlyph } from './provider-glyph'
 import { formatUpdatedAgoShort, PROVIDER_META } from '@/components/quota/format'
@@ -131,13 +135,12 @@ export function QuotaSection() {
           aria-pressed={master.value}
           aria-label="Enable quota polling"
           className={cn(
-            'inline-flex items-center gap-1.5 rounded-full border px-3 py-1 font-mono-theme text-[11px] tracking-[0.02em] transition-[color,border-color] duration-150',
+            'inline-flex size-7 items-center justify-center rounded-md border transition-[color,border-color] duration-150',
             master.value ? 'border-[rgba(255,255,255,0.18)] text-[var(--text-primary)]' : 'border-[var(--border-subtle)] text-[var(--text-tertiary)]',
             master.source === 'env' && 'cursor-not-allowed opacity-50',
           )}
         >
-          <span aria-hidden="true">{master.value ? '●' : '○'}</span>
-          {master.value ? 'on' : 'off'}
+          {master.value ? <Zap size={15} /> : <ZapOff size={15} />}
         </button>
       </div>
       <EnvNote setting={master} />
