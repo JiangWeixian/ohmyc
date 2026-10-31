@@ -149,6 +149,12 @@ fn main() {
             #[cfg(target_os = "macos")]
             ohmyc_desktop_lib::tray_stats::macos::start(_tray)?;
 
+            // Apply the persisted tray visibility (env > settings file > default).
+            ohmyc_desktop_lib::api::settings::apply_menubar_visibility(
+                app.handle(),
+                ohmyc_core::settings::resolve().menubar_icon_visible.value,
+            );
+
             let popover_window = app.get_webview_window("popover").unwrap();
 
             // The web layer paints the popover chrome. Avoid macOS vibrancy here:
