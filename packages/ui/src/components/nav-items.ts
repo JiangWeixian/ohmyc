@@ -8,13 +8,14 @@ import {
   Bot,
   Code2,
   Gauge,
+  Settings,
   Sparkles,
   TerminalSquare,
 } from 'lucide-react'
 
 import type { LucideIcon } from 'lucide-react'
 
-export type NavItemId = 'agents' | 'commands' | 'monitor' | 'plugins' | 'quota' | 'skills' | 'timeline'
+export type NavItemId = 'agents' | 'commands' | 'monitor' | 'plugins' | 'quota' | 'settings' | 'skills' | 'timeline'
 
 export interface NavItem {
   id: NavItemId
@@ -33,4 +34,5 @@ export const NAV_ITEMS: NavItem[] = [
   { id: 'commands', path: '/explore/commands', label: 'Commands', icon: TerminalSquare, keycap: 'C' },
   { id: 'skills', path: '/explore/skills', label: 'Skills', icon: Sparkles, keycap: 'S' },
   { id: 'plugins', path: '/explore/plugins', label: 'Plugins', icon: Blocks, keycap: 'P' },
+  { id: 'settings', path: '/explore/settings', label: 'Settings', icon: Settings, keycap: 'E' },
 ]
