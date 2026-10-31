@@ -52,6 +52,18 @@ export const MasterOff: Story = {
     const master = await canvas.findByRole('button', { name: /enable quota polling/i })
     master.click()
     await waitFor(() => expect(canvas.getByTestId('provider-grid')).toHaveClass('all-off'))
+    // Keyboard users can't toggle either: cards are natively disabled.
+    expect(canvas.getByRole('button', { name: /^Claude/ })).toBeDisabled()
+  },
+}
+
+/** No settings backend (e.g. plain web): only the theme cards render. */
+export const NoBackend: Story = {
+  decorators: [withMockTransport(() => {})],
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement)
+    await canvas.findByText('Phosphor Mono')
+    expect(canvas.queryByText('Codex')).not.toBeInTheDocument()
   },
 }
 

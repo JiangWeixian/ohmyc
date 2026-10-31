@@ -149,6 +149,11 @@ export function quotaSnapshotsLoggedOut(): UsageSnapshot[] {
   }))
 }
 
+/** Every provider switched off in settings — polling-off cards, no bars. */
+export function quotaSnapshotsDisabled(): UsageSnapshot[] {
+  return quotaSnapshotsLoggedOut().map(snapshot => ({ ...snapshot, status: 'disabled' }))
+}
+
 /**
  * The stale-merge shape (quota_poller::merge_stale): Kimi's token lapsed 37
  * minutes after the last good fetch — the failure badge stays, the bars and

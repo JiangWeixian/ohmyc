@@ -62,7 +62,10 @@ export function registerMockSettings(): void {
   let state = defaultResolvedSettings()
   setMockHandler('settings.get', async () => state)
   setMockHandler('settings.set', async (args) => {
-    state = mergeSettingsPatch(state, args as SettingsPatch)
+    // The Tauri command takes a named `patch` argument; the wire shape is
+    // `{ patch: SettingsPatch }`, mirroring invoke('settings_set', { patch }).
+    const { patch } = args as { patch: SettingsPatch }
+    state = mergeSettingsPatch(state, patch)
     return state
   })
 }

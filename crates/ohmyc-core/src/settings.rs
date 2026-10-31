@@ -224,7 +224,7 @@ pub fn resolve_with(file: &AppSettingsFile, env: &dyn Fn(&str) -> Option<String>
         .filter(|secs| *secs > 0)
     {
         Some(value) => ResolvedSetting { value, source: SettingSource::Env, env_var: Some("OHMYC_QUOTA_POLL_SECS") },
-        None => match quota.poll_secs {
+        None => match quota.poll_secs.filter(|secs| *secs > 0) {
             Some(value) => ResolvedSetting { value, source: SettingSource::Settings, env_var: None },
             None => ResolvedSetting { value: DEFAULT_POLL_SECS, source: SettingSource::Default, env_var: None },
         },
@@ -333,6 +333,20 @@ mod tests {
         let r = resolve_with(&AppSettingsFile::default(), &env);
         assert!(!r.providers[&QuotaProvider::Claude].value);
         assert!(matches!(r.providers[&QuotaProvider::Claude].source, SettingSource::Env));
+    }
+
+    #[test]
+    fn file_poll_secs_zero_falls_back_to_default() {
+        let file = AppSettingsFile {
+            quota: Some(QuotaSettings {
+                poll_secs: Some(0),
+                ..QuotaSettings::default()
+            }),
+            ..AppSettingsFile::default()
+        };
+        let r = resolve_with(&file, &no_env);
+        assert_eq!(r.quota_poll_secs.value, 300);
+        assert!(matches!(r.quota_poll_secs.source, SettingSource::Default));
     }
 
     #[test]

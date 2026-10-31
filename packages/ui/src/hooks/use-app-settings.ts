@@ -104,7 +104,7 @@ export function useAppSettings() {
 export function useUpdateSettings() {
   const qc = useQueryClient()
   return async (patch: SettingsPatch) => {
-    const resolved = await request<ResolvedSettings>('settings.set', patch)
+    const resolved = await request<ResolvedSettings>('settings.set', { patch })
     qc.setQueryData(SETTINGS_QUERY_KEY, resolved)
     return resolved
   }

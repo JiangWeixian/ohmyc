@@ -59,10 +59,11 @@ export function EnvNote({ setting }: { setting: ResolvedSetting<unknown> }) {
   )
 }
 
-function ProviderCard({ id, setting, snapshot, onToggle }: {
+function ProviderCard({ id, setting, snapshot, masterOff, onToggle }: {
   id: QuotaProviderId
   setting: ResolvedSetting<boolean>
   snapshot: UsageSnapshot | undefined
+  masterOff: boolean
   onToggle: () => void
 }) {
   const selected = setting.value
@@ -71,7 +72,7 @@ function ProviderCard({ id, setting, snapshot, onToggle }: {
   return (
     <button
       type="button"
-      disabled={envOverride}
+      disabled={envOverride || masterOff}
       onClick={onToggle}
       aria-pressed={selected}
       className={cn(
@@ -126,7 +127,7 @@ export function QuotaSection() {
         <button
           type="button"
           disabled={master.source === 'env'}
-          onClick={() => update({ quota: { enabled: masterOff } })}
+          onClick={() => update({ quota: { enabled: masterOff } }).catch(() => {})}
           aria-pressed={master.value}
           aria-label="Enable quota polling"
           className={cn(
@@ -150,7 +151,8 @@ export function QuotaSection() {
             id={id}
             setting={settings.providers[id]}
             snapshot={snapshots?.find(s => s.provider === id)}
-            onToggle={() => update({ quota: { providers: { [id]: { enabled: !settings.providers[id].value } } } })}
+            masterOff={masterOff}
+            onToggle={() => update({ quota: { providers: { [id]: { enabled: !settings.providers[id].value } } } }).catch(() => {})}
           />
         ))}
       </div>

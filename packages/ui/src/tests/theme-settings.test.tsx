@@ -62,6 +62,7 @@ describe('theme settings integration', () => {
 
   it('migrates intensity independently of id', async () => {
     localStorage.setItem('ohmyc-theme', JSON.stringify({ theme: 'amber', intensity: 'calm' }))
+    registerMockSettings()
     const resolved = defaultResolvedSettings()
     resolved.themeId = { value: 'monitor', source: 'settings', envVar: null }
     setMockHandler('settings.get', async () => resolved)
@@ -78,6 +79,21 @@ describe('theme settings integration', () => {
     render(<ThemeProvider><Probe /></ThemeProvider>)
     await waitFor(() => expect(screen.getByTestId('theme-source')).toHaveTextContent('env'))
     expect(screen.getByTestId('theme')).toHaveTextContent('phosphor')
+  })
+
+  it('re-reads settings on visibility change after an external update', async () => {
+    localStorage.setItem('ohmyc-theme', JSON.stringify({ theme: 'phosphor', intensity: 'expressive' }))
+    registerMockSettings()
+    render(<ThemeProvider><Probe /></ThemeProvider>)
+    await waitFor(() => expect(screen.getByTestId('theme-source')).toHaveTextContent('settings'))
+    expect(screen.getByTestId('theme')).toHaveTextContent('phosphor')
+    // Another window changed the theme while this webview was suspended —
+    // no settings:changed event reaches it, so visibility must self-heal.
+    const resolved = defaultResolvedSettings()
+    resolved.themeId = { value: 'amber', source: 'settings', envVar: null }
+    setMockHandler('settings.get', async () => resolved)
+    document.dispatchEvent(new Event('visibilitychange'))
+    await waitFor(() => expect(screen.getByTestId('theme')).toHaveTextContent('amber'))
   })
 
   it('localStorage mode unchanged when settings.get fails', async () => {

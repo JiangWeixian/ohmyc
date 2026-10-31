@@ -88,12 +88,13 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     let cancelled = false
 
-    const applyResolved = (resolved: ResolvedSettings, migrate: boolean) => {
+    const applyResolved = async (resolved: ResolvedSettings, migrate: boolean) => {
       const legacy = migrate ? loadPersistedThemeFields() : {}
       // Per-field migration: a field still at its default inherits the old
       // localStorage value (and is written back); file/env values win.
       const migratedTheme = resolved.themeId.source === 'default' ? legacy.theme : undefined
       const migratedIntensity = resolved.themeIntensity.source === 'default' ? legacy.intensity : undefined
+      let writeLanded = false
       if (migratedTheme || migratedIntensity) {
         const patch: SettingsPatch = { theme: {} }
         if (migratedTheme) {
@@ -102,18 +103,26 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
         if (migratedIntensity) {
           patch.theme!.intensity = migratedIntensity
         }
-        void request<ResolvedSettings>('settings.set', patch).catch(() => {})
+        try {
+          await request<ResolvedSettings>('settings.set', { patch })
+          writeLanded = true
+        } catch {
+          writeLanded = false
+        }
       }
       if (cancelled) {
         return
       }
-      const themeValue = migratedTheme ?? resolved.themeId.value
-      const intensityValue = migratedIntensity ?? resolved.themeIntensity.value
+      // Only claim migrated values when the write actually landed — a failed
+      // write must not pretend the migration succeeded.
+      const useMigration = writeLanded
+      const themeValue = useMigration && migratedTheme ? migratedTheme : resolved.themeId.value
+      const intensityValue = useMigration && migratedIntensity ? migratedIntensity : resolved.themeIntensity.value
       setCurrentTheme(isThemeId(themeValue) ? themeValue : DEFAULT_THEME)
       setCurrentIntensity(isIntensity(intensityValue) ? intensityValue : DEFAULT_INTENSITY)
       setSources({
-        theme: migratedTheme ? 'settings' : resolved.themeId.source,
-        intensity: migratedIntensity ? 'settings' : resolved.themeIntensity.source,
+        theme: useMigration && migratedTheme ? 'settings' : resolved.themeId.source,
+        intensity: useMigration && migratedIntensity ? 'settings' : resolved.themeIntensity.source,
       })
       setMode('settings')
     }
@@ -124,14 +133,31 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
         // No settings backend: keep localStorage mode.
       })
 
+    const refetch = () => {
+      if (document.visibilityState !== 'visible') {
+        return
+      }
+      void request<ResolvedSettings>('settings.get', {})
+        .then(resolved => applyResolved(resolved, false))
+        .catch(() => {})
+    }
+    document.addEventListener('visibilitychange', refetch)
+    window.addEventListener('focus', refetch)
+
+    let unlisten: (() => void) | null = null
     void (async () => {
       try {
         const { subscribe } = await import('../lib/tauri-event-bridge')
-        await subscribe<ResolvedSettings>('settings:changed', (payload) => {
+        const off = await subscribe<ResolvedSettings>('settings:changed', (payload) => {
           if (payload && typeof payload === 'object') {
-            applyResolved(payload, false)
+            void applyResolved(payload, false)
           }
         })
+        if (cancelled) {
+          off()
+        } else {
+          unlisten = off
+        }
       } catch {
         // Not running inside Tauri — nothing to subscribe to.
       }
@@ -139,6 +165,11 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
 
     return () => {
       cancelled = true
+      if (unlisten) {
+        unlisten()
+      }
+      document.removeEventListener('visibilitychange', refetch)
+      window.removeEventListener('focus', refetch)
     }
   }, [])
 
@@ -148,7 +179,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     }
     await loadThemeFonts(next)
     if (modeRef.current === 'settings') {
-      const resolved = await request<ResolvedSettings>('settings.set', { theme: { id: next } })
+      const resolved = await request<ResolvedSettings>('settings.set', { patch: { theme: { id: next } } })
       setSources(s => ({ ...s, theme: resolved.themeId.source }))
     } else {
       persistTheme({ theme: next, intensity: currentIntensity })
@@ -161,13 +192,19 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
       return
     }
     if (modeRef.current === 'settings') {
-      void request<ResolvedSettings>('settings.set', { theme: { intensity: next } })
-        .then(resolved => setSources(s => ({ ...s, intensity: resolved.themeIntensity.source })))
-        .catch(() => {})
+      void (async () => {
+        try {
+          const resolved = await request<ResolvedSettings>('settings.set', { patch: { theme: { intensity: next } } })
+          setSources(s => ({ ...s, intensity: resolved.themeIntensity.source }))
+          setCurrentIntensity(next)
+        } catch {
+          // Write failed: keep the previous intensity instead of pretending.
+        }
+      })()
     } else {
       persistTheme({ theme: currentTheme, intensity: next })
+      setCurrentIntensity(next)
     }
-    setCurrentIntensity(next)
   }, [currentTheme])
 
   return (

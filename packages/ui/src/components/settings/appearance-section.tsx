@@ -46,7 +46,7 @@ export function AppearanceSection() {
               type="button"
               data-testid={`theme-card-${t.id}`}
               disabled={themeEnvOverride}
-              onClick={() => setTheme(t.id)}
+              onClick={() => setTheme(t.id).catch(() => {})}
               aria-pressed={selected}
               className={cn(
                 'relative overflow-hidden rounded-[10px] border border-[var(--border-subtle)] bg-[rgba(255,255,255,0.02)] text-left transition-[border-color,background-color] duration-150',
@@ -88,7 +88,7 @@ export function AppearanceSection() {
               disabled={menubar.source === 'env'}
               onCheckedChange={(next) => {
                 if (next) {
-                  void update({ menubar: { iconVisible: true } })
+                  update({ menubar: { iconVisible: true } }).catch(() => {})
                 } else {
                   setConfirming(true)
                 }
@@ -105,9 +105,13 @@ export function AppearanceSection() {
               </p>
               <div className="mt-3.5 flex gap-2.5">
                 <Button
-                  onClick={() => {
-                    void update({ menubar: { iconVisible: false } })
-                    setConfirming(false)
+                  onClick={async () => {
+                    try {
+                      await update({ menubar: { iconVisible: false } })
+                      setConfirming(false)
+                    } catch {
+                      // Write failed: keep the confirmation open and the icon visible.
+                    }
                   }}
                 >
                   Hide icon

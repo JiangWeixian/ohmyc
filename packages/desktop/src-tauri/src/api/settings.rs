@@ -19,10 +19,12 @@ pub fn settings_get() -> Result<ResolvedSettings, ApiError> {
 #[tauri::command]
 pub fn settings_set(app: AppHandle, patch: SettingsPatch) -> Result<ResolvedSettings, ApiError> {
     validate_patch(&patch)?;
+    settings::write_patch(&patch)?;
+    // Side effects only after the write lands: a failed write must leave
+    // native state (and other windows) untouched.
     if let Some(visible) = patch.menubar.as_ref().and_then(|m| m.icon_visible) {
         apply_menubar_visibility(&app, visible);
     }
-    settings::write_patch(&patch)?;
     app.state::<PollerWake>().0.send(()).ok();
     let resolved = settings::resolve();
     let _ = app.emit(SETTINGS_CHANGED_EVENT, &resolved);
