@@ -213,8 +213,25 @@ fn main() {
 
             Ok(())
         })
-        .run(tauri::generate_context!())
-        .expect("error while running tauri application");
+        .build(tauri::generate_context!())
+        .expect("error while building tauri application")
+        .run(|app_handle, event| {
+            #[cfg(target_os = "macos")]
+            {
+                if let tauri::RunEvent::Reopen { .. } = event {
+                    if let Err(e) = ohmyc_desktop_lib::windows::open_main_window(app_handle.clone()) {
+                        ohmyc_desktop_lib::quota_poller::log_line(
+                            "ui-events.log",
+                            &format!("{} reopen main window failed: {e}", chrono::Local::now().to_rfc3339()),
+                        );
+                    }
+                }
+            }
+            #[cfg(not(target_os = "macos"))]
+            {
+                let _ = (app_handle, &event);
+            }
+        });
 }
 
 #[tauri::command]
