@@ -4,7 +4,7 @@
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
 #[serde(rename_all = "lowercase")]
 pub enum QuotaProvider {
     Claude,
@@ -83,6 +83,9 @@ pub enum SnapshotStatus {
     Ok,
     /// No credential found on this machine.
     NotLoggedIn,
+    /// Polling is switched off in settings (master or per-provider); the
+    /// provider is never contacted.
+    Disabled,
     /// Credential exists but is expired; opening the official CLI once
     /// refreshes it (we never refresh tokens ourselves).
     TokenExpired,

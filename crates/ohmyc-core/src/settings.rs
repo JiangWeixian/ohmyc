@@ -1,215 +1,420 @@
-//! Read + atomic-write of `<claude_home>/settings.json`. Mirrors the
-//! TS `/api/settings` GET/POST behavior:
-//! - Read: `{ path, content: Option<Value>, exists }` — content is
-//!   None when the file does not exist; `exists` is false in that case.
-//! - Write: rejects non-object bodies with `ApiError::Validation`,
-//!   creates the parent dir if missing, writes via temp-file + rename
-//!   so a partial write never leaves a corrupt file.
+//! OhMyC app settings — `<ohmyc_home>/settings.json` storage and the
+//! env > file > default resolution layer. Sparse on disk: only fields the
+//! user explicitly set are written; missing fields resolve to defaults.
+//! A missing or corrupt file resolves to all defaults, and the next
+//! `write_patch` rewrites it as valid JSON.
 
-use std::path::PathBuf;
+use std::collections::BTreeMap;
+use std::path::{Path, PathBuf};
 
-use serde::Serialize;
-use serde_json::Value;
+use serde::{Deserialize, Serialize};
 
-use crate::claude_home;
 use crate::error::ApiError;
+use crate::quota::types::QuotaProvider;
 
-#[derive(Debug, Clone, Serialize, PartialEq)]
-pub struct SettingsRead {
-    pub path: String,
-    pub content: Option<Value>,
-    pub exists: bool,
+pub const DEFAULT_POLL_SECS: u64 = 300;
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub enum SettingSource {
+    Env,
+    Settings,
+    Default,
+}
+
+#[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ResolvedSetting<T> {
+    pub value: T,
+    pub source: SettingSource,
+    pub env_var: Option<&'static str>,
+}
+
+#[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ResolvedSettings {
+    pub quota_enabled: ResolvedSetting<bool>,
+    pub quota_poll_secs: ResolvedSetting<u64>,
+    pub providers: BTreeMap<QuotaProvider, ResolvedSetting<bool>>,
+    pub menubar_icon_visible: ResolvedSetting<bool>,
+    pub theme_id: ResolvedSetting<String>,
+    pub theme_intensity: ResolvedSetting<String>,
+}
+
+impl ResolvedSettings {
+    /// Per-provider switch only — the master switch (`quota_enabled`) is
+    /// ANDed in by the poller, not here.
+    pub fn provider_enabled(&self, p: QuotaProvider) -> bool {
+        self.providers.get(&p).is_some_and(|r| r.value)
+    }
+}
+
+#[derive(Debug, Default, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct AppSettingsFile {
+    #[serde(default = "schema_version")]
+    pub version: u32,
+    pub quota: Option<QuotaSettings>,
+    pub menubar: Option<MenubarSettings>,
+    pub theme: Option<ThemeSettings>,
+}
+
+fn schema_version() -> u32 {
+    1
+}
+
+/// A settings patch has the file's shape: every field is optional, and only
+/// the present fields are merged into the existing file.
+pub type SettingsPatch = AppSettingsFile;
+
+#[derive(Debug, Default, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct QuotaSettings {
+    pub enabled: Option<bool>,
+    pub poll_secs: Option<u64>,
+    pub providers: Option<BTreeMap<QuotaProvider, ProviderSettings>>,
+}
+
+#[derive(Debug, Default, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ProviderSettings {
+    pub enabled: Option<bool>,
+}
+
+#[derive(Debug, Default, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct MenubarSettings {
+    pub icon_visible: Option<bool>,
+}
+
+#[derive(Debug, Default, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ThemeSettings {
+    pub id: Option<String>,
+    pub intensity: Option<String>,
 }
 
 pub fn settings_path() -> Result<PathBuf, ApiError> {
-    Ok(claude_home::resolve()?.join("settings.json"))
+    Ok(crate::store::base_dir()?.join("settings.json"))
 }
 
-/// Read settings from the global `<claude_home>/settings.json`. Returns
-/// `exists: false, content: None` when the file is missing — this is
-/// not an error, it's the "no settings yet" state the UI surfaces as
-/// defaults.
-///
-/// Other I/O failures (permission denied, etc.) surface as `ApiError::Io`.
-/// Malformed JSON surfaces as `ApiError::Parse`.
-pub fn read() -> Result<SettingsRead, ApiError> {
+fn read_file_at(path: &Path) -> AppSettingsFile {
+    std::fs::read_to_string(path)
+        .ok()
+        .and_then(|raw| serde_json::from_str(&raw).ok())
+        .unwrap_or_default()
+}
+
+pub fn write_patch(patch: &SettingsPatch) -> Result<(), ApiError> {
     let path = settings_path()?;
-    let path_str = path.to_string_lossy().to_string();
-    match std::fs::read_to_string(&path) {
-        Ok(raw) => {
-            let content: Value =
-                serde_json::from_str(&raw).map_err(|e| ApiError::Parse(format!("settings.json: {e}")))?;
-            Ok(SettingsRead {
-                path: path_str,
-                content: Some(content),
-                exists: true,
-            })
+    write_patch_at(&path, patch)
+}
+
+fn write_patch_at(path: &Path, patch: &SettingsPatch) -> Result<(), ApiError> {
+    let mut file = read_file_at(path);
+    merge(&mut file, patch);
+    file.version = schema_version();
+    let raw =
+        serde_json::to_string_pretty(&file).map_err(|e| ApiError::Internal(format!("serialize settings.json: {e}")))?;
+    if let Some(parent) = path.parent() {
+        std::fs::create_dir_all(parent).map_err(|e| ApiError::Io(format!("create {}: {e}", parent.display())))?;
+    }
+    let tmp = path.with_extension("json.tmp");
+    std::fs::write(&tmp, raw).map_err(|e| ApiError::Io(format!("write {}: {e}", tmp.display())))?;
+    std::fs::rename(&tmp, path).map_err(|e| ApiError::Io(format!("rename to {}: {e}", path.display())))?;
+    Ok(())
+}
+
+fn merge(file: &mut AppSettingsFile, patch: &SettingsPatch) {
+    if let Some(pq) = &patch.quota {
+        let quota = file.quota.get_or_insert_with(QuotaSettings::default);
+        if pq.enabled.is_some() {
+            quota.enabled = pq.enabled;
         }
-        Err(e) if e.kind() == std::io::ErrorKind::NotFound => Ok(SettingsRead {
-            path: path_str,
-            content: None,
-            exists: false,
-        }),
-        Err(e) => Err(ApiError::Io(format!("read {path_str}: {e}"))),
+        if pq.poll_secs.is_some() {
+            quota.poll_secs = pq.poll_secs;
+        }
+        if let Some(providers) = &pq.providers {
+            let target = quota.providers.get_or_insert_with(BTreeMap::new);
+            for (provider, settings) in providers {
+                if settings.enabled.is_some() {
+                    target.insert(*provider, settings.clone());
+                }
+            }
+        }
+    }
+    if let Some(pm) = &patch.menubar {
+        let menubar = file.menubar.get_or_insert_with(MenubarSettings::default);
+        if pm.icon_visible.is_some() {
+            menubar.icon_visible = pm.icon_visible;
+        }
+    }
+    if let Some(pt) = &patch.theme {
+        let theme = file.theme.get_or_insert_with(ThemeSettings::default);
+        if pt.id.is_some() {
+            theme.id = pt.id.clone();
+        }
+        if pt.intensity.is_some() {
+            theme.intensity = pt.intensity.clone();
+        }
     }
 }
 
-#[derive(Debug, Clone, Serialize, PartialEq)]
-pub struct SettingsWrite {
-    pub path: String,
-    pub success: bool,
-}
-
-/// Write `content` to `<claude_home>/settings.json` atomically. Rejects
-/// non-object bodies with `ApiError::Validation` (matches the TS server's
-/// "Content must be an object" check). Creates the parent directory if
-/// missing. Writes via temp-file in the same directory + atomic rename.
-pub fn write(content: &Value) -> Result<SettingsWrite, ApiError> {
-    if !content.is_object() {
-        return Err(ApiError::Validation("content must be a JSON object".to_string()));
-    }
-    let path = settings_path()?;
-    let path_str = path.to_string_lossy().to_string();
-
-    let dir = path
-        .parent()
-        .ok_or_else(|| ApiError::Internal(format!("settings path has no parent: {path_str}")))?;
-    std::fs::create_dir_all(dir).map_err(|e| ApiError::Io(format!("mkdir {}: {e}", dir.display())))?;
-
-    let serialized =
-        serde_json::to_string_pretty(content).map_err(|e| ApiError::Internal(format!("serialize settings: {e}")))?;
-
-    // Atomic replace: write to a sibling temp file, then rename.
-    let mut tmp = tempfile::NamedTempFile::new_in(dir)
-        .map_err(|e| ApiError::Io(format!("create temp in {}: {e}", dir.display())))?;
-    use std::io::Write;
-    tmp.write_all(serialized.as_bytes())
-        .map_err(|e| ApiError::Io(format!("write temp: {e}")))?;
-    tmp.persist(&path)
-        .map_err(|e| ApiError::Io(format!("persist {path_str}: {e}")))?;
-
-    Ok(SettingsWrite {
-        path: path_str,
-        success: true,
+pub fn resolve() -> ResolvedSettings {
+    resolve_with(&read_file_at(&settings_path().unwrap_or_default()), &|name| {
+        std::env::var(name).ok()
     })
+}
+
+fn pick_bool(
+    env: &dyn Fn(&str) -> Option<String>,
+    env_name: &'static str,
+    file_value: Option<bool>,
+    default: bool,
+) -> ResolvedSetting<bool> {
+    if let Some(value) = env(env_name).and_then(|v| parse_env_bool(&v)) {
+        return ResolvedSetting {
+            value,
+            source: SettingSource::Env,
+            env_var: Some(env_name),
+        };
+    }
+    match file_value {
+        Some(value) => ResolvedSetting {
+            value,
+            source: SettingSource::Settings,
+            env_var: None,
+        },
+        None => ResolvedSetting {
+            value: default,
+            source: SettingSource::Default,
+            env_var: None,
+        },
+    }
+}
+
+fn pick_string(
+    env: &dyn Fn(&str) -> Option<String>,
+    env_name: &'static str,
+    file_value: Option<String>,
+    default: &str,
+) -> ResolvedSetting<String> {
+    if let Some(value) = env(env_name).map(|v| v.trim().to_string()).filter(|v| !v.is_empty()) {
+        return ResolvedSetting {
+            value,
+            source: SettingSource::Env,
+            env_var: Some(env_name),
+        };
+    }
+    match file_value {
+        Some(value) => ResolvedSetting {
+            value,
+            source: SettingSource::Settings,
+            env_var: None,
+        },
+        None => ResolvedSetting {
+            value: default.to_string(),
+            source: SettingSource::Default,
+            env_var: None,
+        },
+    }
+}
+
+fn parse_env_bool(value: &str) -> Option<bool> {
+    match value.trim() {
+        "1" | "true" | "yes" | "on" => Some(true),
+        "0" | "false" | "no" | "off" => Some(false),
+        _ => None,
+    }
+}
+
+fn provider_env(p: QuotaProvider) -> &'static str {
+    match p {
+        QuotaProvider::Claude => "OHMYC_QUOTA_CLAUDE_ENABLED",
+        QuotaProvider::Codex => "OHMYC_QUOTA_CODEX_ENABLED",
+        QuotaProvider::Cursor => "OHMYC_QUOTA_CURSOR_ENABLED",
+        QuotaProvider::Grok => "OHMYC_QUOTA_GROK_ENABLED",
+        QuotaProvider::Gemini => "OHMYC_QUOTA_GEMINI_ENABLED",
+        QuotaProvider::Kimi => "OHMYC_QUOTA_KIMI_ENABLED",
+        QuotaProvider::OpenCodeGo => "OHMYC_QUOTA_OPENCODE_ENABLED",
+        QuotaProvider::Glm => "OHMYC_QUOTA_GLM_ENABLED",
+    }
+}
+
+pub fn resolve_with(file: &AppSettingsFile, env: &dyn Fn(&str) -> Option<String>) -> ResolvedSettings {
+    let quota = file.quota.clone().unwrap_or_default();
+    let quota_enabled = pick_bool(env, "OHMYC_QUOTA_ENABLED", quota.enabled, true);
+    let quota_poll_secs = match env("OHMYC_QUOTA_POLL_SECS")
+        .and_then(|v| v.trim().parse::<u64>().ok())
+        .filter(|secs| *secs > 0)
+    {
+        Some(value) => ResolvedSetting {
+            value,
+            source: SettingSource::Env,
+            env_var: Some("OHMYC_QUOTA_POLL_SECS"),
+        },
+        None => match quota.poll_secs.filter(|secs| *secs > 0) {
+            Some(value) => ResolvedSetting {
+                value,
+                source: SettingSource::Settings,
+                env_var: None,
+            },
+            None => ResolvedSetting {
+                value: DEFAULT_POLL_SECS,
+                source: SettingSource::Default,
+                env_var: None,
+            },
+        },
+    };
+    let provider_files = quota.providers.unwrap_or_default();
+    let providers = QuotaProvider::ALL
+        .into_iter()
+        .map(|p| {
+            let file_value = provider_files.get(&p).and_then(|s| s.enabled);
+            let default = !matches!(p, QuotaProvider::Claude);
+            (p, pick_bool(env, provider_env(p), file_value, default))
+        })
+        .collect();
+    let menubar_icon_visible = pick_bool(
+        env,
+        "OHMYC_MENUBAR_ICON_ENABLED",
+        file.menubar.as_ref().and_then(|m| m.icon_visible),
+        true,
+    );
+    let theme = file.theme.clone().unwrap_or_default();
+    let theme_id = pick_string(env, "OHMYC_THEME", theme.id, "phosphor");
+    let theme_intensity = pick_string(env, "OHMYC_THEME_INTENSITY", theme.intensity, "expressive");
+    ResolvedSettings {
+        quota_enabled,
+        quota_poll_secs,
+        providers,
+        menubar_icon_visible,
+        theme_id,
+        theme_intensity,
+    }
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use std::sync::Mutex;
+    use crate::quota::types::QuotaProvider;
+    use std::collections::BTreeMap;
 
-    static ENV_LOCK: Mutex<()> = Mutex::new(());
+    fn no_env(_: &str) -> Option<String> {
+        None
+    }
 
-    fn with_claude_home<F: FnOnce()>(dir: &std::path::Path, f: F) {
-        let _lock = ENV_LOCK.lock().unwrap();
-        let prev = std::env::var("OHMYC_CLAUDE_HOME").ok();
-        std::env::set_var("OHMYC_CLAUDE_HOME", dir);
-        f();
-        match prev {
-            Some(v) => std::env::set_var("OHMYC_CLAUDE_HOME", v),
-            None => std::env::remove_var("OHMYC_CLAUDE_HOME"),
+    fn file_with_claude(enabled: bool) -> AppSettingsFile {
+        let mut providers = BTreeMap::new();
+        providers.insert(QuotaProvider::Claude, ProviderSettings { enabled: Some(enabled) });
+        AppSettingsFile {
+            quota: Some(QuotaSettings {
+                enabled: None,
+                poll_secs: None,
+                providers: Some(providers),
+            }),
+            ..AppSettingsFile::default()
         }
     }
 
     #[test]
-    fn read_returns_exists_false_when_file_missing() {
-        let dir = tempfile::tempdir().unwrap();
-        with_claude_home(dir.path(), || {
-            let r = read().unwrap();
-            assert!(!r.exists);
-            assert!(r.content.is_none());
-            assert!(r.path.ends_with("settings.json"));
-        });
+    fn defaults_when_nothing_set() {
+        let r = resolve_with(&AppSettingsFile::default(), &no_env);
+        assert!(r.quota_enabled.value);
+        assert!(!r.providers[&QuotaProvider::Claude].value);
+        assert!(r.providers[&QuotaProvider::Codex].value);
+        assert_eq!(r.quota_poll_secs.value, 300);
+        assert!(r.menubar_icon_visible.value);
+        assert_eq!(r.theme_id.value, "phosphor");
+        assert_eq!(r.theme_intensity.value, "expressive");
+        assert!(matches!(r.quota_enabled.source, SettingSource::Default));
+        assert!(matches!(
+            r.providers[&QuotaProvider::Claude].source,
+            SettingSource::Default
+        ));
+        assert!(matches!(r.theme_id.source, SettingSource::Default));
     }
 
     #[test]
-    fn read_returns_parsed_content_when_file_exists() {
-        let dir = tempfile::tempdir().unwrap();
-        std::fs::write(
-            dir.path().join("settings.json"),
-            r#"{"model":"sonnet-4","general":{"alwaysThinkingEnabled":true}}"#,
-        )
-        .unwrap();
-        with_claude_home(dir.path(), || {
-            let r = read().unwrap();
-            assert!(r.exists);
-            let c = r.content.unwrap();
-            assert_eq!(c["model"], "sonnet-4");
-            assert_eq!(c["general"]["alwaysThinkingEnabled"], true);
-        });
+    fn file_overrides_default() {
+        let r = resolve_with(&file_with_claude(true), &no_env);
+        assert!(r.providers[&QuotaProvider::Claude].value);
+        assert!(matches!(
+            r.providers[&QuotaProvider::Claude].source,
+            SettingSource::Settings
+        ));
     }
 
     #[test]
-    fn read_errors_on_malformed_json() {
-        let dir = tempfile::tempdir().unwrap();
-        std::fs::write(dir.path().join("settings.json"), "{not valid").unwrap();
-        with_claude_home(dir.path(), || {
-            let err = read().unwrap_err();
-            match err {
-                ApiError::Parse(msg) => assert!(msg.contains("settings.json")),
-                other => panic!("expected Parse, got {other:?}"),
-            }
-        });
+    fn env_overrides_file() {
+        let env = |name: &str| (name == "OHMYC_QUOTA_CLAUDE_ENABLED").then(|| "0".to_string());
+        let r = resolve_with(&file_with_claude(true), &env);
+        assert!(!r.providers[&QuotaProvider::Claude].value);
+        assert!(matches!(r.providers[&QuotaProvider::Claude].source, SettingSource::Env));
+        assert_eq!(
+            r.providers[&QuotaProvider::Claude].env_var,
+            Some("OHMYC_QUOTA_CLAUDE_ENABLED")
+        );
     }
 
     #[test]
-    fn write_persists_object_atomically() {
-        let dir = tempfile::tempdir().unwrap();
-        with_claude_home(dir.path(), || {
-            let content = serde_json::json!({"model": "sonnet-4"});
-            let r = write(&content).unwrap();
-            assert!(r.success);
-            assert!(r.path.ends_with("settings.json"));
-
-            // Read back
-            let raw = std::fs::read_to_string(dir.path().join("settings.json")).unwrap();
-            let parsed: serde_json::Value = serde_json::from_str(&raw).unwrap();
-            assert_eq!(parsed, content);
-        });
+    fn invalid_env_ignored() {
+        let env = |name: &str| match name {
+            "OHMYC_QUOTA_POLL_SECS" => Some("0".to_string()),
+            "OHMYC_QUOTA_CODEX_ENABLED" => Some("maybe".to_string()),
+            _ => None,
+        };
+        let r = resolve_with(&AppSettingsFile::default(), &env);
+        assert_eq!(r.quota_poll_secs.value, 300);
+        assert!(matches!(r.quota_poll_secs.source, SettingSource::Default));
+        assert!(r.providers[&QuotaProvider::Codex].value);
+        assert!(matches!(
+            r.providers[&QuotaProvider::Codex].source,
+            SettingSource::Default
+        ));
+        let env_abc = |name: &str| (name == "OHMYC_QUOTA_POLL_SECS").then(|| "abc".to_string());
+        assert_eq!(
+            resolve_with(&AppSettingsFile::default(), &env_abc)
+                .quota_poll_secs
+                .value,
+            300
+        );
     }
 
     #[test]
-    fn write_creates_parent_directory_when_missing() {
-        // Use a tempdir that doesn't have the claude_home dir yet.
-        let dir = tempfile::tempdir().unwrap();
-        let nested = dir.path().join("does-not-exist");
-        with_claude_home(&nested, || {
-            let content = serde_json::json!({"k": "v"});
-            let r = write(&content).unwrap();
-            assert!(r.success);
-            assert!(nested.join("settings.json").exists());
-        });
+    fn explicit_env_disable_is_env_source() {
+        let env = |name: &str| (name == "OHMYC_QUOTA_CLAUDE_ENABLED").then(|| "0".to_string());
+        let r = resolve_with(&AppSettingsFile::default(), &env);
+        assert!(!r.providers[&QuotaProvider::Claude].value);
+        assert!(matches!(r.providers[&QuotaProvider::Claude].source, SettingSource::Env));
     }
 
     #[test]
-    fn write_rejects_non_object_with_validation_error() {
-        let dir = tempfile::tempdir().unwrap();
-        with_claude_home(dir.path(), || {
-            let err = write(&serde_json::json!([1, 2, 3])).unwrap_err();
-            match err {
-                ApiError::Validation(msg) => assert!(msg.contains("object")),
-                other => panic!("expected Validation, got {other:?}"),
-            }
-            let err2 = write(&serde_json::json!("a string")).unwrap_err();
-            assert!(matches!(err2, ApiError::Validation(_)));
-            let err3 = write(&serde_json::json!(null)).unwrap_err();
-            assert!(matches!(err3, ApiError::Validation(_)));
-        });
+    fn file_poll_secs_zero_falls_back_to_default() {
+        let file = AppSettingsFile {
+            quota: Some(QuotaSettings {
+                poll_secs: Some(0),
+                ..QuotaSettings::default()
+            }),
+            ..AppSettingsFile::default()
+        };
+        let r = resolve_with(&file, &no_env);
+        assert_eq!(r.quota_poll_secs.value, 300);
+        assert!(matches!(r.quota_poll_secs.source, SettingSource::Default));
     }
 
     #[test]
-    fn write_then_read_roundtrip() {
-        let dir = tempfile::tempdir().unwrap();
-        with_claude_home(dir.path(), || {
-            let content = serde_json::json!({
-                "model": "opus",
-                "general": {"showTurnDuration": true, "prefersReducedMotion": false}
-            });
-            write(&content).unwrap();
-            let r = read().unwrap();
-            assert!(r.exists);
-            assert_eq!(r.content.unwrap(), content);
-        });
+    fn corrupt_file_falls_back_to_defaults() {
+        let dir = std::env::temp_dir().join(format!("ohmyc-settings-test-{}", std::process::id()));
+        std::fs::create_dir_all(&dir).unwrap();
+        let path = dir.join("settings.json");
+        std::fs::write(&path, "{ not json").unwrap();
+        let file = read_file_at(&path);
+        let r = resolve_with(&file, &no_env);
+        assert!(r.quota_enabled.value);
+        write_patch_at(&path, &SettingsPatch::default()).unwrap();
+        let raw = std::fs::read_to_string(&path).unwrap();
+        assert!(serde_json::from_str::<serde_json::Value>(&raw).is_ok());
+        let _ = std::fs::remove_dir_all(&dir);
     }
 }
