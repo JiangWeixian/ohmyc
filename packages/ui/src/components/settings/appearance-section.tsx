@@ -80,8 +80,8 @@ export function AppearanceSection() {
         <div className="mt-2">
           <div className="flex items-center gap-4 py-3.5">
             <div className="flex-1">
-              <div className="text-sm font-[510]">Show menu bar icon</div>
-              <div className="mt-0.5 text-xs text-[var(--text-tertiary)]">Quick access to the quota popover. Quota keeps refreshing while hidden.</div>
+              <div className="text-sm font-[510]">Show quota in the menu bar</div>
+              <div className="mt-0.5 text-xs text-[var(--text-tertiary)]">Check quota from the menu bar without opening the main window. Polling continues while hidden.</div>
             </div>
             <Switch
               checked={menubar.value}
