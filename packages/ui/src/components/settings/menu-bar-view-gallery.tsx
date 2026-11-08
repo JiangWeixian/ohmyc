@@ -6,7 +6,11 @@ import {
   ChevronRight,
   Plus,
 } from 'lucide-react'
-import { useRef, useState } from 'react'
+import {
+  useEffect,
+  useRef,
+  useState,
+} from 'react'
 
 import { MenubarPresetContent } from '@/components/menubar/menubar-preset-content'
 import { EnvNote } from '@/components/settings/quota-section'
@@ -62,11 +66,31 @@ export function MenuBarViewGallery({ settings }: { settings: ResolvedSettings })
   const preset = PRESETS[active]
   const appliedPreset = PRESETS[appliedIndex]
   const envOverride = settings.menubarView.source === 'env'
+  const scrollSyncTimer = useRef<number | undefined>(undefined)
+  const programmaticScroll = useRef(false)
+  const programmaticTimer = useRef<number | undefined>(undefined)
+
+  useEffect(() => {
+    const carousel = carouselRef.current
+    const slide = carousel?.querySelectorAll<HTMLElement>('[data-gallery-slide]')[appliedIndex]
+    if (carousel && slide) {
+      carousel.scrollTo({ left: slide.offsetLeft - (carousel.clientWidth - slide.clientWidth) / 2, behavior: 'auto' })
+    }
+    return () => {
+      globalThis.clearTimeout(scrollSyncTimer.current)
+      globalThis.clearTimeout(programmaticTimer.current)
+    }
+  }, [])
 
   function goTo(index: number) {
     const next = Math.max(0, Math.min(PRESETS.length - 1, index))
     const carousel = carouselRef.current
     const slide = carousel?.querySelectorAll<HTMLElement>('[data-gallery-slide]')[next]
+    programmaticScroll.current = true
+    globalThis.clearTimeout(programmaticTimer.current)
+    programmaticTimer.current = globalThis.setTimeout(() => {
+      programmaticScroll.current = false
+    }, 400)
     slide?.scrollIntoView({ behavior: reducedMotion ? 'auto' : 'smooth', inline: 'center', block: 'nearest' })
     setActive(next)
   }
@@ -90,6 +114,19 @@ export function MenuBarViewGallery({ settings }: { settings: ResolvedSettings })
     if (closest !== active) {
       setActive(closest)
     }
+  }
+
+  function scheduleScrollSync() {
+    if (programmaticScroll.current) {
+      return
+    }
+    globalThis.clearTimeout(scrollSyncTimer.current)
+    scrollSyncTimer.current = globalThis.setTimeout(syncFromScroll, 80)
+  }
+
+  function finishScroll() {
+    programmaticScroll.current = false
+    syncFromScroll()
   }
 
   async function apply() {
@@ -124,7 +161,8 @@ export function MenuBarViewGallery({ settings }: { settings: ResolvedSettings })
           role="group"
           aria-label="Available layouts. Use left and right arrow keys to browse."
           tabIndex={0}
-          onScrollEnd={syncFromScroll}
+          onScroll={scheduleScrollSync}
+          onScrollEnd={finishScroll}
           onKeyDown={(event) => {
             if (event.key === 'ArrowRight') {
               event.preventDefault()

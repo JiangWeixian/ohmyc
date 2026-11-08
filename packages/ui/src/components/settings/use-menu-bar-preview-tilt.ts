@@ -133,7 +133,7 @@ export function useMenuBarPreviewTilt({ active, position }: { active: boolean; p
     }
 
     const track = (event: PointerEvent) => {
-      if (!active || reducedMotion || !finePointer.matches) {
+      if (!active || reducedMotion || !finePointer.matches || event.pointerType === 'touch') {
         return
       }
       let state = tiltRef.current

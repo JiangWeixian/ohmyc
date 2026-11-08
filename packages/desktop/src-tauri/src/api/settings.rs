@@ -25,7 +25,9 @@ pub fn settings_set(app: AppHandle, patch: SettingsPatch) -> Result<ResolvedSett
     if let Some(visible) = patch.menubar.as_ref().and_then(|m| m.icon_visible) {
         apply_menubar_visibility(&app, visible);
     }
-    app.state::<PollerWake>().0.send(()).ok();
+    if should_wake_poller(&patch) {
+        app.state::<PollerWake>().0.send(()).ok();
+    }
     let resolved = settings::resolve();
     let _ = app.emit(SETTINGS_CHANGED_EVENT, &resolved);
     Ok(resolved)
@@ -60,6 +62,10 @@ fn validate_patch(patch: &SettingsPatch) -> Result<(), ApiError> {
         }
     }
     Ok(())
+}
+
+fn should_wake_poller(patch: &SettingsPatch) -> bool {
+    patch.quota.is_some()
 }
 
 #[cfg(test)]
@@ -129,5 +135,29 @@ mod tests {
             ..SettingsPatch::default()
         };
         assert!(matches!(validate_patch(&patch), Err(ApiError::Validation(_))));
+    }
+
+    #[test]
+    fn view_only_patch_does_not_wake_the_quota_poller() {
+        let patch = SettingsPatch {
+            menubar: Some(MenubarSettings {
+                icon_visible: None,
+                view: Some("heatmap".to_string()),
+            }),
+            ..SettingsPatch::default()
+        };
+        assert!(!should_wake_poller(&patch));
+    }
+
+    #[test]
+    fn quota_patch_wakes_the_poller() {
+        let patch = SettingsPatch {
+            quota: Some(QuotaSettings {
+                enabled: Some(true),
+                ..QuotaSettings::default()
+            }),
+            ..SettingsPatch::default()
+        };
+        assert!(should_wake_poller(&patch));
     }
 }

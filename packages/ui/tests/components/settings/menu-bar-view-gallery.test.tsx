@@ -116,6 +116,14 @@ describe('useMenuBarPreviewTilt', () => {
     expect(screen.getByTestId('preview')).not.toHaveAttribute('data-tilting')
   })
 
+  it('ignores touch-originated events even when fine-pointer media matches', () => {
+    render(<Slide />)
+    const event = new Event('pointerenter') as PointerEvent
+    Object.assign(event, { clientX: 450, clientY: 120, pointerType: 'touch' })
+    fireEvent(screen.getByTestId('slide'), event)
+    expect(screen.getByTestId('preview')).not.toHaveAttribute('data-tilting')
+  })
+
   it('clears stale transform and glow when the slide becomes inactive', () => {
     const { rerender } = render(<Slide />)
     const slide = screen.getByTestId('slide')

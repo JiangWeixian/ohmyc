@@ -225,3 +225,51 @@ export const GalleryEnvOverride: Story = {
     await canvas.findByText(/OHMYC_MENUBAR_VIEW/)
   },
 }
+
+function galleryViewSettings(view: 'area' | 'heatmap' | 'quota') {
+  installGalleryHandlers()
+  const resolved = defaultResolvedSettings()
+  resolved.menubarView = { value: view, source: 'settings', envVar: null }
+  setMockHandler('settings.get', async () => resolved)
+}
+
+export const GalleryInitialHeatmap: Story = {
+  decorators: [withMockTransport(() => galleryViewSettings('heatmap'))],
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement)
+    const carousel = await canvas.findByLabelText(/Available layouts/)
+    await waitFor(() => {
+      const slide = carousel.querySelector('[data-gallery-slide][data-position="active"]')!
+      const carouselRect = carousel.getBoundingClientRect()
+      const slideRect = slide.getBoundingClientRect()
+      expect(Math.abs(slideRect.left + slideRect.width / 2 - (carouselRect.left + carouselRect.width / 2))).toBeLessThan(2)
+    })
+  },
+}
+
+export const GalleryInitialQuotaFocus: Story = {
+  decorators: [withMockTransport(() => galleryViewSettings('quota'))],
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement)
+    const carousel = await canvas.findByLabelText(/Available layouts/)
+    await waitFor(() => {
+      const slide = carousel.querySelector('[data-gallery-slide][data-position="active"]')!
+      const carouselRect = carousel.getBoundingClientRect()
+      const slideRect = slide.getBoundingClientRect()
+      expect(Math.abs(slideRect.left + slideRect.width / 2 - (carouselRect.left + carouselRect.width / 2))).toBeLessThan(2)
+    })
+  },
+}
+
+export const GalleryScrollFallback: Story = {
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement)
+    const carousel = await canvas.findByLabelText(/Available layouts/)
+    const slides = carousel.querySelectorAll<HTMLElement>('[data-gallery-slide]')
+    const second = slides[1]
+    carousel.addEventListener('scrollend', event => event.stopImmediatePropagation(), true)
+    carousel.scrollLeft = second.offsetLeft - (carousel.clientWidth - second.clientWidth) / 2
+    fireEvent.scroll(carousel)
+    await canvas.findByText('Bricks & Quota')
+  },
+}
