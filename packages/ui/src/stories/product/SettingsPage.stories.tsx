@@ -1,20 +1,45 @@
 import {
   expect,
+  fireEvent,
   waitFor,
   within,
 } from 'storybook/test'
 
-import { defaultResolvedSettings, registerMockSettings } from '@/lib/mock-settings'
+import {
+  defaultResolvedSettings,
+  mergeSettingsPatch,
+  registerMockSettings,
+} from '@/lib/mock-settings'
 import { setMockHandler } from '@/lib/transport/mock'
 import { SettingsPage } from '@/routes/settings-page'
 import {
+  installQuotaHandlers,
+  installTimelineHandlers,
   withMockTransport,
   withQueryClient,
   withRouter,
 } from '@/stories/decorators/storybook-decorators'
+import { quotaSnapshots } from '@/stories/fixtures/quota'
+import { menubarSessions, menubarTokens } from '@/stories/fixtures/timeline'
 import { ThemeProvider } from '@/theme/theme-provider'
 
 import type { Meta, StoryObj } from '@storybook/react-vite'
+
+function installGalleryHandlers() {
+  registerMockSettings()
+  installTimelineHandlers({
+    years: [2026],
+    projects: ['ohmyc'],
+    heatmapByMetric: {
+      tokens: menubarTokens,
+      sessions: menubarSessions,
+      event_sessions: menubarSessions,
+    },
+    events: { days: [] },
+    status: { sessionCount: 9, lastSyncAt: Date.UTC(2026, 5, 19, 12, 0, 0) },
+  })
+  installQuotaHandlers(quotaSnapshots())
+}
 
 const meta = {
   title: 'Product/SettingsPage',
@@ -24,7 +49,7 @@ const meta = {
     withQueryClient,
     withRouter(['/explore/settings']),
     Story => <ThemeProvider><Story /></ThemeProvider>,
-    withMockTransport(() => registerMockSettings()),
+    withMockTransport(installGalleryHandlers),
   ],
 } satisfies Meta<typeof SettingsPage>
 
@@ -64,6 +89,7 @@ export const NoBackend: Story = {
     const canvas = within(canvasElement)
     await canvas.findByText('Phosphor Mono')
     expect(canvas.queryByText('Codex')).not.toBeInTheDocument()
+    expect(canvas.queryByRole('heading', { name: 'Menu bar' })).not.toBeInTheDocument()
   },
 }
 
@@ -81,5 +107,121 @@ export const EnvOverride: Story = {
     const master = await canvas.findByRole('button', { name: /enable quota polling/i })
     expect(master).toBeDisabled()
     await canvas.findByText(/OHMYC_QUOTA_ENABLED/)
+  },
+}
+
+export const GalleryApply: Story = {
+  decorators: [withMockTransport(() => {
+    installGalleryHandlers()
+    const calls: unknown[] = []
+    setMockHandler('settings.set', async (args) => {
+      calls.push(args)
+      return mergeSettingsPatch(defaultResolvedSettings(), (args as { patch: Parameters<typeof mergeSettingsPatch>[1] }).patch)
+    })
+    ;(globalThis as { __galleryCalls?: unknown[] }).__galleryCalls = calls
+  })],
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement)
+    const calls = (globalThis as { __galleryCalls?: unknown[] }).__galleryCalls!
+    await canvas.findByRole('heading', { name: 'Menu bar' })
+    fireEvent.click(canvas.getByRole('button', { name: 'Next layout' }))
+    await canvas.findByText('Bricks & Quota')
+    expect(calls).toHaveLength(0)
+    fireEvent.click(canvas.getByRole('button', { name: 'Use Bricks & Quota' }))
+    await waitFor(() => expect(calls).toHaveLength(1))
+    expect((calls[0] as { patch: { menubar: { view: string } } }).patch.menubar.view).toBe('heatmap')
+    await canvas.findByRole('button', { name: 'Bricks & Quota selected' })
+
+    fireEvent.keyDown(canvas.getByLabelText(/Available layouts/), { key: 'ArrowRight' })
+    await canvas.findByText('Quota Focus')
+    const region = canvas.getByRole('region', { name: 'Quota providers, scrollable' })
+    region.style.maxHeight = '40px'
+    expect(region.scrollHeight).toBeGreaterThan(region.clientHeight)
+    region.focus()
+    fireEvent.keyDown(region, { key: 'PageDown' })
+    expect(region.scrollTop).toBeGreaterThan(0)
+    expect(canvas.queryByRole('button', { name: 'Open OhMyC →' })).not.toBeInTheDocument()
+    delete (globalThis as { __galleryCalls?: unknown[] }).__galleryCalls
+  },
+}
+
+export const GalleryDuplicateApply: Story = {
+  decorators: [withMockTransport(() => {
+    installGalleryHandlers()
+    let calls = 0
+    let finish: (() => void) | undefined
+    setMockHandler('settings.set', async (args) => {
+      calls += 1
+      const patch = (args as { patch: Parameters<typeof mergeSettingsPatch>[1] }).patch
+      await new Promise<void>((resolve) => {
+        finish = () => {
+          resolve()
+        }
+      })
+      return mergeSettingsPatch(defaultResolvedSettings(), patch)
+    })
+    ;(globalThis as { __duplicateGallery?: { calls: () => number; finish: () => void } }).__duplicateGallery = {
+      calls: () => calls,
+      finish: () => finish?.(),
+    }
+  })],
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement)
+    const state = (globalThis as { __duplicateGallery?: { calls: () => number; finish: () => void } }).__duplicateGallery!
+    fireEvent.click(await canvas.findByRole('button', { name: 'Next layout' }))
+    const apply = await canvas.findByRole('button', { name: 'Use Bricks & Quota' })
+    fireEvent.click(apply)
+    fireEvent.click(apply)
+    await waitFor(() => expect(state.calls()).toBe(1))
+    state.finish()
+    await canvas.findByRole('button', { name: 'Bricks & Quota selected' })
+    delete (globalThis as { __duplicateGallery?: unknown }).__duplicateGallery
+  },
+}
+
+export const GalleryRejectedApply: Story = {
+  decorators: [withMockTransport(() => {
+    installGalleryHandlers()
+    let attempts = 0
+    let state = defaultResolvedSettings()
+    setMockHandler('settings.get', async () => state)
+    setMockHandler('settings.set', async (args) => {
+      attempts += 1
+      if (attempts === 1) {
+        throw new Error('read-only settings')
+      }
+      state = mergeSettingsPatch(state, (args as { patch: Parameters<typeof mergeSettingsPatch>[1] }).patch)
+      return state
+    })
+    ;(globalThis as { __rejectedGallery?: () => number }).__rejectedGallery = () => attempts
+  })],
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement)
+    const attempts = (globalThis as { __rejectedGallery?: () => number }).__rejectedGallery!
+    fireEvent.click(await canvas.findByRole('button', { name: 'Next layout' }))
+    fireEvent.click(canvas.getByRole('button', { name: 'Use Bricks & Quota' }))
+    await canvas.findByText("Couldn't save menu bar view. Try again.")
+    await canvas.findByText('Applied: Trend & Quota')
+    expect(attempts()).toBe(1)
+    fireEvent.click(canvas.getByRole('button', { name: 'Use Bricks & Quota' }))
+    await canvas.findByRole('button', { name: 'Bricks & Quota selected' })
+    expect(attempts()).toBe(2)
+    delete (globalThis as { __rejectedGallery?: unknown }).__rejectedGallery
+  },
+}
+
+export const GalleryEnvOverride: Story = {
+  decorators: [withMockTransport(() => {
+    installGalleryHandlers()
+    const resolved = defaultResolvedSettings()
+    resolved.menubarView = { value: 'area', source: 'env', envVar: 'OHMYC_MENUBAR_VIEW' }
+    setMockHandler('settings.get', async () => resolved)
+  })],
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement)
+    fireEvent.click(await canvas.findByRole('button', { name: 'Next layout' }))
+    await canvas.findByText('Bricks & Quota')
+    expect(canvas.getByRole('button', { name: 'Use Bricks & Quota' })).toBeDisabled()
+    await canvas.findByText(/OHMYC_MENUBAR_VIEW/)
   },
 }

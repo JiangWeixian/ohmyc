@@ -1,14 +1,7 @@
-// Appearance settings: the five theme cards (band preview + name) and the
-// menu bar icon row. The menu bar row is a desktop/macOS-only surface and
-// asks for confirmation before hiding the icon — the recovery path (#30)
-// is what makes hiding safe.
+// Appearance settings: the five theme cards (band preview + name).
 import { Check } from 'lucide-react'
-import { useState } from 'react'
 
-import { EnvNote } from './quota-section'
-import { Button } from '@/components/ui/button'
-import { Switch } from '@/components/ui/switch'
-import { useAppSettings, useUpdateSettings } from '@/hooks/use-app-settings'
+import { useAppSettings } from '@/hooks/use-app-settings'
 import { cn } from '@/lib/utils'
 import { type ThemeId, themes } from '@/theme/registry'
 import { useTheme } from '@/theme/theme-provider'
@@ -21,17 +14,10 @@ const THEME_BANDS: Record<ThemeId, { background: string; color: string }> = {
   cyberpunk: { background: 'linear-gradient(135deg,#232006,#0a0a08)', color: '#fcee0a' },
 }
 
-function isMacOS(): boolean {
-  return typeof navigator !== 'undefined' && /Mac/.test(navigator.userAgent)
-}
-
 export function AppearanceSection() {
   const { theme, setTheme, sources } = useTheme()
   const { data: settings } = useAppSettings()
-  const update = useUpdateSettings()
-  const [confirming, setConfirming] = useState(false)
   const themeEnvOverride = sources.theme === 'env'
-  const menubar = settings?.menubarIconVisible
 
   return (
     <section className="mb-9">
@@ -75,52 +61,6 @@ export function AppearanceSection() {
         <p className="mt-2 text-[11px] text-[var(--text-quaternary)]">
           Theme is overridden by <code className="font-mono-theme">{settings?.themeId.envVar ?? 'OHMYC_THEME'}</code> — palette and card switches are disabled.
         </p>
-      )}
-      {isMacOS() && menubar && (
-        <div className="mt-2">
-          <div className="flex items-center gap-4 py-3.5">
-            <div className="flex-1">
-              <div className="text-sm font-[510]">Show quota in the menu bar</div>
-              <div className="mt-0.5 text-xs text-[var(--text-tertiary)]">Check quota from the menu bar without opening the main window. Polling continues while hidden.</div>
-            </div>
-            <Switch
-              checked={menubar.value}
-              disabled={menubar.source === 'env'}
-              onCheckedChange={(next) => {
-                if (next) {
-                  update({ menubar: { iconVisible: true } }).catch(() => {})
-                } else {
-                  setConfirming(true)
-                }
-              }}
-              aria-label="Show menu bar icon"
-            />
-          </div>
-          <EnvNote setting={menubar} />
-          {confirming && (
-            <div data-testid="menubar-confirm" className="border-t border-[var(--border-subtle)] py-4">
-              <p className="text-[13px] text-[var(--text-secondary)]">Hide the menu bar icon? OhMyC keeps running and polling in the background.</p>
-              <p className="mt-1.5 font-mono-theme text-xs text-[var(--text-tertiary)]">
-                To get back: reopen OhMyC from Applications, Dock, or Spotlight — the main window returns, and you can re-enable the icon here.
-              </p>
-              <div className="mt-3.5 flex gap-2.5">
-                <Button
-                  onClick={async () => {
-                    try {
-                      await update({ menubar: { iconVisible: false } })
-                      setConfirming(false)
-                    } catch {
-                      // Write failed: keep the confirmation open and the icon visible.
-                    }
-                  }}
-                >
-                  Hide icon
-                </Button>
-                <Button variant="ghost" onClick={() => setConfirming(false)}>Cancel</Button>
-              </div>
-            </div>
-          )}
-        </div>
       )}
     </section>
   )

@@ -1,6 +1,7 @@
-// /explore/settings — quota polling and appearance preferences. Without a
-// settings backend (web dev, no Tauri), only the theme cards render.
+// /explore/settings — quota polling, menu bar, and appearance preferences.
+// Without a settings backend (web dev, no Tauri), only the theme cards render.
 import { AppearanceSection } from '@/components/settings/appearance-section'
+import { MenuBarSection } from '@/components/settings/menu-bar-section'
 import { QuotaSection } from '@/components/settings/quota-section'
 import { useAppSettings } from '@/hooks/use-app-settings'
 
@@ -13,6 +14,7 @@ export function SettingsPage() {
         Quota polling, menu bar, and appearance. Changes apply immediately and persist across restarts.
       </p>
       {!isError && <QuotaSection />}
+      {!isError && <MenuBarSection />}
       <AppearanceSection />
     </div>
   )
