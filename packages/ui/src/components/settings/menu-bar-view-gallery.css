@@ -1,0 +1,80 @@
+.menu-bar-gallery-slide {
+  position: relative;
+  transform-style: preserve-3d;
+}
+
+.menu-bar-gallery-slide::before {
+  content: "";
+  position: absolute;
+  inset: -12px;
+  pointer-events: auto;
+}
+
+.menu-bar-preview {
+  --glow-x: 50%;
+  --glow-y: 40%;
+  --glow-opacity: 0;
+  position: relative;
+  isolation: isolate;
+  transform-origin: 50% 50%;
+  transition: transform 320ms var(--motion-ease-out);
+  will-change: transform;
+}
+
+.menu-bar-gallery-slide[data-position="before"] .menu-bar-preview {
+  transform: perspective(1200px) rotateY(-12deg) rotateX(1deg) rotateZ(-0.35deg);
+}
+
+.menu-bar-gallery-slide[data-position="after"] .menu-bar-preview {
+  transform: perspective(1200px) rotateY(12deg) rotateX(1deg) rotateZ(0.35deg);
+}
+
+.menu-bar-gallery-slide[data-position="active"] .menu-bar-preview {
+  transform: perspective(1200px) rotateY(7deg) rotateX(1deg) rotateZ(0.35deg);
+}
+
+.menu-bar-preview[data-tilting="true"] {
+  transition: none;
+}
+
+.menu-bar-preview::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  border-radius: var(--menubar-popover-radius);
+  background: radial-gradient(300px circle at var(--glow-x) var(--glow-y), rgba(255, 255, 255, 0.1), transparent 68%);
+  opacity: var(--glow-opacity);
+  pointer-events: none;
+}
+
+.menu-bar-preview::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  padding: 1px;
+  border-radius: var(--menubar-popover-radius);
+  background: radial-gradient(240px circle at var(--glow-x) var(--glow-y), rgba(255, 255, 255, 0.72), transparent 70%);
+  opacity: var(--glow-opacity);
+  pointer-events: none;
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+}
+
+.menu-bar-preview > * {
+  position: relative;
+  z-index: 1;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .menu-bar-preview {
+    transition-duration: 0.01ms;
+  }
+
+  .menu-bar-preview::before,
+  .menu-bar-preview::after {
+    display: none;
+  }
+}

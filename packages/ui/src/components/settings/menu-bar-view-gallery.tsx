@@ -1,3 +1,5 @@
+import './menu-bar-view-gallery.css'
+
 import {
   Check,
   ChevronLeft,
@@ -8,6 +10,7 @@ import { useRef, useState } from 'react'
 
 import { MenubarPresetContent } from '@/components/menubar/menubar-preset-content'
 import { EnvNote } from '@/components/settings/quota-section'
+import { useMenuBarPreviewTilt } from '@/components/settings/use-menu-bar-preview-tilt'
 import { Button } from '@/components/ui/button'
 import { useUpdateSettings } from '@/hooks/use-app-settings'
 import { usePrefersReducedMotion } from '@/hooks/use-prefers-reduced-motion'
@@ -20,6 +23,31 @@ const PRESETS: { id: MenubarView; name: string; description: string }[] = [
   { id: 'heatmap', name: 'Bricks & Quota', description: 'A denser activity pattern for spotting streaks and quiet days.' },
   { id: 'quota', name: 'Quota Focus', description: 'Subscription pressure only, with more room for each provider.' },
 ]
+
+function GallerySlide({ item, index, active, today }: { item: (typeof PRESETS)[number]; index: number; active: number; today: Date }) {
+  const isActive = index === active
+  const position = index < active ? 'before' : (index > active ? 'after' : 'active')
+  const { slideRef, previewRef } = useMenuBarPreviewTilt({ active: isActive, position })
+
+  return (
+    <div
+      ref={slideRef}
+      data-gallery-slide
+      data-active={isActive}
+      data-position={position}
+      aria-hidden={!isActive}
+      inert={!isActive}
+      className={cn(
+        'menu-bar-gallery-slide flex shrink-0 snap-center flex-col transition-[opacity,transform] duration-200',
+        isActive ? 'scale-100 opacity-100' : 'pointer-events-none scale-[.91] opacity-30',
+      )}
+      style={{ flexBasis: 367, maxWidth: '85vw' }}
+    >
+      <span className="sr-only">{item.name}: {item.description}</span>
+      <MenubarPresetContent ref={previewRef} className="menu-bar-preview" view={item.id} today={today} preview />
+    </div>
+  )
+}
 
 export function MenuBarViewGallery({ settings }: { settings: ResolvedSettings }) {
   const applied = settings.menubarView.value
@@ -110,21 +138,7 @@ export function MenuBarViewGallery({ settings }: { settings: ResolvedSettings })
           style={{ paddingInline: 'max(24px, calc(50% - 183.5px))' }}
         >
           {PRESETS.map((item, index) => (
-            <div
-              key={item.id}
-              data-gallery-slide
-              data-active={index === active}
-              aria-hidden={index !== active}
-              inert={index !== active}
-              className={cn(
-                'flex shrink-0 snap-center flex-col transition-[opacity,transform] duration-200',
-                index === active ? 'scale-100 opacity-100' : 'pointer-events-none scale-[.91] opacity-30',
-              )}
-              style={{ flexBasis: 367, maxWidth: '85vw' }}
-            >
-              <span className="sr-only">{item.name}: {item.description}</span>
-              <MenubarPresetContent view={item.id} today={today} preview />
-            </div>
+            <GallerySlide key={item.id} item={item} index={index} active={active} today={today} />
           ))}
         </div>
         <button

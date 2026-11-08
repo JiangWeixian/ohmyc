@@ -6,6 +6,7 @@ import { RecentHeatmap } from './recent-heatmap'
 import { menubarPopoverStyles } from './styles'
 import { useTimelineHeatmapRange } from '@/hooks/use-timeline'
 import { formatTokens } from '@/lib/format-tokens'
+import { cn } from '@/lib/utils'
 
 import type { MenubarView } from '@/hooks/use-app-settings'
 
@@ -14,6 +15,7 @@ interface MenubarPresetContentProps {
   today: Date
   onOpen?: () => void
   preview?: boolean
+  className?: string
 }
 
 function isoDate(d: Date): string {
@@ -47,7 +49,7 @@ function shortDayLabel(iso: string): string {
 }
 
 export const MenubarPresetContent = forwardRef<HTMLDivElement, MenubarPresetContentProps>((
-  { view, today, onOpen, preview = false },
+  { view, today, onOpen, preview = false, className },
   ref,
 ) => {
   const todayIso = isoDate(today)
@@ -68,7 +70,7 @@ export const MenubarPresetContent = forwardRef<HTMLDivElement, MenubarPresetCont
       <style>{menubarPopoverStyles}</style>
       <div
         ref={ref}
-        className="relative mx-auto w-full max-w-sm overflow-hidden px-5 py-[18px] text-[var(--text-primary)] menubar-popover"
+        className={cn('relative mx-auto w-full max-w-sm overflow-hidden px-5 py-[18px] text-[var(--text-primary)] menubar-popover', className)}
         data-menubar-page
         data-layout={view}
       >
