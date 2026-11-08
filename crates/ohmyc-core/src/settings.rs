@@ -37,6 +37,7 @@ pub struct ResolvedSettings {
     pub quota_poll_secs: ResolvedSetting<u64>,
     pub providers: BTreeMap<QuotaProvider, ResolvedSetting<bool>>,
     pub menubar_icon_visible: ResolvedSetting<bool>,
+    pub menubar_view: ResolvedSetting<String>,
     pub theme_id: ResolvedSetting<String>,
     pub theme_intensity: ResolvedSetting<String>,
 }
@@ -85,6 +86,7 @@ pub struct ProviderSettings {
 #[serde(rename_all = "camelCase")]
 pub struct MenubarSettings {
     pub icon_visible: Option<bool>,
+    pub view: Option<String>,
 }
 
 #[derive(Debug, Default, Clone, Serialize, Deserialize)]
@@ -147,6 +149,9 @@ fn merge(file: &mut AppSettingsFile, patch: &SettingsPatch) {
         let menubar = file.menubar.get_or_insert_with(MenubarSettings::default);
         if pm.icon_visible.is_some() {
             menubar.icon_visible = pm.icon_visible;
+        }
+        if pm.view.is_some() {
+            menubar.view = pm.view.clone();
         }
     }
     if let Some(pt) = &patch.theme {
@@ -241,6 +246,38 @@ fn provider_env(p: QuotaProvider) -> &'static str {
     }
 }
 
+pub fn is_valid_menubar_view(value: &str) -> bool {
+    matches!(value, "area" | "heatmap" | "quota")
+}
+
+fn resolve_menubar_view(
+    env: &dyn Fn(&str) -> Option<String>,
+    file_value: Option<String>,
+) -> ResolvedSetting<String> {
+    if let Some(value) = env("OHMYC_MENUBAR_VIEW")
+        .map(|value| value.trim().to_string())
+        .filter(|value| is_valid_menubar_view(value))
+    {
+        return ResolvedSetting {
+            value,
+            source: SettingSource::Env,
+            env_var: Some("OHMYC_MENUBAR_VIEW"),
+        };
+    }
+    match file_value.filter(|value| is_valid_menubar_view(value)) {
+        Some(value) => ResolvedSetting {
+            value,
+            source: SettingSource::Settings,
+            env_var: None,
+        },
+        None => ResolvedSetting {
+            value: "area".to_string(),
+            source: SettingSource::Default,
+            env_var: None,
+        },
+    }
+}
+
 pub fn resolve_with(file: &AppSettingsFile, env: &dyn Fn(&str) -> Option<String>) -> ResolvedSettings {
     let quota = file.quota.clone().unwrap_or_default();
     let quota_enabled = pick_bool(env, "OHMYC_QUOTA_ENABLED", quota.enabled, true);
@@ -281,6 +318,7 @@ pub fn resolve_with(file: &AppSettingsFile, env: &dyn Fn(&str) -> Option<String>
         file.menubar.as_ref().and_then(|m| m.icon_visible),
         true,
     );
+    let menubar_view = resolve_menubar_view(env, file.menubar.as_ref().and_then(|m| m.view.clone()));
     let theme = file.theme.clone().unwrap_or_default();
     let theme_id = pick_string(env, "OHMYC_THEME", theme.id, "phosphor");
     let theme_intensity = pick_string(env, "OHMYC_THEME_INTENSITY", theme.intensity, "expressive");
@@ -289,6 +327,7 @@ pub fn resolve_with(file: &AppSettingsFile, env: &dyn Fn(&str) -> Option<String>
         quota_poll_secs,
         providers,
         menubar_icon_visible,
+        menubar_view,
         theme_id,
         theme_intensity,
     }
@@ -401,6 +440,90 @@ mod tests {
         let r = resolve_with(&file, &no_env);
         assert_eq!(r.quota_poll_secs.value, 300);
         assert!(matches!(r.quota_poll_secs.source, SettingSource::Default));
+    }
+
+    fn file_with_view(view: &str) -> AppSettingsFile {
+        AppSettingsFile {
+            menubar: Some(MenubarSettings {
+                icon_visible: Some(true),
+                view: Some(view.to_string()),
+            }),
+            ..AppSettingsFile::default()
+        }
+    }
+
+    fn env_with_view(value: &str) -> impl Fn(&str) -> Option<String> {
+        let value = value.to_string();
+        move |name| (name == "OHMYC_MENUBAR_VIEW").then(|| value.clone())
+    }
+
+    #[test]
+    fn menubar_view_defaults_to_area() {
+        let r = resolve_with(&AppSettingsFile::default(), &no_env);
+        assert_eq!(r.menubar_view.value, "area");
+        assert!(matches!(r.menubar_view.source, SettingSource::Default));
+    }
+
+    #[test]
+    fn menubar_view_file_overrides_default() {
+        let r = resolve_with(&file_with_view("heatmap"), &no_env);
+        assert_eq!(r.menubar_view.value, "heatmap");
+        assert!(matches!(r.menubar_view.source, SettingSource::Settings));
+    }
+
+    #[test]
+    fn invalid_menubar_view_env_falls_through_to_file() {
+        let r = resolve_with(&file_with_view("quota"), &env_with_view("invalid"));
+        assert_eq!(r.menubar_view.value, "quota");
+        assert!(matches!(r.menubar_view.source, SettingSource::Settings));
+    }
+
+    #[test]
+    fn invalid_menubar_view_file_falls_back_to_area() {
+        let r = resolve_with(&file_with_view("invalid"), &no_env);
+        assert_eq!(r.menubar_view.value, "area");
+        assert!(matches!(r.menubar_view.source, SettingSource::Default));
+    }
+
+    #[test]
+    fn invalid_menubar_view_does_not_invalidate_other_fields_or_sparse_writes() {
+        let dir = std::env::temp_dir().join(format!("ohmyc-settings-view-test-{}", std::process::id()));
+        std::fs::create_dir_all(&dir).unwrap();
+        let path = dir.join("settings.json");
+        std::fs::write(&path, r#"{
+            "version": 1,
+            "quota": { "enabled": false, "pollSecs": 60, "providers": { "codex": { "enabled": false } } },
+            "menubar": { "iconVisible": false, "view": "unknown" },
+            "theme": { "id": "amber", "intensity": "calm" }
+        }"#).unwrap();
+
+        let file = read_file_at(&path);
+        let r = resolve_with(&file, &no_env);
+        assert_eq!(r.menubar_view.value, "area");
+        assert!(!r.quota_enabled.value);
+        assert_eq!(r.quota_poll_secs.value, 60);
+        assert!(!r.providers[&QuotaProvider::Codex].value);
+        assert!(!r.menubar_icon_visible.value);
+        assert_eq!(r.theme_id.value, "amber");
+        assert_eq!(r.theme_intensity.value, "calm");
+
+        let patch = SettingsPatch {
+            quota: Some(QuotaSettings {
+                enabled: Some(true),
+                ..QuotaSettings::default()
+            }),
+            ..SettingsPatch::default()
+        };
+        write_patch_at(&path, &patch).unwrap();
+        let r = resolve_with(&read_file_at(&path), &no_env);
+        assert!(r.quota_enabled.value);
+        assert_eq!(r.quota_poll_secs.value, 60);
+        assert!(!r.providers[&QuotaProvider::Codex].value);
+        assert!(!r.menubar_icon_visible.value);
+        assert_eq!(r.theme_id.value, "amber");
+        assert_eq!(r.theme_intensity.value, "calm");
+        assert_eq!(r.menubar_view.value, "area");
+        let _ = std::fs::remove_dir_all(&dir);
     }
 
     #[test]

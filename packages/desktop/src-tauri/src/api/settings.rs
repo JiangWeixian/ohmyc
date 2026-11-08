@@ -45,6 +45,13 @@ fn validate_patch(patch: &SettingsPatch) -> Result<(), ApiError> {
             return Err(ApiError::Validation("quota.pollSecs must be > 0".to_string()));
         }
     }
+    if let Some(view) = patch.menubar.as_ref().and_then(|m| m.view.as_deref()) {
+        if !settings::is_valid_menubar_view(view) {
+            return Err(ApiError::Validation(
+                "menubar.view must be area, heatmap, or quota".to_string(),
+            ));
+        }
+    }
     if let Some(intensity) = patch.theme.as_ref().and_then(|t| t.intensity.as_deref()) {
         if !matches!(intensity, "calm" | "expressive") {
             return Err(ApiError::Validation(
@@ -58,7 +65,7 @@ fn validate_patch(patch: &SettingsPatch) -> Result<(), ApiError> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use ohmyc_core::settings::{QuotaSettings, ThemeSettings};
+    use ohmyc_core::settings::{MenubarSettings, QuotaSettings, ThemeSettings};
 
     #[test]
     fn patch_rejects_zero_poll_secs() {
@@ -98,5 +105,29 @@ mod tests {
             ..SettingsPatch::default()
         };
         assert!(validate_patch(&patch).is_ok());
+    }
+
+    #[test]
+    fn patch_accepts_menubar_view() {
+        let patch = SettingsPatch {
+            menubar: Some(MenubarSettings {
+                icon_visible: None,
+                view: Some("heatmap".to_string()),
+            }),
+            ..SettingsPatch::default()
+        };
+        assert!(validate_patch(&patch).is_ok());
+    }
+
+    #[test]
+    fn patch_rejects_unknown_menubar_view() {
+        let patch = SettingsPatch {
+            menubar: Some(MenubarSettings {
+                icon_visible: None,
+                view: Some("invalid".to_string()),
+            }),
+            ..SettingsPatch::default()
+        };
+        assert!(matches!(validate_patch(&patch), Err(ApiError::Validation(_))));
     }
 }
