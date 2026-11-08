@@ -71,40 +71,6 @@ export const menubarPopoverStyles = `
   text-shadow: var(--menubar-switch-hover-shadow);
 }
 
-.menubar-view-button {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: var(--menubar-switch-size);
-  height: var(--menubar-switch-size);
-  padding: 0;
-  color: var(--menubar-switch-color);
-  background: transparent;
-  border: 1px solid var(--menubar-switch-border);
-  border-radius: var(--menubar-switch-radius);
-  clip-path: var(--menubar-switch-clip);
-  cursor: pointer;
-  line-height: 1;
-  transition:
-    color var(--motion-fast) var(--motion-ease-out),
-    background-color var(--motion-fast) var(--motion-ease-out),
-    border-color var(--motion-fast) var(--motion-ease-out);
-}
-
-.menubar-view-button:hover {
-  color: var(--menubar-switch-hover-color);
-  background: var(--menubar-switch-hover-bg);
-  border-color: var(--menubar-switch-hover-border);
-  text-shadow: var(--menubar-switch-hover-shadow);
-}
-
-.menubar-view-button[data-active='true'] {
-  color: var(--menubar-switch-active-color);
-  background: var(--menubar-switch-active-bg);
-  border-color: var(--menubar-switch-active-border);
-  filter: var(--menubar-switch-active-shadow);
-}
-
 .menubar-chart-area {
   background: var(--menubar-chart-bg);
 }
