@@ -66,9 +66,9 @@ export function MenuBarViewGallery({ settings }: { settings: ResolvedSettings })
   const preset = PRESETS[active]
   const appliedPreset = PRESETS[appliedIndex]
   const envOverride = settings.menubarView.source === 'env'
-  const scrollSyncTimer = useRef<number | undefined>(undefined)
+  const scrollSyncTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
   const programmaticScroll = useRef(false)
-  const programmaticTimer = useRef<number | undefined>(undefined)
+  const programmaticTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
 
   useEffect(() => {
     const carousel = carouselRef.current
