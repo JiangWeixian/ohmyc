@@ -24,6 +24,7 @@ export function defaultResolvedSettings(): ResolvedSettings {
       Object.entries(PROVIDER_DEFAULTS).map(([id, value]) => [id, { value, source: 'default', envVar: null }]),
     ) as ResolvedSettings['providers'],
     menubarIconVisible: { value: true, source: 'default', envVar: null },
+    menubarView: { value: 'area', source: 'default', envVar: null },
     themeId: { value: 'phosphor', source: 'default', envVar: null },
     themeIntensity: { value: 'expressive', source: 'default', envVar: null },
   }
@@ -48,6 +49,9 @@ export function mergeSettingsPatch(base: ResolvedSettings, patch: SettingsPatch)
   }
   if (patch.menubar?.iconVisible !== undefined) {
     next.menubarIconVisible = { value: patch.menubar.iconVisible, source: 'settings', envVar: null }
+  }
+  if (patch.menubar?.view !== undefined) {
+    next.menubarView = { value: patch.menubar.view, source: 'settings', envVar: null }
   }
   if (patch.theme?.id !== undefined) {
     next.themeId = { value: patch.theme.id, source: 'settings', envVar: null }

@@ -9,6 +9,7 @@ import { request } from '@/lib/transport'
 import type { QuotaProviderId } from './use-quota'
 
 export type SettingSource = 'default' | 'env' | 'settings'
+export type MenubarView = 'area' | 'heatmap' | 'quota'
 
 export interface ResolvedSetting<TValue> {
   value: TValue
@@ -21,6 +22,7 @@ export interface ResolvedSettings {
   quotaPollSecs: ResolvedSetting<number>
   providers: Record<QuotaProviderId, ResolvedSetting<boolean>>
   menubarIconVisible: ResolvedSetting<boolean>
+  menubarView: ResolvedSetting<MenubarView>
   themeId: ResolvedSetting<string>
   themeIntensity: ResolvedSetting<string>
 }
@@ -31,7 +33,7 @@ export interface SettingsPatch {
     pollSecs?: number
     providers?: Partial<Record<QuotaProviderId, { enabled: boolean }>>
   }
-  menubar?: { iconVisible?: boolean }
+  menubar?: { iconVisible?: boolean; view?: MenubarView }
   theme?: { id?: string; intensity?: string }
 }
 

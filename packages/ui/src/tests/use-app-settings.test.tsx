@@ -34,7 +34,10 @@ function Demo() {
     <div>
       <span data-testid="claude">{settings.data ? String(settings.data.providers.claude.value) : 'loading'}</span>
       <span data-testid="source">{settings.data?.providers.claude.source}</span>
+      <span data-testid="menubar-view">{settings.data?.menubarView.value}</span>
+      <span data-testid="menubar-view-source">{settings.data?.menubarView.source}</span>
       <button onClick={() => update({ quota: { providers: { claude: { enabled: true } } } })}>enable</button>
+      <button onClick={() => update({ menubar: { view: 'heatmap' } })}>use heatmap</button>
     </div>
   )
 }
@@ -56,6 +59,7 @@ describe('useAppSettings', () => {
     expect(result.current.data?.quotaPollSecs.value).toBe(300)
     expect(result.current.data?.themeId.value).toBe('phosphor')
     expect(result.current.data?.quotaEnabled.value).toBe(true)
+    expect(result.current.data?.menubarView.value).toBe('area')
   })
 
   it('useUpdateSettings merges patch and updates cache', async () => {
@@ -64,5 +68,8 @@ describe('useAppSettings', () => {
     screen.getByRole('button', { name: 'enable' }).click()
     await waitFor(() => expect(screen.getByTestId('claude')).toHaveTextContent('true'))
     expect(screen.getByTestId('source')).toHaveTextContent('settings')
+    screen.getByRole('button', { name: 'use heatmap' }).click()
+    await waitFor(() => expect(screen.getByTestId('menubar-view')).toHaveTextContent('heatmap'))
+    expect(screen.getByTestId('menubar-view-source')).toHaveTextContent('settings')
   })
 })
