@@ -250,10 +250,7 @@ pub fn is_valid_menubar_view(value: &str) -> bool {
     matches!(value, "area" | "heatmap" | "quota")
 }
 
-fn resolve_menubar_view(
-    env: &dyn Fn(&str) -> Option<String>,
-    file_value: Option<String>,
-) -> ResolvedSetting<String> {
+fn resolve_menubar_view(env: &dyn Fn(&str) -> Option<String>, file_value: Option<String>) -> ResolvedSetting<String> {
     if let Some(value) = env("OHMYC_MENUBAR_VIEW")
         .map(|value| value.trim().to_string())
         .filter(|value| is_valid_menubar_view(value))
@@ -490,12 +487,16 @@ mod tests {
         let dir = std::env::temp_dir().join(format!("ohmyc-settings-view-test-{}", std::process::id()));
         std::fs::create_dir_all(&dir).unwrap();
         let path = dir.join("settings.json");
-        std::fs::write(&path, r#"{
+        std::fs::write(
+            &path,
+            r#"{
             "version": 1,
             "quota": { "enabled": false, "pollSecs": 60, "providers": { "codex": { "enabled": false } } },
             "menubar": { "iconVisible": false, "view": "unknown" },
             "theme": { "id": "amber", "intensity": "calm" }
-        }"#).unwrap();
+        }"#,
+        )
+        .unwrap();
 
         let file = read_file_at(&path);
         let r = resolve_with(&file, &no_env);
