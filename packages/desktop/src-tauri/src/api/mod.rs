@@ -2,6 +2,7 @@ pub mod agents;
 pub mod commands;
 pub mod configs;
 pub mod plugins;
+pub mod quota;
 pub mod settings;
 pub mod setup;
 pub mod skills;

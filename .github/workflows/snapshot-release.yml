@@ -2,12 +2,6 @@ name: Snapshot Release
 
 on:
   workflow_dispatch:
-    inputs:
-      branch:
-        description: Enter the branch name for snapshot release
-        required: true
-        default: main
-        type: string
 
 env:
   CI: true
@@ -23,10 +17,10 @@ jobs:
       pull-requests: write
       id-token: write
     steps:
-      - name: checkout code repository
+      - name: Checkout next
         uses: actions/checkout@v5
         with:
-          ref: ${{ github.event.inputs.branch }}
+          ref: next
           fetch-depth: 0
 
       - uses: pnpm/action-setup@v4

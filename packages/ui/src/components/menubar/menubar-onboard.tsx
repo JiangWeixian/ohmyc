@@ -7,6 +7,7 @@ import { menubarOnboardStyles, menubarPopoverStyles } from './styles'
 import { RetroComputerAtropos } from '@/components/onboarding/retro-computer-atropos'
 import { retroComputerSceneStyles } from '@/components/onboarding/styles'
 import { Button } from '@/components/ui/button'
+import { usePopoverAutosize } from '@/hooks/use-popover-autosize'
 import { usePrefersReducedMotion } from '@/hooks/use-prefers-reduced-motion'
 
 const PLUGIN_REPO = 'https://github.com/JiangWeixian/ohmyc-plugins'
@@ -18,11 +19,12 @@ export interface MenubarOnboardProps {
 
 export function MenubarOnboard({ statusLine }: MenubarOnboardProps) {
   const reduced = usePrefersReducedMotion()
+  const popoverRef = usePopoverAutosize<HTMLDivElement>()
 
   return (
     <>
       <style>{menubarPopoverStyles + retroComputerSceneStyles + menubarOnboardStyles}</style>
-      <div className="relative mx-auto w-full max-w-sm overflow-hidden px-5 py-[18px] text-[var(--text-primary)] menubar-popover" data-menubar-page>
+      <div ref={popoverRef} className="relative mx-auto w-full max-w-sm overflow-hidden px-5 py-[18px] text-[var(--text-primary)] menubar-popover" data-menubar-page>
         <span className="menubar-popover-corner" aria-hidden="true" />
         <div className="relative z-[1] menubar-content">
           <header className="mb-2 flex items-center justify-between gap-3">

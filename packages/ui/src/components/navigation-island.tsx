@@ -12,7 +12,7 @@ import { NAV_ITEMS, type NavItem } from '@/components/nav-items'
 import { cn } from '@/lib/utils'
 import { useIslandStore } from '@/state/island-store'
 
-const SIGNAL_IDS = new Set(['monitor', 'timeline'])
+const SIGNAL_IDS = new Set(['monitor', 'timeline', 'quota'])
 
 const SIGNAL_ITEMS = NAV_ITEMS.filter(item => SIGNAL_IDS.has(item.id))
 const EXPLORE_ITEMS = NAV_ITEMS.filter(item => !SIGNAL_IDS.has(item.id))

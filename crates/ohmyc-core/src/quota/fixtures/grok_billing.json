@@ -1,0 +1,18 @@
+{
+  "config": {
+    "currentPeriod": {
+      "type": "USAGE_PERIOD_TYPE_WEEKLY",
+      "start": "2026-09-28T00:00:00Z",
+      "end": "2026-10-05T00:00:00Z"
+    },
+    "productUsage": [
+      {
+        "product": "grok-code-fast-1",
+        "usagePercent": 20.0
+      }
+    ],
+    "prepaidBalance": {
+      "val": "1500"
+    }
+  }
+}
