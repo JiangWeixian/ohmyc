@@ -64,7 +64,6 @@ export function MenuBarViewGallery({ settings }: { settings: ResolvedSettings })
   const reducedMotion = usePrefersReducedMotion()
   const update = useUpdateSettings()
   const preset = PRESETS[active]
-  const appliedPreset = PRESETS[appliedIndex]
   const envOverride = settings.menubarView.source === 'env'
   const scrollSyncTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
   const programmaticScroll = useRef(false)
@@ -214,9 +213,6 @@ export function MenuBarViewGallery({ settings }: { settings: ResolvedSettings })
           {preset.id === applied ? <Check size={15} /> : <Plus size={15} />}
           {saving ? 'Saving…' : (preset.id === applied ? `${preset.name} selected` : `Use ${preset.name}`)}
         </Button>
-        {preset.id !== applied && (
-          <p className="mt-2 text-[11px] text-[var(--text-quaternary)]">Applied: {appliedPreset.name}</p>
-        )}
         {error && <p role="alert" className="mt-2 text-xs text-[var(--text-secondary)]">{error}</p>}
         <EnvNote setting={settings.menubarView} />
       </div>

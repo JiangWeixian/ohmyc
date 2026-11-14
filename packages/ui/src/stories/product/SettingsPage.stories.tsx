@@ -210,7 +210,7 @@ export const GalleryRejectedApply: Story = {
     fireEvent.click(await canvas.findByRole('button', { name: 'Next layout' }))
     fireEvent.click(canvas.getByRole('button', { name: 'Use Bricks & Quota' }))
     await canvas.findByText("Couldn't save menu bar view. Try again.")
-    await canvas.findByText('Applied: Trend & Quota')
+    expect(canvas.queryByText('Applied: Trend & Quota')).not.toBeInTheDocument()
     expect(attempts()).toBe(1)
     fireEvent.click(canvas.getByRole('button', { name: 'Use Bricks & Quota' }))
     await canvas.findByRole('button', { name: 'Bricks & Quota selected' })
