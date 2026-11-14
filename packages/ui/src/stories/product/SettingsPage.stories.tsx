@@ -131,6 +131,9 @@ export const GalleryApply: Story = {
     await waitFor(() => expect(calls).toHaveLength(1))
     expect((calls[0] as { patch: { menubar: { view: string } } }).patch.menubar.view).toBe('heatmap')
     await canvas.findByRole('button', { name: 'Bricks & Quota selected' })
+    expect(canvas.queryByText('Applied: Bricks & Quota')).not.toBeInTheDocument()
+    expect(canvas.queryByText('Changes the popover layout only. Quota polling stays on.')).not.toBeInTheDocument()
+    expect(canvas.queryByText('A denser activity pattern for spotting streaks and quiet days.')).not.toBeInTheDocument()
 
     fireEvent.keyDown(canvas.getByLabelText(/Available layouts/), { key: 'ArrowRight' })
     await canvas.findByText('Quota Focus')

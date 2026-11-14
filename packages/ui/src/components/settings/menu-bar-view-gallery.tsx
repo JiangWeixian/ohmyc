@@ -192,7 +192,6 @@ export function MenuBarViewGallery({ settings }: { settings: ResolvedSettings })
 
       <div className="text-center">
         <h3 className="text-[17px] font-[510]">{preset.name}</h3>
-        <p className="mt-1.5 text-[13px] text-[var(--text-tertiary)]">{preset.description}</p>
         <div className="my-4 flex justify-center gap-2" aria-label="Choose a layout">
           {PRESETS.map((item, index) => (
             <button
@@ -215,12 +214,11 @@ export function MenuBarViewGallery({ settings }: { settings: ResolvedSettings })
           {preset.id === applied ? <Check size={15} /> : <Plus size={15} />}
           {saving ? 'Saving…' : (preset.id === applied ? `${preset.name} selected` : `Use ${preset.name}`)}
         </Button>
-        <p className="mt-2 text-[11px] text-[var(--text-quaternary)]">Applied: {appliedPreset.name}</p>
+        {preset.id !== applied && (
+          <p className="mt-2 text-[11px] text-[var(--text-quaternary)]">Applied: {appliedPreset.name}</p>
+        )}
         {error && <p role="alert" className="mt-2 text-xs text-[var(--text-secondary)]">{error}</p>}
         <EnvNote setting={settings.menubarView} />
-        <p className="mt-3 font-mono-theme text-[10px] text-[var(--text-quaternary)]">
-          Changes the popover layout only. Quota polling stays on.
-        </p>
       </div>
     </div>
   )
