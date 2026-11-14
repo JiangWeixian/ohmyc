@@ -47,6 +47,7 @@ impl Drop for EnvGuard {
 /// the same fixed status/headers/body. Enough to drive provider fetch logic.
 pub(crate) struct MiniServer {
     pub(crate) url: String,
+    requests: Arc<Mutex<Vec<String>>>,
     shutdown: Arc<AtomicBool>,
     handle: Option<JoinHandle<()>>,
 }
@@ -58,6 +59,8 @@ impl MiniServer {
         let addr = listener.local_addr().unwrap();
         let shutdown = Arc::new(AtomicBool::new(false));
         let flag = Arc::clone(&shutdown);
+        let requests = Arc::new(Mutex::new(Vec::new()));
+        let captured_requests = Arc::clone(&requests);
         let extra: Vec<(String, String)> = extra_headers
             .iter()
             .map(|(k, v)| (k.to_string(), v.to_string()))
@@ -70,7 +73,8 @@ impl MiniServer {
             match listener.accept() {
                 Ok((mut stream, _)) => {
                     let _ = stream.set_read_timeout(Some(Duration::from_secs(2)));
-                    read_request(&mut stream);
+                    let request = read_request(&mut stream);
+                    captured_requests.lock().unwrap().push(request);
                     let mut response = format!(
                         "HTTP/1.1 {status} {}\r\ncontent-length: {}\r\nconnection: close\r\n",
                         reason_phrase(status),
@@ -92,9 +96,14 @@ impl MiniServer {
         });
         Self {
             url: format!("http://{addr}"),
+            requests,
             shutdown,
             handle: Some(handle),
         }
+    }
+
+    pub(crate) fn requests(&self) -> Vec<String> {
+        self.requests.lock().unwrap().clone()
     }
 }
 
@@ -119,23 +128,24 @@ fn reason_phrase(status: u16) -> &'static str {
 }
 
 /// Consume one request: headers up to `\r\n\r\n`, then the exact
-/// `content-length` body, so the client sees a well-formed exchange.
-fn read_request(stream: &mut TcpStream) {
+/// `content-length` body, so the client sees a well-formed exchange. Returns
+/// only the header text for assertions; response fixtures never need the body.
+fn read_request(stream: &mut TcpStream) -> String {
     let mut buf = Vec::new();
     let mut chunk = [0u8; 4096];
     let header_end = loop {
         match stream.read(&mut chunk) {
-            Ok(0) => return,
+            Ok(0) => return String::new(),
             Ok(n) => {
                 buf.extend_from_slice(&chunk[..n]);
                 if let Some(pos) = find_subslice(&buf, b"\r\n\r\n") {
                     break pos;
                 }
             }
-            Err(_) => return,
+            Err(_) => return String::new(),
         }
     };
-    let headers = String::from_utf8_lossy(&buf[..header_end]);
+    let headers = String::from_utf8_lossy(&buf[..header_end]).into_owned();
     let content_length: usize = headers
         .lines()
         .filter_map(|line| line.split_once(':'))
@@ -150,6 +160,7 @@ fn read_request(stream: &mut TcpStream) {
             Err(_) => break,
         }
     }
+    headers
 }
 
 fn find_subslice(haystack: &[u8], needle: &[u8]) -> Option<usize> {

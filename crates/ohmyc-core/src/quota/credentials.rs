@@ -591,34 +591,158 @@ pub fn kimi() -> CredentialOutcome {
 // ---------------------------------------------------------------------------
 // OpenCode Go (opencode's subscription product)
 //
-// Chain: env `OPENCODE_API_KEY` → `<opencode data home>/auth.json`, where the
-// data home is `OHMYC_QUOTA_OPENCODE_HOME` → `$XDG_DATA_HOME/opencode` →
-// `~/.local/share/opencode`. Note this is the XDG **data** home, distinct
-// from `crate::providers::paths::opencode_home` (the XDG **config** home).
-// Entries look like `{"opencode-go": {"type": "api", "key": "..."}}`; Go and
-// Zen share one key, so `opencode-go` is preferred with an `opencode`
-// fallback. There is no expiry field → no precheck; a dead key surfaces as
-// 401 → TokenExpired at fetch time.
+// Chain: env `OPENCODE_API_KEY` → v2's `<opencode data home>/opencode.db`
+// `credential` table → v1's `auth.json`. The data home is
+// `OHMYC_QUOTA_OPENCODE_HOME` → `$XDG_DATA_HOME/opencode` →
+// `~/.local/share/opencode`; `OPENCODE_DB` can select another database.
+// Note this is the XDG **data** home, distinct from
+// `crate::providers::paths::opencode_home` (the XDG **config** home).
+//
+// V2 activates one `opencode-go` or generic `opencode` credential. OAuth
+// carries an access token, millisecond expiry and workspace metadata. Once a
+// modern credential table exists, stale legacy keys must never be resurrected.
+// Reads are read-only; renewal remains the official CLI's responsibility.
 // ---------------------------------------------------------------------------
 
-pub fn opencode_go() -> CredentialOutcome {
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct OpenCodeGoCredential {
+    pub token: String,
+    pub workspace_id: Option<String>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum OpenCodeGoOutcome {
+    Credential(OpenCodeGoCredential),
+    NotLoggedIn,
+    Expired,
+    Error,
+}
+
+pub fn opencode_go() -> OpenCodeGoOutcome {
     if let Ok(key) = std::env::var("OPENCODE_API_KEY") {
         if let Some(key) = non_empty_str(Some(&Value::String(key))) {
-            return CredentialOutcome::Token(key);
+            return OpenCodeGoOutcome::Credential(OpenCodeGoCredential {
+                token: key,
+                workspace_id: None,
+            });
         }
     }
-    let Some(path) = opencode_data_home().map(|h| h.join("auth.json")) else {
-        return CredentialOutcome::NotLoggedIn;
+    let Some(data_home) = opencode_data_home() else {
+        return OpenCodeGoOutcome::NotLoggedIn;
     };
-    let Some(json) = read_json(&path) else {
-        return CredentialOutcome::NotLoggedIn;
+    if let Some(outcome) = opencode_go_from_modern_db(&data_home) {
+        return outcome;
+    }
+    opencode_go_from_legacy_json(&data_home)
+}
+
+fn opencode_database_path(data_home: &std::path::Path) -> Option<PathBuf> {
+    match std::env::var("OPENCODE_DB").ok().filter(|v| !v.trim().is_empty()) {
+        Some(filename) if filename == ":memory:" => None,
+        Some(filename) => {
+            let path = PathBuf::from(filename);
+            Some(if path.is_absolute() { path } else { data_home.join(path) })
+        }
+        None => Some(data_home.join("opencode.db")),
+    }
+}
+
+fn opencode_go_from_modern_db(data_home: &std::path::Path) -> Option<OpenCodeGoOutcome> {
+    if std::env::var("OPENCODE_DB").is_ok_and(|v| v == ":memory:") {
+        return Some(OpenCodeGoOutcome::NotLoggedIn);
+    }
+    let database = opencode_database_path(data_home)?;
+    if !database.is_file() {
+        return None;
+    }
+    match read_opencode_go_database(&database) {
+        Ok(outcome) => outcome,
+        Err(()) => Some(OpenCodeGoOutcome::Error),
+    }
+}
+
+/// `Ok(None)` means an older database without the v2 credential table; only
+/// that case may fall back to legacy auth.json.
+fn read_opencode_go_database(database: &std::path::Path) -> Result<Option<OpenCodeGoOutcome>, ()> {
+    let conn =
+        rusqlite::Connection::open_with_flags(database, rusqlite::OpenFlags::SQLITE_OPEN_READ_ONLY).map_err(|_| ())?;
+    conn.busy_timeout(Duration::from_millis(250)).map_err(|_| ())?;
+    let has_credential_table: bool = conn
+        .query_row(
+            "SELECT EXISTS(SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = 'credential')",
+            [],
+            |row| row.get(0),
+        )
+        .map_err(|_| ())?;
+    if !has_credential_table {
+        return Ok(None);
+    }
+    let mut statement = conn
+        .prepare(
+            "SELECT integration_id, value FROM credential \
+             WHERE active = 1 AND integration_id IN ('opencode-go', 'opencode')",
+        )
+        .map_err(|_| ())?;
+    let rows = statement
+        .query_map([], |row| Ok((row.get::<_, String>(0)?, row.get::<_, String>(1)?)))
+        .map_err(|_| ())?
+        .collect::<Result<Vec<_>, _>>()
+        .map_err(|_| ())?;
+    if rows.is_empty() {
+        return Ok(Some(OpenCodeGoOutcome::NotLoggedIn));
+    }
+    let selected_integration = if rows.iter().any(|(id, _)| id == "opencode-go") {
+        "opencode-go"
+    } else {
+        "opencode"
+    };
+    let mut selected = rows.into_iter().filter(|(id, _)| id == selected_integration);
+    let Some((_, value)) = selected.next() else {
+        return Ok(Some(OpenCodeGoOutcome::NotLoggedIn));
+    };
+    if selected.next().is_some() {
+        return Ok(Some(OpenCodeGoOutcome::Error));
+    }
+    Ok(Some(parse_opencode_go_credential(&value)))
+}
+
+fn parse_opencode_go_credential(value: &str) -> OpenCodeGoOutcome {
+    let Some(json) = serde_json::from_str::<Value>(value).ok() else {
+        return OpenCodeGoOutcome::Expired;
+    };
+    let workspace_id = non_empty_str(json.get("configuration").and_then(|metadata| metadata.get("orgID")))
+        .or_else(|| non_empty_str(json.get("metadata").and_then(|metadata| metadata.get("orgID"))));
+    let token = match json.get("type").and_then(Value::as_str) {
+        Some("key") => non_empty_str(json.get("key")),
+        Some("oauth") => {
+            match json.get("expires").and_then(Value::as_f64) {
+                Some(0.0) => {}
+                Some(expires) if expires > 0.0 && !epoch_millis_expired(expires) => {}
+                _ => return OpenCodeGoOutcome::Expired,
+            }
+            non_empty_str(json.get("access"))
+        }
+        _ => return OpenCodeGoOutcome::Expired,
+    };
+    match token {
+        Some(token) => OpenCodeGoOutcome::Credential(OpenCodeGoCredential { token, workspace_id }),
+        None => OpenCodeGoOutcome::Expired,
+    }
+}
+
+fn opencode_go_from_legacy_json(data_home: &std::path::Path) -> OpenCodeGoOutcome {
+    let Some(json) = read_json(&data_home.join("auth.json")) else {
+        return OpenCodeGoOutcome::NotLoggedIn;
     };
     let key = ["opencode-go", "opencode"]
         .iter()
         .find_map(|name| non_empty_str(json.get(*name).and_then(|entry| entry.get("key"))));
     match key {
-        Some(key) => CredentialOutcome::Token(key),
-        None => CredentialOutcome::NotLoggedIn,
+        Some(token) => OpenCodeGoOutcome::Credential(OpenCodeGoCredential {
+            token,
+            workspace_id: None,
+        }),
+        None => OpenCodeGoOutcome::NotLoggedIn,
     }
 }
 
@@ -1041,6 +1165,29 @@ mod tests {
         assert_eq!(flexible_expiry_epoch_seconds(&Value::Null), None);
     }
 
+    fn opencode_credential(token: &str, workspace_id: Option<&str>) -> OpenCodeGoOutcome {
+        OpenCodeGoOutcome::Credential(OpenCodeGoCredential {
+            token: token.to_string(),
+            workspace_id: workspace_id.map(ToOwned::to_owned),
+        })
+    }
+
+    fn write_opencode_credential_db(home: &tempfile::TempDir, rows: &[(&str, bool, &str)]) {
+        let conn = rusqlite::Connection::open(home.path().join("opencode.db")).unwrap();
+        conn.execute(
+            "CREATE TABLE credential (integration_id TEXT, value TEXT, active INTEGER)",
+            [],
+        )
+        .unwrap();
+        for (integration, active, value) in rows {
+            conn.execute(
+                "INSERT INTO credential (integration_id, value, active) VALUES (?1, ?2, ?3)",
+                rusqlite::params![integration, value, active],
+            )
+            .unwrap();
+        }
+    }
+
     #[test]
     fn opencode_env_key_wins_over_file() {
         let _lock = ENV_LOCK.lock().unwrap();
@@ -1052,7 +1199,8 @@ mod tests {
         );
         let _home = EnvGuard::set("OHMYC_QUOTA_OPENCODE_HOME", home.path().to_str().unwrap());
         let _env = EnvGuard::set("OPENCODE_API_KEY", "oc-from-env");
-        assert_eq!(opencode_go(), CredentialOutcome::Token("oc-from-env".to_string()));
+        let _db = EnvGuard::unset("OPENCODE_DB");
+        assert_eq!(opencode_go(), opencode_credential("oc-from-env", None));
     }
 
     #[test]
@@ -1066,7 +1214,8 @@ mod tests {
         );
         let _home = EnvGuard::set("OHMYC_QUOTA_OPENCODE_HOME", home.path().to_str().unwrap());
         let _env = EnvGuard::unset("OPENCODE_API_KEY");
-        assert_eq!(opencode_go(), CredentialOutcome::Token("go-key".to_string()));
+        let _db = EnvGuard::unset("OPENCODE_DB");
+        assert_eq!(opencode_go(), opencode_credential("go-key", None));
     }
 
     #[test]
@@ -1080,7 +1229,85 @@ mod tests {
         );
         let _home = EnvGuard::set("OHMYC_QUOTA_OPENCODE_HOME", home.path().to_str().unwrap());
         let _env = EnvGuard::unset("OPENCODE_API_KEY");
-        assert_eq!(opencode_go(), CredentialOutcome::Token("zen-key".to_string()));
+        let _db = EnvGuard::unset("OPENCODE_DB");
+        assert_eq!(opencode_go(), opencode_credential("zen-key", None));
+    }
+
+    #[test]
+    fn opencode_v2_active_oauth_beats_stale_legacy_key() {
+        let _lock = ENV_LOCK.lock().unwrap();
+        let home = tempfile::tempdir().unwrap();
+        write_file(
+            home.path(),
+            "auth.json",
+            r#"{"opencode-go":{"type":"api","key":"stale-legacy"}}"#,
+        );
+        let oauth = format!(
+            r#"{{"type":"oauth","access":"v2-access","refresh":"unused","expires":{},"metadata":{{"orgID":"wrk-current"}}}}"#,
+            future_epoch_ms()
+        );
+        write_opencode_credential_db(&home, &[("opencode", true, &oauth)]);
+        let _home = EnvGuard::set("OHMYC_QUOTA_OPENCODE_HOME", home.path().to_str().unwrap());
+        let _env = EnvGuard::unset("OPENCODE_API_KEY");
+        let _db = EnvGuard::unset("OPENCODE_DB");
+        assert_eq!(opencode_go(), opencode_credential("v2-access", Some("wrk-current")));
+    }
+
+    #[test]
+    fn opencode_v2_specific_go_credential_wins_over_generic_console() {
+        let _lock = ENV_LOCK.lock().unwrap();
+        let home = tempfile::tempdir().unwrap();
+        let oauth = format!(
+            r#"{{"type":"oauth","access":"console-access","expires":{}}}"#,
+            future_epoch_ms()
+        );
+        write_opencode_credential_db(
+            &home,
+            &[
+                ("opencode", true, &oauth),
+                ("opencode-go", true, r#"{"type":"key","key":"go-v2-key"}"#),
+            ],
+        );
+        let _home = EnvGuard::set("OHMYC_QUOTA_OPENCODE_HOME", home.path().to_str().unwrap());
+        let _env = EnvGuard::unset("OPENCODE_API_KEY");
+        let _db = EnvGuard::unset("OPENCODE_DB");
+        assert_eq!(opencode_go(), opencode_credential("go-v2-key", None));
+    }
+
+    #[test]
+    fn opencode_v2_without_active_credential_never_revives_legacy_key() {
+        let _lock = ENV_LOCK.lock().unwrap();
+        let home = tempfile::tempdir().unwrap();
+        write_file(
+            home.path(),
+            "auth.json",
+            r#"{"opencode-go":{"type":"api","key":"stale-legacy"}}"#,
+        );
+        write_opencode_credential_db(&home, &[("opencode", false, r#"{"type":"key","key":"inactive"}"#)]);
+        let _home = EnvGuard::set("OHMYC_QUOTA_OPENCODE_HOME", home.path().to_str().unwrap());
+        let _env = EnvGuard::unset("OPENCODE_API_KEY");
+        let _db = EnvGuard::unset("OPENCODE_DB");
+        assert_eq!(opencode_go(), OpenCodeGoOutcome::NotLoggedIn);
+    }
+
+    #[test]
+    fn opencode_v2_expired_oauth_never_revives_legacy_key() {
+        let _lock = ENV_LOCK.lock().unwrap();
+        let home = tempfile::tempdir().unwrap();
+        write_file(
+            home.path(),
+            "auth.json",
+            r#"{"opencode-go":{"type":"api","key":"stale-legacy"}}"#,
+        );
+        let oauth = format!(
+            r#"{{"type":"oauth","access":"expired-access","expires":{}}}"#,
+            past_epoch_ms()
+        );
+        write_opencode_credential_db(&home, &[("opencode", true, &oauth)]);
+        let _home = EnvGuard::set("OHMYC_QUOTA_OPENCODE_HOME", home.path().to_str().unwrap());
+        let _env = EnvGuard::unset("OPENCODE_API_KEY");
+        let _db = EnvGuard::unset("OPENCODE_DB");
+        assert_eq!(opencode_go(), OpenCodeGoOutcome::Expired);
     }
 
     #[test]
@@ -1089,7 +1316,8 @@ mod tests {
         let home = tempfile::tempdir().unwrap();
         let _home = EnvGuard::set("OHMYC_QUOTA_OPENCODE_HOME", home.path().to_str().unwrap());
         let _env = EnvGuard::unset("OPENCODE_API_KEY");
-        assert_eq!(opencode_go(), CredentialOutcome::NotLoggedIn);
+        let _db = EnvGuard::unset("OPENCODE_DB");
+        assert_eq!(opencode_go(), OpenCodeGoOutcome::NotLoggedIn);
     }
 
     // GLM ----------------------------------------------------------------
