@@ -4,6 +4,8 @@ import { usePrefersReducedMotion } from '@/hooks/use-prefers-reduced-motion'
 
 type PreviewPosition = 'active' | 'after' | 'before'
 
+const PREVIEW_SCALE = 0.85
+
 class SpringValue {
   value: number
   target: number
@@ -116,7 +118,7 @@ export function useMenuBarPreviewTilt({ active, position }: { active: boolean; p
       }
       state.rotateX.target = base.x
       state.rotateY.target = base.y
-      state.scale.target = 1
+      state.scale.target = PREVIEW_SCALE
       state.opacity.target = 0
       if (immediate || reducedMotion || !active || !finePointer.matches) {
         if (state.frame !== null) {
@@ -140,7 +142,7 @@ export function useMenuBarPreviewTilt({ active, position }: { active: boolean; p
       if (!state) {
         const rotateX = new SpringValue(base.x)
         const rotateY = new SpringValue(base.y)
-        const scale = new SpringValue(1)
+        const scale = new SpringValue(PREVIEW_SCALE)
         const opacity = new SpringValue(0)
         state = {
           popover: preview,
@@ -160,7 +162,7 @@ export function useMenuBarPreviewTilt({ active, position }: { active: boolean; p
       const y = event.clientY - rect.top
       state.rotateX.target = base.x + ((y / rect.height) - 0.5) * 6
       state.rotateY.target = base.y - ((x / rect.width) - 0.5) * 8
-      state.scale.target = 1.02
+      state.scale.target = PREVIEW_SCALE * 1.02
       state.glowX = x
       state.glowY = y
       state.opacity.target = 1

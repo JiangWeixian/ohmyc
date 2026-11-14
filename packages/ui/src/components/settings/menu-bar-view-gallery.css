@@ -22,15 +22,15 @@
 }
 
 .menu-bar-gallery-slide[data-position="before"] .menu-bar-preview {
-  transform: perspective(1200px) rotateY(-12deg) rotateX(1deg) rotateZ(-0.35deg);
+  transform: perspective(1200px) rotateY(-12deg) rotateX(1deg) rotateZ(-0.35deg) scale(.85);
 }
 
 .menu-bar-gallery-slide[data-position="after"] .menu-bar-preview {
-  transform: perspective(1200px) rotateY(12deg) rotateX(1deg) rotateZ(0.35deg);
+  transform: perspective(1200px) rotateY(12deg) rotateX(1deg) rotateZ(0.35deg) scale(.85);
 }
 
 .menu-bar-gallery-slide[data-position="active"] .menu-bar-preview {
-  transform: perspective(1200px) rotateY(7deg) rotateX(1deg) rotateZ(0.35deg);
+  transform: perspective(1200px) rotateY(7deg) rotateX(1deg) rotateZ(0.35deg) scale(.85);
 }
 
 .menu-bar-preview[data-tilting="true"] {
@@ -43,7 +43,7 @@
   inset: 0;
   z-index: 0;
   border-radius: var(--menubar-popover-radius);
-  background: radial-gradient(300px circle at var(--glow-x) var(--glow-y), rgba(255, 255, 255, 0.1), transparent 68%);
+  background: radial-gradient(280px circle at var(--glow-x) var(--glow-y), rgba(255, 255, 255, 0.16), transparent 68%);
   opacity: var(--glow-opacity);
   pointer-events: none;
 }
@@ -55,7 +55,7 @@
   z-index: 2;
   padding: 1px;
   border-radius: var(--menubar-popover-radius);
-  background: radial-gradient(240px circle at var(--glow-x) var(--glow-y), rgba(255, 255, 255, 0.72), transparent 70%);
+  background: radial-gradient(220px circle at var(--glow-x) var(--glow-y), rgba(255, 255, 255, 0.88), transparent 70%);
   opacity: var(--glow-opacity);
   pointer-events: none;
   -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);

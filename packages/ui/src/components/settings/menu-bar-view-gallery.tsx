@@ -45,7 +45,7 @@ function GallerySlide({ item, index, active, today }: { item: (typeof PRESETS)[n
         'menu-bar-gallery-slide flex shrink-0 snap-center flex-col transition-[opacity,transform] duration-200',
         isActive ? 'scale-100 opacity-100' : 'pointer-events-none scale-[.91] opacity-30',
       )}
-      style={{ flexBasis: 367, maxWidth: '85vw' }}
+      style={{ flexBasis: 320, maxWidth: '85vw' }}
     >
       <span className="sr-only">{item.name}: {item.description}</span>
       <MenubarPresetContent ref={previewRef} className="menu-bar-preview" view={item.id} today={today} preview />
@@ -173,7 +173,7 @@ export function MenuBarViewGallery({ settings }: { settings: ResolvedSettings })
             }
           }}
           className="flex snap-x snap-mandatory gap-9 overflow-x-auto py-7 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
-          style={{ paddingInline: 'max(24px, calc(50% - 183.5px))' }}
+          style={{ paddingInline: 'max(24px, calc(50% - 160px))' }}
         >
           {PRESETS.map((item, index) => (
             <GallerySlide key={item.id} item={item} index={index} active={active} today={today} />

@@ -92,7 +92,8 @@ describe('useMenuBarPreviewTilt', () => {
     expect(preview.style.transform).toContain('rotateX(')
     expect(preview.style.transform).toContain('rotateY(')
     const scale = Number(preview.style.transform.match(/scale\(([\d.]+)\)/)?.[1])
-    expect(scale).toBeCloseTo(1.02, 3)
+    expect(scale).toBeCloseTo(0.85 * 1.02, 3)
+    expect(Number(preview.style.getPropertyValue('--glow-opacity'))).toBeGreaterThan(0.9)
 
     fireEvent.pointerLeave(slide, { pointerType: 'mouse' })
     advanceFrames(240)
