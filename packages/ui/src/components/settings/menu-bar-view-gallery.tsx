@@ -4,9 +4,7 @@ import {
   Check,
   ChevronLeft,
   ChevronRight,
-  EyeOff,
   Plus,
-  Wifi,
 } from 'lucide-react'
 import {
   useEffect,
@@ -24,30 +22,11 @@ import { cn } from '@/lib/utils'
 
 import type { MenubarView, ResolvedSettings } from '@/hooks/use-app-settings'
 
-const PRESETS: { id: MenubarView | 'hidden'; name: string; description: string }[] = [
+const PRESETS: { id: MenubarView; name: string; description: string }[] = [
   { id: 'area', name: 'Trend & Quota', description: 'A sense of momentum, with subscription pressure close by.' },
   { id: 'heatmap', name: 'Bricks & Quota', description: 'A denser activity pattern for spotting streaks and quiet days.' },
   { id: 'quota', name: 'Quota Focus', description: 'Subscription pressure only, with more room for each provider.' },
-  { id: 'hidden', name: 'Menu bar hidden', description: 'Hide OhMyC from the menu bar while polling continues.' },
 ]
-
-function HiddenMenuBarPreview() {
-  return (
-    <>
-      <div className="menubar-title">Menu bar</div>
-      <div className="mt-4 flex items-center justify-between rounded-md border border-[var(--border-subtle)] bg-[rgba(255,255,255,0.02)] px-3 py-2 text-[10px] text-[var(--text-secondary)]">
-        <span>Finder</span>
-        <span className="flex items-center gap-2"><Wifi size={13} /><span>9:41</span></span>
-      </div>
-      <div className="flex flex-1 flex-col items-center justify-center text-center">
-        <EyeOff size={24} className="text-[var(--text-tertiary)]" />
-        <p className="mt-3 text-sm font-[510]">OhMyC is hidden</p>
-        <p className="mt-1 text-xs text-[var(--text-tertiary)]">Polling continues in the background.</p>
-      </div>
-      <p className="menubar-label text-center">Reopen from Dock or Spotlight</p>
-    </>
-  )
-}
 
 function GallerySlide({ item, index, active, today }: { item: (typeof PRESETS)[number]; index: number; active: number; today: Date }) {
   const isActive = index === active
@@ -69,19 +48,13 @@ function GallerySlide({ item, index, active, today }: { item: (typeof PRESETS)[n
       style={{ flexBasis: 320, maxWidth: '85vw' }}
     >
       <span className="sr-only">{item.name}: {item.description}</span>
-      {item.id === 'hidden'
-        ? (
-        <div ref={previewRef} className="menubar-popover menu-bar-preview relative mx-auto flex w-full max-w-sm flex-1 flex-col overflow-hidden px-5 py-[18px] text-[var(--text-primary)]">
-          <HiddenMenuBarPreview />
-        </div>
-          )
-        : <MenubarPresetContent ref={previewRef} className="menu-bar-preview" view={item.id} today={today} preview />}
+      <MenubarPresetContent ref={previewRef} className="menu-bar-preview" view={item.id} today={today} preview />
     </div>
   )
 }
 
 export function MenuBarViewGallery({ settings }: { settings: ResolvedSettings }) {
-  const applied = settings.menubarIconVisible.value ? settings.menubarView.value : 'hidden'
+  const applied = settings.menubarView.value
   const appliedIndex = Math.max(0, PRESETS.findIndex(preset => preset.id === applied))
   const [active, setActive] = useState(appliedIndex)
   const [saving, setSaving] = useState(false)
@@ -91,8 +64,7 @@ export function MenuBarViewGallery({ settings }: { settings: ResolvedSettings })
   const reducedMotion = usePrefersReducedMotion()
   const update = useUpdateSettings()
   const preset = PRESETS[active]
-  const envOverride = settings.menubarIconVisible.source === 'env'
-    || (preset.id !== 'hidden' && settings.menubarView.source === 'env')
+  const envOverride = settings.menubarView.source === 'env'
   const scrollSyncTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
   const programmaticScroll = useRef(false)
   const programmaticTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
@@ -163,9 +135,7 @@ export function MenuBarViewGallery({ settings }: { settings: ResolvedSettings })
     setSaving(true)
     setError(null)
     try {
-      await update(preset.id === 'hidden'
-        ? { menubar: { iconVisible: false } }
-        : { menubar: { view: preset.id, iconVisible: true } })
+      await update({ menubar: { view: preset.id } })
     } catch {
       setError("Couldn't save menu bar view. Try again.")
     } finally {
@@ -246,8 +216,7 @@ export function MenuBarViewGallery({ settings }: { settings: ResolvedSettings })
           ))}
         </div>
         {error && <p role="alert" className="mt-2 text-xs text-[var(--text-secondary)]">{error}</p>}
-        {preset.id !== 'hidden' && <EnvNote setting={settings.menubarView} />}
-        <EnvNote setting={settings.menubarIconVisible} />
+        <EnvNote setting={settings.menubarView} />
       </div>
     </div>
   )
