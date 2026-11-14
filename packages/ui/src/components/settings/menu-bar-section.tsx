@@ -28,8 +28,8 @@ export function MenuBarSection() {
       </p>
       <MenuBarViewGallery settings={settings} />
       {isMacOS() && menubar && (
-        <div className="mt-2">
-          <div className="flex items-center gap-4 py-3.5">
+        <div className="mt-4 rounded-[10px] border border-[var(--border-subtle)] bg-[rgba(255,255,255,0.02)] p-4">
+          <div className="flex items-center gap-4">
             <div className="flex-1">
               <div className="text-sm font-[510]">Show quota in the menu bar</div>
               <div className="mt-0.5 text-xs text-[var(--text-tertiary)]">Check quota from the menu bar without opening the main window. Polling continues while hidden.</div>
