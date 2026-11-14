@@ -190,17 +190,17 @@ export function MenuBarViewGallery({ settings }: { settings: ResolvedSettings })
       </div>
 
       <div className="text-center">
-        <div className="flex flex-wrap items-center justify-center gap-4">
+        <div className="flex flex-wrap items-center justify-center gap-2">
           <h3 className="text-[17px] font-[510]">{preset.name}</h3>
           <Button
             type="button"
+            size="icon-sm"
             disabled={saving || envOverride || preset.id === applied}
             onClick={apply}
             aria-pressed={preset.id === applied}
-            className="min-w-[220px]"
+            aria-label={saving ? 'Saving…' : (preset.id === applied ? `${preset.name} selected` : `Use ${preset.name}`)}
           >
             {preset.id === applied ? <Check size={15} /> : <Plus size={15} />}
-            {saving ? 'Saving…' : (preset.id === applied ? `${preset.name} selected` : `Use ${preset.name}`)}
           </Button>
         </div>
         <div className="mt-4 flex justify-center gap-2" aria-label="Choose a layout">
