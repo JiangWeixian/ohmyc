@@ -75,7 +75,7 @@ function GallerySlide({ item, index, active, today }: { item: (typeof PRESETS)[n
           <HiddenMenuBarPreview />
         </div>
           )
-        : <MenubarPresetContent ref={previewRef} className="menu-bar-preview flex-1" view={item.id} today={today} preview />}
+        : <MenubarPresetContent ref={previewRef} className="menu-bar-preview" view={item.id} today={today} preview />}
     </div>
   )
 }

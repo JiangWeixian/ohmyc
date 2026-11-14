@@ -152,6 +152,9 @@ export const GalleryApply: Story = {
     fireEvent.keyDown(region, { key: 'PageDown' })
     expect(region.scrollTop).toBeGreaterThan(0)
     expect(canvas.queryByRole('button', { name: 'Open OhMyC →' })).not.toBeInTheDocument()
+    const quotaPreview = canvasElement.querySelector<HTMLElement>('[data-gallery-slide][data-position="active"] .menu-bar-preview')!
+    const openLabel = quotaPreview.querySelector<HTMLElement>('.menubar-open')!
+    expect(quotaPreview.getBoundingClientRect().bottom - openLabel.getBoundingClientRect().bottom).toBeLessThan(40)
     delete (globalThis as { __galleryCalls?: unknown[] }).__galleryCalls
   },
 }
