@@ -139,6 +139,8 @@ export const GalleryApply: Story = {
     fireEvent.pointerEnter(preview.closest('[data-gallery-slide]')!, { clientX: 800, clientY: 200, pointerType: 'mouse' })
     await waitFor(() => expect(preview).toHaveAttribute('data-tilting', 'true'))
     expect(Number(getComputedStyle(preview, '::before').zIndex)).toBeGreaterThanOrEqual(1)
+    expect(getComputedStyle(preview, '::before').backgroundImage).toContain('radial-gradient')
+    expect(getComputedStyle(preview, '::after').backgroundImage).toContain('radial-gradient')
     await waitFor(() => expect(Number(getComputedStyle(preview, '::before').opacity)).toBeGreaterThan(0.9))
 
     fireEvent.keyDown(canvas.getByLabelText(/Available layouts/), { key: 'ArrowRight' })

@@ -37,7 +37,7 @@
   transition: none;
 }
 
-.menu-bar-preview::before {
+.menubar-popover.menu-bar-preview::before {
   content: "";
   position: absolute;
   inset: 0;
@@ -48,7 +48,7 @@
   pointer-events: none;
 }
 
-.menu-bar-preview::after {
+.menubar-popover.menu-bar-preview::after {
   content: "";
   position: absolute;
   inset: 0;
@@ -73,8 +73,8 @@
     transition-duration: 0.01ms;
   }
 
-  .menu-bar-preview::before,
-  .menu-bar-preview::after {
+  .menubar-popover.menu-bar-preview::before,
+  .menubar-popover.menu-bar-preview::after {
     display: none;
   }
 }
