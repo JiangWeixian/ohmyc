@@ -191,7 +191,7 @@ export function MenuBarViewGallery({ settings }: { settings: ResolvedSettings })
 
       <div className="text-center">
         <div className="flex flex-wrap items-center justify-center gap-2">
-          <h3 className="text-[17px] font-[510]">{preset.name}</h3>
+          <h3 className="text-sm font-[510]">{preset.name}</h3>
           <Button
             type="button"
             size="icon-sm"
