@@ -135,6 +135,12 @@ export const GalleryApply: Story = {
     expect(canvas.queryByText('Changes the popover layout only. Quota polling stays on.')).not.toBeInTheDocument()
     expect(canvas.queryByText('A denser activity pattern for spotting streaks and quiet days.')).not.toBeInTheDocument()
 
+    const preview = canvasElement.querySelector<HTMLElement>('[data-gallery-slide][data-position="active"] .menu-bar-preview')!
+    fireEvent.pointerEnter(preview.closest('[data-gallery-slide]')!, { clientX: 800, clientY: 200, pointerType: 'mouse' })
+    await waitFor(() => expect(preview).toHaveAttribute('data-tilting', 'true'))
+    expect(Number(getComputedStyle(preview, '::before').zIndex)).toBeGreaterThanOrEqual(1)
+    await waitFor(() => expect(Number(getComputedStyle(preview, '::before').opacity)).toBeGreaterThan(0.9))
+
     fireEvent.keyDown(canvas.getByLabelText(/Available layouts/), { key: 'ArrowRight' })
     await canvas.findByText('Quota Focus')
     const region = canvas.getByRole('region', { name: 'Quota providers, scrollable' })
