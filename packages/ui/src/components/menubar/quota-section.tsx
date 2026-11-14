@@ -19,6 +19,7 @@ import { useQuota } from '@/hooks/use-quota'
 import { cn } from '@/lib/utils'
 
 import type { UsageSnapshot, UsageWindow } from '@/hooks/use-quota'
+import type { KeyboardEvent } from 'react'
 
 function accountWindows(snapshot: UsageSnapshot): UsageWindow[] {
   return snapshot.windows.filter(window => window.model == null)
@@ -34,6 +35,12 @@ function constraintScore(snapshot: UsageSnapshot): number {
     }
   }
   return max
+}
+
+function displayableSnapshots(snapshots: UsageSnapshot[]): UsageSnapshot[] {
+  return snapshots
+    .filter(snapshot => snapshot.status === 'ok' || accountWindows(snapshot).length > 0)
+    .toSorted((a, b) => constraintScore(b) - constraintScore(a))
 }
 
 function PopoverWindowRow({ window, nowMs }: { window: UsageWindow; nowMs: number }) {
@@ -96,13 +103,8 @@ export function MenubarQuotaSection({ nowMs }: { nowMs: number }) {
   const { data } = useQuota()
   const snapshots = data ?? []
 
-  // Providers with displayable account data: healthy ones, plus transient
-  // failures still carrying last-known windows (the stale merge). An
-  // early-warning surface must not vanish during a network blip.
-  const displayable = snapshots.filter(
-    snapshot => snapshot.status === 'ok' || accountWindows(snapshot).length > 0,
-  )
-  const ranked = displayable.toSorted((a, b) => constraintScore(b) - constraintScore(a))
+  // Healthy providers plus transient failures with last-known windows.
+  const ranked = displayableSnapshots(snapshots)
   const shown = ranked.slice(0, 3)
   // "+N more" counts only providers that could actually render a row —
   // one with only model-specific windows would otherwise inflate the count.
@@ -171,5 +173,131 @@ export function MenubarQuotaSection({ nowMs }: { nowMs: number }) {
         </div>
       )}
     </>
+  )
+}
+
+function QuotaFocusStatus({ children }: { children: string }) {
+  return (
+    <div className="py-10 text-center">
+      <div className="menubar-title mb-2">Quota</div>
+      <p className="text-xs text-[var(--text-tertiary)]">{children}</p>
+    </div>
+  )
+}
+
+function scrollProviderList(event: KeyboardEvent<HTMLDivElement>) {
+  const element = event.currentTarget
+  const page = element.clientHeight || 200
+  switch (event.key) {
+    case 'ArrowDown': {
+      element.scrollTop += 40
+      break
+    }
+    case 'ArrowUp': {
+      element.scrollTop -= 40
+      break
+    }
+    case 'PageDown': {
+      element.scrollTop += page
+      break
+    }
+    case 'PageUp': {
+      element.scrollTop -= page
+      break
+    }
+    case 'Home': {
+      element.scrollTop = 0
+      break
+    }
+    case 'End': {
+      element.scrollTop = element.scrollHeight
+      break
+    }
+    default: {
+      return
+    }
+  }
+  event.preventDefault()
+}
+
+export function MenubarQuotaFocus({ nowMs }: { nowMs: number }) {
+  const { data, isLoading, isError } = useQuota()
+  if (isLoading) {
+    return <QuotaFocusStatus>Loading quota…</QuotaFocusStatus>
+  }
+
+  const ranked = displayableSnapshots(data ?? [])
+  if (ranked.length === 0) {
+    return <QuotaFocusStatus>{isError ? 'Quota unavailable' : 'No quota data yet'}</QuotaFocusStatus>
+  }
+
+  const shown = ranked.slice(0, 4)
+  const moreCount = ranked.length - shown.length
+  const pressure = computePressure(data ?? [])
+  const fetchedAtMs = latestFetchedAt(shown)
+  const peakMeta = pressure.peakProvider && pressure.peakWindow
+    ? `${PROVIDER_META[pressure.peakProvider].name} ${windowTagShort(pressure.peakWindow)}`
+    : null
+
+  return (
+    <div>
+      <div className="mb-3 flex items-baseline justify-between">
+        <span className="menubar-title">Quota</span>
+        <span className="font-mono-theme text-[9px] text-[var(--text-quaternary)]">
+          {fetchedAtMs == null ? '' : formatUpdatedAgoShort(fetchedAtMs, nowMs)}
+        </span>
+      </div>
+      <div className="mb-4 grid grid-cols-2 gap-3 border-b border-[var(--border-subtle)] pb-4">
+        <div>
+          <div className="mb-1 font-mono-theme text-[9px] uppercase text-[var(--text-quaternary)]">Avg used</div>
+          <div data-testid="quota-avg" className="font-mono-theme text-xl font-[510]">
+            {pressure.avg == null ? '—' : `${Math.round(pressure.avg)}%`}
+          </div>
+        </div>
+        <div>
+          <div className="mb-1 font-mono-theme text-[9px] uppercase text-[var(--text-quaternary)]">
+            Peak{peakMeta ? ` · ${peakMeta}` : ''}
+          </div>
+          <div data-testid="quota-peak" className="font-mono-theme text-xl font-[510]">
+            {pressure.peak == null ? '—' : `${Math.round(pressure.peak)}%`}
+          </div>
+        </div>
+      </div>
+      <div
+        role="region"
+        aria-label="Quota providers, scrollable"
+        tabIndex={0}
+        onKeyDown={scrollProviderList}
+        className="max-h-[min(50vh,420px)] overflow-y-auto pr-1"
+      >
+        <div className="flex flex-col gap-3.5">
+          {shown.map(snapshot => (
+            <div
+              key={snapshot.provider}
+              data-quota-provider={snapshot.provider}
+              className={cn('flex flex-col gap-1.5', snapshot.status !== 'ok' && 'opacity-50')}
+            >
+              <div className="flex items-center gap-1.5">
+                <span className="font-mono-theme text-[11px] font-[510] text-[var(--text-primary)]">
+                  {PROVIDER_META[snapshot.provider].name}
+                </span>
+              </div>
+              {accountWindows(snapshot).map(window => (
+                <PopoverWindowRow
+                  key={`${windowTagShort(window)}|${window.windowSeconds ?? ''}|${window.resetsAt ?? ''}`}
+                  window={window}
+                  nowMs={nowMs}
+                />
+              ))}
+            </div>
+          ))}
+        </div>
+      </div>
+      {moreCount > 0 && (
+        <div className="mt-2.5 font-mono-theme text-[10px] text-[var(--text-quaternary)]">
+          {`+ ${moreCount} more`}
+        </div>
+      )}
+    </div>
   )
 }

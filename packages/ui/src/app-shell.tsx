@@ -22,6 +22,7 @@ import { CommandsPage } from './routes/commands-page'
 import { MonitorPage } from './routes/monitor-page'
 import { PluginsPage } from './routes/plugins-page'
 import { QuotaPage } from './routes/quota-page'
+import { SettingsPage } from './routes/settings-page'
 import { SkillsPage } from './routes/skills-page'
 import { TimelinePage } from './routes/timeline-page'
 import { useThemeCommands } from './theme'
@@ -102,6 +103,7 @@ export function AppLayout() {
         <Route path="/explore/skills" element={<ExplorerLayout><SkillsPage /></ExplorerLayout>} />
         <Route path="/explore/commands" element={<ExplorerLayout><CommandsPage /></ExplorerLayout>} />
         <Route path="/explore/plugins" element={<ExplorerLayout><PluginsPage /></ExplorerLayout>} />
+        <Route path="/explore/settings" element={<ExplorerLayout><SettingsPage /></ExplorerLayout>} />
 
         <Route path="/explore" element={<Navigate to="/explore/timeline" replace />} />
         <Route path="/explore/*" element={<Navigate to="/explore/timeline" replace />} />

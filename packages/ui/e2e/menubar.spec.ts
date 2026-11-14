@@ -10,23 +10,22 @@ test.describe('Menubar popover', () => {
     await expect(page.getByText('Activity', { exact: true })).toBeVisible()
   })
 
-  test('switches between area chart and heatmap views', async ({ page }) => {
-    await page.goto(`${MENUBAR}?scenario=ready`)
+  test('renders heatmap from saved settings without a temporary switch', async ({ page }) => {
+    await page.goto(`${MENUBAR}?scenario=readyHeatmap`)
 
-    await expect(page.locator('[data-menubar-page]')).toBeVisible()
+    await expect(page.locator('[data-layout="heatmap"]')).toBeVisible()
+    await expect(page.locator('[data-heat-cell]').first()).toBeVisible()
+    await expect(page.getByRole('tab', { name: 'Area chart view' })).toHaveCount(0)
+    await expect(page.getByRole('tab', { name: 'Heatmap view' })).toHaveCount(0)
+  })
 
-    const areaButton = page.getByRole('tab', { name: 'Area chart view' })
-    const heatmapButton = page.getByRole('tab', { name: 'Heatmap view' })
+  test('renders quota focus from saved settings', async ({ page }) => {
+    await page.goto(`${MENUBAR}?scenario=readyQuota`)
 
-    await expect(areaButton).toHaveAttribute('aria-pressed', 'true')
-    await expect(heatmapButton).toHaveAttribute('aria-pressed', 'false')
-
-    await heatmapButton.click()
-    await expect(heatmapButton).toHaveAttribute('aria-pressed', 'true')
-    await expect(areaButton).toHaveAttribute('aria-pressed', 'false')
-
-    await areaButton.click()
-    await expect(areaButton).toHaveAttribute('aria-pressed', 'true')
+    await expect(page.locator('[data-layout="quota"]')).toBeVisible()
+    await expect(page.getByRole('region', { name: 'Quota providers, scrollable' })).toBeVisible()
+    await expect(page.getByRole('tab', { name: 'Area chart view' })).toHaveCount(0)
+    await expect(page.getByRole('tab', { name: 'Heatmap view' })).toHaveCount(0)
   })
 
   test('Open OhMyC button triggers invoke', async ({ page }) => {

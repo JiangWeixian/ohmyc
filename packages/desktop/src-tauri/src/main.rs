@@ -149,6 +149,12 @@ fn main() {
             #[cfg(target_os = "macos")]
             ohmyc_desktop_lib::tray_stats::macos::start(_tray)?;
 
+            // Apply the persisted tray visibility (env > settings file > default).
+            ohmyc_desktop_lib::api::settings::apply_menubar_visibility(
+                app.handle(),
+                ohmyc_core::settings::resolve().menubar_icon_visible.value,
+            );
+
             let popover_window = app.get_webview_window("popover").unwrap();
 
             // The web layer paints the popover chrome. Avoid macOS vibrancy here:
@@ -213,8 +219,25 @@ fn main() {
 
             Ok(())
         })
-        .run(tauri::generate_context!())
-        .expect("error while running tauri application");
+        .build(tauri::generate_context!())
+        .expect("error while building tauri application")
+        .run(|app_handle, event| {
+            #[cfg(target_os = "macos")]
+            {
+                if let tauri::RunEvent::Reopen { .. } = event {
+                    if let Err(e) = ohmyc_desktop_lib::windows::open_main_window(app_handle.clone()) {
+                        ohmyc_desktop_lib::quota_poller::log_line(
+                            "ui-events.log",
+                            &format!("{} reopen main window failed: {e}", chrono::Local::now().to_rfc3339()),
+                        );
+                    }
+                }
+            }
+            #[cfg(not(target_os = "macos"))]
+            {
+                let _ = (app_handle, &event);
+            }
+        });
 }
 
 #[tauri::command]

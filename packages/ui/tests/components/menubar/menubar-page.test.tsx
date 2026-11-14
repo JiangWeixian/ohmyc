@@ -6,7 +6,6 @@ import {
   screen,
   waitFor,
 } from '@testing-library/react'
-import userEvent from '@testing-library/user-event'
 import {
   afterEach,
   beforeAll,
@@ -18,9 +17,11 @@ import {
 } from 'vitest'
 
 import { MenubarPage } from '@/components/menubar/menubar-page'
+import { defaultResolvedSettings, registerMockSettings } from '@/lib/mock-settings'
 import { __setTransportForTests, resetTransportForTests } from '@/lib/transport'
 import { resetMock, setMockHandler } from '@/lib/transport/mock'
 
+import type { MenubarView } from '@/hooks/use-app-settings'
 import type { ReactNode } from 'react'
 
 vi.mock('@tauri-apps/api/core', () => ({
@@ -49,6 +50,12 @@ function setupTimelineMock() {
   })
 }
 
+function setMenubarView(view: MenubarView) {
+  const settings = defaultResolvedSettings()
+  settings.menubarView = { value: view, source: 'settings', envVar: null }
+  setMockHandler('settings.get', async () => settings)
+}
+
 function wrapper({ children }: { children: ReactNode }) {
   const client = new QueryClient({ defaultOptions: { queries: { retry: false } } })
   return <QueryClientProvider client={client}>{children}</QueryClientProvider>
@@ -68,6 +75,7 @@ beforeAll(() => {
 
 beforeEach(() => {
   __setTransportForTests('mock')
+  registerMockSettings()
   setupTimelineMock()
   // The activity surface only renders when setup is ready.
   setMockHandler('setup.status', async () => ({ state: 'ready' }))
@@ -86,12 +94,11 @@ describe('MenubarPage', () => {
     expect(title.tagName.toLowerCase()).toBe('span')
   })
 
-  it('keeps the ACTIVITY title after switching to heatmap view', async () => {
+  it('keeps the ACTIVITY title when heatmap is resolved from settings', async () => {
+    setMenubarView('heatmap')
     render(<MenubarPage />, { wrapper })
-    await screen.findByText(/^Activity$/i)
-    const heatmapBtn = screen.getByRole('tab', { name: /heatmap view/i })
-    await userEvent.click(heatmapBtn)
     expect(await screen.findByText(/^Activity$/i)).toBeInTheDocument()
+    expect(screen.queryByRole('tab', { name: /heatmap view/i })).not.toBeInTheDocument()
   })
 
   it('renders the DualLineChart in line view (Recharts wrapper present)', async () => {
@@ -103,16 +110,16 @@ describe('MenubarPage', () => {
   })
 
   it('does not render the Recharts wrapper in heatmap view', async () => {
+    setMenubarView('heatmap')
     const { container } = render(<MenubarPage />, { wrapper })
-    await screen.findByText(/^Activity$/i)
-    await userEvent.click(screen.getByRole('tab', { name: /heatmap view/i }))
+    await waitFor(() => expect(container.querySelector('[data-layout="heatmap"]')).toBeInTheDocument())
     expect(container.querySelector('.recharts-wrapper')).not.toBeInTheDocument()
   })
 
   it('does not clip the heatmap hover tooltip inside the chart slot', async () => {
+    setMenubarView('heatmap')
     const { container } = render(<MenubarPage />, { wrapper })
-    await screen.findByText(/^Activity$/i)
-    await userEvent.click(screen.getByRole('tab', { name: /heatmap view/i }))
+    await waitFor(() => expect(container.querySelector('[data-layout="heatmap"]')).toBeInTheDocument())
 
     // Hover the first (top-left) cell — for top-row cells the tooltip extends
     // ABOVE the heatmap wrap, overlapping the header region of the popover.
@@ -229,22 +236,25 @@ describe('MenubarPage (setup gate)', () => {
   })
 })
 
-it('uses event sessions in both chart tooltips and creation counts in the 16-week total', async () => {
-  const today = new Date()
-  const date = [today.getFullYear(), String(today.getMonth() + 1).padStart(2, '0'), String(today.getDate()).padStart(2, '0')].join('-')
-  setMockHandler('timeline.status', async () => ({ sessionCount: 5, usageMode: 'events', usageIncomplete: 1 }))
-  setMockHandler('timeline.heatmap', async args => ({
-    data: [{ date, value: ({ tokens: 15_000, sessions: 5, event_sessions: 2 } as Record<string, number>)[(args as { metric: string }).metric] }],
-  }))
-  const { container } = render(<MenubarPage />, { wrapper })
-  await waitFor(() => expect(document.querySelector('[data-kpi="sessions"]')).toHaveTextContent('5'))
-  const chart = container.querySelector('.recharts-surface')!
-  fireEvent.focus(chart)
-  expect(await screen.findByText('2 sessions · 15K tokens')).toBeInTheDocument()
-  await userEvent.click(screen.getByRole('tab', { name: /heatmap view/i }))
-  fireEvent.mouseEnter(container.querySelectorAll('[data-heat-cell]')[111])
-  expect(await screen.findByText('2 sessions · 15K tokens')).toBeInTheDocument()
-  expect(document.querySelector('[data-kpi="sessions"]')).toHaveTextContent('5')
+describe.each(['area', 'heatmap'] as const)('MenubarPage %s event sessions', (view) => {
+  it('uses event sessions in chart tooltips and creation counts in the 16-week total', async () => {
+    const today = new Date()
+    const date = [today.getFullYear(), String(today.getMonth() + 1).padStart(2, '0'), String(today.getDate()).padStart(2, '0')].join('-')
+    setMockHandler('timeline.status', async () => ({ sessionCount: 5, usageMode: 'events', usageIncomplete: 1 }))
+    setMockHandler('timeline.heatmap', async args => ({
+      data: [{ date, value: ({ tokens: 15_000, sessions: 5, event_sessions: 2 } as Record<string, number>)[(args as { metric: string }).metric] }],
+    }))
+    setMenubarView(view)
+    const { container } = render(<MenubarPage />, { wrapper })
+    await waitFor(() => expect(document.querySelector('[data-kpi="sessions"]')).toHaveTextContent('5'))
+    if (view === 'area') {
+      fireEvent.focus(container.querySelector('.recharts-surface')!)
+    } else {
+      fireEvent.mouseEnter(container.querySelectorAll('[data-heat-cell]')[111])
+    }
+    expect(await screen.findByText('2 sessions · 15K tokens')).toBeInTheDocument()
+    expect(document.querySelector('[data-kpi="sessions"]')).toHaveTextContent('5')
+  })
 })
 
 it('keeps Sessions visible when token queries fail', async () => {
@@ -254,10 +264,10 @@ it('keeps Sessions visible when token queries fail', async () => {
     }
     return { data: [{ date: '2026-05-22', value: 7182 }] }
   })
+  setMenubarView('heatmap')
   render(<MenubarPage />, { wrapper })
   await waitFor(() => expect(document.querySelector('[data-kpi="sessions"]')).toHaveTextContent('7,182'))
   await waitFor(() => expect(document.querySelector('[data-kpi="tokens"]')).toHaveTextContent('—'))
-  await userEvent.click(screen.getByRole('tab', { name: /heatmap view/i }))
   fireEvent.mouseEnter(document.querySelector('[data-heat-cell]')!)
   expect(await screen.findByText(/sessions · — tokens/)).toBeInTheDocument()
 })
@@ -275,12 +285,12 @@ describe.each(['area', 'heatmap'] as const)('MenubarPage %s tooltip availability
       return { data: [{ date, value: ({ tokens: 15_000, sessions: 5, event_sessions: 2 } as Record<string, number>)[metric] }] }
     })
     const client = new QueryClient({ defaultOptions: { queries: { retry: false } } })
+    setMenubarView(view)
     const { container } = render(<QueryClientProvider client={client}><MenubarPage /></QueryClientProvider>)
     await waitFor(() => expect(container.querySelector('[data-kpi="sessions"]')).toHaveTextContent('5'))
     if (view === 'area') {
       fireEvent.focus(container.querySelector('.recharts-surface')!)
     } else {
-      await userEvent.click(screen.getByRole('tab', { name: /heatmap view/i }))
       fireEvent.mouseEnter(container.querySelectorAll('[data-heat-cell]')[111])
     }
     if (failure === 'refetch') {

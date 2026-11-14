@@ -17,7 +17,10 @@ use ohmyc_core::quota::{QuotaRegistry, SnapshotStatus, UsageSnapshot};
 use tauri::{AppHandle, Emitter, Manager};
 
 pub const QUOTA_CHANGED_EVENT: &str = "quota:changed";
-pub const DEFAULT_POLL_SECS: u64 = 300;
+
+/// Wake channel for the poller thread: `settings_set` sends a unit to cut
+/// the current sleep short so new settings apply immediately.
+pub struct PollerWake(pub std::sync::mpsc::Sender<()>);
 
 /// Shared snapshot cache. Registered via `app.manage(...)` at setup.
 #[derive(Default)]
@@ -40,16 +43,6 @@ impl QuotaCache {
     pub fn is_empty(&self) -> bool {
         self.snapshots.read().unwrap().is_empty()
     }
-}
-
-/// Poll interval: `OHMYC_QUOTA_POLL_SECS` (seconds, > 0) or 5 minutes.
-pub fn poll_interval() -> Duration {
-    std::env::var("OHMYC_QUOTA_POLL_SECS")
-        .ok()
-        .and_then(|v| v.trim().parse::<u64>().ok())
-        .filter(|secs| *secs > 0)
-        .map(Duration::from_secs)
-        .unwrap_or(Duration::from_secs(DEFAULT_POLL_SECS))
 }
 
 /// Statuses where a previously-good snapshot stays meaningful when the
@@ -139,7 +132,11 @@ pub fn refresh_now(app: &AppHandle) -> Vec<UsageSnapshot> {
             cached
         }
     };
-    let snapshots = merge_stale(&previous, QuotaRegistry::new().fetch_all());
+    let settings = ohmyc_core::settings::resolve();
+    let snapshots = merge_stale(
+        &previous,
+        QuotaRegistry::new().fetch_all(&|p| settings.quota_enabled.value && settings.provider_enabled(p)),
+    );
     cache.set(snapshots.clone());
     persist_cache(&snapshots);
     let _ = app.emit(QUOTA_CHANGED_EVENT, &snapshots);
@@ -150,6 +147,7 @@ fn status_label(snapshot: &UsageSnapshot) -> &'static str {
     match &snapshot.status {
         SnapshotStatus::Ok => "ok",
         SnapshotStatus::NotLoggedIn => "not-logged-in",
+        SnapshotStatus::Disabled => "disabled",
         SnapshotStatus::TokenExpired => "token-expired",
         SnapshotStatus::RateLimited { .. } => "rate-limited",
         SnapshotStatus::Unsupported { .. } => "unsupported",
@@ -204,12 +202,17 @@ pub fn prevent_app_nap() {
 /// Spawn the polling thread. The first fetch runs immediately so the cache is
 /// warm before the UI asks; failures inside a provider never surface here —
 /// `fetch_all` already collapses them into per-provider snapshot statuses.
+/// Each cycle re-resolves settings (interval + switches) and then waits on
+/// the wake channel: `recv_timeout` returns either on timeout (next regular
+/// cycle) or on a settings write (immediate cycle with the new settings).
 pub fn spawn_poller(app: &AppHandle) {
     #[cfg(target_os = "macos")]
     prevent_app_nap();
     let app = app.clone();
-    let interval = poll_interval();
+    let (tx, rx) = std::sync::mpsc::channel::<()>();
+    app.manage(PollerWake(tx));
     thread::spawn(move || loop {
+        let interval = Duration::from_secs(ohmyc_core::settings::resolve().quota_poll_secs.value);
         let cycle = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
             let started = Instant::now();
             let snapshots = refresh_now(&app);
@@ -230,42 +233,36 @@ pub fn spawn_poller(app: &AppHandle) {
                 chrono::Local::now().to_rfc3339()
             ));
         }
-        thread::sleep(interval);
+        let _ = rx.recv_timeout(interval);
     });
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
+    use ohmyc_core::quota::{QuotaProvider, UsageWindow, WindowKind};
     use std::sync::Mutex;
 
     static ENV_LOCK: Mutex<()> = Mutex::new(());
 
     #[test]
-    fn poll_interval_defaults_to_five_minutes() {
-        let _guard = ENV_LOCK.lock().unwrap();
-        let prev = std::env::var("OHMYC_QUOTA_POLL_SECS").ok();
-        std::env::remove_var("OHMYC_QUOTA_POLL_SECS");
-        assert_eq!(poll_interval(), Duration::from_secs(300));
-        if let Some(v) = prev {
-            std::env::set_var("OHMYC_QUOTA_POLL_SECS", v);
-        }
-    }
-
-    #[test]
-    fn poll_interval_accepts_valid_override_and_rejects_garbage() {
-        let _guard = ENV_LOCK.lock().unwrap();
-        let prev = std::env::var("OHMYC_QUOTA_POLL_SECS").ok();
-        std::env::set_var("OHMYC_QUOTA_POLL_SECS", "60");
-        assert_eq!(poll_interval(), Duration::from_secs(60));
-        for bad in ["0", "-5", "abc", ""] {
-            std::env::set_var("OHMYC_QUOTA_POLL_SECS", bad);
-            assert_eq!(poll_interval(), Duration::from_secs(300), "input {bad:?}");
-        }
-        match prev {
-            Some(v) => std::env::set_var("OHMYC_QUOTA_POLL_SECS", v),
-            None => std::env::remove_var("OHMYC_QUOTA_POLL_SECS"),
-        }
+    fn disabled_never_merges_stale() {
+        let mut previous = vec![UsageSnapshot::with_status(QuotaProvider::Claude, SnapshotStatus::Ok)];
+        previous[0].windows.push(UsageWindow {
+            kind: WindowKind::Session,
+            label: "5h".to_string(),
+            used_percent: Some(42.0),
+            resets_at: None,
+            window_seconds: Some(18000),
+            model: None,
+        });
+        let next = vec![UsageSnapshot::with_status(
+            QuotaProvider::Claude,
+            SnapshotStatus::Disabled,
+        )];
+        let merged = merge_stale(&previous, next);
+        assert!(merged[0].windows.is_empty());
+        assert!(matches!(merged[0].status, SnapshotStatus::Disabled));
     }
 
     #[test]

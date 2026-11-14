@@ -11,7 +11,11 @@ import { renderWithProviders } from '../../test/render-with-providers'
 import { QuotaView } from '@/components/quota/quota-view'
 import { __setTransportForTests } from '@/lib/transport'
 import { resetMock, setMockHandler } from '@/lib/transport/mock'
-import { quotaSnapshots, quotaSnapshotsLoggedOut } from '@/stories/fixtures/quota'
+import {
+  quotaSnapshots,
+  quotaSnapshotsDisabled,
+  quotaSnapshotsLoggedOut,
+} from '@/stories/fixtures/quota'
 
 describe('QuotaView', () => {
   beforeEach(() => {
@@ -94,5 +98,14 @@ describe('QuotaView', () => {
     setMockHandler('quota.refresh', async () => quotaSnapshots())
     screen.getByRole('button', { name: /refresh/i }).click()
     await waitFor(() => expect(screen.queryByText(/Couldn’t load quota snapshots/)).not.toBeInTheDocument())
+  })
+
+  it('renders disabled providers as polling-off cards with a settings hint', async () => {
+    setMockHandler('quota.list', async () => quotaSnapshotsDisabled())
+    renderWithProviders(<QuotaView />)
+
+    await waitFor(() => expect(screen.getAllByText('Polling disabled').length).toBeGreaterThan(0))
+    expect(screen.getAllByText('Polling disabled')).toHaveLength(8)
+    expect(screen.getAllByText(/Enable it in Settings/).length).toBeGreaterThan(0)
   })
 })

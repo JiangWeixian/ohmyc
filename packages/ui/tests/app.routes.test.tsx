@@ -48,6 +48,13 @@ vi.mock('@/routes/quota-page', () => ({
   },
 }))
 
+vi.mock('@/routes/settings-page', () => ({
+  SettingsPage: () => {
+    const location = useLocation()
+    return <div data-testid="explorer-route">{location.pathname}</div>
+  },
+}))
+
 vi.mock('@/components/menubar/menubar-page', () => ({
   MenubarPage: () => <div data-testid="menubar-route">Menubar route</div>,
 }))

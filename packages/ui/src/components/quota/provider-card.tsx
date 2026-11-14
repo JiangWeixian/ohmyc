@@ -150,6 +150,16 @@ function StateBody({ snapshot }: { snapshot: UsageSnapshot }) {
         </div>
       )
     }
+    case 'disabled': {
+      return (
+        <div className="flex flex-col gap-2 pb-1 pt-1.5">
+          <p className="text-[13px] font-[510] text-[var(--text-secondary)]">Polling disabled</p>
+          <p className="font-mono-theme text-[11px] leading-[1.6] text-[var(--text-quaternary)]">
+            Enable it in Settings → Quota.
+          </p>
+        </div>
+      )
+    }
     case 'unsupported': {
       return (
         <div className="flex flex-col gap-2 pb-1 pt-1.5">
@@ -172,6 +182,8 @@ function stateBadgeLabel(snapshot: UsageSnapshot): string | null {
     case 'rateLimited': { return 'rate limited'
     }
     case 'error': { return 'error'
+    }
+    case 'disabled': { return 'polling off'
     }
     case 'unsupported': { return 'polling off'
     }
