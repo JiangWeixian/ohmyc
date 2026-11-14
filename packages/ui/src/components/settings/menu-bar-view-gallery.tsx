@@ -190,8 +190,20 @@ export function MenuBarViewGallery({ settings }: { settings: ResolvedSettings })
       </div>
 
       <div className="text-center">
-        <h3 className="text-[17px] font-[510]">{preset.name}</h3>
-        <div className="my-4 flex justify-center gap-2" aria-label="Choose a layout">
+        <div className="flex flex-wrap items-center justify-center gap-4">
+          <h3 className="text-[17px] font-[510]">{preset.name}</h3>
+          <Button
+            type="button"
+            disabled={saving || envOverride || preset.id === applied}
+            onClick={apply}
+            aria-pressed={preset.id === applied}
+            className="min-w-[220px]"
+          >
+            {preset.id === applied ? <Check size={15} /> : <Plus size={15} />}
+            {saving ? 'Saving…' : (preset.id === applied ? `${preset.name} selected` : `Use ${preset.name}`)}
+          </Button>
+        </div>
+        <div className="mt-4 flex justify-center gap-2" aria-label="Choose a layout">
           {PRESETS.map((item, index) => (
             <button
               key={item.id}
@@ -203,16 +215,6 @@ export function MenuBarViewGallery({ settings }: { settings: ResolvedSettings })
             />
           ))}
         </div>
-        <Button
-          type="button"
-          disabled={saving || envOverride || preset.id === applied}
-          onClick={apply}
-          aria-pressed={preset.id === applied}
-          className="min-w-[220px]"
-        >
-          {preset.id === applied ? <Check size={15} /> : <Plus size={15} />}
-          {saving ? 'Saving…' : (preset.id === applied ? `${preset.name} selected` : `Use ${preset.name}`)}
-        </Button>
         {error && <p role="alert" className="mt-2 text-xs text-[var(--text-secondary)]">{error}</p>}
         <EnvNote setting={settings.menubarView} />
       </div>
