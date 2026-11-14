@@ -156,6 +156,39 @@ export const GalleryApply: Story = {
   },
 }
 
+export const GalleryMenuBarVisibility: Story = {
+  decorators: [withMockTransport(() => {
+    installGalleryHandlers()
+    const calls: unknown[] = []
+    let state = defaultResolvedSettings()
+    setMockHandler('settings.get', async () => state)
+    setMockHandler('settings.set', async (args) => {
+      calls.push(args)
+      state = mergeSettingsPatch(state, (args as { patch: Parameters<typeof mergeSettingsPatch>[1] }).patch)
+      return state
+    })
+    ;(globalThis as { __visibilityGalleryCalls?: unknown[] }).__visibilityGalleryCalls = calls
+  })],
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement)
+    const calls = (globalThis as { __visibilityGalleryCalls?: unknown[] }).__visibilityGalleryCalls!
+    await canvas.findByRole('heading', { name: 'Menu bar' })
+    expect(canvas.queryByRole('switch', { name: 'Show menu bar icon' })).not.toBeInTheDocument()
+
+    fireEvent.click(await canvas.findByRole('button', { name: 'Show Menu bar hidden' }))
+    fireEvent.click(await canvas.findByRole('button', { name: 'Use Menu bar hidden' }))
+    await waitFor(() => expect(calls).toHaveLength(1))
+    expect(calls[0]).toEqual({ patch: { menubar: { iconVisible: false } } })
+    await canvas.findByRole('button', { name: 'Menu bar hidden selected' })
+
+    fireEvent.click(canvas.getByRole('button', { name: 'Show Quota Focus' }))
+    fireEvent.click(await canvas.findByRole('button', { name: 'Use Quota Focus' }))
+    await waitFor(() => expect(calls).toHaveLength(2))
+    expect(calls[1]).toEqual({ patch: { menubar: { view: 'quota', iconVisible: true } } })
+    delete (globalThis as { __visibilityGalleryCalls?: unknown }).__visibilityGalleryCalls
+  },
+}
+
 export const GalleryDuplicateApply: Story = {
   decorators: [withMockTransport(() => {
     installGalleryHandlers()
