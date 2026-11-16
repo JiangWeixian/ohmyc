@@ -21,6 +21,7 @@ import {
   ChartContainer,
   ChartTooltip,
 } from '@/components/chart'
+import { getAreaBaseValue } from '@/lib/area-chart'
 import { formatTokens } from '@/lib/format-tokens'
 
 import type { HeatmapPoint } from '@/hooks/use-timeline'
@@ -135,6 +136,7 @@ export function AreaTrendChart({ tokens, sessions, sessionsUnavailable = false }
     [sessions, sessionsUnavailable],
   )
   const peak = useMemo(() => findPeak(chartData), [chartData])
+  const baseValue = useMemo(() => getAreaBaseValue(tokens), [tokens])
 
   return (
     <SessionMapContext.Provider value={sessionMap}>
@@ -162,7 +164,7 @@ export function AreaTrendChart({ tokens, sessions, sessionsUnavailable = false }
           </defs>
           {/* Axes stay hidden: the menubar chart should read as a clean sparkline. */}
           <XAxis dataKey="iso" hide />
-          <YAxis hide width={0} domain={[0, 'dataMax']} />
+          <YAxis hide width={0} domain={[baseValue, 'dataMax']} />
           <ChartTooltip
             cursor={{ stroke: 'var(--border-default)' }}
             content={<ChartTooltipContent />}
@@ -170,7 +172,7 @@ export function AreaTrendChart({ tokens, sessions, sessionsUnavailable = false }
           <Area
             dataKey="tokens"
             type="natural"
-            baseValue={0}
+            baseValue={baseValue}
             stroke={`url(#${strokeId})`}
             fill={`url(#${fillId})`}
             fillOpacity={1}
