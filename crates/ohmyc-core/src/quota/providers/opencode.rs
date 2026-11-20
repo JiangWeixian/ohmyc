@@ -9,9 +9,10 @@
 //!   engineered providers. (A pre-2026-08 cookie/dashboard scraping fallback
 //!   exists in other tools; the API superseded it and is not implemented
 //!   here.)
-//! - Credentials: env `OPENCODE_API_KEY` → `<xdg-data>/opencode/auth.json`
-//!   (`opencode-go` entry, `opencode` fallback). No expiry field exists, so
-//!   401/403 → TokenExpired is the only staleness signal.
+//! - Credentials: env `OPENCODE_API_KEY` → v2 `<xdg-data>/opencode/opencode.db`
+//!   (active `opencode-go`, then `opencode`) → v1 `auth.json`. OAuth expiry is
+//!   checked locally and the active workspace is sent as `x-opencode-org-id`.
+//!   Dead credentials surface as 401/403 → TokenExpired.
 //! - Three windows: rolling 5h (20% of the monthly cap), weekly (50%),
 //!   monthly (100%, anchored to the billing cycle).
 //! - **Trap: `percent` is a 0–100 percentage, NOT a 0–1 fraction** (CodexBar
@@ -21,7 +22,7 @@
 
 use serde::Deserialize;
 
-use crate::quota::credentials::{self, CredentialOutcome};
+use crate::quota::credentials::{self, OpenCodeGoOutcome};
 use crate::quota::http;
 use crate::quota::types::{Provenance, QuotaProvider, SnapshotStatus, UsageSnapshot, UsageWindow, WindowKind};
 
@@ -38,17 +39,25 @@ impl OpenCodeGoQuota {
     }
 
     pub fn fetch(&self) -> UsageSnapshot {
-        let token = match credentials::opencode_go() {
-            CredentialOutcome::Token(token) => token,
-            CredentialOutcome::NotLoggedIn => return with_status(SnapshotStatus::NotLoggedIn),
-            CredentialOutcome::Expired => return with_status(SnapshotStatus::TokenExpired),
+        let credential = match credentials::opencode_go() {
+            OpenCodeGoOutcome::Credential(credential) => credential,
+            OpenCodeGoOutcome::NotLoggedIn => return with_status(SnapshotStatus::NotLoggedIn),
+            OpenCodeGoOutcome::Expired => return with_status(SnapshotStatus::TokenExpired),
+            OpenCodeGoOutcome::Error => {
+                return with_status(SnapshotStatus::Error {
+                    message: "failed to read OpenCode v2 credentials".to_string(),
+                });
+            }
         };
         let url = format!(
             "{}/zen/go/v1/usage",
             super::base_url("OHMYC_QUOTA_OPENCODE_BASE_URL", DEFAULT_BASE_URL)
         );
-        let auth = format!("Bearer {token}");
-        let headers = [("authorization", auth.as_str()), ("accept", "application/json")];
+        let auth = format!("Bearer {}", credential.token);
+        let mut headers = vec![("authorization", auth.as_str()), ("accept", "application/json")];
+        if let Some(workspace_id) = credential.workspace_id.as_deref() {
+            headers.push(("x-opencode-org-id", workspace_id));
+        }
         let mut snapshot = super::finish(
             QuotaProvider::OpenCodeGo,
             http::get_json(&url, &headers, http::DEFAULT_TIMEOUT),
@@ -141,7 +150,7 @@ mod tests {
 
     const FIXTURE: &str = include_str!("../fixtures/opencode_go_usage.json");
 
-    fn opencode_env(home: &tempfile::TempDir) -> (EnvGuard, EnvGuard) {
+    fn opencode_env(home: &tempfile::TempDir) -> (EnvGuard, EnvGuard, EnvGuard) {
         std::fs::write(
             home.path().join("auth.json"),
             r#"{"opencode-go":{"type":"api","key":"oc-test-key"}}"#,
@@ -150,6 +159,7 @@ mod tests {
         (
             EnvGuard::set("OHMYC_QUOTA_OPENCODE_HOME", home.path().to_str().unwrap()),
             EnvGuard::unset("OPENCODE_API_KEY"),
+            EnvGuard::unset("OPENCODE_DB"),
         )
     }
 
@@ -214,6 +224,38 @@ mod tests {
         assert!(matches!(snapshot.status, SnapshotStatus::Ok));
         assert_eq!(snapshot.provenance, Provenance::OfficialEndpoint);
         assert_eq!(snapshot.windows.len(), 3);
+    }
+
+    #[test]
+    fn fetch_uses_v2_oauth_and_active_workspace() {
+        let _lock = ENV_LOCK.lock().unwrap();
+        let home = tempfile::tempdir().unwrap();
+        let _env = opencode_env(&home);
+        let conn = rusqlite::Connection::open(home.path().join("opencode.db")).unwrap();
+        conn.execute(
+            "CREATE TABLE credential (integration_id TEXT, value TEXT, active INTEGER)",
+            [],
+        )
+        .unwrap();
+        let expires = chrono::Utc::now().timestamp_millis() + 3_600_000;
+        let value = format!(
+            r#"{{"type":"oauth","access":"v2-oauth","refresh":"unused","expires":{expires},"metadata":{{"orgID":"wrk-current"}}}}"#
+        );
+        conn.execute(
+            "INSERT INTO credential (integration_id, value, active) VALUES ('opencode', ?1, 1)",
+            [value],
+        )
+        .unwrap();
+        drop(conn);
+        let server = MiniServer::respond(200, &[], FIXTURE);
+        let _base = EnvGuard::set("OHMYC_QUOTA_OPENCODE_BASE_URL", &server.url);
+        let snapshot = OpenCodeGoQuota::new().fetch();
+        assert!(matches!(snapshot.status, SnapshotStatus::Ok));
+        let requests = server.requests();
+        assert_eq!(requests.len(), 1);
+        let request = requests[0].to_lowercase();
+        assert!(request.contains("authorization: bearer v2-oauth"));
+        assert!(request.contains("x-opencode-org-id: wrk-current"));
     }
 
     #[test]
