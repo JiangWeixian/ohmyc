@@ -20,7 +20,7 @@ jobs:
   build:
     strategy:
       matrix:
-        platform: [macos-14, windows-latest]
+        platform: [macos-15, windows-latest]
     runs-on: ${{ matrix.platform }}
     env:
       NODE_OPTIONS: --max-old-space-size=4096
