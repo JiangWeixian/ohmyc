@@ -34,7 +34,6 @@ describe('CLI timeline plugin build assets', () => {
 
     copyTimelinePluginAssets({ outputDir })
 
-    expect(existsSync(path.join(outputDir, '.agents/plugins/marketplace.json'))).toBe(true)
     expect(existsSync(path.join(outputDir, '.claude-plugin/plugin.json'))).toBe(true)
     expect(existsSync(path.join(outputDir, '.codex-plugin/plugin.json'))).toBe(true)
     expect(existsSync(path.join(outputDir, 'hooks/hooks.json'))).toBe(true)
@@ -46,7 +45,6 @@ describe('CLI timeline plugin build assets', () => {
   it('does not copy the removed monorepo plugin source tree', () => {
     expect(resolveTimelinePluginPackageDir()).toContain(`${path.sep}node_modules${path.sep}@ohmyc${path.sep}timeline-plugin`)
     expect(timelinePluginCopyPaths).toEqual([
-      '.agents/plugins',
       '.claude-plugin',
       '.codex-plugin',
       'dist',

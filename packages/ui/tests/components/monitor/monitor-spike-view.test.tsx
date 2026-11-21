@@ -64,4 +64,31 @@ describe('MonitorSpikeView', () => {
     expect(screen.getByText('turns').nextSibling?.textContent).toBe('18')
     expect(screen.getByTestId('computer-backdrop')).not.toHaveTextContent('18.4M')
   })
+
+  it('explains a wall of zeros instead of leaving it looking broken', async () => {
+    setMockHandler('timeline.status', async () => ({ sessionCount: 0, lastSyncAt: null }))
+    setMockHandler('timeline.events', async () => ({ days: [] }))
+
+    renderWithProviders(<MonitorSpikeView />)
+
+    expect(
+      await screen.findByText(/No sessions recorded yet/i),
+    ).toBeInTheDocument()
+  })
+
+  it('stays quiet once there is activity', async () => {
+    setMockHandler('timeline.status', async () => ({ sessionCount: 3, lastSyncAt: null }))
+    setMockHandler('timeline.events', async () => ({
+      days: [
+        { day: '2026-06-20', session_count: 3, turn_count: 9, token_count: 100, project_groups: [] },
+      ],
+    }))
+
+    renderWithProviders(<MonitorSpikeView />)
+
+    await waitFor(() => {
+      expect(screen.getByText('sessions').nextSibling?.textContent).toBe('3')
+    })
+    expect(screen.queryByText(/No sessions recorded yet/i)).not.toBeInTheDocument()
+  })
 })
