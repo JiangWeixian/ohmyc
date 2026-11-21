@@ -1,5 +1,7 @@
+import { defaultResolvedSettings, registerMockSettings } from '../src/lib/mock-settings'
 import { __setTransportForTests } from '../src/lib/transport'
 import { resetMock, setMockHandler } from '../src/lib/transport/mock'
+import { quotaSnapshots } from '../src/stories/fixtures/quota'
 import {
   e2eAgents,
   e2eCommands,
@@ -38,6 +40,7 @@ function ready(): void {
   })
   setMockHandler('timeline.events', async () => ({ days: [] }))
   setMockHandler('timeline.status', async () => ({ sessionCount: 42, lastSyncAt: Date.now() }))
+  setMockHandler('quota.list', async () => quotaSnapshots())
   setMockHandler('agents.list', async () => ({ agents: e2eAgents }))
   setMockHandler('agents.get', async (args: unknown) => {
     const name = (args as { name: string }).name
@@ -90,10 +93,20 @@ function empty(): void {
   setMockHandler('marketplaces.list', async () => ({ marketplaces: [] }))
 }
 
-export type ScenarioName = 'empty' | 'error' | 'missing' | 'ready' | 'unreadable'
+function readyWithView(view: 'heatmap' | 'quota'): void {
+  ready()
+  registerMockSettings()
+  const settings = defaultResolvedSettings()
+  settings.menubarView = { value: view, source: 'settings', envVar: null }
+  setMockHandler('settings.get', async () => settings)
+}
+
+export type ScenarioName = 'empty' | 'error' | 'missing' | 'ready' | 'readyHeatmap' | 'readyQuota' | 'unreadable'
 
 export const SCENARIOS: Record<ScenarioName, () => void> = {
   ready,
+  readyHeatmap: () => readyWithView('heatmap'),
+  readyQuota: () => readyWithView('quota'),
   missing: missingStore,
   unreadable: unreadableStore,
   error: internalError,

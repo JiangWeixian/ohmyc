@@ -44,3 +44,31 @@ export function persistTheme(value: PersistedTheme): void {
   }
   localStorage.setItem(STORAGE_KEY, JSON.stringify(value))
 }
+
+/**
+ * The valid subset of fields stored in localStorage, for one-time migration
+ * into the settings file. Unlike `loadPersistedTheme`, missing/invalid fields
+ * are omitted (not defaulted) so migration never writes a fabricated value.
+ */
+export function loadPersistedThemeFields(): Partial<PersistedTheme> {
+  if (typeof localStorage === 'undefined') {
+    return {}
+  }
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY)
+    if (!raw) {
+      return {}
+    }
+    const parsed = JSON.parse(raw) as Partial<PersistedTheme>
+    const out: Partial<PersistedTheme> = {}
+    if (parsed.theme && themes.map(t => t.id).includes(parsed.theme)) {
+      out.theme = parsed.theme
+    }
+    if (parsed.intensity && intensities.includes(parsed.intensity)) {
+      out.intensity = parsed.intensity
+    }
+    return out
+  } catch {
+    return {}
+  }
+}

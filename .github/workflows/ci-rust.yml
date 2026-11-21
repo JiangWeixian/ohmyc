@@ -3,7 +3,7 @@ name: Rust CI
 on:
   push:
   pull_request:
-    branches: [master, release]
+    branches: [develop, next]
 
 jobs:
   rust-check:

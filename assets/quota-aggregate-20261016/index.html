@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Quota 全量压力指示 · 设计 demo</title>
+<style>
+  :root {
+    --bg-deep: #08090a;
+    --bg-panel: #0f1011;
+    --bg-surface: #191a1b;
+    --text-primary: #f7f8f8;
+    --text-secondary: #d0d6e0;
+    --text-tertiary: #8a8f98;
+    --text-quaternary: #62666d;
+    --border-subtle: rgba(255,255,255,0.05);
+    --border-standard: rgba(255,255,255,0.08);
+    --heat-0: rgba(255,255,255,0.04);
+    --heat-1: rgba(255,255,255,0.15);
+    --heat-2: rgba(255,255,255,0.30);
+    --heat-3: rgba(255,255,255,0.50);
+    --heat-4: rgba(255,255,255,0.78);
+    --font-mono: "JetBrains Mono", ui-monospace, "SF Mono", Menlo, monospace;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    background: var(--bg-deep); color: var(--text-primary);
+    font-family: var(--font-mono); padding: 40px 24px 64px;
+    display: flex; flex-direction: column; align-items: center; gap: 36px;
+  }
+  .intro { max-width: 760px; text-align: center; }
+  .intro h1 { font-size: 15px; font-weight: 590; margin-bottom: 10px; }
+  .intro p { font-size: 11px; line-height: 1.8; color: var(--text-tertiary); }
+  .intro code { color: var(--text-secondary); background: var(--heat-0); border: 1px solid var(--border-subtle); border-radius: 4px; padding: 1px 5px; }
+  h2.group { font-size: 11px; font-weight: 510; letter-spacing: 0.14em; text-transform: uppercase; color: var(--text-quaternary); margin-top: 8px; }
+  .row { display: flex; gap: 28px; flex-wrap: wrap; justify-content: center; align-items: flex-start; }
+  .opt-tag { font-size: 10px; color: var(--text-quaternary); letter-spacing: 0.12em; text-transform: uppercase; margin-bottom: 10px; display: flex; justify-content: space-between; }
+  .opt-tag b { color: var(--text-secondary); font-weight: 510; }
+  .note { margin-top: 12px; font-size: 10px; line-height: 1.7; color: var(--text-quaternary); }
+
+  /* ═══ menubar popover frame ═══ */
+  .popover {
+    width: 367px; border-radius: 12px; padding: 18px 20px;
+    background: var(--bg-panel); border: 1px solid var(--border-standard);
+  }
+  .pop-title { font-size: 10px; letter-spacing: 0.14em; color: var(--text-quaternary); text-transform: uppercase; }
+  .pop-kpis { display: flex; margin-top: 10px; }
+  .pop-kpi { flex: 1; display: flex; flex-direction: column; gap: 4px; padding-right: 14px; }
+  .pop-kpi + .pop-kpi { border-left: 1px solid var(--border-subtle); padding-left: 14px; }
+  .pop-kpi b { font-size: 20px; font-weight: 510; }
+  .pop-kpi span { font-size: 9px; letter-spacing: 0.1em; color: var(--text-quaternary); text-transform: uppercase; }
+  .pop-divider { border-top: 1px solid var(--border-subtle); margin: 14px 0 10px; }
+
+  /* popover 方案 A：KPI 行旁边加 PEAK 大数字 */
+  .peak-inline b { font-size: 20px; font-weight: 510; }
+  .peak-inline span { font-size: 9px; }
+
+  /* popover 方案 B：QUOTA 头部下方一条细 pressure 条 */
+  .pressure-line { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; }
+  .pressure-line .bar { position: relative; height: 4px; border-radius: 2px; background: var(--heat-0); flex: 1; }
+  .pressure-line .bar i { position: absolute; inset: 0 auto 0 0; border-radius: 2px; }
+  .pressure-line .v { font-size: 10px; color: var(--text-secondary); }
+  .pressure-line .w { font-size: 9px; color: var(--text-quaternary); }
+
+  /* ═══ quota page frame ═══ */
+  .page { width: 760px; border-radius: 12px; padding: 28px 32px; background: var(--bg-deep); border: 1px solid var(--border-subtle); }
+  .page-head { display: flex; align-items: baseline; gap: 10px; margin-bottom: 18px; }
+  .page-title { font-size: 20px; font-weight: 590; }
+  .page-sub { font-size: 11px; color: var(--text-tertiary); }
+
+  /* 页面方案 A：hero 大数字 + 约束明细 */
+  .hero { display: flex; align-items: flex-end; justify-content: space-between; gap: 24px; padding: 20px 22px; border: 1px solid var(--border-standard); border-radius: 10px; background: rgba(255,255,255,0.02); margin-bottom: 14px; }
+  .hero .big { font-size: 44px; font-weight: 590; letter-spacing: -1px; line-height: 1; }
+  .hero .cap { font-size: 9px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--text-quaternary); margin-top: 8px; }
+  .hero .who { text-align: right; font-size: 11px; color: var(--text-tertiary); line-height: 1.8; }
+  .hero .who b { color: var(--text-primary); font-weight: 510; }
+  .hero .bar { height: 6px; border-radius: 3px; background: var(--heat-0); margin-top: 12px; position: relative; }
+  .hero .bar i { position: absolute; inset: 0 auto 0 0; border-radius: 3px; }
+  .hero .bar .bar-tag { position: absolute; right: 0; top: 12px; font-size: 9px; color: var(--text-quaternary); }
+
+  /* 页面方案 B：signal strip 单行 */
+  .strip { display: flex; align-items: center; gap: 14px; padding: 12px 16px; border: 1px solid var(--border-subtle); border-radius: 8px; margin-bottom: 14px; background: rgba(255,255,255,0.015); }
+  .strip .sig { font-size: 10px; letter-spacing: 0.1em; color: var(--text-quaternary); text-transform: uppercase; white-space: nowrap; }
+  .strip .bar { flex: 1; height: 5px; border-radius: 3px; background: var(--heat-0); position: relative; }
+  .strip .bar i { position: absolute; inset: 0 auto 0 0; border-radius: 3px; }
+  .strip .v { font-size: 12px; font-weight: 510; }
+  .strip .w { font-size: 10px; color: var(--text-tertiary); white-space: nowrap; }
+
+  .cards { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; opacity: 0.45; }
+  .mini-card { border: 1px solid var(--border-subtle); border-radius: 8px; padding: 12px 14px; }
+  .mini-card .n { font-size: 11px; font-weight: 510; margin-bottom: 8px; }
+  .mini-card .r { height: 4px; border-radius: 2px; background: var(--heat-0); position: relative; margin-bottom: 6px; }
+  .mini-card .r i { position: absolute; inset: 0 auto 0 0; border-radius: 2px; }
+</style>
+</head>
+<body>
+
+<div class="intro">
+  <h1>全量 Quota 压力指示</h1>
+  <p>指标定义：<b>峰值压力 = 各家账户级窗口的最大 used%</b>——回答「我离被限流还有多远」；不用平均（各家窗口周期不同，平均值没意义）。<br>峰值走 heat 灰阶；并标注「最紧的是谁 / 哪个窗口 / 离重置多久」。</p>
+</div>
+
+<h2 class="group">menubar popover · 两种</h2>
+<div class="row">
+
+  <div>
+    <div class="opt-tag"><b>P-A</b><span>peak 并入 KPI 行</span></div>
+    <div class="popover">
+      <div class="pop-title">// activity</div>
+      <div class="pop-kpis">
+        <div class="pop-kpi"><b>15.6B</b><span>tokens</span></div>
+        <div class="pop-kpi"><b>7,135</b><span>sessions</span></div>
+        <div class="pop-kpi"><b>2.1B</b><span>peak</span></div>
+      </div>
+      <div class="pop-divider"></div>
+      <div class="pop-title">// quota</div>
+      <div class="pop-kpis" style="margin-top:12px">
+        <div class="pop-kpi peak-inline"><b>100%</b><span>peak · kimi 5h</span></div>
+        <div class="pop-kpi"><b>62%</b><span>2nd · glm wk</span></div>
+        <div class="pop-kpi"><b>43%</b><span>3rd · cursor mo</span></div>
+      </div>
+      <div class="note">把 peak/2nd/3rd 做成第二行 KPI，不新增组件形态，和 Activity KPI 完全同构。缺点：占两行高度，popover 变高。</div>
+    </div>
+  </div>
+
+  <div>
+    <div class="opt-tag"><b>P-B</b><span>QUOTA 头部一条压力条</span></div>
+    <div class="popover">
+      <div class="pop-title">// activity</div>
+      <div class="pop-kpis">
+        <div class="pop-kpi"><b>15.6B</b><span>tokens</span></div>
+        <div class="pop-kpi"><b>7,135</b><span>sessions</span></div>
+        <div class="pop-kpi"><b>2.1B</b><span>peak</span></div>
+      </div>
+      <div class="pop-divider"></div>
+      <div class="pop-title">// quota</div>
+      <div class="pressure-line" style="margin-top:12px">
+        <span class="v">peak 100%</span>
+        <span class="bar"><i style="width:100%;background:var(--heat-4)"></i></span>
+        <span class="w">kimi 5h · 0m</span>
+      </div>
+      <div class="note">单行：峰值数字 + 细条 + 最紧者。高度只加一行，popover 增量最小。这个形态我最推荐放 popover。</div>
+    </div>
+  </div>
+
+  <div>
+    <div class="opt-tag"><b>P-B′</b><span>总消耗 + 峰值双指标</span></div>
+    <div class="popover">
+      <div class="pop-title">// activity</div>
+      <div class="pop-kpis">
+        <div class="pop-kpi"><b>15.6B</b><span>tokens</span></div>
+        <div class="pop-kpi"><b>7,135</b><span>sessions</span></div>
+        <div class="pop-kpi"><b>2.1B</b><span>peak</span></div>
+      </div>
+      <div class="pop-divider"></div>
+      <div class="pop-title">// quota</div>
+      <div class="pressure-line" style="margin-top:12px">
+        <span class="v">avg 41%</span>
+        <span class="bar"><i style="width:41%;background:var(--heat-3)"></i></span>
+        <span class="w">总消耗</span>
+      </div>
+      <div class="pressure-line">
+        <span class="v">peak 100%</span>
+        <span class="bar"><i style="width:100%;background:var(--heat-4)"></i></span>
+        <span class="w">kimi 5h · 0m</span>
+      </div>
+      <div class="note">两条：上是总消耗指数（均值），下是峰值压力（最紧者）。两行也只比原来多一行。</div>
+    </div>
+  </div>
+
+</div>
+
+<h2 class="group">quota 页面 · 两种</h2>
+<div class="row">
+
+  <div>
+    <div class="opt-tag"><b>A</b><span>hero 大数字带</span></div>
+    <div class="page">
+      <div class="page-head"><span class="page-title">Quota</span><span class="page-sub">Subscription usage across your coding CLIs</span></div>
+      <div class="hero">
+        <div>
+          <div class="big">41%</div>
+          <div class="cap">avg · 8 家均值</div>
+          <div class="bar">
+            <i style="width:100%;background:var(--heat-4)"></i>
+            <span class="bar-tag">peak 100% · kimi 5h · 0m</span>
+          </div>
+        </div>
+        <div class="who">
+          most constrained <b>Kimi · 5H</b><br>
+          resets in <b>0m</b> · 3 of 8 above 50%
+        </div>
+      </div>
+      <div class="cards">
+        <div class="mini-card"><div class="n">Kimi</div><div class="r"><i style="width:100%;background:var(--heat-4)"></i></div></div>
+        <div class="mini-card"><div class="n">GLM</div><div class="r"><i style="width:62%;background:var(--heat-3)"></i></div></div>
+        <div class="mini-card"><div class="n">Cursor</div><div class="r"><i style="width:43%;background:var(--heat-2)"></i></div></div>
+        <div class="mini-card"><div class="n">Codex</div><div class="r"><i style="width:18%;background:var(--heat-1)"></i></div></div>
+      </div>
+      <div class="note">大数字 + 明细（谁/哪个窗口/重置倒计时/超过 50% 的家数）。视觉冲击强，但和卡片网格有点抢戏。</div>
+    </div>
+  </div>
+
+  <div>
+    <div class="opt-tag"><b>B</b><span>signal strip 单行</span></div>
+    <div class="page">
+      <div class="page-head"><span class="page-title">Quota</span><span class="page-sub">Subscription usage across your coding CLIs</span></div>
+      <div class="strip">
+        <span class="sig">peak</span>
+        <span class="bar"><i style="width:100%;background:var(--heat-4)"></i></span>
+        <span class="v">peak 100%</span>
+        <span class="w">kimi 5h · 0m</span>
+      </div>
+      <div class="cards">
+        <div class="mini-card"><div class="n">Kimi</div><div class="r"><i style="width:100%;background:var(--heat-4)"></i></div></div>
+        <div class="mini-card"><div class="n">GLM</div><div class="r"><i style="width:62%;background:var(--heat-3)"></i></div></div>
+        <div class="mini-card"><div class="n">Cursor</div><div class="r"><i style="width:43%;background:var(--heat-2)"></i></div></div>
+        <div class="mini-card"><div class="n">Codex</div><div class="r"><i style="width:18%;background:var(--heat-1)"></i></div></div>
+      </div>
+      <div class="note">一条信号带，克制、不抢卡片的戏；和页面现有的 mono 气质一致。页面侧我推荐这个。</div>
+    </div>
+  </div>
+
+  <div>
+    <div class="opt-tag"><b>B′</b><span>总消耗 + 峰值双指标</span></div>
+    <div class="page">
+      <div class="page-head"><span class="page-title">Quota</span><span class="page-sub">Subscription usage across your coding CLIs</span></div>
+      <div class="strip">
+        <span class="sig">total</span>
+        <span class="bar"><i style="width:41%;background:var(--heat-3)"></i></span>
+        <span class="v">avg 41%</span>
+        <span class="w">8 家均值</span>
+      </div>
+      <div class="strip">
+        <span class="sig">peak</span>
+        <span class="bar"><i style="width:100%;background:var(--heat-4)"></i></span>
+        <span class="v">peak 100%</span>
+        <span class="w">kimi 5h · 0m</span>
+      </div>
+      <div class="cards">
+        <div class="mini-card"><div class="n">Kimi</div><div class="r"><i style="width:100%;background:var(--heat-4)"></i></div></div>
+        <div class="mini-card"><div class="n">GLM</div><div class="r"><i style="width:62%;background:var(--heat-3)"></i></div></div>
+        <div class="mini-card"><div class="n">Cursor</div><div class="r"><i style="width:43%;background:var(--heat-2)"></i></div></div>
+        <div class="mini-card"><div class="n">Codex</div><div class="r"><i style="width:18%;background:var(--heat-1)"></i></div></div>
+      </div>
+      <div class="note">总消耗（total）+ 峰值压力（peak）两条 strip，同形态。页面侧推荐。</div>
+    </div>
+  </div>
+
+</div>
+
+</body>
+</html>

@@ -48,6 +48,17 @@ pub fn position_under_tray(
     PhysicalPosition::new(x, y)
 }
 
+/// Clamp a content-reported popover height (CSS px) to a sane window size:
+/// never shorter than the compact views, never taller than the space below
+/// the menu bar on the current monitor.
+pub fn clamp_popover_height(height: f64, max_height: f64) -> f64 {
+    const MIN_HEIGHT: f64 = 160.0;
+    if !height.is_finite() {
+        return MIN_HEIGHT;
+    }
+    height.clamp(MIN_HEIGHT, max_height.max(MIN_HEIGHT))
+}
+
 /// Popover visibility state.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum PopoverState {
@@ -166,5 +177,27 @@ mod tests {
     fn test_popover_state_hide_is_idempotent() {
         assert_eq!(PopoverState::Visible.hide(), PopoverState::Hidden);
         assert_eq!(PopoverState::Hidden.hide(), PopoverState::Hidden);
+    }
+
+    #[test]
+    fn test_clamp_popover_height_passes_through_within_bounds() {
+        assert_eq!(clamp_popover_height(420.0, 1000.0), 420.0);
+    }
+
+    #[test]
+    fn test_clamp_popover_height_clamps_to_min_and_max() {
+        assert_eq!(clamp_popover_height(20.0, 1000.0), 160.0);
+        assert_eq!(clamp_popover_height(5000.0, 1000.0), 1000.0);
+    }
+
+    #[test]
+    fn test_clamp_popover_height_rejects_non_finite() {
+        assert_eq!(clamp_popover_height(f64::NAN, 1000.0), 160.0);
+        assert_eq!(clamp_popover_height(f64::INFINITY, 1000.0), 160.0);
+    }
+
+    #[test]
+    fn test_clamp_popover_height_tiny_monitor_keeps_min() {
+        assert_eq!(clamp_popover_height(400.0, 100.0), 160.0);
     }
 }

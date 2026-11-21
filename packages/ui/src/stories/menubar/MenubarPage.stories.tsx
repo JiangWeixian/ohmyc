@@ -5,18 +5,29 @@ import {
 } from 'storybook/test'
 
 import { MenubarPage } from '@/components/menubar/menubar-page'
+import { defaultResolvedSettings, registerMockSettings } from '@/lib/mock-settings'
 import { setMockHandler } from '@/lib/transport/mock'
 import {
+  installQuotaHandlers,
   installTimelineHandlers,
   MenubarFrame,
   withMockTransport,
   withQueryClient,
 } from '@/stories/decorators/storybook-decorators'
+import { quotaSnapshots } from '@/stories/fixtures/quota'
 import { menubarSessions, menubarTokens } from '@/stories/fixtures/timeline'
 
+import type { MenubarView } from '@/hooks/use-app-settings'
 import type { Meta, StoryObj } from '@storybook/react-vite'
 
+function useMenubarView(view: MenubarView) {
+  const settings = defaultResolvedSettings()
+  settings.menubarView = { value: view, source: 'settings', envVar: null }
+  setMockHandler('settings.get', async () => settings)
+}
+
 const populatedHandlers = () => {
+  registerMockSettings()
   installTimelineHandlers({
     years: [2026],
     projects: ['ohmyc'],
@@ -28,6 +39,7 @@ const populatedHandlers = () => {
     events: { days: [] },
     status: { sessionCount: 9, lastSyncAt: Date.UTC(2026, 5, 19, 12, 0, 0) },
   })
+  installQuotaHandlers(quotaSnapshots())
   setMockHandler('setup.status', async () => ({ state: 'ready' }))
 }
 
@@ -66,14 +78,40 @@ type Story = StoryObj<typeof meta>
 
 export const AreaView: Story = {
   decorators: [withMockTransport(populatedHandlers)],
+  play: async ({ canvasElement }) => {
+    // Quota section: provider names must label each block — a past edit
+    // dropped the name row and left bare 5H/WK bars.
+    const canvas = within(canvasElement)
+    await canvas.findByText('GLM')
+    await canvas.findByText('Codex')
+    await canvas.findByText('Claude')
+  },
 }
 
 export const HeatmapView: Story = {
-  decorators: [withMockTransport(populatedHandlers)],
+  decorators: [withMockTransport(() => {
+    populatedHandlers()
+    useMenubarView('heatmap')
+  })],
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement)
-    const heatmap = await canvas.findByRole('tab', { name: 'Heatmap view' })
-    fireEvent.click(heatmap)
+    await canvas.findByText('GLM')
+    expect(canvasElement.querySelectorAll('[data-heat-cell]').length).toBeGreaterThan(0)
+    expect(canvas.queryByRole('tab', { name: 'Heatmap view' })).not.toBeInTheDocument()
+  },
+}
+
+export const QuotaFocusView: Story = {
+  decorators: [withMockTransport(() => {
+    populatedHandlers()
+    useMenubarView('quota')
+  })],
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement)
+    await canvas.findByRole('region', { name: 'Quota providers, scrollable' })
+    await canvas.findByText('GLM')
+    await canvas.findByText('Cursor')
+    expect(canvas.queryByRole('tab', { name: 'Heatmap view' })).not.toBeInTheDocument()
   },
 }
 
@@ -93,14 +131,13 @@ export const EventSessionsTooltips: Story = {
       status: { sessionCount: 5, lastSyncAt: null },
     })
     setMockHandler('setup.status', async () => ({ state: 'ready' }))
+    useMenubarView('heatmap')
   })],
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement)
     await canvas.findByText('5')
-    canvas.getByRole('application').focus()
-    await expect(canvas.findByText('2 sessions · 15K tokens')).resolves.toBeVisible()
-    await expect(canvasElement.querySelector('[data-kpi="sessions"]')).toHaveTextContent('5')
-    fireEvent.click(canvas.getByRole('tab', { name: 'Heatmap view' }))
+    expect(canvas.queryByRole('tab', { name: 'Area chart view' })).not.toBeInTheDocument()
+    expect(canvas.queryByRole('tab', { name: 'Heatmap view' })).not.toBeInTheDocument()
     fireEvent.mouseOver(canvasElement.querySelectorAll('[data-heat-cell]')[111])
     await expect(canvas.findByText('2 sessions · 15K tokens')).resolves.toBeVisible()
     await expect(canvasElement.querySelector('[data-kpi="sessions"]')).toHaveTextContent('5')

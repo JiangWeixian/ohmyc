@@ -19,7 +19,7 @@ describe('Storybook public surface', () => {
 
   it('documents Menubar through composed and reusable surfaces only', () => {
     expect(() => readUiFile('src/stories/menubar/MenubarPage.stories.tsx')).not.toThrow()
-    expect(() => readUiFile('src/stories/menubar/ViewSwitch.stories.tsx')).not.toThrow()
+    expect(() => readUiFile('src/stories/menubar/ViewSwitch.stories.tsx')).toThrow(/ENOENT/)
     expect(() => readUiFile('src/stories/menubar/RecentHeatmap.stories.tsx')).toThrow(/ENOENT/)
     expect(() => readUiFile('src/stories/menubar/DualLineChart.stories.tsx')).toThrow(/ENOENT/)
   })

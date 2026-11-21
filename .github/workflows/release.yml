@@ -2,9 +2,7 @@ name: Release
 on:
   push:
     branches:
-      - main
-      - master
-      - "releases/*"
+      - develop
 env:
   CI: true
   NODE_OPTIONS: --max-old-space-size=4096

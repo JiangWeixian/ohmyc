@@ -6,7 +6,9 @@
 
 #[cfg(target_os = "macos")]
 use tauri::TitleBarStyle;
-use tauri::{Manager, WebviewUrl, WebviewWindowBuilder};
+use tauri::{Emitter, Manager, WebviewUrl, WebviewWindowBuilder};
+
+use crate::quota_poller::{QuotaCache, QUOTA_CHANGED_EVENT};
 
 pub const MAIN_LABEL: &str = "main";
 const DEFAULT_WIDTH: f64 = 1200.0;
@@ -43,6 +45,18 @@ pub fn open_main_window(app: tauri::AppHandle) -> Result<(), String> {
     }
 
     let window = builder.build().map_err(|e| e.to_string())?;
+    // An occluded/suspended webview misses quota:changed broadcasts (same
+    // class as the popover). The main window takes focus normally, so push
+    // the current cache on every focus gain — deterministic, native-side.
+    let win = window.clone();
+    window.on_window_event(move |event| {
+        if matches!(event, tauri::WindowEvent::Focused(true)) {
+            let snapshots = win.app_handle().state::<QuotaCache>().get();
+            if !snapshots.is_empty() {
+                let _ = win.emit(QUOTA_CHANGED_EVENT, snapshots);
+            }
+        }
+    });
     window.show().map_err(|e| e.to_string())?;
     window.set_focus().map_err(|e| e.to_string())?;
 

@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Kimi 月度额度展示 · 方案对比</title>
+<style>
+  :root {
+    --bg-deep: #08090a;
+    --bg-panel: #0f1011;
+    --text-primary: #f7f8f8;
+    --text-secondary: #d0d6e0;
+    --text-tertiary: #8a8f98;
+    --text-quaternary: #62666d;
+    --border-subtle: rgba(255,255,255,0.05);
+    --border-standard: rgba(255,255,255,0.08);
+    --heat-0: rgba(255,255,255,0.04);
+    --heat-1: rgba(255,255,255,0.15);
+    --heat-2: rgba(255,255,255,0.30);
+    --heat-3: rgba(255,255,255,0.50);
+    --heat-4: rgba(255,255,255,0.78);
+    --font-mono: "JetBrains Mono", ui-monospace, "SF Mono", Menlo, monospace;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    background: var(--bg-deep); color: var(--text-primary);
+    font-family: var(--font-mono); padding: 48px 24px;
+    display: flex; flex-direction: column; align-items: center; gap: 40px;
+  }
+  .intro { max-width: 720px; text-align: center; }
+  .intro h1 { font-size: 15px; font-weight: 590; letter-spacing: 0.02em; margin-bottom: 10px; }
+  .intro p { font-size: 11px; line-height: 1.8; color: var(--text-tertiary); }
+  .intro code { color: var(--text-secondary); background: var(--heat-0); border: 1px solid var(--border-subtle); border-radius: 4px; padding: 1px 5px; }
+
+  .compare { display: flex; gap: 28px; flex-wrap: wrap; justify-content: center; align-items: flex-start; }
+  .option { width: 340px; }
+  .option-tag {
+    font-size: 10px; letter-spacing: 0.14em; text-transform: uppercase;
+    color: var(--text-quaternary); margin-bottom: 10px; display: flex; justify-content: space-between;
+  }
+  .option-tag b { color: var(--text-secondary); font-weight: 510; }
+
+  .card {
+    background: rgba(255,255,255,0.02); border: 1px solid var(--border-standard);
+    border-radius: 10px; padding: 20px 22px 16px;
+  }
+  .card-head { display: flex; align-items: center; gap: 10px; margin-bottom: 16px; }
+  .card-name { font-size: 14px; font-weight: 590; }
+  .card-prov { margin-left: auto; font-size: 10px; color: var(--text-quaternary); display: flex; align-items: center; gap: 7px; }
+  .card-prov i { width: 6px; height: 6px; border-radius: 50%; border: 1px solid var(--text-quaternary); }
+
+  .row { display: grid; grid-template-columns: 64px 1fr 46px 64px; align-items: center; gap: 12px; margin-bottom: 11px; }
+  .row:last-child { margin-bottom: 0; }
+  .tag { font-size: 10px; font-weight: 510; text-transform: uppercase; letter-spacing: 0.06em; color: var(--text-tertiary); }
+  .tag .sub { text-transform: none; letter-spacing: 0; color: var(--text-quaternary); }
+  .pct { text-align: right; font-size: 12px; font-weight: 510; }
+  .reset { text-align: right; font-size: 10px; color: var(--text-quaternary); white-space: nowrap; }
+
+  .bar { position: relative; height: 6px; border-radius: 3px; background: var(--heat-0); overflow: hidden; }
+  .bar .fill { position: absolute; inset: 0 auto 0 0; border-radius: 3px; }
+  /* pace tick: 时间流逝位置 */
+  .tick { position: absolute; top: -3px; bottom: -3px; width: 1px; background: var(--text-quaternary); opacity: 0.9; }
+  .tick::after { content: ""; position: absolute; top: -2.5px; left: -2px; width: 5px; height: 5px; border-radius: 50%; background: var(--text-tertiary); }
+
+  /* 分段（方案 B）：Kimi = 暗灰底段，Code = 亮灰叠加段 */
+  .seg-kimi { position: absolute; inset: 0 auto 0 0; background: var(--heat-1); }
+  .seg-code { position: absolute; top: 0; bottom: 0; background: var(--heat-3); border-radius: 0 3px 3px 0; }
+
+  .legend { display: flex; gap: 12px; margin-top: 2px; }
+  .legend .item { display: flex; align-items: center; gap: 6px; font-size: 9px; color: var(--text-quaternary); }
+  .legend .sw { width: 7px; height: 7px; border-radius: 2px; display: inline-block; }
+  .sw-kimi { background: var(--heat-1); }
+  .sw-code { background: var(--heat-3); }
+
+  .note { margin-top: 14px; font-size: 10px; line-height: 1.7; color: var(--text-quaternary); border-top: 1px solid var(--border-subtle); padding-top: 12px; }
+  .note b { color: var(--text-tertiary); font-weight: 510; }
+</style>
+</head>
+<body>
+
+<div class="intro">
+  <h1>Kimi 月度额度：两种展示方案</h1>
+  <p>官方语义：<code>monthCode ⊂ monthTotal</code>，code 是月度总量中「编程场景消耗」的构成部分，<b style="color:var(--text-secondary)">不是独立配额</b>。官方 CLI 的 Plan Usage 卡片只渲染一条 Monthly 条，内部用分段表达构成（图例 Kimi / Code）。</p>
+</div>
+
+<div class="compare">
+
+  <!-- ═══════ 方案 A：现状（独立两行） ═══════ -->
+  <div class="option">
+    <div class="option-tag"><b>A</b><span>现状 · 独立两行</span></div>
+    <div class="card">
+      <div class="card-head">
+        <span class="card-name">Kimi</span>
+        <span class="card-prov"><i></i>experimental</span>
+      </div>
+      <div class="row">
+        <span class="tag">5H</span>
+        <div class="bar"><div class="fill" style="width:38%;background:var(--heat-2)"></div><div class="tick" style="left:61%"></div></div>
+        <span class="pct">38%</span>
+        <span class="reset">2h 29m</span>
+      </div>
+      <div class="row">
+        <span class="tag">MO</span>
+        <div class="bar"><div class="fill" style="width:18%;background:var(--heat-1)"></div><div class="tick" style="left:39%"></div></div>
+        <span class="pct">18%</span>
+        <span class="reset">28d 17h</span>
+      </div>
+      <div class="row">
+        <span class="tag">MO<span class="sub"> code</span></span>
+        <div class="bar"><div class="fill" style="width:18%;background:var(--heat-1)"></div><div class="tick" style="left:39%"></div></div>
+        <span class="pct">18%</span>
+        <span class="reset">28d 17h</span>
+      </div>
+      <div class="note">
+        <b>问题：</b>两条全宽进度条、数值永远 ≥ 关系（code 是子集），看起来像两个独立月度配额；你的场景下完全相等，视觉上是重复行。
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════ 方案 B：官方式分段条 ═══════ -->
+  <div class="option">
+    <div class="option-tag"><b>B</b><span>官方式 · 单条分段</span></div>
+    <div class="card">
+      <div class="card-head">
+        <span class="card-name">Kimi</span>
+        <span class="card-prov"><i></i>experimental</span>
+      </div>
+      <div class="row">
+        <span class="tag">5H</span>
+        <div class="bar"><div class="fill" style="width:38%;background:var(--heat-2)"></div><div class="tick" style="left:61%"></div></div>
+        <span class="pct">38%</span>
+        <span class="reset">2h 29m</span>
+      </div>
+      <div class="row">
+        <span class="tag">MO</span>
+        <div class="bar">
+          <div class="seg-kimi" style="width:18%"></div>
+          <div class="seg-code" style="left:0;width:18%"></div>
+          <div class="tick" style="left:39%"></div>
+        </div>
+        <span class="pct">18%</span>
+        <span class="reset">28d 17h</span>
+      </div>
+      <div class="legend">
+        <span class="item"><i class="sw sw-code"></i>Code 18%</span>
+        <span class="item"><i class="sw sw-kimi"></i>Kimi 0%</span>
+      </div>
+      <div class="note">
+        <b>你的真实数据：</b>用量全部来自编程场景，Code 段 = 总条（Kimi 段为 0）。分段关系一目了然：Code 是构成，不是第二个池子。
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════ 方案 B：混合用量假想场景 ═══════ -->
+  <div class="option">
+    <div class="option-tag"><b>B′</b><span>分段 · 混合用量假想</span></div>
+    <div class="card">
+      <div class="card-head">
+        <span class="card-name">Kimi</span>
+        <span class="card-prov"><i></i>experimental</span>
+      </div>
+      <div class="row">
+        <span class="tag">5H</span>
+        <div class="bar"><div class="fill" style="width:38%;background:var(--heat-2)"></div><div class="tick" style="left:61%"></div></div>
+        <span class="pct">38%</span>
+        <span class="reset">2h 29m</span>
+      </div>
+      <div class="row">
+        <span class="tag">MO</span>
+        <div class="bar">
+          <div class="seg-kimi" style="width:46%"></div>
+          <div class="seg-code" style="left:28%;width:18%"></div>
+          <div class="tick" style="left:39%"></div>
+        </div>
+        <span class="pct">46%</span>
+        <span class="reset">28d 17h</span>
+      </div>
+      <div class="legend">
+        <span class="item"><i class="sw sw-code"></i>Code 18%</span>
+        <span class="item"><i class="sw sw-kimi"></i>Kimi 28%</span>
+      </div>
+      <div class="note">
+        <b>假想：</b>若你还在 Kimi 主站/非编程场景消耗，构成会分开——暗灰是其他 Kimi 用量，亮灰是编程用量，合计 46% 才是真正的月度消耗。
+      </div>
+    </div>
+  </div>
+
+</div>
+
+</body>
+</html>
