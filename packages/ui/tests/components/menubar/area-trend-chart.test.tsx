@@ -8,6 +8,7 @@ import {
 } from 'vitest'
 
 import { AreaTrendChart } from '@/components/menubar/area-trend-chart'
+import { getAreaBaseValue } from '@/lib/area-chart'
 
 import type { HeatmapPoint } from '@/hooks/use-timeline'
 
@@ -51,6 +52,24 @@ function mockSessions(): HeatmapPoint[] {
     { date: '2026-05-22', value: 5 },
   ]
 }
+
+describe('getAreaBaseValue', () => {
+  it('uses the smallest non-zero token value', () => {
+    expect(getAreaBaseValue([
+      { date: '2026-05-15', value: 0 },
+      ...mockTokens(),
+      { date: '2026-05-23', value: 5000 },
+    ])).toBe(5000)
+  })
+
+  it('falls back to zero for empty or all-zero data', () => {
+    expect(getAreaBaseValue([])).toBe(0)
+    expect(getAreaBaseValue([
+      { date: '2026-05-15', value: 0 },
+      { date: '2026-05-16', value: 0 },
+    ])).toBe(0)
+  })
+})
 
 describe('AreaTrendChart', () => {
   it('renders a Recharts wrapper (shadcn ChartContainer internals)', () => {
